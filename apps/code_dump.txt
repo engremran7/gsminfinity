@@ -1,0 +1,1264 @@
+﻿### FILE: D:\GsmInfinity\apps\consent\admin.py
+from django.contrib import admin
+from .models import ConsentPolicy, ConsentRecord
+import csv
+from django.http import HttpResponse
+
+
+# --- Custom Filter for Reject All ---
+class RejectAllFilter(admin.SimpleListFilter):
+    title = "Reject All"
+    parameter_name = "reject_all"
+
+    def lookups(self, request, model_admin):
+        return [
+            ("yes", "Rejected All"),
+            ("no", "Not Rejected All"),
+        ]
+
+    def queryset(self, request, queryset):
+        if self.value() == "yes":
+            return queryset.filter(accepted_categories__reject_all=True)
+        if self.value() == "no":
+            return queryset.exclude(accepted_categories__reject_all=True)
+        return queryset
+
+
+@admin.register(ConsentPolicy)
+class ConsentPolicyAdmin(admin.ModelAdmin):
+    list_display = ("version", "is_active", "created_at", "updated_at")
+    list_filter = ("is_active", "created_at")
+    search_fields = ("version",)
+    ordering = ("-created_at",)
+
+    actions = ["activate_policy"]
+
+    def activate_policy(self, request, queryset):
+        ConsentPolicy.objects.update(is_active=False)
+        queryset.update(is_active=True)
+    activate_policy.short_description = "Activate selected policy (deactivate others)"
+
+
+@admin.register(ConsentRecord)
+class ConsentRecordAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "session_key",
+        "policy_version",
+        "site_domain",
+        "accepted_categories",
+        "is_reject_all",   # helper method from model
+        "accepted_at",
+        "updated_at",
+    )
+    list_filter = ("policy_version", "site_domain", RejectAllFilter, "updated_at")
+    search_fields = ("user__username", "session_key", "policy_version", "site_domain")
+    date_hierarchy = "updated_at"
+    ordering = ("-updated_at",)
+
+    actions = ["export_csv"]
+
+    def export_csv(self, request, queryset):
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = "attachment; filename=consent_records.csv"
+        writer = csv.writer(response)
+        writer.writerow([
+            "user",
+            "session_key",
+            "policy_version",
+            "site_domain",
+            "accepted_categories",
+            "is_reject_all",
+            "accepted_at",
+            "updated_at",
+        ])
+        for record in queryset:
+            writer.writerow([
+                getattr(record.user, "username", ""),
+                record.session_key,
+                record.policy_version,
+                record.site_domain,
+                record.accepted_categories,
+                record.is_reject_all(),
+                record.accepted_at.isoformat() if record.accepted_at else "",
+                record.updated_at.isoformat() if record.updated_at else "",
+            ])
+        return response
+    export_csv.short_description = "Export selected consent records to CSV"
+### FILE: D:\GsmInfinity\apps\consent\decorators.py
+from functools import wraps
+from django.http import HttpResponseForbidden
+
+def require_consent(category="analytics"):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            if not getattr(request, "has_cookie_consent", False):
+                return HttpResponseForbidden("Consent required")
+            return view_func(request, *args, **kwargs)
+        return _wrapped
+    return decorator
+### FILE: D:\GsmInfinity\apps\consent\middleware.py
+from django.utils.deprecation import MiddlewareMixin
+from .models import ConsentRecord, ConsentPolicy
+
+class ConsentMiddleware(MiddlewareMixin):
+    """
+    Attaches consent status, categories, and policy version to request.
+    Enforces reject-all override and ensures session for anonymous users.
+    """
+
+    def process_request(self, request):
+        # Defaults: functional allowed, others off until explicit opt-in
+        request.has_cookie_consent = False
+        request.consent_categories = {
+            "functional": True,
+            "analytics": False,
+            "ads": False,
+        }
+        request.consent_version = None
+
+        # Ensure session exists for anonymous tracking
+        if not request.session.session_key:
+            request.session.save()
+
+        # Active policy
+        policy = ConsentPolicy.objects.filter(is_active=True).order_by("-created_at").first()
+        if policy:
+            request.consent_version = policy.version
+
+        # Resolve consent record by user or session + policy version
+        consent_record = None
+        if request.user.is_authenticated:
+            consent_record = ConsentRecord.objects.filter(
+                user=request.user,
+                policy_version=request.consent_version
+            ).first()
+        else:
+            consent_record = ConsentRecord.objects.filter(
+                session_key=request.session.session_key,
+                policy_version=request.consent_version
+            ).first()
+
+        # Apply categories if found
+        if consent_record:
+            cats = consent_record.accepted_categories or {}
+            # Reject-all override wins
+            if cats.get("reject_all", False):
+                request.has_cookie_consent = False
+                request.consent_categories = {
+                    "functional": True,
+                    "analytics": False,
+                    "ads": False,
+                }
+            else:
+                request.has_cookie_consent = True
+                # Ensure functional remains True even if not present
+                request.consent_categories = {
+                    "functional": True,
+                    "analytics": bool(cats.get("analytics", False)),
+                    "ads": bool(cats.get("ads", False)),
+                }
+### FILE: D:\GsmInfinity\apps\consent\models.py
+from django.db import models
+from django.conf import settings
+
+
+class ConsentPolicy(models.Model):
+    version = models.CharField(max_length=20, unique=True)
+    text = models.TextField()  # Markdown/HTML policy content
+    categories = models.JSONField(default=dict)  # {"functional": true, "analytics": true, "ads": false}
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  # <-- added
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Consent Policy v{self.version}"
+
+
+class ConsentRecord(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE)
+    session_key = models.CharField(max_length=40, blank=True)  # anonymous users
+    policy_version = models.CharField(max_length=20)
+    accepted_categories = models.JSONField(default=dict)
+    accepted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  # <-- added
+    site_domain = models.CharField(max_length=255, blank=True)  # multi-tenant optional
+
+    class Meta:
+        indexes = [models.Index(fields=["policy_version", "session_key"])]
+        ordering = ["-accepted_at"]
+
+    def __str__(self):
+        who = self.user.email if self.user_id else self.session_key or "anonymous"
+        return f"Consent {self.policy_version} for {who}"
+
+    def is_reject_all(self):
+        """
+        Helper method for admin filters: returns True if record is a full reject.
+        """
+        return bool(self.accepted_categories.get("reject_all", False))
+    is_reject_all.boolean = True
+    is_reject_all.short_description = "Rejected All"
+### FILE: D:\GsmInfinity\apps\consent\urls.py
+from django.urls import path
+from .views import consent_accept, manage_consent   # import both functions
+
+urlpatterns = [
+    path("accept/", consent_accept, name="consent_accept"),
+    path("manage/", manage_consent, name="consent_manage"),
+]
+### FILE: D:\GsmInfinity\apps\consent\views.py
+from django.views.decorators.http import require_POST
+from django.shortcuts import redirect, render
+from django.contrib import messages
+from django.contrib.sites.models import Site
+from django.middleware.csrf import get_token
+from django.template.response import TemplateResponse
+from .models import ConsentPolicy, ConsentRecord
+
+def banner_partial(request):
+    """
+    Render the consent banner partial with the active policy.
+    Accessible dialog and clear actions per GDPR: accept all, reject all, manage.
+    """
+    policy = ConsentPolicy.objects.filter(is_active=True).order_by("-created_at").first()
+    ctx = {
+        "consent_active": bool(policy),
+        "consent_version": policy.version if policy else "",
+        "consent_text": policy.text if policy else "Default consent policy text.",
+        "consent_categories": policy.categories if policy else {
+            "functional": True,
+            "analytics": True,
+            "ads": False,
+        },
+        "csrf_token": get_token(request),
+    }
+    return TemplateResponse(request, "site_settings/consent_banner.html", ctx)
+
+def manage_consent(request):
+    """
+    Render full manage page for updating preferences.
+    Shows current selections (from request.consent_categories) and policy info.
+    """
+    policy = ConsentPolicy.objects.filter(is_active=True).order_by("-created_at").first()
+    context = {
+        "consent_active": bool(policy),
+        "consent_version": policy.version if policy else "",
+        "consent_text": policy.text if policy else "Default consent policy text.",
+        # Seed defaults; current effective categories come from middleware
+        "default_categories": policy.categories if policy else {
+            "functional": True,
+            "analytics": True,
+            "ads": False,
+        },
+    }
+    return render(request, "site_settings/consent_manage.html", context)
+
+@require_POST
+def consent_accept(request):
+    """
+    Persist consent (accept all, granular, or reject all) to ConsentRecord
+    and support anonymous/session-based tracking.
+    """
+    policy = ConsentPolicy.objects.filter(is_active=True).order_by("-created_at").first()
+    if not policy:
+        messages.error(request, "No active consent policy.")
+        return redirect(request.POST.get("next") or "/")
+
+    # Buttons: accept_all, save (granular), reject_all
+    if "reject_all" in request.POST:
+        accepted = {"functional": True, "analytics": False, "ads": False, "reject_all": True}
+    elif "accept_all" in request.POST:
+        accepted = {"functional": True, "analytics": True, "ads": True, "reject_all": False}
+    else:
+        accepted = {
+            "functional": True,
+            "analytics": request.POST.get("analytics") == "on",
+            "ads": request.POST.get("ads") == "on",
+            "reject_all": False,
+        }
+
+    # Domain
+    try:
+        domain = Site.objects.get_current().domain
+    except Exception:
+        domain = request.get_host()
+
+    defaults = {
+        "accepted_categories": accepted,
+        "site_domain": domain,
+        "session_key": request.session.session_key,
+    }
+
+    # Save by user or session
+    if request.user.is_authenticated:
+        ConsentRecord.objects.update_or_create(
+            user=request.user,
+            policy_version=policy.version,
+            defaults=defaults,
+        )
+    else:
+        ConsentRecord.objects.update_or_create(
+            session_key=request.session.session_key,
+            policy_version=policy.version,
+            defaults=defaults,
+        )
+
+    if accepted["reject_all"]:
+        messages.success(request, "You have rejected all optional cookies.")
+    elif "accept_all" in request.POST:
+        messages.success(request, "You have accepted all optional cookies.")
+    else:
+        messages.success(request, "Your cookie preferences have been saved.")
+
+    return redirect(request.POST.get("next") or "/")
+### FILE: D:\GsmInfinity\apps\core\admin.py
+from django.contrib import admin
+
+# Register your models here.
+### FILE: D:\GsmInfinity\apps\core\apps.py
+from django.apps import AppConfig
+
+class CoreConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.core"       # physical Python path
+    label = "core"           # short app label
+    verbose_name = "Core"
+### FILE: D:\GsmInfinity\apps\core\context_processors.py
+from apps.site_settings.models import SiteSettings   # âœ… correct
+
+def global_settings(request):
+    s = SiteSettings.get_solo()
+    return {
+        "site_name": s.site_name,
+        "theme_profile": s.theme_profile,
+        "primary_color": s.primary_color,
+        "secondary_color": s.secondary_color,
+    }
+### FILE: D:\GsmInfinity\apps\core\models.py
+from django.db import models
+
+
+class TimestampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+### FILE: D:\GsmInfinity\apps\core\tests.py
+from django.test import TestCase
+
+# Create your tests here.
+### FILE: D:\GsmInfinity\apps\core\urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    # Home / Landing
+    path("", views.home, name="home"),
+
+    # Tenants
+    path("tenants/", views.tenants, name="tenants"),
+
+    # Dashboards
+    path("dashboard/", views.overview, name="dashboard_overview"),
+    path("dashboard/security/", views.security, name="dashboard_security"),
+    path("dashboard/monetization/", views.monetization, name="dashboard_monetization"),
+    path("dashboard/notifications/", views.notifications, name="dashboard_notifications"),
+    path("dashboard/announcements/", views.announcements, name="dashboard_announcements"),
+    path("dashboard/users/", views.users_dashboard, name="dashboard_users"),
+    path("dashboard/system/", views.system_health, name="dashboard_system"),
+]
+### FILE: D:\GsmInfinity\apps\core\views.py
+from django.shortcuts import render
+from apps.site_settings.models import SiteSettings, TenantSiteSettings
+
+
+# Utility to fetch global site settings
+def _get_site_settings():
+    return SiteSettings.get_solo() if hasattr(SiteSettings, "get_solo") else SiteSettings.objects.first()
+
+
+# Home view with KPIs + site settings
+def home(request):
+    site_settings = _get_site_settings()
+    context = {
+        "site_settings": site_settings,
+        "active_users": 1245,
+        "mfa_adoption": "87%",
+        "revenue": "$12,340",
+    }
+    return render(request, "core/home.html", context)
+
+
+# Dashboard sections
+def overview(request):
+    return render(request, "dashboard/overview.html", {"site_settings": _get_site_settings()})
+
+
+def security(request):
+    return render(request, "dashboard/security.html", {"site_settings": _get_site_settings()})
+
+
+def monetization(request):
+    return render(request, "dashboard/monetization.html", {"site_settings": _get_site_settings()})
+
+
+def notifications(request):
+    return render(request, "dashboard/notifications.html", {"site_settings": _get_site_settings()})
+
+
+def announcements(request):
+    return render(request, "dashboard/announcements.html", {"site_settings": _get_site_settings()})
+
+
+def users_dashboard(request):
+    return render(request, "dashboard/users.html", {"site_settings": _get_site_settings()})
+
+
+def system_health(request):
+    return render(request, "dashboard/system_health.html", {"site_settings": _get_site_settings()})
+
+
+# Tenants listing
+def tenants(request):
+    site_settings = _get_site_settings()
+    tenants = TenantSiteSettings.objects.select_related("site").prefetch_related("meta_tags", "verification_files")
+    return render(request, "core/tenants.html", {"site_settings": site_settings, "tenants": tenants})
+
+
+# Error handlers
+def error_404_view(request, exception):
+    return render(request, "errors/404.html", {"site_settings": _get_site_settings()}, status=404)
+
+
+def error_403_view(request, exception):
+    return render(request, "errors/403.html", {"site_settings": _get_site_settings()}, status=403)
+
+
+def error_500_view(request):
+    return render(request, "errors/500.html", {"site_settings": _get_site_settings()}, status=500)
+### FILE: D:\GsmInfinity\apps\core\__init__.py
+### FILE: D:\GsmInfinity\apps\site_settings\admin.py
+from django.contrib import admin
+from import_export.admin import ExportMixin
+from solo.admin import SingletonModelAdmin
+from .models import SiteSettings, VerificationMetaTag, VerificationFile, TenantSiteSettings
+
+
+class VerificationMetaTagInline(admin.TabularInline):
+    model = VerificationMetaTag
+    extra = 1
+    fields = ("provider", "name_attr", "content_attr", "description", "created_at")
+    readonly_fields = ("created_at",)
+
+
+class VerificationFileInline(admin.TabularInline):
+    model = VerificationFile
+    extra = 1
+    fields = ("provider", "file", "description", "uploaded_at")
+    readonly_fields = ("uploaded_at",)
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(SingletonModelAdmin, ExportMixin, admin.ModelAdmin):
+    """
+    Enterprise-ready admin for global site settings.
+    Includes inlines for verification meta tags and files.
+    """
+
+    list_display = (
+        "site_name", "site_header", "maintenance_mode",
+        "recaptcha_enabled", "recaptcha_mode", "recaptcha_score_threshold",
+        "max_devices_per_user", "enforce_unique_device", "require_mfa",
+        "max_login_attempts", "rate_limit_window_seconds",
+    )
+
+    readonly_fields = ("favicon",)
+
+    fieldsets = (
+        ("Branding", {
+            "fields": ("site_name", "site_header", "favicon",
+                       "theme_profile", "primary_color", "secondary_color")
+        }),
+        ("Locale", {
+            "fields": ("default_language", "timezone", "enable_localization")
+        }),
+        ("AI Personalization", {
+            "fields": ("enable_ai_personalization", "ai_theme_mode", "ai_model_version")
+        }),
+        ("Security & Features", {
+            "fields": ("enable_signup", "enable_password_reset",
+                       "enable_notifications", "maintenance_mode")
+        }),
+        ("reCAPTCHA", {
+            "fields": ("recaptcha_enabled", "recaptcha_mode",
+                       "recaptcha_public_key", "recaptcha_private_key",
+                       "recaptcha_score_threshold", "recaptcha_timeout_ms")
+        }),
+        ("Device & MFA", {
+            "fields": ("max_devices_per_user", "lock_duration_minutes",
+                       "fingerprint_mode", "enforce_unique_device",
+                       "require_mfa", "mfa_totp_issuer")
+        }),
+        ("Email Verification", {
+            "fields": ("email_verification_code_length", "email_verification_code_type")
+        }),
+        ("Robustness", {
+            "fields": ("max_login_attempts", "rate_limit_window_seconds", "cache_ttl_seconds")
+        }),
+    )
+
+    inlines = [VerificationMetaTagInline, VerificationFileInline]
+
+
+@admin.register(TenantSiteSettings)
+class TenantSiteSettingsAdmin(admin.ModelAdmin):
+    """
+    Admin for per-tenant site settings (linked to django.contrib.sites).
+    """
+    list_display = ("site", "theme_profile", "primary_color", "secondary_color")
+    filter_horizontal = ("meta_tags", "verification_files")
+### FILE: D:\GsmInfinity\apps\site_settings\apps.py
+from django.apps import AppConfig
+
+class SiteSettingsConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.site_settings"        # full Python path
+    label = "site_settings"            # short app label
+    verbose_name = "Site Settings"     # human-readable name in admin
+
+    def ready(self):
+        # Import signals so they are registered when Django starts
+        import apps.site_settings.signals  # noqa
+### FILE: D:\GsmInfinity\apps\site_settings\context_processors.py
+from django.core.cache import cache
+from .models import SiteSettings
+
+def site_settings(request):
+    """
+    Provides global site settings, verification meta tags, and verification files
+    to all templates. Uses caching for efficiency and prefetches related objects.
+    """
+    settings = cache.get("site_settings_singleton")
+
+    if not settings:
+        # Prefetch related meta_tags and verification_files in one query
+        settings = (
+            SiteSettings.objects
+            .prefetch_related("meta_tags", "verification_files")
+            .get(pk=SiteSettings.get_solo().pk)
+        )
+        cache.set(
+            "site_settings_singleton",
+            settings,
+            timeout=getattr(settings, "cache_ttl_seconds", 300)
+        )
+
+    return {
+        "settings": settings,
+        "meta_tags": settings.meta_tags.all(),
+        "verification_files": settings.verification_files.all(),
+    }
+
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.cache import cache
+from .models import SiteSettings, TenantSiteSettings
+
+def site_settings(request):
+    current_site = get_current_site(request)
+    cache_key = f"site_settings_{current_site.id}"
+    settings = cache.get(cache_key)
+
+    if not settings:
+        try:
+            tenant_settings = TenantSiteSettings.objects.select_related("site").get(site=current_site)
+            settings = tenant_settings
+        except TenantSiteSettings.DoesNotExist:
+            settings = SiteSettings.get_solo()
+        cache.set(cache_key, settings, timeout=getattr(settings, "cache_ttl_seconds", 300))
+
+    return {
+        "settings": settings,
+        "meta_tags": getattr(settings, "meta_tags", SiteSettings.get_solo().meta_tags.all()),
+        "verification_files": getattr(settings, "verification_files", SiteSettings.get_solo().verification_files.all()),
+    }
+### FILE: D:\GsmInfinity\apps\site_settings\models.py
+from django.db import models
+from django.contrib.sites.models import Site
+from solo.models import SingletonModel
+
+# ---------- Core global site settings (singleton) ----------
+class SiteSettings(SingletonModel):
+    # Branding
+    site_name = models.CharField(max_length=128, default="GsmInfinity")
+    site_header = models.CharField(max_length=128, default="Admin Panel")
+    favicon = models.ImageField(upload_to="favicons/", null=True, blank=True)
+    theme_profile = models.CharField(max_length=64, default="default")
+    primary_color = models.CharField(max_length=7, default="#0057B8")
+    secondary_color = models.CharField(max_length=7, default="#FFD700")
+
+    # Locale
+    default_language = models.CharField(max_length=16, default="en-us")
+    timezone = models.CharField(max_length=64, default="Asia/Riyadh")
+    enable_localization = models.BooleanField(default=True)
+
+    # AI personalization
+    enable_ai_personalization = models.BooleanField(default=True)
+    ai_theme_mode = models.CharField(
+        max_length=16,
+        choices=[("auto", "Auto"), ("light", "Light"), ("dark", "Dark")],
+        default="auto"
+    )
+    ai_model_version = models.CharField(max_length=32, default="v1.0")
+
+    # Security feature flags
+    enable_signup = models.BooleanField(default=True)
+    enable_password_reset = models.BooleanField(default=True)
+    enable_notifications = models.BooleanField(default=True)
+    maintenance_mode = models.BooleanField(default=False)
+
+    # reCAPTCHA (admin-driven)
+    RECAPTCHA_CHOICES = [("v2", "reCAPTCHA v2"), ("v3", "reCAPTCHA v3"), ("off", "Disabled")]
+    recaptcha_enabled = models.BooleanField(default=True)
+    recaptcha_public_key = models.CharField(max_length=200, blank=True)
+    recaptcha_private_key = models.CharField(max_length=200, blank=True)
+    recaptcha_mode = models.CharField(max_length=5, choices=RECAPTCHA_CHOICES, default="v2")
+    recaptcha_score_threshold = models.DecimalField(max_digits=3, decimal_places=2, default=0.50)
+    recaptcha_timeout_ms = models.PositiveIntegerField(default=5000)
+
+    # Device & MFA
+    max_devices_per_user = models.IntegerField(default=3)
+    lock_duration_minutes = models.IntegerField(default=60)
+    fingerprint_mode = models.CharField(
+        max_length=10,
+        choices=[
+            ("all", "Motherboard + OS"),
+            ("mb", "Motherboard Only"),
+            ("os", "OS Only"),
+            ("none", "No Fingerprint Lock")
+        ],
+        default="all"
+    )
+    enforce_unique_device = models.BooleanField(default=False)
+    require_mfa = models.BooleanField(default=False)
+    mfa_totp_issuer = models.CharField(max_length=64, default="GsmInfinity")
+
+    # Email verification
+    email_verification_code_length = models.PositiveIntegerField(default=6)
+    email_verification_code_type = models.CharField(
+        max_length=12,
+        choices=[("numeric", "Numeric"), ("alphanumeric", "Alphanumeric")],
+        default="alphanumeric"
+    )
+
+    # Robustness
+    max_login_attempts = models.PositiveIntegerField(default=10)
+    rate_limit_window_seconds = models.PositiveIntegerField(default=300)
+    cache_ttl_seconds = models.PositiveIntegerField(default=300)
+
+    def __str__(self):
+        return "Global Site Settings"
+
+    class Meta:
+        verbose_name = "Site Settings"
+
+
+# ---------- Ownership verification (provider-aware) ----------
+class VerificationMetaTag(models.Model):
+    site_settings = models.ForeignKey(SiteSettings, on_delete=models.CASCADE, related_name="meta_tags")
+    provider = models.CharField(max_length=100, help_text="e.g. Google, Bing, Facebook, LinkedIn")
+    description = models.TextField(blank=True, null=True, help_text="Reason/use, requester, ticket ref")
+    name_attr = models.CharField(max_length=200, help_text="meta name attribute (e.g. google-site-verification)")
+    content_attr = models.CharField(max_length=500, help_text="meta content value/code")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Verification meta tag"
+        verbose_name_plural = "Verification meta tags"
+        indexes = [models.Index(fields=["provider", "name_attr"])]
+
+    def __str__(self):
+        return f"{self.provider} meta tag"
+
+
+class VerificationFile(models.Model):
+    site_settings = models.ForeignKey(SiteSettings, on_delete=models.CASCADE, related_name="verification_files")
+    provider = models.CharField(max_length=100, help_text="e.g. Google, LinkedIn, Bing")
+    description = models.TextField(blank=True, null=True, help_text="Purpose / requester / ticket ref")
+    file = models.FileField(upload_to="verification/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Verification file"
+        verbose_name_plural = "Verification files"
+        indexes = [models.Index(fields=["provider"])]
+
+    def __str__(self):
+        return f"{self.provider} file ({self.file.name})"
+
+
+# ---------- Tenant overrides (per-domain) ----------
+class TenantSiteSettings(models.Model):
+    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name="tenant_settings")
+    theme_profile = models.CharField(max_length=64, default="default")
+    primary_color = models.CharField(max_length=7, default="#0057B8")
+    secondary_color = models.CharField(max_length=7, default="#FFD700")
+    favicon = models.ImageField(upload_to="favicons/", null=True, blank=True)
+
+    # Optional: tenantâ€‘specific verification
+    meta_tags = models.ManyToManyField(VerificationMetaTag, blank=True)
+    verification_files = models.ManyToManyField(VerificationFile, blank=True)
+
+    def __str__(self):
+        return f"Tenant settings for {self.site.domain}"
+### FILE: D:\GsmInfinity\apps\site_settings\signals.py
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.core.cache import cache
+from .models import SiteSettings, VerificationMetaTag, VerificationFile
+
+def clear_site_settings_cache():
+    cache.delete("site_settings_singleton")
+
+@receiver(post_save, sender=SiteSettings)
+@receiver(post_delete, sender=SiteSettings)
+@receiver(post_save, sender=VerificationMetaTag)
+@receiver(post_delete, sender=VerificationMetaTag)
+@receiver(post_save, sender=VerificationFile)
+@receiver(post_delete, sender=VerificationFile)
+def invalidate_site_settings_cache(sender, **kwargs):
+    clear_site_settings_cache()
+### FILE: D:\GsmInfinity\apps\site_settings\tests.py
+from django.test import TestCase
+
+# Create your tests here.
+### FILE: D:\GsmInfinity\apps\site_settings\urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    # Page view (used by {% url 'site_settings' %} in templates)
+    path("", views.site_settings_view, name="site_settings"),
+
+    # JSON API endpoint for programmatic access
+    path("info/", views.settings_info, name="site_settings_info"),
+
+    # Verification file endpoint (works with root-level alias in project urls.py)
+    path("verification/<str:filename>", views.verification_file, name="site_settings_verification"),
+]
+### FILE: D:\GsmInfinity\apps\site_settings\views.py
+from mimetypes import guess_type
+from django.core.cache import cache
+from django.shortcuts import render
+from django.http import JsonResponse, FileResponse, Http404
+from .models import SiteSettings, VerificationFile
+
+
+def get_cached_settings():
+    """
+    Helper to fetch SiteSettings singleton with caching.
+    Respects the admin-driven cache_ttl_seconds field.
+    """
+    settings = cache.get("site_settings_singleton")
+    if not settings:
+        settings = SiteSettings.get_solo()
+        cache.set(
+            "site_settings_singleton",
+            settings,
+            timeout=getattr(settings, "cache_ttl_seconds", 300),
+        )
+    return settings
+
+
+def site_settings_view(request):
+    """
+    Render the Site Settings dashboard page.
+    """
+    site_settings = get_cached_settings()
+    return render(request, "site_settings/settings.html", {"settings": site_settings})
+
+
+def settings_info(request):
+    """
+    JSON API endpoint for programmatic access to site settings.
+    Returns a minimal set of global configuration values.
+    """
+    site_settings = get_cached_settings()
+    data = {
+        "site_name": site_settings.site_name,
+        "language": site_settings.default_language,
+        "timezone": site_settings.timezone,
+    }
+    return JsonResponse(data)
+
+
+def verification_file(request, filename):
+    """
+    Serve the verification file by filename, so it works at:
+    - /settings/verification/<filename>
+    - /<filename> (root-level alias in project urls)
+
+    We try an exact basename match first, then fallback to contains.
+    """
+    try:
+        vf = VerificationFile.objects.filter(file__endswith=filename).first()
+        if not vf:
+            vf = VerificationFile.objects.get(file__icontains=filename)
+
+        content_type, _ = guess_type(vf.file.name)
+        return FileResponse(
+            vf.file.open("rb"),
+            content_type=content_type or "application/octet-stream",
+        )
+    except VerificationFile.DoesNotExist:
+        raise Http404("Verification file not found")
+### FILE: D:\GsmInfinity\apps\site_settings\__init__.py
+### FILE: D:\GsmInfinity\apps\users\services\rate_limit.py
+from django.core.cache import cache
+from time import time
+
+def allow_action(key,max_attempts,window_seconds):
+    now=time();bucket=cache.get(key,[])
+    bucket=[t for t in bucket if now-t<=window_seconds]
+    if len(bucket)>=max_attempts:return False
+    bucket.append(now);cache.set(key,bucket,timeout=window_seconds);return True
+### FILE: D:\GsmInfinity\apps\users\services\recaptcha.py
+import requests,logging
+from decimal import Decimal
+from apps.site_settings.models import SiteSettings
+log=logging.getLogger(__name__)
+
+def verify_recaptcha(token,remote_ip=None,action="login"):
+    s=SiteSettings.get_solo()
+    if not s.recaptcha_enabled or s.recaptcha_mode=="off":return {"ok":True}
+    if not s.recaptcha_private_key or not token:return {"ok":False,"error":"missing"}
+    data={"secret":s.recaptcha_private_key,"response":token}
+    if remote_ip:data["remoteip"]=remote_ip
+    try:
+        r=requests.post("https://www.google.com/recaptcha/api/siteverify",data=data,timeout=(s.recaptcha_timeout_ms/1000.0))
+        j=r.json();ok=j.get("success",False)
+        if s.recaptcha_mode=="v3":
+            score=Decimal(str(j.get("score",0.0)));thr=Decimal(str(s.recaptcha_score_threshold));ok=ok and score>=thr
+            return {"ok":ok,"score":float(score),"errors":j.get("error-codes",[])}
+        return {"ok":ok,"errors":j.get("error-codes",[])}
+    except Exception as e:
+        log.warning("reCAPTCHA verify error: %s",e);return {"ok":False,"error":"recaptcha_unreachable"}
+### FILE: D:\GsmInfinity\apps\users\utils\utils.py
+import hashlib
+def get_device_fingerprint(request):
+    ua=request.META.get("HTTP_USER_AGENT","")
+    ip=request.META.get("HTTP_X_FORWARDED_FOR",request.META.get("REMOTE_ADDR",""))
+    session_key=request.session.session_key or ""
+    return hashlib.sha256(f"{ua}|{ip}|{session_key}".encode()).hexdigest()
+### FILE: D:\GsmInfinity\apps\users\adapters.py
+from allauth.account.adapter import DefaultAccountAdapter
+from apps.site_settings.models import SiteSettings
+
+class CustomAccountAdapter(DefaultAccountAdapter):
+    def is_open_for_signup(self, request):
+        # Respect enterprise flag from SiteSettings
+        return SiteSettings.get_solo().enable_signup
+
+    def send_confirmation_mail(self, request, emailconfirmation, signup):
+        # Hook: you can inject your verification/MFA logic here
+        super().send_confirmation_mail(request, emailconfirmation, signup)
+### FILE: D:\GsmInfinity\apps\users\admin.py
+from django.contrib import admin
+from import_export.admin import ExportMixin
+from .models import CustomUser, DeviceFingerprint, Notification, Announcement
+
+
+# --- Custom User Admin ---
+@admin.register(CustomUser)
+class CustomUserAdmin(ExportMixin, admin.ModelAdmin):
+    list_display = (
+        "email", "username", "full_name",
+        "is_active", "is_staff", "is_superuser",
+        "credits", "signup_method", "date_joined"
+    )
+    search_fields = ("email", "username", "full_name", "phone", "referral_code")
+    list_filter = ("is_active", "is_staff", "is_superuser", "signup_method")
+    readonly_fields = ("referral_code", "date_joined", "email_verified_at", "last_unlock")
+
+
+# --- Device Fingerprint Admin ---
+@admin.register(DeviceFingerprint)
+class DeviceFingerprintAdmin(ExportMixin, admin.ModelAdmin):
+    list_display = (
+        "user", "fingerprint_hash", "os_info", "motherboard_id",
+        "browser_info", "last_used_at", "is_active"
+    )
+    list_filter = ("is_active",)
+    search_fields = ("fingerprint_hash", "user__email", "user__username")
+    readonly_fields = ("registered_at", "last_used_at")
+
+
+# --- Notification Admin ---
+@admin.register(Notification)
+class NotificationAdmin(ExportMixin, admin.ModelAdmin):
+    list_display = (
+        "recipient", "title", "priority", "channel",
+        "created_at", "is_read", "read_at"
+    )
+    list_filter = ("priority", "channel", "is_read")
+    search_fields = ("title", "message", "recipient__email")
+
+    class Meta:
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+
+
+# --- Announcement Admin ---
+@admin.register(Announcement)
+class AnnouncementAdmin(ExportMixin, admin.ModelAdmin):
+    list_display = (
+        "title", "audience", "is_global", "created_by",
+        "start_at", "expires_at"
+    )
+    list_filter = ("audience", "is_global", "expires_at")
+    search_fields = ("title", "message")
+
+    class Meta:
+        verbose_name = "Announcement"
+        verbose_name_plural = "Announcements"
+
+
+# --- Admin branding ---
+admin.site.site_header = "GSM Infinity Admin"
+admin.site.index_title = "Enterprise Management"
+admin.site.site_title = "Admin Portal"
+### FILE: D:\GsmInfinity\apps\users\apps.py
+from django.apps import AppConfig
+
+class UsersConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.users"      # physical Python path
+    label = "users"          # app label used in AUTH_USER_MODEL
+    verbose_name = "Users"
+### FILE: D:\GsmInfinity\apps\users\auth_backends.py
+from django.contrib.auth.backends import ModelBackend
+from django.db.models import Q
+from .models import CustomUser
+
+
+class MultiFieldAuthBackend(ModelBackend):
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        if username is None:
+            return None
+        try:
+            user = CustomUser.objects.get(Q(email=username) | Q(username=username) | Q(phone=username))
+        except CustomUser.DoesNotExist:
+            return None
+        if user.check_password(password) and self.user_can_authenticate(user):
+            return user
+        return None
+### FILE: D:\GsmInfinity\apps\users\context_processors.py
+# Keep users-specific processors minimal; site settings are injected via site_settings app.
+def user_context(request):
+    return {"is_authenticated":request.user.is_authenticated}
+### FILE: D:\GsmInfinity\apps\users\forms.py
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from .models import CustomUser
+from apps.site_settings.models import SiteSettings
+import random, string
+
+
+class CustomSignupForm(UserCreationForm):
+    invite_code = forms.CharField(required=False)
+    password = forms.CharField(widget=forms.PasswordInput)
+
+    class Meta:
+        model = CustomUser
+        fields = ["email", "username", "full_name", "country", "phone", "password"]
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        super().__init__(*args, **kwargs)
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if CustomUser.objects.filter(email=email).exists():
+            raise forms.ValidationError("Email already in use.")
+        return email
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username")
+        if username and CustomUser.objects.filter(username=username).exists():
+            raise forms.ValidationError("Username already in use.")
+        return username
+
+    def clean_phone(self):
+        phone = self.cleaned_data.get("phone")
+        if phone and CustomUser.objects.filter(phone=phone).exists():
+            raise forms.ValidationError("Phone already in use.")
+        return phone
+
+    def save(self, request=None, commit=True):
+        user = super().save(commit=False)
+        s = SiteSettings.get_solo()
+        length = s.email_verification_code_length
+        code_type = s.email_verification_code_type
+        chars = string.digits if code_type == "numeric" else string.ascii_letters + string.digits
+        user.verification_code = "".join(random.choices(chars, k=length))
+        user.signup_method = "manual"
+        if commit:
+            user.save()
+        return user
+### FILE: D:\GsmInfinity\apps\users\mfa.py
+import base64,os,time,hmac,hashlib
+from apps.site_settings.models import SiteSettings
+
+class TOTPService:
+    @staticmethod
+    def generate_secret(length=20):return base64.b32encode(os.urandom(length)).decode("utf-8").replace("=","")
+    @staticmethod
+    def _totp(secret,period=30,digits=6):
+        key=base64.b32decode(secret+"="*((8-(len(secret)%8))%8))
+        counter=int(time.time()/period)
+        msg=counter.to_bytes(8,"big");h=hmac.new(key,msg,hashlib.sha1).digest()
+        o=h[-1]&0x0F;code=(int.from_bytes(h[o:o+4],"big")&0x7fffffff)%(10**digits)
+        return str(code).zfill(digits)
+    @staticmethod
+    def verify(secret,code):return TOTPService._totp(secret)==code
+
+class MFAEnforcer:
+    @staticmethod
+    def required():return SiteSettings.get_solo().require_mfa
+    @staticmethod
+    def issuer():return SiteSettings.get_solo().mfa_totp_issuer
+### FILE: D:\GsmInfinity\apps\users\models.py
+from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.conf import settings
+from django.utils import timezone
+import uuid
+
+
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, username=None, password=None, **extra):
+        if not email:
+            raise ValueError("Email required")
+        email = self.normalize_email(email)
+        user = self.model(email=email, username=username, **extra)
+        user.set_password(password)
+        user.save()
+        return user
+
+    def create_superuser(self, email, username=None, password=None, **extra):
+        extra.setdefault("is_staff", True)
+        extra.setdefault("is_superuser", True)
+        extra.setdefault("is_active", True)
+        return self.create_user(email, username, password, **extra)
+
+
+class CustomUser(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(unique=True)
+    username = models.CharField(max_length=150, unique=True, blank=True, null=True)
+
+    full_name = models.CharField(max_length=150, default="No Name")
+    country = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    currency = models.CharField(max_length=10, blank=True, null=True)
+    role = models.CharField(max_length=50, blank=True, null=True)
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    credits = models.PositiveIntegerField(default=0)
+
+    referral_code = models.CharField(max_length=10, unique=True, blank=True)
+    referred_by = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
+
+    unlock_count = models.PositiveIntegerField(default=0)
+    last_unlock = models.DateTimeField(null=True, blank=True)
+
+    email_verified_at = models.DateTimeField(null=True, blank=True)
+    verification_code = models.CharField(max_length=12, blank=True)
+
+    signup_method = models.CharField(
+        max_length=20,
+        choices=[("manual", "Manual"), ("social", "Social")],
+        default="manual",
+    )
+    needs_profile_completion = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username", "full_name"]
+
+    objects = CustomUserManager()
+
+    def __str__(self):
+        return self.email
+
+    def save(self, *args, **kwargs):
+        if not self.referral_code:
+            while True:
+                code = uuid.uuid4().hex[:10].upper()
+                if not CustomUser.objects.filter(referral_code=code).exists():
+                    self.referral_code = code
+                    break
+        super().save(*args, **kwargs)
+
+    @property
+    def is_verified(self):
+        return bool(self.email_verified_at)
+
+
+class DeviceFingerprint(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    fingerprint_hash = models.CharField(max_length=255)
+    os_info = models.CharField(max_length=100, blank=True)
+    motherboard_id = models.CharField(max_length=100, blank=True)
+    browser_info = models.CharField(max_length=255, blank=True)
+    registered_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ("user", "fingerprint_hash")
+        ordering = ["-last_used_at"]
+
+
+class Notification(models.Model):
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    priority = models.CharField(
+        max_length=20,
+        choices=[("info", "Info"), ("warning", "Warning"), ("critical", "Critical")],
+        default="info",
+    )
+    channel = models.CharField(
+        max_length=20,
+        choices=[("web", "Web"), ("email", "Email"), ("sms", "SMS"), ("push", "Push")],
+        default="web",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class Announcement(models.Model):
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    audience = models.CharField(
+        max_length=20,
+        choices=[("all", "All"), ("user", "Users"), ("staff", "Staff")],
+        default="all",
+    )
+    is_global = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="created_announcements",
+    )
+    start_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def is_active(self):
+        now = timezone.now()
+        return (self.start_at <= now) and (not self.expires_at or self.expires_at > now)
+### FILE: D:\GsmInfinity\apps\users\tests.py
+from django.test import TestCase
+
+# Create your tests here.
+### FILE: D:\GsmInfinity\apps\users\urls.py
+from django.urls import path
+from . import views
+
+urlpatterns=[
+ path("",views.home_view,name="home"),
+ path("signup/",views.signup_view,name="signup"),
+ path("login/",views.login_view,name="login"),
+ path("verify-email/",views.verify_email_view,name="verify_email"),
+ path("dashboard/",views.dashboard_view,name="dashboard"),
+ path("profile/",views.profile_view,name="profile"),
+]
+### FILE: D:\GsmInfinity\apps\users\views.py
+from django.shortcuts import render,redirect
+from django.contrib.auth import authenticate,login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
+from django.utils import timezone
+from .models import Notification,Announcement,DeviceFingerprint,CustomUser
+from .forms import CustomSignupForm
+from .utils.utils import get_device_fingerprint
+from .services.recaptcha import verify_recaptcha
+from .services.rate_limit import allow_action
+from apps.site_settings.models import SiteSettings
+
+def home_view(request):
+    anns=[a for a in Announcement.objects.all() if a.is_active()]
+    unread=Notification.objects.filter(recipient=request.user,is_read=False).count() if request.user.is_authenticated else 0
+    return render(request,"users/home.html",{"announcements":anns,"unread_count":unread})
+
+def signup_view(request):
+    s=SiteSettings.get_solo()
+    if not s.enable_signup:return render(request,"users/signup.html",{"error":"Signup disabled"})
+    form=CustomSignupForm(request.POST or None,request=request)
+    if request.method=="POST" and form.is_valid():
+        token=request.POST.get("g-recaptcha-response") or request.POST.get("recaptcha_token")
+        r=verify_recaptcha(token,request.META.get("REMOTE_ADDR"),action="signup")
+        if not r.get("ok"):return render(request,"users/signup.html",{"form":form,"error":"reCAPTCHA failed"})
+        user=form.save(request)
+        return redirect("verify_email")
+    return render(request,"users/signup.html",{"form":form})
+
+def login_view(request):
+    form=AuthenticationForm(request,data=request.POST or None)
+    s=SiteSettings.get_solo()
+    if request.method=="POST" and form.is_valid():
+        rl_key=f"login:{request.META.get('REMOTE_ADDR','')}"
+        if not allow_action(rl_key,s.max_login_attempts,s.rate_limit_window_seconds):
+            return render(request,"users/login.html",{"form":form,"error":"Too many attempts. Try later."})
+        token=request.POST.get("g-recaptcha-response") or request.POST.get("recaptcha_token")
+        r=verify_recaptcha(token,request.META.get("REMOTE_ADDR"),action="login")
+        if not r.get("ok"):return render(request,"users/login.html",{"form":form,"error":"reCAPTCHA failed"})
+        user=form.get_user();login(request,user)
+        fp=get_device_fingerprint(request)
+        DeviceFingerprint.objects.get_or_create(user=user,fingerprint_hash=fp)
+        if s.enforce_unique_device and DeviceFingerprint.objects.filter(user=user).count()>s.max_devices_per_user:
+            return render(request,"users/login.html",{"form":form,"error":"Device limit exceeded"})
+        if s.require_mfa and not user.is_verified:
+            return redirect("verify_email")
+        return redirect("dashboard")
+    return render(request,"users/login.html",{"form":form})
+
+@login_required
+def verify_email_view(request):
+    if request.method=="POST":
+        code=request.POST.get("code","");u=request.user
+        if u.verification_code==code:
+            u.email_verified_at=timezone.now();u.verification_code="";u.save();return redirect("dashboard")
+    return render(request,"users/verify_email.html")
+
+@login_required
+def dashboard_view(request):
+    anns=[a for a in Announcement.objects.all() if a.is_active()]
+    notes=Notification.objects.filter(recipient=request.user).order_by("-created_at")[:5]
+    s=SiteSettings.get_solo()
+    return render(request,"users/dashboard.html",{"announcements":anns,"notifications":notes,"credits":request.user.credits,"can_watch_ad":s.recaptcha_enabled,"can_pay":True})
+
+@login_required
+def profile_view(request):
+    return render(request,"users/profile.html",{"user":request.user})
+
+def error_404_view(request,exception):return render(request,"errors/404.html",status=404)
+def error_403_view(request,exception):return render(request,"errors/403.html",status=403)
+def error_500_view(request):return render(request,"errors/500.html",status=500)
+### FILE: D:\GsmInfinity\apps\users\__init__.py

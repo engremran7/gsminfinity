@@ -1,0 +1,829 @@
+### FILE: __init__.py
+### PATH TREE: 
+
+
+### FILE: adapters.py
+### PATH TREE: 
+from allauth.account.adapter import DefaultAccountAdapter
+from django.core.exceptions import ValidationError
+from django.urls import reverse
+from apps.site_settings.models import SiteSettings
+
+
+class CustomAccountAdapter(DefaultAccountAdapter):
+    def is_open_for_signup(self, request):
+        try:
+            settings = SiteSettings.get_solo()
+            return settings.enable_signup
+        except Exception:
+            return True  # fallback: allow signup if settings not initialized
+
+    def clean_password(self, password, user=None):
+        if len(password) < 8:
+            raise ValidationError("Password must be at least 8 characters.")
+        if password.isdigit():
+            raise ValidationError("Password cannot be entirely numeric.")
+        return super().clean_password(password, user)
+
+    def get_login_redirect_url(self, request):
+        user = request.user
+        if hasattr(user, "is_verified") and not user.is_verified:
+            return reverse("verify_email")
+        return reverse("dashboard")
+
+
+### FILE: admin.py
+### PATH TREE: 
+from django.contrib import admin
+from import_export.admin import ExportMixin
+from .models import CustomUser, DeviceFingerprint, Notification, Announcement
+
+
+# --- Custom User Admin ---
+@admin.register(CustomUser)
+class CustomUserAdmin(ExportMixin, admin.ModelAdmin):
+    list_display = (
+        "email",
+        "username",
+        "full_name",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "credits",
+        "signup_method",
+        "date_joined",
+    )
+    search_fields = (
+        "email",
+        "username",
+        "full_name",
+        "phone",
+        "referral_code",
+    )
+    list_filter = (
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "signup_method",
+    )
+    readonly_fields = (
+        "referral_code",
+        "date_joined",
+        "email_verified_at",
+        "last_unlock",
+    )
+
+
+# --- Device Fingerprint Admin ---
+@admin.register(DeviceFingerprint)
+class DeviceFingerprintAdmin(ExportMixin, admin.ModelAdmin):
+    list_display = (
+        "user",
+        "fingerprint_hash",
+        "os_info",
+        "motherboard_id",
+        "browser_info",
+        "last_used_at",
+        "is_active",
+    )
+    list_filter = ("is_active",)
+    search_fields = (
+        "fingerprint_hash",
+        "user__email",
+        "user__username",
+    )
+    readonly_fields = (
+        "registered_at",
+        "last_used_at",
+    )
+
+
+# --- Notification Admin ---
+@admin.register(Notification)
+class NotificationAdmin(ExportMixin, admin.ModelAdmin):
+    list_display = (
+        "recipient",
+        "title",
+        "priority",
+        "channel",
+        "created_at",
+        "is_read",
+        "read_at",
+    )
+    list_filter = (
+        "priority",
+        "channel",
+        "is_read",
+    )
+    search_fields = (
+        "title",
+        "message",
+        "recipient__email",
+    )
+
+    class Meta:
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+
+
+# --- Announcement Admin ---
+@admin.register(Announcement)
+class AnnouncementAdmin(ExportMixin, admin.ModelAdmin):
+    list_display = (
+        "title",
+        "audience",
+        "is_global",
+        "created_by",
+        "start_at",
+        "expires_at",
+    )
+    list_filter = (
+        "audience",
+        "is_global",
+        "expires_at",
+    )
+    search_fields = (
+        "title",
+        "message",
+    )
+
+    class Meta:
+        verbose_name = "Announcement"
+        verbose_name_plural = "Announcements"
+
+
+# --- Admin branding ---
+admin.site.site_header = "GSM Infinity Admin"
+admin.site.index_title = "Enterprise Management"
+admin.site.site_title = "Admin Portal"
+
+
+### FILE: apps.py
+### PATH TREE: 
+from django.apps import AppConfig
+
+class UsersConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.users"      # physical Python path
+    label = "users"          # app label used in AUTH_USER_MODEL
+    verbose_name = "Users"
+
+
+
+### FILE: auth_backends.py
+### PATH TREE: 
+from django.contrib.auth.backends import ModelBackend
+from django.db.models import Q
+from .models import CustomUser
+
+
+class MultiFieldAuthBackend(ModelBackend):
+    def authenticate(self, request, username=None, password=None, **kwargs):
+        if username is None:
+            return None
+        try:
+            user = CustomUser.objects.get(Q(email=username) | Q(username=username) | Q(phone=username))
+        except CustomUser.DoesNotExist:
+            return None
+        if user.check_password(password) and self.user_can_authenticate(user):
+            return user
+        return None
+
+
+### FILE: context_processors.py
+### PATH TREE: 
+# Keep users-specific processors minimal; site settings are injected via site_settings app.
+def user_context(request):
+    return {"is_authenticated":request.user.is_authenticated}
+
+
+
+### FILE: forms.py
+### PATH TREE: 
+from allauth.account.forms import SignupForm
+from django.core.exceptions import ValidationError
+from django import forms
+
+class CustomSignupForm(SignupForm):
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
+        if not email or "@" not in email:
+            raise ValidationError("Enter a valid email address.")
+        return email
+
+    def clean_username(self):
+        username = self.cleaned_data.get("username")
+        if not username or len(username) < 3:
+            raise ValidationError("Username must be at least 3 characters.")
+        return username
+
+    def clean_password1(self):
+        password = self.cleaned_data.get("password1")
+        if len(password) < 8:
+            raise ValidationError("Password must be at least 8 characters.")
+        if password.isdigit():
+            raise ValidationError("Password cannot be entirely numeric.")
+        return password
+
+    def save(self, request):
+        user = super().save(request)
+        user.verification_code = user.generate_verification_code()
+        user.save()
+        return user
+
+
+### FILE: mfa.py
+### PATH TREE: 
+import base64,os,time,hmac,hashlib
+from apps.site_settings.models import SiteSettings
+
+class TOTPService:
+    @staticmethod
+    def generate_secret(length=20):return base64.b32encode(os.urandom(length)).decode("utf-8").replace("=","")
+    @staticmethod
+    def _totp(secret,period=30,digits=6):
+        key=base64.b32decode(secret+"="*((8-(len(secret)%8))%8))
+        counter=int(time.time()/period)
+        msg=counter.to_bytes(8,"big");h=hmac.new(key,msg,hashlib.sha1).digest()
+        o=h[-1]&0x0F;code=(int.from_bytes(h[o:o+4],"big")&0x7fffffff)%(10**digits)
+        return str(code).zfill(digits)
+    @staticmethod
+    def verify(secret,code):return TOTPService._totp(secret)==code
+
+class MFAEnforcer:
+    @staticmethod
+    def required():return SiteSettings.get_solo().require_mfa
+    @staticmethod
+    def issuer():return SiteSettings.get_solo().mfa_totp_issuer
+
+
+
+### FILE: migrations\__init__.py
+### PATH TREE: migrations
+
+
+### FILE: migrations\0001_initial.py
+### PATH TREE: migrations
+# Generated by Django 5.2.8 on 2025-11-05 20:45
+
+import django.db.models.deletion
+import django.utils.timezone
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+        ('auth', '0012_alter_user_first_name_max_length'),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='CustomUser',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('password', models.CharField(max_length=128, verbose_name='password')),
+                ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
+                ('is_superuser', models.BooleanField(default=False, help_text='Designates that this user has all permissions without explicitly assigning them.', verbose_name='superuser status')),
+                ('email', models.EmailField(max_length=254, unique=True)),
+                ('username', models.CharField(blank=True, max_length=150, null=True, unique=True)),
+                ('full_name', models.CharField(default='No Name', max_length=150)),
+                ('country', models.CharField(blank=True, max_length=100)),
+                ('phone', models.CharField(blank=True, max_length=20, null=True, unique=True)),
+                ('currency', models.CharField(blank=True, max_length=10, null=True)),
+                ('role', models.CharField(blank=True, max_length=50, null=True)),
+                ('is_active', models.BooleanField(default=True)),
+                ('is_staff', models.BooleanField(default=False)),
+                ('credits', models.PositiveIntegerField(default=0)),
+                ('referral_code', models.CharField(blank=True, max_length=10, unique=True)),
+                ('unlock_count', models.PositiveIntegerField(default=0)),
+                ('last_unlock', models.DateTimeField(blank=True, null=True)),
+                ('email_verified_at', models.DateTimeField(blank=True, null=True)),
+                ('verification_code', models.CharField(blank=True, max_length=12)),
+                ('signup_method', models.CharField(choices=[('manual', 'Manual'), ('social', 'Social')], default='manual', max_length=20)),
+                ('needs_profile_completion', models.BooleanField(default=False)),
+                ('date_joined', models.DateTimeField(auto_now_add=True)),
+                ('groups', models.ManyToManyField(blank=True, help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.', related_name='user_set', related_query_name='user', to='auth.group', verbose_name='groups')),
+                ('referred_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                ('user_permissions', models.ManyToManyField(blank=True, help_text='Specific permissions for this user.', related_name='user_set', related_query_name='user', to='auth.permission', verbose_name='user permissions')),
+            ],
+            options={
+                'abstract': False,
+            },
+        ),
+        migrations.CreateModel(
+            name='Announcement',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.CharField(max_length=255)),
+                ('message', models.TextField()),
+                ('audience', models.CharField(choices=[('all', 'All'), ('user', 'Users'), ('staff', 'Staff')], default='all', max_length=20)),
+                ('is_global', models.BooleanField(default=False)),
+                ('start_at', models.DateTimeField(default=django.utils.timezone.now)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('expires_at', models.DateTimeField(blank=True, null=True)),
+                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_announcements', to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                'ordering': ['-created_at'],
+            },
+        ),
+        migrations.CreateModel(
+            name='Notification',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.CharField(max_length=255)),
+                ('message', models.TextField()),
+                ('priority', models.CharField(choices=[('info', 'Info'), ('warning', 'Warning'), ('critical', 'Critical')], default='info', max_length=20)),
+                ('channel', models.CharField(choices=[('web', 'Web'), ('email', 'Email'), ('sms', 'SMS'), ('push', 'Push')], default='web', max_length=20)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('is_read', models.BooleanField(default=False)),
+                ('read_at', models.DateTimeField(blank=True, null=True)),
+                ('recipient', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                'ordering': ['-created_at'],
+            },
+        ),
+        migrations.CreateModel(
+            name='DeviceFingerprint',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('fingerprint_hash', models.CharField(max_length=255)),
+                ('os_info', models.CharField(blank=True, max_length=100)),
+                ('motherboard_id', models.CharField(blank=True, max_length=100)),
+                ('browser_info', models.CharField(blank=True, max_length=255)),
+                ('registered_at', models.DateTimeField(auto_now_add=True)),
+                ('last_used_at', models.DateTimeField(auto_now=True)),
+                ('is_active', models.BooleanField(default=True)),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                'ordering': ['-last_used_at'],
+                'unique_together': {('user', 'fingerprint_hash')},
+            },
+        ),
+    ]
+
+
+
+### FILE: migrations\0002_alter_devicefingerprint_unique_together_and_more.py
+### PATH TREE: migrations
+# Generated by Django 5.2.8 on 2025-11-06 18:50
+
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('users', '0001_initial'),
+    ]
+
+    operations = [
+        migrations.AlterUniqueTogether(
+            name='devicefingerprint',
+            unique_together=set(),
+        ),
+        migrations.AddConstraint(
+            model_name='devicefingerprint',
+            constraint=models.UniqueConstraint(fields=('user', 'fingerprint_hash'), name='unique_user_fingerprint'),
+        ),
+    ]
+
+
+
+### FILE: models.py
+### PATH TREE: 
+from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.conf import settings
+from django.utils import timezone
+import uuid
+
+
+# --- Custom User Manager ---
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, username=None, password=None, **extra_fields):
+        if not email:
+            raise ValueError("Email is required")
+        email = self.normalize_email(email)
+        username = username or email.split("@")[0]
+        user = self.model(email=email, username=username, **extra_fields)
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        user.save()
+        return user
+
+    def create_superuser(self, email, username=None, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        return self.create_user(email, username, password, **extra_fields)
+
+
+# --- Custom User Model ---
+class CustomUser(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(unique=True)
+    username = models.CharField(max_length=150, unique=True, blank=True, null=True)
+
+    full_name = models.CharField(max_length=150, default="No Name")
+    country = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    currency = models.CharField(max_length=10, blank=True, null=True)
+    role = models.CharField(max_length=50, blank=True, null=True)
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    credits = models.PositiveIntegerField(default=0)
+
+    referral_code = models.CharField(max_length=10, unique=True, blank=True)
+    referred_by = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL)
+
+    unlock_count = models.PositiveIntegerField(default=0)
+    last_unlock = models.DateTimeField(null=True, blank=True)
+
+    email_verified_at = models.DateTimeField(null=True, blank=True)
+    verification_code = models.CharField(max_length=12, blank=True)
+
+    signup_method = models.CharField(
+        max_length=20,
+        choices=[("manual", "Manual"), ("social", "Social")],
+        default="manual",
+    )
+    needs_profile_completion = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username", "full_name"]
+
+    objects = CustomUserManager()
+
+    def __str__(self):
+        return self.email
+
+    def save(self, *args, **kwargs):
+        if not self.referral_code:
+            while True:
+                code = uuid.uuid4().hex[:10].upper()
+                if not CustomUser.objects.filter(referral_code=code).exists():
+                    self.referral_code = code
+                    break
+        super().save(*args, **kwargs)
+
+    @property
+    def is_verified(self):
+        return bool(self.email_verified_at)
+
+    def generate_verification_code(self, length=6, code_type="alphanumeric"):
+        import random, string
+        alphabet = string.digits if code_type == "numeric" else string.ascii_uppercase + string.digits
+        return "".join(random.choice(alphabet) for _ in range(length))
+
+
+# --- Device Fingerprint ---
+class DeviceFingerprint(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    fingerprint_hash = models.CharField(max_length=255)
+    os_info = models.CharField(max_length=100, blank=True)
+    motherboard_id = models.CharField(max_length=100, blank=True)
+    browser_info = models.CharField(max_length=255, blank=True)
+    registered_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "fingerprint_hash"], name="unique_user_fingerprint")
+        ]
+        ordering = ["-last_used_at"]
+
+    def __str__(self):
+        return f"{self.user.email} · {self.fingerprint_hash[:8]}"
+
+
+# --- Notification ---
+class Notification(models.Model):
+    PRIORITY_CHOICES = [
+        ("info", "Info"),
+        ("warning", "Warning"),
+        ("critical", "Critical"),
+    ]
+    CHANNEL_CHOICES = [
+        ("web", "Web"),
+        ("email", "Email"),
+        ("sms", "SMS"),
+        ("push", "Push"),
+    ]
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default="info")
+    channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES, default="web")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.title} → {self.recipient.email}"
+
+
+# --- Announcement ---
+class Announcement(models.Model):
+    AUDIENCE_CHOICES = [
+        ("all", "All"),
+        ("user", "Users"),
+        ("staff", "Staff"),
+    ]
+
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    audience = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default="all")
+    is_global = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="created_announcements",
+    )
+    start_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    def is_active(self):
+        now = timezone.now()
+        return (self.start_at <= now) and (not self.expires_at or self.expires_at > now)
+
+
+### FILE: services\rate_limit.py
+### PATH TREE: services
+from django.core.cache import cache
+from time import time
+
+def allow_action(key,max_attempts,window_seconds):
+    now=time();bucket=cache.get(key,[])
+    bucket=[t for t in bucket if now-t<=window_seconds]
+    if len(bucket)>=max_attempts:return False
+    bucket.append(now);cache.set(key,bucket,timeout=window_seconds);return True
+
+
+
+### FILE: services\recaptcha.py
+### PATH TREE: services
+import requests,logging
+from decimal import Decimal
+from apps.site_settings.models import SiteSettings
+log=logging.getLogger(__name__)
+
+def verify_recaptcha(token,remote_ip=None,action="login"):
+    s=SiteSettings.get_solo()
+    if not s.recaptcha_enabled or s.recaptcha_mode=="off":return {"ok":True}
+    if not s.recaptcha_private_key or not token:return {"ok":False,"error":"missing"}
+    data={"secret":s.recaptcha_private_key,"response":token}
+    if remote_ip:data["remoteip"]=remote_ip
+    try:
+        r=requests.post("https://www.google.com/recaptcha/api/siteverify",data=data,timeout=(s.recaptcha_timeout_ms/1000.0))
+        j=r.json();ok=j.get("success",False)
+        if s.recaptcha_mode=="v3":
+            score=Decimal(str(j.get("score",0.0)));thr=Decimal(str(s.recaptcha_score_threshold));ok=ok and score>=thr
+            return {"ok":ok,"score":float(score),"errors":j.get("error-codes",[])}
+        return {"ok":ok,"errors":j.get("error-codes",[])}
+    except Exception as e:
+        log.warning("reCAPTCHA verify error: %s",e);return {"ok":False,"error":"recaptcha_unreachable"}
+
+
+
+### FILE: tests.py
+### PATH TREE: 
+from django.test import TestCase
+
+# Create your tests here.
+
+
+
+### FILE: urls.py
+### PATH TREE: 
+from django.urls import path
+from .views import (
+    auth_hub_view,
+    dashboard_view,
+    profile_view,
+    verify_email_view,
+    EnterpriseLoginView,
+    EnterpriseSignupView,
+)
+from allauth.account.views import LogoutView
+
+urlpatterns = [
+    # --- Unified Auth Hub ---
+    path("auth/", auth_hub_view, name="auth_hub"),
+
+    # --- Allauth Overrides ---
+    path("login/", EnterpriseLoginView.as_view(), name="account_login"),
+    path("signup/", EnterpriseSignupView.as_view(), name="account_signup"),
+    path("logout/", LogoutView.as_view(), name="account_logout"),
+
+    # --- User Dashboard & Profile ---
+    path("dashboard/", dashboard_view, name="dashboard"),
+    path("profile/", profile_view, name="profile"),
+
+    # --- Email Verification ---
+    path("verify/", verify_email_view, name="verify_email"),
+]
+
+
+### FILE: utils\utils.py
+### PATH TREE: utils
+import hashlib
+def get_device_fingerprint(request):
+    ua=request.META.get("HTTP_USER_AGENT","")
+    ip=request.META.get("HTTP_X_FORWARDED_FOR",request.META.get("REMOTE_ADDR",""))
+    session_key=request.session.session_key or ""
+    return hashlib.sha256(f"{ua}|{ip}|{session_key}".encode()).hexdigest()
+
+
+
+### FILE: views.py
+### PATH TREE: 
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from django.contrib import messages
+from allauth.account.views import LoginView, SignupView
+from allauth.account.forms import LoginForm, SignupForm
+
+from apps.site_settings.models import SiteSettings, TenantSiteSettings
+from .models import Notification, Announcement, DeviceFingerprint
+from .utils.utils import get_device_fingerprint
+from .services.recaptcha import verify_recaptcha
+from .services.rate_limit import allow_action
+from django.contrib.sites.shortcuts import get_current_site
+
+
+# --- Helper to safely resolve SiteSettings ---
+def _get_settings(request=None):
+    try:
+        if request:
+            current_site = get_current_site(request)
+            return TenantSiteSettings.objects.select_related("site").get(site=current_site)
+        return SiteSettings.get_solo()
+    except TenantSiteSettings.DoesNotExist:
+        return SiteSettings.get_solo()
+    except Exception:
+        # Fallback dummy if SiteSettings not initialized
+        class Dummy:
+            site_name = "GsmInfinity"
+            site_header = "GSM Admin"
+            site_description = "Default description"
+            enable_signup = True
+            max_login_attempts = 5
+            rate_limit_window_seconds = 300
+            recaptcha_enabled = False
+            enforce_unique_device = False
+            max_devices_per_user = 3
+            require_mfa = False
+            enable_payments = True
+            meta_tags = []
+            verification_files = []
+        return Dummy()
+
+
+# --- Unified Allauth-based login ---
+class EnterpriseLoginView(LoginView):
+    form_class = LoginForm
+
+    def form_valid(self, form):
+        s = _get_settings(self.request)
+        ip = self.request.META.get("REMOTE_ADDR", "")
+        rl_key = f"login:{ip}"
+
+        # Rate limiting
+        if not allow_action(rl_key, s.max_login_attempts, s.rate_limit_window_seconds):
+            form.add_error(None, "Too many login attempts. Please try again later.")
+            return self.form_invalid(form)
+
+        # reCAPTCHA
+        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get("recaptcha_token")
+        r = verify_recaptcha(token, ip, action="login")
+        if not r.get("ok"):
+            form.add_error(None, "reCAPTCHA verification failed.")
+            return self.form_invalid(form)
+
+        # Proceed with login
+        response = super().form_valid(form)
+        user = self.request.user
+
+        # Device fingerprint enforcement
+        if s.enforce_unique_device:
+            count = DeviceFingerprint.objects.filter(user=user).count()
+            if count >= s.max_devices_per_user:
+                form.add_error(None, "Device limit exceeded.")
+                return self.form_invalid(form)
+        fp = get_device_fingerprint(self.request)
+        DeviceFingerprint.objects.get_or_create(user=user, fingerprint_hash=fp)
+
+        # MFA enforcement
+        if s.require_mfa and not getattr(user, "email_verified_at", None):
+            return redirect("verify_email")
+
+        return response
+
+
+def auth_hub_view(request):
+    return render(request, "account/hub.html")
+
+
+# --- Unified Allauth-based signup ---
+class EnterpriseSignupView(SignupView):
+    form_class = SignupForm
+
+    def form_valid(self, form):
+        s = _get_settings(self.request)
+
+        # Signup toggle
+        if not s.enable_signup:
+            form.add_error(None, "Signup is currently disabled.")
+            return self.form_invalid(form)
+
+        # reCAPTCHA
+        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get("recaptcha_token")
+        r = verify_recaptcha(token, self.request.META.get("REMOTE_ADDR"), action="signup")
+        if not r.get("ok"):
+            form.add_error(None, "reCAPTCHA verification failed.")
+            return self.form_invalid(form)
+
+        return super().form_valid(form)
+
+
+# --- Email verification flow ---
+@login_required
+def verify_email_view(request):
+    if request.method == "POST":
+        code = request.POST.get("code", "").strip()
+        u = request.user
+        if code and code == getattr(u, "verification_code", ""):
+            u.email_verified_at = timezone.now()
+            u.verification_code = ""
+            u.save()
+            messages.success(request, "Email verified successfully.")
+            return redirect("dashboard")
+        else:
+            messages.error(request, "Invalid verification code.")
+    return render(request, "users/verify_email.html")
+
+
+# --- Dashboard view ---
+@login_required
+def dashboard_view(request):
+    s = _get_settings(request)
+    anns = [a for a in Announcement.objects.all() if a.is_active()]
+    notes = Notification.objects.filter(recipient=request.user).order_by("-created_at")[:5]
+
+    return render(
+        request,
+        "users/dashboard.html",
+        {
+            "announcements": anns,
+            "notifications": notes,
+            "credits": getattr(request.user, "credits", 0),
+            "can_watch_ad": s.recaptcha_enabled,
+            "can_pay": getattr(s, "enable_payments", True),
+            "site_settings": s,
+        },
+    )
+
+
+# --- Profile view ---
+@login_required
+def profile_view(request):
+    return render(
+        request,
+        "users/profile.html",
+        {
+            "user": request.user,
+            "credits": getattr(request.user, "credits", 0),
+            "site_settings": _get_settings(request),
+        },
+    )
+
+

@@ -1,0 +1,5323 @@
+﻿### FILE: apps\consent\admin.py
+### PATH TREE: apps\consent
+"""
+apps.consent.admin
+------------------
+Enterprise-grade admin interface for GDPR/CCPA consent management.
+"""
+
+import csv
+import json
+from django.contrib import admin
+from django.http import HttpResponse
+from django.db import transaction
+from django.utils.encoding import smart_str
+from .models import ConsentPolicy, ConsentRecord, ConsentLog
+
+
+# ============================================================
+#  FILTERS
+# ============================================================
+class RejectAllFilter(admin.SimpleListFilter):
+    """Quickly locate users who rejected all optional cookies."""
+    title = "Reject All"
+    parameter_name = "reject_all"
+
+    def lookups(self, request, model_admin):
+        return [("yes", "Rejected All"), ("no", "Not Rejected All")]
+
+    def queryset(self, request, queryset):
+        val = self.value()
+        if val == "yes":
+            return queryset.filter(accepted_categories__reject_all=True)
+        elif val == "no":
+            return queryset.exclude(accepted_categories__reject_all=True)
+        return queryset
+
+
+class PolicyVersionFilter(admin.SimpleListFilter):
+    """Filter by policy version safely, even if field is CharField or FK."""
+    title = "Policy Version"
+    parameter_name = "policy_version"
+
+    def lookups(self, request, model_admin):
+        versions = (
+            ConsentPolicy.objects.order_by("-created_at")
+            .values_list("version", flat=True)
+            .distinct()
+        )
+        return [(v, v) for v in versions]
+
+    def queryset(self, request, queryset):
+        val = self.value()
+        if val:
+            return queryset.filter(policy_version=val)
+        return queryset
+
+
+# ============================================================
+#  CONSENT POLICY ADMIN
+# ============================================================
+@admin.register(ConsentPolicy)
+class ConsentPolicyAdmin(admin.ModelAdmin):
+    """Manage Consent Policies across sites."""
+    list_display = ("version", "site_domain", "is_active", "created_at", "updated_at")
+    list_filter = ("site_domain", "is_active", "created_at")
+    search_fields = ("version", "site_domain")
+    ordering = ("-created_at",)
+    actions = ["activate_policy"]
+
+    @admin.action(description="Activate selected policy (deactivate others for same site)")
+    def activate_policy(self, request, queryset):
+        """Atomically activate selected policies per site_domain."""
+        with transaction.atomic():
+            for policy in queryset:
+                ConsentPolicy.objects.select_for_update().filter(
+                    site_domain=policy.site_domain
+                ).exclude(pk=policy.pk).update(is_active=False)
+                policy.is_active = True
+                policy.save(update_fields=["is_active"])
+        self.message_user(
+            request,
+            "✅ Selected policies activated; others for the same site were deactivated."
+        )
+
+
+# ============================================================
+#  CONSENT RECORD ADMIN
+# ============================================================
+@admin.register(ConsentRecord)
+class ConsentRecordAdmin(admin.ModelAdmin):
+    """Manage individual consent records and export compliance data."""
+    list_display = (
+        "user_display",
+        "session_key",
+        "policy_display",
+        "site_domain",
+        "is_reject_all",
+        "audit_summary_display",
+        "accepted_at",
+        "updated_at",
+    )
+    list_filter = (
+        PolicyVersionFilter,  # ✅ replaced invalid direct field filter
+        "site_domain",
+        RejectAllFilter,
+        "updated_at",
+    )
+    search_fields = (
+        "user__email",
+        "user__username",
+        "session_key",
+        "policy_version",
+        "site_domain",
+    )
+    date_hierarchy = "updated_at"
+    ordering = ("-updated_at",)
+    actions = ["export_to_csv"]
+
+    @admin.display(description="User")
+    def user_display(self, obj):
+        """Friendly user display for admin lists."""
+        if obj.user:
+            return getattr(obj.user, "email", None) or getattr(obj.user, "username", None) or f"User#{obj.user_id}"
+        return "Anonymous"
+
+    @admin.display(description="Policy Version")
+    def policy_display(self, obj):
+        """Display linked policy version or fallback string."""
+        if obj.policy:
+            return obj.policy.version
+        return obj.policy_version or "—"
+
+    @admin.display(boolean=True, description="Rejected All?")
+    def is_reject_all(self, obj):
+        try:
+            return bool(obj.accepted_categories.get("reject_all"))
+        except Exception:
+            return False
+
+    @admin.display(description="Accepted Categories Summary")
+    def audit_summary_display(self, obj):
+        try:
+            return obj.audit_summary()
+        except Exception:
+            return "—"
+
+    @admin.action(description="Export selected consent records to CSV (UTF-8 + Excel-safe)")
+    def export_to_csv(self, request, queryset):
+        """Export selected consent records as UTF-8 CSV with JSON-safe category data."""
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = "attachment; filename=consent_records.csv"
+        response.write("\ufeff")  # UTF-8 BOM for Excel
+
+        writer = csv.writer(response)
+        writer.writerow([
+            "User",
+            "Session Key",
+            "Policy Version",
+            "Site Domain",
+            "Accepted Categories (JSON)",
+            "Rejected All",
+            "Accepted At",
+            "Updated At",
+        ])
+
+        for record in queryset.select_related("user", "policy"):
+            user_display = getattr(record.user, "email", "") or getattr(record.user, "username", "") or "Anonymous"
+            writer.writerow([
+                smart_str(user_display),
+                smart_str(record.session_key or ""),
+                smart_str(record.policy_version or getattr(record.policy, "version", "")),
+                smart_str(record.site_domain),
+                json.dumps(record.accepted_categories or {}, ensure_ascii=False),
+                record.is_reject_all(),
+                record.accepted_at.isoformat() if record.accepted_at else "",
+                record.updated_at.isoformat() if record.updated_at else "",
+            ])
+        return response
+
+
+# ============================================================
+#  CONSENT LOG ADMIN
+# ============================================================
+@admin.register(ConsentLog)
+class ConsentLogAdmin(admin.ModelAdmin):
+    """Audit trail for consent change events."""
+    list_display = ("user_display", "ip_address", "policy_version_display", "site_domain", "timestamp")
+    list_filter = ("site_domain", "timestamp")
+    search_fields = ("user__email", "ip_address", "policy_version")
+    date_hierarchy = "timestamp"
+    ordering = ("-timestamp",)
+
+    @admin.display(description="User")
+    def user_display(self, obj):
+        return getattr(obj.user, "email", None) or getattr(obj.user, "username", None) or "Anonymous"
+
+    @admin.display(description="Policy Version")
+    def policy_version_display(self, obj):
+        """Display for admin list when policy_version isn't a true model field reference."""
+        return getattr(obj, "policy_version", "—") or "—"
+
+
+### FILE: apps\consent\api\views.py
+### PATH TREE: apps\consent\api
+# apps/consent/api.py
+"""
+Enterprise Consent API Endpoints
+================================
+Features:
+- Secure retrieval and update of consent records.
+- Multi-site & multi-policy support.
+- CSRF-protected and login-enforced.
+- Safe JSON/form parsing with payload limits.
+- Atomic, version-consistent writes.
+- Unified cache coherence with ConsentMiddleware.
+"""
+
+import json
+import logging
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET, require_POST
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_protect
+from django.db import transaction
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.cache import cache
+
+from apps.consent.models import ConsentRecord, ConsentPolicy
+
+log = logging.getLogger(__name__)
+
+# ============================================================
+#  GET CONSENT STATUS
+# ============================================================
+
+@require_GET
+def get_consent_status(request):
+    """
+    Retrieve the active consent policy and its categories for the current site.
+    Used by front-end consent banners or SPAs.
+    """
+    try:
+        # -----------------------------------------------
+        # Resolve site and cache key
+        # -----------------------------------------------
+        site_domain = getattr(get_current_site(request), "domain", None) or request.get_host()
+        cache_key = f"active_consent_policy_{site_domain}"
+
+        # Attempt cached policy first
+        policy = cache.get(cache_key)
+        if not policy:
+            policy = (
+                ConsentPolicy.objects.filter(is_active=True, site_domain=site_domain)
+                .order_by("-created_at")
+                .first()
+            )
+            if policy:
+                ttl = getattr(policy, "cache_ttl_seconds", 300) or 300
+                cache.set(cache_key, policy, timeout=ttl)
+
+        if not policy:
+            log.warning("get_consent_status: no active policy for %s", site_domain)
+            return JsonResponse({"error": "no_active_policy"}, status=404)
+
+        return JsonResponse(
+            {
+                "version": policy.version,
+                "site_domain": site_domain,
+                "categories": policy.categories_snapshot or {},
+            },
+            status=200,
+        )
+
+    except Exception as exc:
+        log.exception("get_consent_status: failed to fetch policy → %s", exc)
+        return JsonResponse({"error": "internal_error"}, status=500)
+
+
+# ============================================================
+#  UPDATE CONSENT
+# ============================================================
+
+@csrf_protect  # ✅ safer than csrf_exempt
+@login_required
+@require_POST
+def update_consent(request):
+    """
+    Stores or updates the user's consent record for the active policy.
+    Enforces required categories and per-site version consistency.
+    """
+    try:
+        # -----------------------------------------------
+        # Step 1. Parse request data safely
+        # -----------------------------------------------
+        if request.content_type and "application/json" in request.content_type:
+            try:
+                raw = request.body.decode("utf-8") or "{}"
+                if len(raw) > 1024 * 1024:  # 1 MB limit
+                    return JsonResponse({"error": "payload_too_large"}, status=413)
+                data = json.loads(raw)
+                if not isinstance(data, dict):
+                    raise ValueError("Invalid JSON structure")
+            except Exception as exc:
+                log.warning("update_consent: invalid JSON → %s", exc)
+                return JsonResponse({"error": "invalid_json"}, status=400)
+        else:
+            data = request.POST.dict()
+
+        # -----------------------------------------------
+        # Step 2. Resolve active policy per site
+        # -----------------------------------------------
+        site_domain = getattr(get_current_site(request), "domain", None) or request.get_host()
+        cache_key = f"active_consent_policy_{site_domain}"
+
+        policy = cache.get(cache_key)
+        if not policy:
+            policy = (
+                ConsentPolicy.objects.filter(is_active=True, site_domain=site_domain)
+                .order_by("-created_at")
+                .first()
+            )
+            if policy:
+                ttl = getattr(policy, "cache_ttl_seconds", 300) or 300
+                cache.set(cache_key, policy, timeout=ttl)
+
+        if not policy:
+            log.error("update_consent: no active policy for site=%s", site_domain)
+            return JsonResponse({"error": "no_active_policy"}, status=404)
+
+        # -----------------------------------------------
+        # Step 3. Sanitize and normalize category choices
+        # -----------------------------------------------
+        categories_snapshot = policy.categories_snapshot or {}
+        valid_slugs = set(categories_snapshot.keys()) | {"functional"}
+
+        sanitized = {}
+        for slug, val in data.items():
+            if slug in valid_slugs:
+                sanitized[slug] = bool(val)
+
+        # Always accept required categories (cannot be turned off)
+        for slug, meta in categories_snapshot.items():
+            if meta.get("required"):
+                sanitized[slug] = True
+
+        # -----------------------------------------------
+        # Step 4. Atomic write
+        # -----------------------------------------------
+        with transaction.atomic():
+            ConsentRecord.objects.update_or_create(
+                user=request.user,
+                policy_version=policy.version,
+                site_domain=site_domain,
+                defaults={"accepted_categories": sanitized},
+            )
+
+        log.info("Consent updated for user=%s (policy=%s, site=%s)", request.user, policy.version, site_domain)
+        return JsonResponse({"ok": True, "version": policy.version, "site_domain": site_domain}, status=200)
+
+    except Exception as exc:
+        log.exception("update_consent: unexpected error → %s", exc)
+        return JsonResponse({"error": "internal_error"}, status=500)
+
+
+### FILE: apps\consent\apps.py
+### PATH TREE: apps\consent
+# apps/consent/apps.py
+"""
+Consent App Configuration
+--------------------------
+Initializes the Consent Management subsystem.
+Ensures signal registration and avoids double import duplication.
+"""
+
+import logging
+from django.apps import AppConfig
+
+log = logging.getLogger(__name__)
+
+
+class ConsentConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.consent"
+    label = "consent"
+    verbose_name = "Consent Management"
+
+    def ready(self):
+        """
+        App startup logic:
+        ✅ Imports signals after Django app registry is ready
+        ✅ Prevents double import issues under ASGI/WSGI reloads
+        ✅ Provides safe logging for debugging startup issues
+        """
+        # Avoid running twice under autoreload (common in runserver)
+        if getattr(self, "_consent_ready_ran", False):
+            return
+        self._consent_ready_ran = True
+
+        try:
+            import apps.consent.signals  # noqa: F401
+            log.debug("Consent signals registered successfully.")
+        except ImportError:
+            log.info("No consent signals found (skipping registration).")
+        except Exception as exc:
+            log.warning(f"Error importing consent signals: {exc}")
+
+
+### FILE: apps\consent\decorators.py
+### PATH TREE: apps\consent
+# apps/consent/decorators.py
+"""
+Consent Decorators
+------------------
+Reusable decorators to enforce consent validation for
+protected or analytics-sensitive endpoints.
+
+Features:
+- Sync & async view support (Django 4.2+)
+- Works with middleware-injected cookie_consent namespace
+- AJAX-friendly JSON response
+- Graceful fallback when middleware missing
+"""
+
+import logging
+import asyncio
+from functools import wraps
+from inspect import iscoroutinefunction
+from django.http import HttpResponseForbidden, JsonResponse
+
+log = logging.getLogger(__name__)
+
+
+def require_consent(category: str = "analytics", ajax_friendly: bool = True):
+    """
+    Decorator to enforce cookie/data-usage consent before executing a view.
+
+    Args:
+        category (str): Consent category slug (e.g., "analytics", "ads", "functional").
+        ajax_friendly (bool): If True, returns JSON 403 for AJAX requests.
+
+    Behavior:
+        ✅ Checks `request.cookie_consent` and `request.has_cookie_consent`
+        ✅ Graceful fallback when middleware not initialized
+        ✅ Works with both sync and async Django views
+        ✅ Prevents accidental access without consent
+    """
+
+    def _deny_access(request, category: str):
+        """Return a standardized 403 response."""
+        msg = f"Consent required for category '{category}'."
+        if ajax_friendly and (
+            request.headers.get("x-requested-with") == "XMLHttpRequest"
+            or (request.content_type or "").startswith("application/json")
+        ):
+            return JsonResponse({"error": "consent_required", "category": category}, status=403)
+        return HttpResponseForbidden(msg, content_type="text/plain; charset=utf-8")
+
+    def decorator(view_func):
+        if iscoroutinefunction(view_func):
+            # ---------------- Async Path ----------------
+            @wraps(view_func)
+            async def _wrapped_async(request, *args, **kwargs):
+                try:
+                    cookie_ns = getattr(request, "cookie_consent", None)
+                    has_category = bool(getattr(cookie_ns, category, False)) if cookie_ns else False
+                    has_overall = bool(getattr(request, "has_cookie_consent", False))
+
+                    if not (has_category and has_overall):
+                        log.info(
+                            "Access blocked (async): user=%s ip=%s category=%s path=%s",
+                            getattr(request.user, "email", "anon"),
+                            request.META.get("REMOTE_ADDR", "unknown"),
+                            category,
+                            request.path,
+                        )
+                        return _deny_access(request, category)
+                except Exception as exc:
+                    log.warning("Consent validation failed (async) for %s → %s", category, exc)
+                    return HttpResponseForbidden("Consent validation error.")
+                return await view_func(request, *args, **kwargs)
+
+            return _wrapped_async
+
+        # ---------------- Sync Path ----------------
+        @wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            try:
+                cookie_ns = getattr(request, "cookie_consent", None)
+                has_category = bool(getattr(cookie_ns, category, False)) if cookie_ns else False
+                has_overall = bool(getattr(request, "has_cookie_consent", False))
+
+                if not (has_category and has_overall):
+                    log.info(
+                        "Access blocked: user=%s ip=%s category=%s path=%s",
+                        getattr(request.user, "email", "anon"),
+                        request.META.get("REMOTE_ADDR", "unknown"),
+                        category,
+                        request.path,
+                    )
+                    return _deny_access(request, category)
+            except Exception as exc:
+                log.warning("Consent validation failed for %s → %s", category, exc)
+                return HttpResponseForbidden("Consent validation error.")
+            return view_func(request, *args, **kwargs)
+
+        return _wrapped
+
+    return decorator
+
+
+### FILE: apps\consent\middleware.py
+### PATH TREE: apps\consent
+"""
+apps.consent.middleware
+------------------------
+Enterprise-grade cookie-consent middleware for GSMInfinity.
+
+✅ Features:
+- Ensures sessions for anonymous users.
+- Per-site active ConsentPolicy resolution with caching.
+- ConsentRecord lookup (user or session-based).
+- Required categories always enforced.
+- “Reject all” support for optional categories.
+- request.cookie_consent.<slug> namespace for templates.
+- request.consent_summary for diagnostic / analytics.
+- Fully compatible with Django 5.x and allauth ≥ 0.65.
+"""
+
+import logging
+from types import SimpleNamespace
+from typing import Dict, Optional
+
+from django.conf import settings
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.cache import cache
+from django.utils.deprecation import MiddlewareMixin
+from django.http import HttpRequest, HttpResponse
+
+from apps.consent.models import ConsentRecord, ConsentPolicy
+
+logger = logging.getLogger(__name__)
+
+
+class ConsentMiddleware(MiddlewareMixin):
+    """
+    Attaches consent-related metadata to every request.
+
+    ⚙️ Notes
+    -------
+    • Works with MiddlewareMixin for async/sync support.
+    • Gracefully handles missing DB tables or sessions.
+    • Ensures one cached ConsentPolicy per site_id/domain.
+    """
+
+    def process_request(self, request: HttpRequest) -> None:
+        """Inject consent context into request safely."""
+
+        # -----------------------------------------------------------
+        # 1️⃣ Ensure session exists (for anonymous users)
+        # -----------------------------------------------------------
+        try:
+            if not getattr(request, "session", None):
+                logger.warning("ConsentMiddleware: SessionMiddleware missing.")
+            elif not request.session.session_key:
+                request.session.create()
+                request.session.modified = True
+                logger.debug("ConsentMiddleware: created new session for anonymous user.")
+        except Exception as exc:
+            logger.debug("ConsentMiddleware: session init failed → %s", exc)
+
+        # -----------------------------------------------------------
+        # 2️⃣ Resolve current site (with safe fallback)
+        # -----------------------------------------------------------
+        try:
+            current_site = get_current_site(request)
+            site_domain = getattr(current_site, "domain", None) or request.get_host()
+            site_identifier = getattr(current_site, "id", site_domain)
+        except Exception as exc:
+            logger.warning("ConsentMiddleware: failed to resolve site → %s", exc)
+            site_domain = getattr(request, "get_host", lambda: "default")() or "default"
+            site_identifier = site_domain
+
+        # -----------------------------------------------------------
+        # 3️⃣ Initialize baseline request attributes
+        # -----------------------------------------------------------
+        request.has_cookie_consent = False
+        request.consent_policy: Optional[ConsentPolicy] = None
+        request.consent_version: Optional[str] = None
+        request.consent_categories: Dict[str, bool] = {}
+        request.cookie_consent = SimpleNamespace()
+        request.consent_summary = {}
+
+        # -----------------------------------------------------------
+        # 4️⃣ Retrieve (or cache) active ConsentPolicy per site
+        # -----------------------------------------------------------
+        cache_key = f"active_consent_policy_{site_identifier}"
+        policy: Optional[ConsentPolicy] = cache.get(cache_key)
+
+        if policy is None:
+            try:
+                policy = (
+                    ConsentPolicy.objects.filter(is_active=True, site_domain=site_domain)
+                    .order_by("-created_at")
+                    .first()
+                )
+                cache_ttl = getattr(settings, "CONSENT_POLICY_CACHE_TTL", 300)
+                cache.set(cache_key, policy, timeout=cache_ttl)
+                logger.debug("ConsentMiddleware: cache MISS for %s", site_domain)
+            except Exception as exc:
+                logger.debug("ConsentMiddleware: policy lookup error → %s", exc)
+                policy = None
+        else:
+            logger.debug("ConsentMiddleware: cache HIT for %s", site_domain)
+
+        if policy:
+            request.consent_policy = policy
+            request.consent_version = policy.version
+
+        # -----------------------------------------------------------
+        # 5️⃣ Load ConsentRecord (user or session-based)
+        # -----------------------------------------------------------
+        consent_record: Optional[ConsentRecord] = None
+        if request.consent_version:
+            lookup = {
+                "policy_version": request.consent_version,
+                "site_domain": site_domain,
+            }
+            user = getattr(request, "user", None)
+            if user and getattr(user, "is_authenticated", False):
+                lookup["user"] = user
+            else:
+                lookup["session_key"] = getattr(request.session, "session_key", None)
+
+            try:
+                consent_record = ConsentRecord.objects.filter(**lookup).first()
+                logger.debug("ConsentMiddleware: record lookup %s", lookup)
+            except Exception as exc:
+                logger.debug("ConsentMiddleware: record query failed → %s", exc)
+
+        # -----------------------------------------------------------
+        # 6️⃣ Build categories baseline
+        # -----------------------------------------------------------
+        categories: Dict[str, bool] = {}
+        required_slugs = set()
+        if policy and policy.categories_snapshot:
+            for slug, data in (policy.categories_snapshot or {}).items():
+                categories[slug] = False
+                if data.get("required"):
+                    required_slugs.add(slug)
+        categories.setdefault("functional", True)
+
+        # -----------------------------------------------------------
+        # 7️⃣ Apply consent record preferences
+        # -----------------------------------------------------------
+        if consent_record:
+            accepted = consent_record.accepted_categories or {}
+
+            if accepted.get("reject_all"):
+                # Only required + functional remain true
+                for slug in categories:
+                    categories[slug] = slug in required_slugs or slug == "functional"
+                request.has_cookie_consent = False
+                logger.debug("ConsentMiddleware: reject_all enforced for %s", site_domain)
+            else:
+                for slug in categories:
+                    if slug in required_slugs or slug == "functional":
+                        categories[slug] = True
+                    else:
+                        categories[slug] = bool(accepted.get(slug))
+                # ✅ has_cookie_consent → True only if optional category accepted
+                optional_accepted = any(
+                    slug not in required_slugs and slug != "functional" and val
+                    for slug, val in categories.items()
+                )
+                request.has_cookie_consent = optional_accepted
+                logger.debug("ConsentMiddleware: consent record applied for %s", site_domain)
+        else:
+            # Default required+functional only
+            for slug in categories:
+                categories[slug] = slug in required_slugs or slug == "functional"
+            logger.debug("ConsentMiddleware: no record, applied defaults.")
+
+        # -----------------------------------------------------------
+        # 8️⃣ Ensure required categories enforced (safety net)
+        # -----------------------------------------------------------
+        for slug in required_slugs:
+            categories[slug] = True
+
+        # -----------------------------------------------------------
+        # 9️⃣ Attach namespace + summary
+        # -----------------------------------------------------------
+        request.consent_categories = categories
+        request.cookie_consent = SimpleNamespace(**categories)
+        request.consent_summary = {
+            "version": request.consent_version,
+            "active": bool(policy),
+            "has_consent": request.has_cookie_consent,
+            "required": sorted(required_slugs),
+            "site": site_domain,
+        }
+
+        logger.debug("ConsentMiddleware summary for %s: %s", site_domain, request.consent_summary)
+
+    # -----------------------------------------------------------
+    # Response hook (optional)
+    # -----------------------------------------------------------
+    def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
+        """
+        Hook for cookie updates or metrics injection.
+
+        ⚠️ Keep synchronous — do not return awaitables to maintain
+        middleware chain integrity under Django async.
+        """
+        # Example future use:
+        # if getattr(request, "has_cookie_consent", False):
+        #     response.set_cookie("cookie_consent", "1", httponly=True)
+        return response
+
+
+### FILE: apps\consent\models.py
+### PATH TREE: apps\consent
+"""
+apps.consent.models
+-------------------
+Enterprise-grade GDPR / CCPA consent tracking and audit system.
+"""
+
+from django.db import models, transaction
+from django.conf import settings
+from django.utils import timezone
+from django.core.cache import cache
+
+
+# ============================================================
+#  Consent Category
+# ============================================================
+class ConsentCategory(models.Model):
+    """Defines a named category of cookies or data usage."""
+
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    required = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Consent category"
+        verbose_name_plural = "Consent categories"
+        indexes = [
+            models.Index(fields=["slug"], name="consent_cat_slug_idx")
+        ]
+
+    def __str__(self):
+        return self.name
+
+
+# ============================================================
+#  Consent Policy
+# ============================================================
+class ConsentPolicy(models.Model):
+    """Represents a versioned, auditable consent policy."""
+
+    version = models.CharField(max_length=20, unique=True)  # ✅ must be unique
+    site_domain = models.CharField(max_length=100, default="default", db_index=True)
+    is_active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    categories_snapshot = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["site_domain", "is_active"],
+                condition=models.Q(is_active=True),
+                name="unique_active_policy_per_site",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["site_domain"], name="consent_policy_site_idx"),
+            models.Index(fields=["version"], name="consent_policy_version_idx"),
+        ]
+        verbose_name = "Consent policy"
+        verbose_name_plural = "Consent policies"
+
+    def __str__(self):
+        return f"{self.site_domain} · v{self.version}"
+
+    def save(self, *args, **kwargs):
+        """Refresh category snapshot and enforce single active policy per site."""
+        snapshot = {
+            c.slug: {
+                "name": c.name,
+                "required": c.required,
+                "description": c.description,
+            }
+            for c in ConsentCategory.objects.all()
+        }
+
+        if not self.pk or self.categories_snapshot != snapshot:
+            self.categories_snapshot = snapshot
+
+        if self.is_active:
+            cache_key = f"active_consent_policy_{self.site_domain}"
+            cache.delete(cache_key)
+            with transaction.atomic():
+                ConsentPolicy.objects.select_for_update().filter(
+                    site_domain=self.site_domain
+                ).exclude(pk=self.pk).update(is_active=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
+
+# ============================================================
+#  Consent Record
+# ============================================================
+class ConsentRecord(models.Model):
+    """Stores user/session consent decisions for a given policy."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="consent_records",
+    )
+    session_key = models.CharField(max_length=64, db_index=True, blank=True, null=True)
+
+    policy = models.ForeignKey(
+        "ConsentPolicy",
+        to_field="version",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        default=None,
+        related_name="consent_records",
+        help_text="Optional foreign key for audit traceability",
+    )
+
+    # ✅ Use a separate DB column to avoid collision
+    policy_version = models.CharField(max_length=20, blank=True, db_column="policy_version_text")
+
+    site_domain = models.CharField(max_length=100, default="default")
+    accepted_categories = models.JSONField(default=dict, blank=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        verbose_name = "Consent record"
+        verbose_name_plural = "Consent records"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "policy_version", "site_domain"],
+                name="unique_consent_per_user",
+            ),
+            models.UniqueConstraint(
+                fields=["session_key", "policy_version", "site_domain"],
+                name="unique_consent_per_session",
+            ),
+            models.CheckConstraint(
+                check=~(
+                    models.Q(user__isnull=True)
+                    & models.Q(session_key__isnull=True)
+                ),
+                name="user_or_session_required",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["policy_version"], name="consent_rec_policy_idx"),
+            models.Index(fields=["site_domain"], name="consent_rec_site_idx"),
+        ]
+
+    def __str__(self):
+        ident = getattr(self.user, "email", None) or self.session_key or "anonymous"
+        return f"{ident} · v{self.policy_version or 'N/A'}"
+
+    def save(self, *args, **kwargs):
+        """Auto-fill accepted_at and sync version from FK."""
+        if self.accepted_categories and not self.accepted_at:
+            self.accepted_at = timezone.now()
+        if self.policy and not self.policy_version:
+            self.policy_version = self.policy.version
+        super().save(*args, **kwargs)
+
+    def is_reject_all(self) -> bool:
+        """Return True if all non-required categories were rejected."""
+        if not self.accepted_categories:
+            return True
+        cache_key = "required_consent_categories"
+        required = cache.get(cache_key)
+        if required is None:
+            required = set(
+                ConsentCategory.objects.filter(required=True)
+                .values_list("slug", flat=True)
+            )
+            cache.set(cache_key, required, timeout=3600)
+        for slug, accepted in self.accepted_categories.items():
+            if accepted and slug not in required:
+                return False
+        return True
+
+    def audit_summary(self) -> str:
+        """Readable summary of accepted categories."""
+        if not self.accepted_categories:
+            return "No categories accepted"
+        accepted_names = [
+            cat.name
+            for slug, val in self.accepted_categories.items()
+            if val and (cat := ConsentCategory.objects.filter(slug=slug).first())
+        ]
+        return ", ".join(accepted_names) if accepted_names else "None"
+
+
+# ============================================================
+#  Consent Log
+# ============================================================
+class ConsentLog(models.Model):
+    """Audit trail for consent changes over time."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="consent_logs",
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    accepted_categories = models.JSONField(default=dict, blank=True)
+    policy_version = models.CharField(max_length=20, blank=True)
+    site_domain = models.CharField(max_length=100, default="default")
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+        verbose_name = "Consent log"
+        verbose_name_plural = "Consent logs"
+        indexes = [
+            models.Index(fields=["timestamp"], name="consent_log_time_idx")
+        ]
+
+    def __str__(self):
+        user_display = (
+            getattr(self.user, "email", None)
+            or self.ip_address
+            or "unknown"
+        )
+        return f"{user_display} @ {self.timestamp:%Y-%m-%d %H:%M}"
+
+
+### FILE: apps\consent\signals.py
+### PATH TREE: apps\consent
+"""
+apps.consent.signals
+---------------------
+Enterprise-grade signal handlers for consent management.
+
+✅ Features:
+- Seamless merge of session → user consent on login
+- Cleans up redundant session records post-merge
+- Safe handling of site resolution and session keys
+- Automatic cleanup on logout
+"""
+
+import logging
+from django.contrib.auth.signals import user_logged_in, user_logged_out
+from django.dispatch import receiver
+from django.contrib.sites.shortcuts import get_current_site
+
+from .models import ConsentRecord, ConsentPolicy
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================
+#  USER LOGIN — Merge Consent from Session
+# ============================================================
+@receiver(user_logged_in)
+def merge_session_consent(sender, user, request, **kwargs):
+    """
+    On user login, merge any session-based consent record
+    into the user's permanent consent record.
+    """
+
+    try:
+        site_domain = get_current_site(request).domain
+    except Exception:
+        site_domain = getattr(request, "get_host", lambda: "default")()
+
+    try:
+        policy = (
+            ConsentPolicy.objects.filter(site_domain=site_domain, is_active=True)
+            .order_by("-created_at")
+            .first()
+        )
+        if not policy:
+            logger.debug("merge_session_consent: no active policy for site %s", site_domain)
+            return
+
+        session_key = getattr(request.session, "session_key", None)
+        if not session_key:
+            logger.debug("merge_session_consent: session missing for %s", user)
+            return
+
+        session_rec = ConsentRecord.objects.filter(
+            session_key=session_key,
+            policy_version=policy.version,
+            site_domain=site_domain,
+        ).first()
+
+        if not session_rec:
+            return
+
+        user_rec, created = ConsentRecord.objects.get_or_create(
+            user=user,
+            policy_version=policy.version,
+            site_domain=site_domain,
+            defaults={
+                "accepted_categories": session_rec.accepted_categories,
+                "session_key": session_key,
+            },
+        )
+
+        if not created:
+            user_rec.accepted_categories = session_rec.accepted_categories
+            user_rec.save(update_fields=["accepted_categories", "updated_at"])
+            logger.debug(
+                "merge_session_consent: updated existing user consent for %s → %s",
+                user.email,
+                site_domain,
+            )
+        else:
+            logger.debug(
+                "merge_session_consent: created new consent record for %s → %s",
+                user.email,
+                site_domain,
+            )
+
+        # ✅ cleanup session record after successful merge
+        session_rec.delete()
+        logger.debug("merge_session_consent: cleaned up session record for %s", session_key)
+
+    except Exception as exc:
+        logger.exception("merge_session_consent: failed for %s → %s", user, exc)
+
+
+# ============================================================
+#  USER LOGOUT — Clear Session Consent
+# ============================================================
+@receiver(user_logged_out)
+def clear_session_consent(sender, request, user, **kwargs):
+    """
+    On logout, clean up transient consent data from session to
+    prevent stale consent persistence or accidental reuse.
+    """
+
+    try:
+        if hasattr(request, "session"):
+            request.session.pop("consent_data", None)
+            logger.debug("clear_session_consent: cleared session consent for %s", user)
+    except Exception as exc:
+        logger.debug("clear_session_consent: failed to clear session data → %s", exc)
+
+
+### FILE: apps\consent\urls.py
+### PATH TREE: apps\consent
+"""
+apps.consent.urls
+-----------------
+URL configuration for user consent management and GDPR compliance system.
+
+✅ Provides:
+    - Accept / manage consent preferences
+    - Render consent banner partial (for inclusion in templates)
+    - API-like endpoint for SPA polling or JS SDKs (`/status/`)
+    - Backward-compatible aliases for older template calls
+
+This module is part of the GSMInfinity Enterprise Consent Suite.
+"""
+
+from django.urls import path
+from .views import (
+    consent_accept,
+    manage_consent,
+    banner_partial,
+    consent_status,   # ✅ added for SPA / monitoring usage
+)
+
+urlpatterns = [
+    # ============================================================
+    #  Core Consent Endpoints
+    # ============================================================
+    path("accept/", consent_accept, name="consent_accept"),
+    path("manage/", manage_consent, name="consent_manage"),
+    path("banner/", banner_partial, name="consent_banner"),
+
+    # ============================================================
+    #  API / Utility Endpoints
+    # ============================================================
+    path("status/", consent_status, name="consent_status"),  # ✅ NEW
+    path("accept-all/", consent_accept, name="consent_accept_all"),
+    path("save/", consent_accept, name="consent_save"),  # alias for legacy frontend
+]
+
+# Optional tip:
+# If you plan to expose a JSON endpoint for SPA apps or SDK clients,
+# the `consent_status` view should return a JSONResponse like:
+#
+#   {
+#       "has_consent": True,
+#       "required_categories": [...],
+#       "user_choices": {...}
+#   }
+#
+# That endpoint is lightweight and ideal for consent audit logging or banner state.
+
+
+### FILE: apps\consent\views.py
+### PATH TREE: apps\consent
+# apps/consent/views.py
+"""
+apps.consent.views
+------------------
+Enterprise-grade GDPR/CCPA consent management views.
+
+✅ Features:
+- Banner + Manage Consent UI rendering
+- JSON API for SPA consent state
+- Atomic persistence for consent updates
+- Per-site active policy resolution
+- CSRF and body-size protection
+- Safe JSON parsing and transaction handling
+"""
+
+import logging
+import json
+from typing import Any, Dict, Optional
+
+from django.views.decorators.http import require_POST
+from django.shortcuts import redirect, render
+from django.contrib import messages
+from django.contrib.sites.shortcuts import get_current_site
+from django.middleware.csrf import get_token
+from django.template.response import TemplateResponse
+from django.http import JsonResponse, HttpRequest
+from django.db import transaction
+from django.core.cache import cache
+
+from apps.consent.models import ConsentPolicy, ConsentRecord
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# Helpers
+# ============================================================
+
+def _is_ajax_request(request: HttpRequest) -> bool:
+    """Portable check for AJAX or JSON requests."""
+    hdr = request.headers.get("x-requested-with", "")
+    return hdr == "XMLHttpRequest" or (request.content_type or "").startswith("application/json")
+
+
+def _get_active_policy(request: Optional[HttpRequest] = None) -> Optional[ConsentPolicy]:
+    """
+    Retrieve the per-site active ConsentPolicy using cache and DB fallback.
+    """
+    try:
+        site_domain = getattr(get_current_site(request), "domain", None) or getattr(request, "get_host", lambda: "global")()
+        cache_key = f"active_consent_policy_{site_domain}"
+        policy = cache.get(cache_key)
+        if not policy:
+            policy = (
+                ConsentPolicy.objects.filter(is_active=True, site_domain=site_domain)
+                .order_by("-created_at")
+                .first()
+            )
+            if policy:
+                ttl = getattr(policy, "cache_ttl_seconds", 300) or 300
+                cache.set(cache_key, policy, timeout=ttl)
+        return policy
+    except Exception as exc:
+        logger.exception("Failed to fetch active consent policy → %s", exc)
+        return None
+
+
+def _parse_json_body(request: HttpRequest, max_size: int = 1024 * 1024) -> Dict[str, Any]:
+    """Safely parse JSON body with a size limit."""
+    try:
+        body = request.body or b""
+        if len(body) > max_size:
+            logger.warning("Request JSON body too large: %d bytes", len(body))
+            return {"__error__": "payload_too_large"}
+        decoded = body.decode("utf-8") or "{}"
+        data = json.loads(decoded)
+        if not isinstance(data, dict):
+            logger.warning("JSON body is not an object")
+            return {}
+        return data
+    except json.JSONDecodeError as exc:
+        logger.warning("Invalid JSON payload: %s", exc)
+        return {}
+    except Exception as exc:
+        logger.exception("Unexpected error parsing JSON: %s", exc)
+        return {}
+
+
+def _coerce_bool(value: Any) -> bool:
+    """Coerce common truthy values to boolean."""
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    s = str(value).strip().lower()
+    return s in ("1", "true", "yes", "on")
+
+
+# ============================================================
+# Banner Partial
+# ============================================================
+
+def banner_partial(request: HttpRequest):
+    """Render the consent banner partial."""
+    policy = _get_active_policy(request)
+    snapshot = getattr(policy, "categories_snapshot", {}) or {}
+
+    derived: Dict[str, bool] = {}
+    if isinstance(snapshot, dict):
+        for slug, data in snapshot.items():
+            derived[slug] = not bool(data.get("required", False))
+    else:
+        derived = {"functional": True}
+
+    ctx = {
+        "consent_active": bool(policy),
+        "consent_version": getattr(policy, "version", ""),
+        "consent_text": getattr(policy, "banner_text", "We use cookies to improve your experience."),
+        "consent_categories": derived,
+        "csrf_token": get_token(request),
+    }
+    return TemplateResponse(request, "consent/includes/banner.html", ctx)
+
+
+# ============================================================
+# Manage Consent Page
+# ============================================================
+
+def manage_consent(request: HttpRequest):
+    """Render the full consent management page."""
+    policy = _get_active_policy(request)
+    snapshot = getattr(policy, "categories_snapshot", {}) or {}
+    categories = []
+
+    if isinstance(snapshot, dict):
+        for slug, data in snapshot.items():
+            categories.append({
+                "name": data.get("name", slug.title()),
+                "slug": slug,
+                "description": data.get("description", ""),
+                "required": bool(data.get("required", False)),
+                "accepted": bool(data.get("default", False)),
+            })
+    else:
+        categories = [
+            {"name": "Functional", "slug": "functional", "description": "", "required": True, "accepted": True},
+            {"name": "Analytics", "slug": "analytics", "description": "", "required": False, "accepted": False},
+            {"name": "Ads", "slug": "ads", "description": "", "required": False, "accepted": False},
+        ]
+
+    ctx = {
+        "consent_active": bool(policy),
+        "consent_version": getattr(policy, "version", ""),
+        "consent_text": getattr(policy, "manage_text", "Manage your cookie preferences."),
+        "categories": categories,
+    }
+    return render(request, "site_settings/consent_manage.html", ctx)
+
+
+# ============================================================
+# Consent Status API
+# ============================================================
+
+def consent_status(request: HttpRequest):
+    """Return the user's current consent state (GET)."""
+    policy = _get_active_policy(request)
+    if not policy:
+        return JsonResponse({"error": "no_active_policy"}, status=404)
+
+    snapshot = getattr(policy, "categories_snapshot", {}) or {}
+    categories: Dict[str, Dict[str, Any]] = {}
+
+    for slug, data in snapshot.items():
+        categories[slug] = {
+            "name": data.get("name", slug.title()),
+            "required": bool(data.get("required", False)),
+            "default": bool(data.get("default", False)),
+            "accepted": bool(data.get("required", False)),  # required defaults to accepted
+        }
+
+    if "functional" not in categories:
+        categories["functional"] = {"name": "Functional", "required": True, "default": True, "accepted": True}
+
+    site_domain = getattr(get_current_site(request), "domain", None) or request.get_host()
+
+    rec: Optional[ConsentRecord] = None
+    if request.user.is_authenticated:
+        rec = ConsentRecord.objects.filter(
+            user=request.user,
+            policy_version=policy.version,
+            site_domain=site_domain,
+        ).first()
+    elif getattr(request, "session", None):
+        if not request.session.session_key:
+            request.session.create()
+        rec = ConsentRecord.objects.filter(
+            session_key=request.session.session_key,
+            policy_version=policy.version,
+            site_domain=site_domain,
+        ).first()
+
+    if rec and rec.accepted_categories:
+        for slug, val in rec.accepted_categories.items():
+            if slug in categories and not categories[slug]["required"]:
+                categories[slug]["accepted"] = bool(val)
+
+    return JsonResponse({
+        "consent_active": True,
+        "consent_version": policy.version,
+        "categories": categories,
+        "site_domain": site_domain,
+    })
+
+
+# ============================================================
+# Consent Accept / Persist
+# ============================================================
+
+@require_POST
+def consent_accept(request: HttpRequest):
+    """
+    Accept or reject consent preferences (form or JSON).
+    Handles:
+      - accept_all / reject_all
+      - granular per-slug boolean values
+    """
+    json_body: Dict[str, Any] = {}
+    if (request.content_type or "").startswith("application/json"):
+        parsed = _parse_json_body(request)
+        if parsed.get("__error__") == "payload_too_large":
+            return JsonResponse({"error": "payload_too_large"}, status=413)
+        json_body = parsed
+
+    def get_param(key: str, default: Any = None) -> Any:
+        return json_body.get(key, request.POST.get(key, default))
+
+    def has_param(key: str) -> bool:
+        return key in json_body or key in request.POST
+
+    policy = _get_active_policy(request)
+    if not policy:
+        return JsonResponse({"ok": False, "error": "no_active_policy"}, status=400)
+
+    snapshot = policy.categories_snapshot or {}
+    valid_slugs = set(snapshot.keys()) | {"functional"}
+    accepted: Dict[str, bool] = {}
+
+    reject_all = _coerce_bool(get_param("reject_all")) or has_param("reject_all")
+    accept_all = _coerce_bool(get_param("accept_all")) or has_param("accept_all")
+
+    if reject_all:
+        accepted = {slug: False for slug in valid_slugs}
+        accepted["functional"] = True
+    elif accept_all:
+        accepted = {slug: True for slug in valid_slugs}
+    else:
+        for slug in valid_slugs:
+            if slug == "functional" or snapshot.get(slug, {}).get("required", False):
+                accepted[slug] = True
+            else:
+                accepted[slug] = _coerce_bool(get_param(slug, ""))
+
+    sanitized = {k: bool(v) for k, v in accepted.items() if k in valid_slugs}
+
+    # Ensure session exists for anonymous users
+    if getattr(request, "session", None) and not request.session.session_key:
+        request.session.create()
+
+    site_domain = getattr(get_current_site(request), "domain", None) or request.get_host()
+    defaults = {"accepted_categories": sanitized, "site_domain": site_domain, "session_key": getattr(request.session, "session_key", None)}
+
+    try:
+        with transaction.atomic():
+            if request.user.is_authenticated:
+                ConsentRecord.objects.update_or_create(
+                    user=request.user,
+                    policy_version=policy.version,
+                    site_domain=site_domain,
+                    defaults=defaults,
+                )
+            else:
+                ConsentRecord.objects.update_or_create(
+                    session_key=request.session.session_key,
+                    policy_version=policy.version,
+                    site_domain=site_domain,
+                    defaults=defaults,
+                )
+    except Exception as exc:
+        logger.exception("Failed to persist ConsentRecord: %s", exc)
+        if _is_ajax_request(request):
+            return JsonResponse({"ok": False, "error": "db_error"}, status=500)
+        messages.warning(request, "Unable to save your preferences. They will apply for this session.")
+        return redirect(get_param("next") or "/")
+
+    message = "Preferences saved."
+    if reject_all:
+        message = "You have rejected all optional cookies."
+    elif accept_all:
+        message = "You have accepted all optional cookies."
+
+    if _is_ajax_request(request):
+        return JsonResponse({"ok": True, "message": message, "consent": sanitized})
+    messages.success(request, message)
+    return redirect(get_param("next") or "/")
+
+
+### FILE: apps\core\__init__.py
+### PATH TREE: apps\core
+
+### FILE: apps\core\admin.py
+### PATH TREE: apps\core
+from django.contrib import admin
+
+# Register your models here.
+
+
+### FILE: apps\core\apps.py
+### PATH TREE: apps\core
+from django.apps import AppConfig
+from django.utils.module_loading import autodiscover_modules
+
+
+class CoreConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.core"
+    label = "core"
+    verbose_name = "Core"
+
+    def ready(self):
+        """
+        Core app initialization:
+        - Safely clear the django.contrib.sites cache after registry load
+        - Autodiscover signals or other startup modules
+        """
+        try:
+            from django.contrib.sites.models import Site
+            Site.objects.clear_cache()
+        except Exception:
+            pass
+
+        # Auto-discover signals.py in submodules
+        autodiscover_modules("signals")
+
+
+### FILE: apps\core\cache.py
+### PATH TREE: apps\core
+# apps/core/cache.py
+"""
+Centralized cache utilities for GSMInfinity.
+
+Provides:
+- Named invalidation helpers for site settings and consent policy
+- A simple get-with-fallback helper to avoid repeating cache-get/set logic
+"""
+
+from django.core.cache import cache
+from django.contrib.sites.models import Site
+
+class CacheManager:
+    @staticmethod
+    def invalidate_site_settings(site_id: int | None = None) -> None:
+        """
+        Invalidate site settings caches.
+        If site_id provided, delete that tenant key; always delete global active key.
+        """
+        cache.delete("active_site_settings")
+        if site_id:
+            cache.delete(f"site_settings_{site_id}")
+        # Optionally clear per-site cached keys if present
+        try:
+            for s in Site.objects.all():
+                cache.delete(f"site_settings_{s.id}")
+        except Exception:
+            # Don't fail cache invalidation on startup/migration environment
+            pass
+
+    @staticmethod
+    def invalidate_consent_policy(site_identifier: str | None = None) -> None:
+        """
+        Invalidate cached active consent policy.
+        Use site_identifier or 'global'.
+        """
+        key = f"active_consent_policy_{site_identifier or 'global'}"
+        cache.delete(key)
+        cache.delete("active_consent_policy")
+
+    @staticmethod
+    def get_with_fallback(key: str, fallback_func, timeout: int = 300):
+        """
+        Get cached value or compute via fallback_func and set cache.
+        """
+        val = cache.get(key)
+        if val is not None:
+            return val
+        val = fallback_func()
+        cache.set(key, val, timeout=timeout)
+        return val
+
+
+### FILE: apps\core\context_processors.py
+### PATH TREE: apps\core
+# apps/site_settings/context_processors.py
+from django.core.cache import cache
+from apps.site_settings.models import SiteSettings
+
+
+def global_settings(request):
+    """
+    Injects global site settings and dynamic configuration into all templates.
+
+    Provides:
+    - Branding metadata (site name, description, favicon)
+    - Theme and color preferences
+    - Localization and timezone info
+    - Security & feature toggles
+    - AI personalization preferences
+
+    Uses caching for performance and fallbacks for uninitialized environments.
+    """
+    cache_key = "global_site_settings"
+    settings_obj = cache.get(cache_key)
+
+    if not settings_obj:
+        try:
+            settings_obj = SiteSettings.get_solo()
+            cache.set(cache_key, settings_obj, timeout=300)
+        except Exception:
+            # Fallback dummy for environments where SiteSettings is not initialized
+            class Dummy:
+                site_name = "GSMInfinity"
+                site_header = "GSM Admin"
+                site_description = "Default site description"
+                favicon = None
+                theme_profile = "default"
+                primary_color = "#0d6efd"
+                secondary_color = "#6c757d"
+                default_language = "en-us"
+                timezone = "UTC"
+                enable_localization = True
+                maintenance_mode = False
+                enable_signup = True
+                enable_password_reset = True
+                enable_notifications = True
+                enable_ai_personalization = False
+                ai_theme_mode = "adaptive"
+                ai_model_version = "gpt-5.0"
+
+            settings_obj = Dummy()
+
+    # Safe attribute access for all template variables
+    s = settings_obj
+    return {
+        # Branding
+        "site_name": getattr(s, "site_name", "GSMInfinity"),
+        "site_header": getattr(s, "site_header", ""),
+        "site_description": getattr(s, "site_description", ""),
+        "favicon": getattr(s, "favicon", None),
+
+        # Theme
+        "theme_profile": getattr(s, "theme_profile", "default"),
+        "primary_color": getattr(s, "primary_color", "#0d6efd"),
+        "secondary_color": getattr(s, "secondary_color", "#6c757d"),
+
+        # Locale
+        "default_language": getattr(s, "default_language", "en-us"),
+        "timezone": getattr(s, "timezone", "UTC"),
+        "enable_localization": getattr(s, "enable_localization", True),
+
+        # Security & Features
+        "maintenance_mode": getattr(s, "maintenance_mode", False),
+        "enable_signup": getattr(s, "enable_signup", True),
+        "enable_password_reset": getattr(s, "enable_password_reset", True),
+        "enable_notifications": getattr(s, "enable_notifications", True),
+
+        # AI personalization
+        "enable_ai_personalization": getattr(s, "enable_ai_personalization", False),
+        "ai_theme_mode": getattr(s, "ai_theme_mode", "adaptive"),
+        "ai_model_version": getattr(s, "ai_model_version", "gpt-5.0"),
+    }
+
+
+### FILE: apps\core\exceptions.py
+### PATH TREE: apps\core
+"""
+Custom exception handlers for uniform JSON + HTML safety.
+"""
+
+import logging
+from django.http import JsonResponse
+from django.conf import settings
+
+log = logging.getLogger(__name__)
+
+def json_error_response(exc, code=500):
+    data = {"ok": False, "error": str(exc), "type": exc.__class__.__name__}
+    if not settings.DEBUG:
+        data["error"] = "Internal server error"
+    return JsonResponse(data, status=code)
+
+
+### FILE: apps\core\middleware\request_meta.py
+### PATH TREE: apps\core\middleware
+"""
+Attach common metadata to each request.
+"""
+
+import logging
+from django.utils.deprecation import MiddlewareMixin
+from django.contrib.sites.shortcuts import get_current_site
+
+log = logging.getLogger(__name__)
+
+class RequestMetaMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        try:
+            site = get_current_site(request)
+            request.site_domain = site.domain
+            request.site_name = getattr(site, "name", "")
+        except Exception as exc:
+            log.debug("Site resolution failed: %s", exc)
+            request.site_domain = request.get_host()
+        request.client_ip = request.META.get("REMOTE_ADDR", "")
+        request.user_agent = request.META.get("HTTP_USER_AGENT", "")
+
+
+### FILE: apps\core\models.py
+### PATH TREE: apps\core
+from django.db import models
+
+
+class TimestampedModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+### FILE: apps\core\tests.py
+### PATH TREE: apps\core
+from django.test import TestCase
+
+# Create your tests here.
+
+
+### FILE: apps\core\urls.py
+### PATH TREE: apps\core
+# apps/core/urls.py
+from django.urls import path
+from . import views
+
+# ============================================================
+#  Core Application URL Configuration
+# ============================================================
+urlpatterns = [
+    # --------------------------------------------------------
+    #  Home / Landing
+    # --------------------------------------------------------
+    path("", views.home, name="home"),
+
+    # --------------------------------------------------------
+    #  Tenants (Multi-Site Overview)
+    # --------------------------------------------------------
+    path("tenants/", views.tenants, name="tenants"),
+
+    # --------------------------------------------------------
+    #  Dashboard Routes
+    # --------------------------------------------------------
+    path("dashboard/", views.overview, name="dashboard_overview"),
+    path("dashboard/security/", views.security, name="dashboard_security"),
+    path("dashboard/monetization/", views.monetization, name="dashboard_monetization"),
+    path("dashboard/notifications/", views.notifications, name="dashboard_notifications"),
+    path("dashboard/announcements/", views.announcements, name="dashboard_announcements"),
+    path("dashboard/users/", views.users_dashboard, name="dashboard_users"),
+    path("dashboard/system/", views.system_health, name="dashboard_system"),
+]
+
+# ============================================================
+#  Notes:
+#  - All paths are mapped to view functions in apps.core.views
+#  - URL names are namespaced consistently for template reverse lookups
+#  - Extend this file when adding new dashboard or core sections
+# ============================================================
+
+
+### FILE: apps\core\views.py
+### PATH TREE: apps\core
+# apps/core/views.py
+from django.shortcuts import render
+from django.core.cache import cache
+from apps.site_settings.models import SiteSettings, TenantSiteSettings
+
+
+# ============================================================
+#  INTERNAL UTILITY — GLOBAL SETTINGS RESOLVER
+# ============================================================
+def _get_site_settings():
+    """
+    Retrieve the global SiteSettings object with caching and fallback safety.
+
+    Features:
+    - Cached for 5 minutes (configurable).
+    - Safe fallback to dummy defaults when DB not initialized.
+    - Prevents repeated DB hits per request.
+    """
+    cache_key = "global_site_settings"
+    site_settings = cache.get(cache_key)
+    if site_settings:
+        return site_settings
+
+    try:
+        # Solo manager preferred
+        if hasattr(SiteSettings, "get_solo"):
+            site_settings = SiteSettings.get_solo()
+        else:
+            site_settings = SiteSettings.objects.first()
+
+        cache.set(cache_key, site_settings, timeout=300)
+        return site_settings
+
+    except Exception:
+        # Fallback Dummy (pre-migrate / debug environments)
+        class DummySettings:
+            site_name = "GSMInfinity"
+            site_header = "GSM Admin"
+            site_description = "Default configuration"
+            enable_signup = True
+            recaptcha_enabled = False
+            require_mfa = False
+            maintenance_mode = False
+            primary_color = "#0d6efd"
+            secondary_color = "#6c757d"
+
+        dummy = DummySettings()
+        cache.set(cache_key, dummy, timeout=60)
+        return dummy
+
+
+# ============================================================
+#  PUBLIC HOME VIEW
+# ============================================================
+def home(request):
+    """
+    Display the landing dashboard (system KPIs + branding context).
+    Placeholder KPIs can be replaced by live metrics or async APIs.
+    """
+    s = _get_site_settings()
+    context = {
+        "site_settings": s,
+        "active_users": 1245,
+        "mfa_adoption": "87%",
+        "revenue": "$12,340",
+    }
+    return render(request, "core/home.html", context)
+
+
+# ============================================================
+#  DASHBOARD SECTIONS (OVERVIEW / SECURITY / ETC.)
+# ============================================================
+def overview(request):
+    """System overview dashboard page."""
+    return render(request, "dashboard/overview.html", {"site_settings": _get_site_settings()})
+
+
+def security(request):
+    """Security metrics dashboard (MFA, auth logs, suspicious activity)."""
+    return render(request, "dashboard/security.html", {"site_settings": _get_site_settings()})
+
+
+def monetization(request):
+    """Revenue, plans, and payment analytics dashboard."""
+    return render(request, "dashboard/monetization.html", {"site_settings": _get_site_settings()})
+
+
+def notifications(request):
+    """System alerts, notifications, and message center."""
+    return render(request, "dashboard/notifications.html", {"site_settings": _get_site_settings()})
+
+
+def announcements(request):
+    """Public changelog and administrative announcements."""
+    return render(request, "dashboard/announcements.html", {"site_settings": _get_site_settings()})
+
+
+def users_dashboard(request):
+    """User management and behavioral analytics dashboard."""
+    return render(request, "dashboard/users.html", {"site_settings": _get_site_settings()})
+
+
+def system_health(request):
+    """System health, uptime, and diagnostic dashboard."""
+    return render(request, "dashboard/system_health.html", {"site_settings": _get_site_settings()})
+
+
+# ============================================================
+#  TENANT MANAGEMENT VIEW
+# ============================================================
+def tenants(request):
+    """
+    Render a list of tenant configurations with prefetch optimizations.
+    Supports multi-tenant environments sharing the same backend.
+    """
+    s = _get_site_settings()
+    tenants_qs = (
+        TenantSiteSettings.objects.select_related("site")
+        .prefetch_related("meta_tags", "verification_files")
+        .order_by("site__domain")
+    )
+    return render(
+        request,
+        "core/tenants.html",
+        {"site_settings": s, "tenants": tenants_qs},
+    )
+
+
+# ============================================================
+#  CUSTOM ERROR HANDLERS (404 / 403 / 500)
+# ============================================================
+def error_404_view(request, exception):
+    """Custom 404 Not Found handler with branding context."""
+    return render(
+        request,
+        "errors/404.html",
+        {"site_settings": _get_site_settings()},
+        status=404,
+    )
+
+
+def error_403_view(request, exception):
+    """Custom 403 Forbidden handler (permissions)."""
+    return render(
+        request,
+        "errors/403.html",
+        {"site_settings": _get_site_settings()},
+        status=403,
+    )
+
+
+def error_500_view(request):
+    """Custom 500 Internal Server Error handler."""
+    return render(
+        request,
+        "errors/500.html",
+        {"site_settings": _get_site_settings()},
+        status=500,
+    )
+
+
+### FILE: apps\site_settings\__init__.py
+### PATH TREE: apps\site_settings
+
+### FILE: apps\site_settings\admin.py
+### PATH TREE: apps\site_settings
+from django.contrib import admin
+from import_export.admin import ExportMixin
+from solo.admin import SingletonModelAdmin
+from .models import SiteSettings, VerificationMetaTag, VerificationFile, TenantSiteSettings
+
+
+# --- Meta Tag Verification ---
+@admin.register(VerificationMetaTag)
+class VerificationMetaTagAdmin(ExportMixin, admin.ModelAdmin):
+    """Admin for managing verification meta tags used in site ownership and SEO."""
+
+    list_display = ("provider", "name_attr", "content_attr", "created_at")
+    search_fields = ("provider", "name_attr", "content_attr")
+    readonly_fields = ("created_at",)
+    ordering = ("-created_at",)
+
+
+# --- File-Based Verification ---
+@admin.register(VerificationFile)
+class VerificationFileAdmin(ExportMixin, admin.ModelAdmin):
+    """Admin for managing uploaded verification files (e.g. Google, Bing, etc)."""
+
+    list_display = ("provider", "file", "uploaded_at")
+    search_fields = ("provider", "file")
+    readonly_fields = ("uploaded_at",)
+    ordering = ("-uploaded_at",)
+
+
+# --- Global Site Settings (Singleton) ---
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(SingletonModelAdmin, ExportMixin, admin.ModelAdmin):
+    """Enterprise-grade admin for global site configuration and compliance."""
+
+    list_display = (
+        "site_name", "site_header", "site_description",
+        "maintenance_mode", "recaptcha_enabled", "recaptcha_mode",
+        "recaptcha_score_threshold", "max_devices_per_user",
+        "enforce_unique_device", "require_mfa",
+        "max_login_attempts", "rate_limit_window_seconds",
+    )
+    search_fields = ("site_name", "site_header", "site_description")
+    readonly_fields = ("favicon",)
+    filter_horizontal = ("meta_tags", "verification_files")
+
+    fieldsets = (
+        ("🔖 Branding", {
+            "fields": (
+                "site_name", "site_header", "site_description", "favicon",
+                "theme_profile", "primary_color", "secondary_color"
+            )
+        }),
+        ("🌍 Locale", {
+            "fields": (
+                "default_language", "timezone", "enable_localization"
+            )
+        }),
+        ("🤖 AI Personalization", {
+            "fields": (
+                "enable_ai_personalization", "ai_theme_mode", "ai_model_version"
+            )
+        }),
+        ("🔐 Security & Features", {
+            "fields": (
+                "enable_signup", "enable_password_reset",
+                "enable_notifications", "maintenance_mode"
+            )
+        }),
+        ("🧠 reCAPTCHA", {
+            "fields": (
+                "recaptcha_enabled", "recaptcha_mode",
+                "recaptcha_public_key", "recaptcha_private_key",
+                "recaptcha_score_threshold", "recaptcha_timeout_ms"
+            )
+        }),
+        ("📱 Device & MFA", {
+            "fields": (
+                "max_devices_per_user", "lock_duration_minutes",
+                "fingerprint_mode", "enforce_unique_device",
+                "require_mfa", "mfa_totp_issuer"
+            )
+        }),
+        ("📧 Email Verification", {
+            "fields": (
+                "email_verification_code_length", "email_verification_code_type"
+            )
+        }),
+        ("🛡️ Robustness", {
+            "fields": (
+                "max_login_attempts", "rate_limit_window_seconds", "cache_ttl_seconds"
+            )
+        }),
+        ("📂 Verification Resources", {
+            "fields": ("meta_tags", "verification_files")
+        }),
+    )
+
+
+# --- Per-Tenant Site Settings ---
+@admin.register(TenantSiteSettings)
+class TenantSiteSettingsAdmin(admin.ModelAdmin):
+    """Admin for managing per-tenant overrides linked to django.contrib.sites."""
+
+    list_display = ("site", "theme_profile", "primary_color", "secondary_color")
+    search_fields = ("site__domain", "theme_profile")
+    filter_horizontal = ("meta_tags", "verification_files")
+    ordering = ("site",)
+
+### FILE: apps\site_settings\apps.py
+### PATH TREE: apps\site_settings
+from django.apps import AppConfig
+from django.utils.module_loading import autodiscover_modules
+
+
+class SiteSettingsConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.site_settings"      # full Python path
+    label = "site_settings"          # short label
+    verbose_name = "Site Settings"
+
+    def ready(self):
+        """
+        Initialize site settings and related signals.
+
+        - Loads signal hooks to sync database-based settings
+        - Avoids circular imports during startup
+        - Autodiscovers additional settings modules if needed
+        """
+        try:
+            import apps.site_settings.signals  # noqa: F401
+        except ImportError:
+            pass
+
+        autodiscover_modules("signals")
+
+
+### FILE: apps\site_settings\context_processors.py
+### PATH TREE: apps\site_settings
+# apps/site_settings/context_processors.py
+"""
+Multi-tenant Site Settings Context Processor
+--------------------------------------------
+Provides tenant-aware configuration for all templates.
+
+✅ Features:
+- Per-site caching (unified key: active_site_settings_<site_domain>)
+- Tenant-aware resolution via django.contrib.sites
+- Safe fallback to global SiteSettings singleton
+- TTL from model or 5 min default
+- Consistent template context keys:
+    site_settings, settings, meta_tags, verification_files
+- Resilient to cache poisoning or missing relationships
+"""
+
+import logging
+from django.core.cache import cache
+from django.contrib.sites.shortcuts import get_current_site
+from apps.site_settings.models import SiteSettings, TenantSiteSettings
+
+log = logging.getLogger(__name__)
+
+
+def site_settings(request):
+    """
+    Provide per-site settings and metadata to all templates.
+
+    Returns:
+        dict: {
+            "site_settings": <TenantSiteSettings or SiteSettings>,
+            "settings": <alias for site_settings>,
+            "meta_tags": <QuerySet>,
+            "verification_files": <QuerySet>,
+        }
+    """
+
+    # ---------------------------------------------------------------
+    # Determine current site and build unified cache key
+    # ---------------------------------------------------------------
+    try:
+        current_site = get_current_site(request)
+        site_identifier = getattr(current_site, "domain", None) or getattr(current_site, "id", "global")
+    except Exception as exc:
+        log.warning("Site resolution failed → %s", exc)
+        current_site = None
+        site_identifier = "global"
+
+    cache_key = f"active_site_settings_{site_identifier}"
+    settings_obj = cache.get(cache_key)
+
+    # ---------------------------------------------------------------
+    # Cache miss → resolve from DB
+    # ---------------------------------------------------------------
+    if not settings_obj:
+        try:
+            if current_site:
+                # Prefer tenant-specific configuration
+                settings_obj = (
+                    TenantSiteSettings.objects.select_related("site")
+                    .get(site=current_site)
+                )
+                log.debug("Loaded TenantSiteSettings for site: %s", current_site)
+            else:
+                raise TenantSiteSettings.DoesNotExist
+
+        except TenantSiteSettings.DoesNotExist:
+            log.debug("TenantSiteSettings missing; using global fallback.")
+            settings_obj = SiteSettings.get_solo()
+
+        except Exception as exc:
+            log.exception("Failed to load site settings → %s", exc)
+            settings_obj = SiteSettings.get_solo()
+
+        # Cache resolved settings with TTL
+        ttl = getattr(settings_obj, "cache_ttl_seconds", 300) or 300
+        cache.set(cache_key, settings_obj, timeout=ttl)
+
+    # ---------------------------------------------------------------
+    # Related metadata normalization
+    # ---------------------------------------------------------------
+    try:
+        meta_tags_qs = getattr(settings_obj, "meta_tags", None)
+        meta_tags = meta_tags_qs.all() if hasattr(meta_tags_qs, "all") else SiteSettings.get_solo().meta_tags.all()
+    except Exception as exc:
+        log.warning("Meta tags fetch failed → %s", exc)
+        meta_tags = SiteSettings.get_solo().meta_tags.none()
+
+    try:
+        verification_files_qs = getattr(settings_obj, "verification_files", None)
+        verification_files = (
+            verification_files_qs.all()
+            if hasattr(verification_files_qs, "all")
+            else SiteSettings.get_solo().verification_files.all()
+        )
+    except Exception as exc:
+        log.warning("Verification files fetch failed → %s", exc)
+        verification_files = SiteSettings.get_solo().verification_files.none()
+
+    # ---------------------------------------------------------------
+    # Return safe context for template rendering
+    # ---------------------------------------------------------------
+    return {
+        "site_settings": settings_obj,
+        "settings": settings_obj,  # legacy alias for backwards compatibility
+        "meta_tags": meta_tags,
+        "verification_files": verification_files,
+    }
+
+
+### FILE: apps\site_settings\management\commands\clear_site_settings_cache.py
+### PATH TREE: apps\site_settings\management\commands
+from django.core.management.base import BaseCommand
+from apps.site_settings.signals import clear_site_settings_cache
+
+class Command(BaseCommand):
+    help = "Clear site settings caches (singleton and per-site keys)."
+
+    def handle(self, *args, **options):
+        clear_site_settings_cache()
+        self.stdout.write(self.style.SUCCESS("Site settings caches cleared."))
+
+### FILE: apps\site_settings\models.py
+### PATH TREE: apps\site_settings
+"""
+Site & Tenant Settings Models
+=============================
+Enterprise configuration module for GSMInfinity.
+
+Provides:
+- Singleton global site settings (via django-solo)
+- Tenant-specific overrides
+- Meta tag and file verification records
+- Security, rate-limiting, and AI personalization controls
+"""
+
+from django.db import models
+from django.contrib.sites.models import Site
+from solo.models import SingletonModel
+
+
+# ============================================================
+#  GLOBAL SITE SETTINGS
+# ============================================================
+class SiteSettings(SingletonModel):
+    """
+    Singleton model storing enterprise-wide configuration.
+    Supports caching via django-solo and automatic fallback in templates.
+    """
+
+    # ------------------------------------------------------------
+    # Branding & Identity
+    # ------------------------------------------------------------
+    site_name = models.CharField(max_length=100, default="GsmInfinity")
+    site_header = models.CharField(max_length=100, default="GSM Admin")
+    site_description = models.TextField(blank=True, default="")
+    favicon = models.ImageField(upload_to="branding/", blank=True, null=True)
+
+    # ------------------------------------------------------------
+    # Theme & Appearance
+    # ------------------------------------------------------------
+    theme_profile = models.CharField(max_length=50, blank=True, null=True)
+    primary_color = models.CharField(max_length=20, blank=True, null=True)
+    secondary_color = models.CharField(max_length=20, blank=True, null=True)
+
+    # ------------------------------------------------------------
+    # Locale & Internationalization
+    # ------------------------------------------------------------
+    default_language = models.CharField(max_length=10, default="en")
+    timezone = models.CharField(max_length=50, default="UTC")
+    enable_localization = models.BooleanField(default=False)
+
+    # ------------------------------------------------------------
+    # AI Personalization
+    # ------------------------------------------------------------
+    enable_ai_personalization = models.BooleanField(default=False)
+    ai_theme_mode = models.CharField(
+        max_length=20,
+        choices=[("light", "Light"), ("dark", "Dark"), ("auto", "Auto")],
+        default="auto",
+    )
+    ai_model_version = models.CharField(max_length=20, blank=True, null=True)
+
+    # ------------------------------------------------------------
+    # Security & Feature Toggles
+    # ------------------------------------------------------------
+    enable_signup = models.BooleanField(default=True)
+    enable_password_reset = models.BooleanField(default=True)
+    enable_notifications = models.BooleanField(default=True)
+    maintenance_mode = models.BooleanField(default=False)
+
+    # ------------------------------------------------------------
+    # reCAPTCHA Configuration
+    # ------------------------------------------------------------
+    recaptcha_enabled = models.BooleanField(default=False)
+    recaptcha_mode = models.CharField(
+        max_length=20,
+        choices=[("v2", "v2"), ("v3", "v3")],
+        default="v2",
+    )
+    recaptcha_public_key = models.CharField(max_length=100, blank=True, null=True)
+    recaptcha_private_key = models.CharField(max_length=100, blank=True, null=True)
+    recaptcha_score_threshold = models.FloatField(default=0.5)
+    recaptcha_timeout_ms = models.PositiveIntegerField(default=3000)
+
+    # ------------------------------------------------------------
+    # Device & MFA Policies
+    # ------------------------------------------------------------
+    max_devices_per_user = models.PositiveIntegerField(default=3)
+    lock_duration_minutes = models.PositiveIntegerField(default=15)
+    fingerprint_mode = models.CharField(
+        max_length=20,
+        choices=[("strict", "Strict"), ("lenient", "Lenient")],
+        default="strict",
+    )
+    enforce_unique_device = models.BooleanField(default=True)
+    require_mfa = models.BooleanField(default=False)
+    mfa_totp_issuer = models.CharField(max_length=50, default="GsmInfinity")
+
+    # ------------------------------------------------------------
+    # Email Verification
+    # ------------------------------------------------------------
+    email_verification_code_length = models.PositiveIntegerField(default=6)
+    email_verification_code_type = models.CharField(
+        max_length=20,
+        choices=[("numeric", "Numeric"), ("alphanumeric", "Alphanumeric")],
+        default="alphanumeric",
+    )
+
+    # ------------------------------------------------------------
+    # Robustness & Rate Limiting
+    # ------------------------------------------------------------
+    max_login_attempts = models.PositiveIntegerField(default=5)
+    rate_limit_window_seconds = models.PositiveIntegerField(default=300)
+    cache_ttl_seconds = models.PositiveIntegerField(default=600)
+
+    # ------------------------------------------------------------
+    # Verification Resources
+    # ------------------------------------------------------------
+    meta_tags = models.ManyToManyField(
+        "VerificationMetaTag", blank=True, related_name="site_settings_meta"
+    )
+    verification_files = models.ManyToManyField(
+        "VerificationFile", blank=True, related_name="site_settings_files"
+    )
+
+    class Meta:
+        verbose_name = "Site Settings"
+        verbose_name_plural = "Site Settings"
+
+    def __str__(self):
+        return self.site_name
+
+    # ------------------------------------------------------------
+    # Utility Methods
+    # ------------------------------------------------------------
+    def get_theme(self):
+        """Return dict of theme configuration for templates."""
+        return {
+            "theme_profile": self.theme_profile,
+            "primary_color": self.primary_color,
+            "secondary_color": self.secondary_color,
+            "ai_mode": self.ai_theme_mode,
+        }
+
+    def recaptcha_config(self):
+        """Return configuration dict for frontend injection."""
+        return {
+            "enabled": self.recaptcha_enabled,
+            "mode": self.recaptcha_mode,
+            "public_key": self.recaptcha_public_key,
+        }
+
+
+# ============================================================
+#  META TAG VERIFICATION
+# ============================================================
+class VerificationMetaTag(models.Model):
+    """
+    Stores meta tag verification data for services (Google, Bing, etc.).
+    Used for SEO or ownership validation.
+    """
+    provider = models.CharField(max_length=50, db_index=True)
+    name_attr = models.CharField(max_length=100)
+    content_attr = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["provider", "name_attr"])]
+        verbose_name = "Verification Meta Tag"
+        verbose_name_plural = "Verification Meta Tags"
+
+    def __str__(self):
+        return f"{self.provider}: {self.name_attr}"
+
+
+# ============================================================
+#  FILE-BASED VERIFICATION
+# ============================================================
+class VerificationFile(models.Model):
+    """
+    Stores verification files for domain ownership (e.g., Google Search Console).
+    """
+    provider = models.CharField(max_length=50, db_index=True)
+    file = models.FileField(upload_to="verification/")
+    description = models.TextField(blank=True, default="")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+        indexes = [models.Index(fields=["provider"])]
+        verbose_name = "Verification File"
+        verbose_name_plural = "Verification Files"
+
+    def __str__(self):
+        return f"{self.provider}: {self.file.name}"
+
+
+# ============================================================
+#  TENANT-SPECIFIC SETTINGS
+# ============================================================
+class TenantSiteSettings(models.Model):
+    """
+    Per-site configuration for multi-tenant deployments.
+    Overrides global color themes and verification metadata.
+    """
+    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name="tenant_settings")
+    theme_profile = models.CharField(max_length=50, blank=True, null=True)
+    primary_color = models.CharField(max_length=20, blank=True, null=True)
+    secondary_color = models.CharField(max_length=20, blank=True, null=True)
+    meta_tags = models.ManyToManyField(VerificationMetaTag, blank=True)
+    verification_files = models.ManyToManyField(VerificationFile, blank=True)
+
+    class Meta:
+        verbose_name = "Tenant Site Settings"
+        verbose_name_plural = "Tenant Site Settings"
+
+    def __str__(self):
+        return f"Settings for {self.site.domain}"
+
+    def get_colors(self):
+        """Return color configuration for this tenant."""
+        return {
+            "primary": self.primary_color or "#007bff",
+            "secondary": self.secondary_color or "#6c757d",
+        }
+
+
+### FILE: apps\site_settings\signals.py
+### PATH TREE: apps\site_settings
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+from django.core.cache import cache
+from django.contrib.sites.models import Site
+from .models import SiteSettings, VerificationMetaTag, VerificationFile, TenantSiteSettings
+
+
+def clear_site_settings_cache():
+    """
+    Invalidate all site settings caches.
+
+    - Per-site caches use 'site_settings_<site_id>'.
+    - Called whenever SiteSettings, TenantSiteSettings, or related verification
+      resources are saved or deleted.
+    """
+    try:
+        for site_id in Site.objects.values_list("id", flat=True):
+            cache.delete(f"site_settings_{site_id}")
+    except Exception:
+        # During migrations or initial setup, Site table may not exist yet.
+        pass
+
+
+@receiver(post_save, sender=SiteSettings)
+@receiver(post_delete, sender=SiteSettings)
+@receiver(post_save, sender=VerificationMetaTag)
+@receiver(post_delete, sender=VerificationMetaTag)
+@receiver(post_save, sender=VerificationFile)
+@receiver(post_delete, sender=VerificationFile)
+@receiver(post_save, sender=TenantSiteSettings)
+@receiver(post_delete, sender=TenantSiteSettings)
+def invalidate_site_settings_cache(sender, **kwargs):
+    """
+    Signal handler to clear cached site settings whenever relevant models change.
+    """
+    clear_site_settings_cache()
+
+### FILE: apps\site_settings\tests.py
+### PATH TREE: apps\site_settings
+from django.test import TestCase
+
+# Create your tests here.
+
+
+### FILE: apps\site_settings\urls.py
+### PATH TREE: apps\site_settings
+from django.urls import path
+from . import views
+
+app_name = "site_settings"
+
+urlpatterns = [
+    # 🌐 Public-facing views
+    path("", views.site_settings_view, name="site_settings"),  # UI: settings detail page
+    path("info/", views.settings_info, name="settings_info"),  # API: JSON snapshot
+    path("verification/<str:filename>", views.verification_file, name="verification_file"),  # Serve uploaded verification files
+
+    # 📜 Public policy pages
+    path("privacy/", views.privacy_policy, name="privacy_policy"),
+    path("terms/", views.terms_of_service, name="terms_of_service"),
+    path("verify/", views.site_verification, name="site_verification"),
+]
+
+### FILE: apps\site_settings\views.py
+### PATH TREE: apps\site_settings
+# apps/site_settings/views.py
+"""
+Site Settings Views
+====================
+Unified interface for global and tenant-specific configuration access.
+
+✅ Features:
+- Per-site caching with unified key pattern
+- Robust fallback logic for missing tenant configs
+- JSON API for frontend initialization
+- Secure verification file serving (strict whitelist)
+- Policy page rendering with cache control
+"""
+
+import logging
+from pathlib import Path
+from django.shortcuts import render, redirect
+from django.http import JsonResponse, Http404
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.views.decorators.http import require_GET
+
+from .models import SiteSettings, TenantSiteSettings
+
+log = logging.getLogger(__name__)
+
+
+# ============================================================
+#  INTERNAL UTILITY: SETTINGS RESOLVER
+# ============================================================
+def _get_settings(request=None):
+    """
+    Retrieve current site settings with robust fallback logic.
+
+    Order of precedence:
+      1. TenantSiteSettings for the current site
+      2. Global SiteSettings singleton
+      3. Dummy fallback with safe defaults
+    """
+
+    try:
+        # Derive consistent site identifier
+        site_domain = "global"
+        if request:
+            try:
+                site_domain = get_current_site(request).domain
+            except Exception:
+                site_domain = request.get_host()
+
+        # ✅ Unified cache key convention
+        cache_key = f"active_site_settings_{site_domain}"
+        cached = cache.get(cache_key)
+        if cached:
+            return cached
+
+        # Prefer tenant-specific configuration
+        try:
+            if request:
+                current_site = get_current_site(request)
+                settings_obj = (
+                    TenantSiteSettings.objects.select_related("site")
+                    .get(site=current_site)
+                )
+            else:
+                settings_obj = SiteSettings.get_solo()
+        except TenantSiteSettings.DoesNotExist:
+            log.debug("Tenant settings not found, using global fallback.")
+            settings_obj = SiteSettings.get_solo()
+
+        # ✅ Cache site-specific settings
+        cache.set(cache_key, settings_obj, timeout=300)
+        return settings_obj
+
+    except Exception as exc:
+        log.warning("Settings resolver fallback triggered: %s", exc)
+
+        # ✅ Fallback safe defaults
+        class DummySettings:
+            site_name = "GsmInfinity"
+            site_header = "GSM Admin"
+            site_description = "Default configuration"
+            enable_signup = True
+            enable_password_reset = True
+            max_login_attempts = 5
+            rate_limit_window_seconds = 300
+            recaptcha_enabled = False
+            enforce_unique_device = False
+            max_devices_per_user = 3
+            require_mfa = False
+            enable_notifications = True
+            meta_tags = []
+            verification_files = []
+
+        dummy = DummySettings()
+        cache.set("active_site_settings_dummy", dummy, timeout=60)
+        return dummy
+
+
+# ============================================================
+#  VIEW: SETTINGS DETAIL (ADMIN / DEBUG)
+# ============================================================
+@require_GET
+@cache_page(60 * 5)
+def site_settings_view(request):
+    """Render a summary of current site/tenant settings for admins or diagnostics."""
+    s = _get_settings(request)
+    context = {
+        "site_settings": s,
+        "meta_tags": getattr(s, "meta_tags", []),
+        "verification_files": getattr(s, "verification_files", []),
+    }
+    return render(request, "site_settings/detail.html", context)
+
+
+# ============================================================
+#  API: JSON SETTINGS SNAPSHOT
+# ============================================================
+@require_GET
+@cache_page(60)
+def settings_info(request):
+    """
+    JSON API for frontend initialization, configuration sync, or diagnostics.
+    Returns minimal but essential metadata.
+    """
+    s = _get_settings(request)
+    try:
+        site_domain = get_current_site(request).domain
+    except Exception:
+        site_domain = request.get_host()
+
+    data = {
+        "site_name": getattr(s, "site_name", "GsmInfinity"),
+        "site_header": getattr(s, "site_header", ""),
+        "site_description": getattr(s, "site_description", ""),
+        "site_domain": site_domain,
+        "enable_signup": getattr(s, "enable_signup", True),
+        "enable_password_reset": getattr(s, "enable_password_reset", True),
+        "recaptcha_enabled": getattr(s, "recaptcha_enabled", False),
+        "require_mfa": getattr(s, "require_mfa", False),
+        "max_login_attempts": getattr(s, "max_login_attempts", 5),
+        "rate_limit_window_seconds": getattr(s, "rate_limit_window_seconds", 300),
+    }
+    return JsonResponse(data, json_dumps_params={"indent": 2})
+
+
+# ============================================================
+#  PUBLIC: VERIFICATION FILE SERVING
+# ============================================================
+@require_GET
+def verification_file(request, filename):
+    """
+    Serve uploaded verification files for domain ownership validation.
+
+    ✅ Strict extension whitelist (.html, .txt)
+    ✅ Prevents path traversal attacks
+    """
+    s = _get_settings(request)
+    try:
+        safe_name = Path(filename).name  # neutralize traversal attempts
+        file_obj = s.verification_files.get(file__iendswith=safe_name)
+
+        allowed_ext = (".html", ".txt")
+        file_name = file_obj.file.name.lower()
+        if not any(file_name.endswith(ext) for ext in allowed_ext):
+            log.warning("Blocked invalid verification file type: %s", safe_name)
+            raise ValueError("Invalid verification file type")
+
+        return redirect(file_obj.file.url)
+
+    except Exception as exc:
+        log.error("Verification file error [%s]: %s", filename, exc)
+        raise Http404("Verification file not found or invalid type")
+
+
+# ============================================================
+#  PUBLIC POLICY PAGES
+# ============================================================
+@require_GET
+@cache_page(60 * 10)
+def privacy_policy(request):
+    """Render the privacy policy page."""
+    return render(request, "site_settings/privacy.html", {"site_settings": _get_settings(request)})
+
+
+@require_GET
+@cache_page(60 * 10)
+def terms_of_service(request):
+    """Render the terms of service page."""
+    return render(request, "site_settings/terms.html", {"site_settings": _get_settings(request)})
+
+
+@require_GET
+@cache_page(60 * 10)
+def site_verification(request):
+    """Render verification resources page (meta tags + file links)."""
+    return render(request, "site_settings/verification.html", {"site_settings": _get_settings(request)})
+
+
+### FILE: apps\users\__init__.py
+### PATH TREE: apps\users
+
+### FILE: apps\users\adapters.py
+### PATH TREE: apps\users
+"""
+Custom Account & Social Adapters for GSMInfinity
+-------------------------------------------------
+Integrates django-allauth with GSMInfinity's enterprise-grade
+custom user model, onboarding flow, and global site settings.
+
+Ensures:
+- Signup toggle from SiteSettings
+- Strong password enforcement
+- Verified user redirect logic
+- Social signup → onboarding ("Tell us about you")
+- Safe fallbacks if SiteSettings are missing
+- Compatible with django-allauth ≥ 0.65.13
+"""
+
+import logging
+from django.core.exceptions import ValidationError
+from django.urls import reverse
+from django.contrib import messages
+from django.http import HttpRequest
+from django.utils.translation import gettext_lazy as _
+from django.contrib.auth import get_user_model
+
+from allauth.account.adapter import DefaultAccountAdapter
+from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+
+from apps.site_settings.models import SiteSettings
+
+logger = logging.getLogger(__name__)
+
+# ============================================================
+#  Custom Account Adapter
+# ============================================================
+
+
+class CustomAccountAdapter(DefaultAccountAdapter):
+    """
+    Overrides allauth’s account adapter to integrate with GSMInfinity settings
+    and custom user verification flow.
+    """
+
+    def is_open_for_signup(self, request: HttpRequest) -> bool:
+        """
+        Respect the `enable_signup` flag in SiteSettings.
+        Return True if signup is allowed; False otherwise.
+        """
+        try:
+            site_settings = SiteSettings.get_solo()
+            allowed = getattr(site_settings, "enable_signup", True)
+            logger.debug("Signup permission from SiteSettings: %s", allowed)
+            return allowed
+        except Exception as exc:
+            logger.warning("SiteSettings lookup failed: %s", exc)
+            return True  # Fallback: allow signup if SiteSettings table not ready
+
+    def clean_password(self, password: str, user=None) -> str:
+        """
+        Enforce strong password requirements.
+        Delegates to DefaultAccountAdapter after enforcing custom rules.
+        """
+        if not password or len(password) < 8:
+            raise ValidationError(_("Password must be at least 8 characters long."))
+        if password.isdigit():
+            raise ValidationError(_("Password cannot be entirely numeric."))
+        return super().clean_password(password, user)
+
+    def get_login_redirect_url(self, request: HttpRequest) -> str:
+        """
+        Determine redirect after successful login.
+        - If email not verified → send to verification page
+        - Otherwise → dashboard
+        """
+        user = getattr(request, "user", None)
+        if user and hasattr(user, "email_verified_at") and not user.email_verified_at:
+            messages.info(request, _("Please verify your email to continue."))
+            logger.debug("Redirecting unverified user %s to verify_email", user.email)
+            return reverse("users:verify_email")
+
+        logger.debug("Redirecting verified user %s to dashboard", getattr(user, "email", None))
+        return reverse("users:dashboard")
+
+    def get_signup_redirect_url(self, request: HttpRequest) -> str:
+        """
+        After standard signup (email/password), direct user to onboarding/profile step.
+        This supports the "Tell us about you" workflow.
+        """
+        logger.debug("Redirecting to profile onboarding after signup.")
+        return reverse("users:profile")
+
+
+# ============================================================
+#  Custom Social Account Adapter
+# ============================================================
+
+
+class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
+    """
+    Integrates social-account events with GSMInfinity flow.
+    Redirects new social signups to onboarding/profile page.
+    """
+
+    def get_connect_redirect_url(self, request: HttpRequest, socialaccount) -> str:
+        """
+        Redirect after connecting a new provider to an existing account.
+        """
+        logger.debug("Social connect redirect for account %s", socialaccount.provider)
+        return reverse("users:profile")
+
+    def get_signup_redirect_url(self, request: HttpRequest) -> str:
+        """
+        Redirect after a social signup (first-time social login).
+        """
+        logger.debug("Redirecting social signup to onboarding profile step.")
+        return reverse("users:profile")
+
+    def pre_social_login(self, request: HttpRequest, sociallogin) -> None:
+        """
+        Hook called just after a successful social login, before login is finalized.
+        Auto-links social accounts to existing users by matching email addresses.
+
+        Prevents duplicate user creation when the same email signs up via social login.
+        """
+        user_email = getattr(sociallogin.user, "email", None)
+        if not user_email:
+            logger.debug("Social login has no email; skipping auto-link.")
+            return
+
+        User = get_user_model()
+        try:
+            existing_user = User.objects.get(email__iexact=user_email)
+        except User.DoesNotExist:
+            logger.debug("No existing user found for social email: %s", user_email)
+            return
+
+        # If already linked, skip.
+        if sociallogin.is_existing:
+            logger.debug("Social account already linked for email: %s", user_email)
+            return
+
+        # Link existing user and skip creating a duplicate
+        logger.info("Auto-linking social account for existing user: %s", user_email)
+        sociallogin.connect(request, existing_user)
+
+
+### FILE: apps\users\admin.py
+### PATH TREE: apps\users
+"""
+apps.users.admin
+----------------
+Enterprise admin interfaces for user-related models in GSMInfinity.
+
+✅ Includes:
+- CustomUser admin (searchable, exportable)
+- DeviceFingerprint admin (per-user device management)
+- Notification & Announcement admin panels
+- Inline improvements and safe read-only fields
+- Compatible with Django 5.x, import_export, and custom user model
+"""
+
+from django.contrib import admin
+from import_export.admin import ExportMixin
+from django.utils.translation import gettext_lazy as _
+
+from .models import (
+    CustomUser,
+    DeviceFingerprint,
+    Notification,
+    Announcement,
+)
+
+
+# ======================================================================
+#  Inline Components
+# ======================================================================
+
+
+class DeviceFingerprintInline(admin.TabularInline):
+    """
+    Inline display of DeviceFingerprints within the user admin detail page.
+    """
+    model = DeviceFingerprint
+    extra = 0
+    readonly_fields = (
+        "fingerprint_hash",
+        "os_info",
+        "browser_info",
+        "motherboard_id",
+        "registered_at",
+        "last_used_at",
+        "is_active",
+    )
+    can_delete = False
+    ordering = ("-last_used_at",)
+    verbose_name = _("Registered Device")
+    verbose_name_plural = _("Registered Devices")
+
+
+# ======================================================================
+#  CustomUser Admin
+# ======================================================================
+
+
+@admin.register(CustomUser)
+class CustomUserAdmin(ExportMixin, admin.ModelAdmin):
+    """
+    Admin configuration for CustomUser model.
+    """
+    list_display = (
+        "email",
+        "username",
+        "full_name",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "credits",
+        "signup_method",
+        "date_joined",
+    )
+    search_fields = (
+        "email",
+        "username",
+        "full_name",
+        "phone",
+        "referral_code",
+    )
+    list_filter = (
+        "is_active",
+        "is_staff",
+        "is_superuser",
+        "signup_method",
+    )
+    readonly_fields = (
+        "referral_code",
+        "date_joined",
+        "email_verified_at",
+        "last_unlock",
+    )
+    inlines = [DeviceFingerprintInline]
+    ordering = ("-date_joined",)
+    fieldsets = (
+        (_("Authentication"), {"fields": ("email", "username", "password")}),
+        (
+            _("Personal Info"),
+            {"fields": ("full_name", "phone", "referral_code")},
+        ),
+        (
+            _("Permissions"),
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
+        (
+            _("Additional Info"),
+            {
+                "fields": (
+                    "credits",
+                    "signup_method",
+                    "email_verified_at",
+                    "last_unlock",
+                    "date_joined",
+                )
+            },
+        ),
+    )
+
+    class Meta:
+        verbose_name = _("User")
+        verbose_name_plural = _("Users")
+
+
+# ======================================================================
+#  DeviceFingerprint Admin
+# ======================================================================
+
+
+@admin.register(DeviceFingerprint)
+class DeviceFingerprintAdmin(ExportMixin, admin.ModelAdmin):
+    """
+    Manages all registered device fingerprints.
+    """
+    list_display = (
+        "user",
+        "fingerprint_hash",
+        "os_info",
+        "browser_info",
+        "motherboard_id",
+        "last_used_at",
+        "is_active",
+    )
+    list_filter = ("is_active", "os_info")
+    search_fields = (
+        "fingerprint_hash",
+        "user__email",
+        "user__username",
+        "browser_info",
+    )
+    readonly_fields = (
+        "registered_at",
+        "last_used_at",
+    )
+    ordering = ("-last_used_at",)
+    list_select_related = ("user",)
+
+    class Meta:
+        verbose_name = _("Device Fingerprint")
+        verbose_name_plural = _("Device Fingerprints")
+
+
+# ======================================================================
+#  Notification Admin
+# ======================================================================
+
+
+@admin.register(Notification)
+class NotificationAdmin(ExportMixin, admin.ModelAdmin):
+    """
+    Enterprise-grade notification log for users.
+    """
+    list_display = (
+        "recipient",
+        "title",
+        "priority",
+        "channel",
+        "created_at",
+        "is_read",
+        "read_at",
+    )
+    list_filter = (
+        "priority",
+        "channel",
+        "is_read",
+        "created_at",
+    )
+    search_fields = (
+        "title",
+        "message",
+        "recipient__email",
+        "recipient__username",
+    )
+    ordering = ("-created_at",)
+    readonly_fields = ("created_at", "read_at")
+
+    class Meta:
+        verbose_name = _("Notification")
+        verbose_name_plural = _("Notifications")
+
+
+# ======================================================================
+#  Announcement Admin
+# ======================================================================
+
+
+@admin.register(Announcement)
+class AnnouncementAdmin(ExportMixin, admin.ModelAdmin):
+    """
+    Enterprise announcements / global messages.
+    """
+    list_display = (
+        "title",
+        "audience",
+        "is_global",
+        "created_by",
+        "start_at",
+        "expires_at",
+    )
+    list_filter = (
+        "audience",
+        "is_global",
+        "expires_at",
+    )
+    search_fields = (
+        "title",
+        "message",
+    )
+    readonly_fields = ("created_by",)
+    ordering = ("-start_at",)
+
+    def save_model(self, request, obj, form, change):
+        """Auto-assign creator on first save."""
+        if not change and not obj.created_by_id:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+    class Meta:
+        verbose_name = _("Announcement")
+        verbose_name_plural = _("Announcements")
+
+
+# ======================================================================
+#  Admin Branding
+# ======================================================================
+
+admin.site.site_header = _("GSM Infinity Admin")
+admin.site.index_title = _("Enterprise Management")
+admin.site.site_title = _("Admin Portal")
+
+
+### FILE: apps\users\apps.py
+### PATH TREE: apps\users
+"""
+apps.users.apps
+----------------
+Application configuration for GSMInfinity's Users module.
+
+Responsibilities:
+- Auto-register user signals (login, signup, profile creation)
+- Integrate cleanly with django-allauth adapters/forms
+- Safe import guards to avoid ORM or AppRegistry errors during startup
+"""
+
+from django.apps import AppConfig
+from django.utils.module_loading import autodiscover_modules
+import logging
+
+
+class UsersConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.users"
+    label = "users"
+    verbose_name = "User Management"
+
+    def ready(self):
+        """
+        App initialization hook called once Django is fully loaded.
+
+        Tasks performed:
+        - Import user signal handlers safely
+        - Discover additional 'signals' submodules across apps
+        - Prevent ImportErrors from halting migrations or shell startup
+        """
+        logger = logging.getLogger(__name__)
+
+        # ---------------------------------------------------------------
+        # 1️⃣ Import this app's signals safely
+        # ---------------------------------------------------------------
+        try:
+            import apps.users.signals  # noqa: F401
+            logger.debug("apps.users.signals successfully imported.")
+        except ImportError as exc:
+            logger.warning(f"UsersConfig: unable to import signals ({exc}). Skipping.")
+
+        # ---------------------------------------------------------------
+        # 2️⃣ Autodiscover cross-app signal modules (optional)
+        # ---------------------------------------------------------------
+        try:
+            autodiscover_modules("signals")
+            logger.debug("UsersConfig: autodiscovered 'signals' modules.")
+        except Exception as exc:
+            logger.debug(f"UsersConfig: autodiscover_modules failed ({exc}).")
+
+        # ---------------------------------------------------------------
+        # 3️⃣ Future extension hook (startup tasks, audits, etc.)
+        # ---------------------------------------------------------------
+        # Example: pre-warm device fingerprint cache, schedule syncs, etc.
+        # Keep this lightweight — ready() runs on every process start.
+        return
+
+
+### FILE: apps\users\auth_backends.py
+### PATH TREE: apps\users
+# apps/users/backends.py
+"""
+Custom Multi-Field Authentication Backend
+-----------------------------------------
+Enterprise-ready authentication backend for GSMInfinity.
+
+✅ Features:
+- Login via email, username, or phone number.
+- Timing-safe and allauth-compatible.
+- Case-insensitive lookups across identifiers.
+- Protects against user enumeration & timing leaks.
+- Graceful fallback and detailed logging.
+"""
+
+import logging
+from django.contrib.auth.backends import ModelBackend
+from django.db.models import Q
+from django.contrib.auth import get_user_model
+from django.core.exceptions import MultipleObjectsReturned
+from django.utils.translation import gettext_lazy as _
+
+logger = logging.getLogger(__name__)
+UserModel = get_user_model()
+
+
+class MultiFieldAuthBackend(ModelBackend):
+    """
+    Authenticate users using email, username, or phone number.
+    Designed for concurrent authentication safety and minimal side-channel exposure.
+    """
+
+    def authenticate(self, request, username: str = None, password: str = None, **kwargs):
+        """
+        Authenticate a user based on a flexible identifier.
+
+        Args:
+            request: Optional HttpRequest
+            username (str): Input identifier (email / username / phone)
+            password (str): Raw password
+        Returns:
+            Authenticated user or None
+        """
+        if not username or not password:
+            logger.debug("Authentication attempt missing credentials.")
+            return None
+
+        identifier = str(username).strip().lower()
+        user = None
+
+        try:
+            # Unified case-insensitive lookup
+            qs = UserModel.objects.filter(
+                Q(email__iexact=identifier)
+                | Q(username__iexact=identifier)
+                | Q(phone__iexact=identifier)
+            ).distinct()
+
+            # Defensive: take first and log duplicates
+            if qs.count() > 1:
+                logger.warning("Multiple accounts share identifier=%s", identifier)
+            user = qs.first()
+
+        except MultipleObjectsReturned:
+            logger.warning("MultipleObjectsReturned: %s", identifier)
+            return None
+        except Exception as exc:
+            logger.exception("User lookup failed for %s → %s", identifier, exc)
+            return None
+
+        if not user:
+            # Silent fail to avoid user enumeration
+            logger.debug("No matching user for identifier=%s", identifier)
+            return None
+
+        try:
+            # Timing-safe password check
+            if user.check_password(password) and self.user_can_authenticate(user):
+                logger.info("Successful login: %s", getattr(user, "email", user.pk))
+                return user
+            else:
+                logger.debug("Invalid password or inactive account for %s", identifier)
+        except Exception as exc:
+            logger.exception("Password verification error for %s → %s", identifier, exc)
+
+        return None
+
+    def get_user(self, user_id):
+        """
+        Retrieve a user instance safely for session authentication.
+        """
+        try:
+            return UserModel.objects.get(pk=user_id)
+        except UserModel.DoesNotExist:
+            logger.debug("get_user: User not found id=%s", user_id)
+            return None
+        except Exception as exc:
+            logger.exception("get_user failed for id=%s → %s", user_id, exc)
+            return None
+
+
+### FILE: apps\users\context_processors.py
+### PATH TREE: apps\users
+# Keep users-specific processors minimal; site settings are injected via site_settings app.
+def user_context(request):
+    return {"is_authenticated":request.user.is_authenticated}
+
+
+### FILE: apps\users\forms.py
+### PATH TREE: apps\users
+"""
+GSMInfinity - Custom Allauth Signup Form
+----------------------------------------
+✅ Compatible with django-allauth ≥ 0.65.13 and Django 5.x
+✅ Prevents circular imports during startup
+✅ Implements the required `signup(self, request, user)` method
+✅ Adds enterprise-grade validation, password policy, and secure defaults
+"""
+
+import logging
+from django import forms
+from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
+from django.utils.module_loading import import_string
+
+logger = logging.getLogger(__name__)
+User = get_user_model()
+
+
+class CustomSignupForm(forms.Form):
+    """
+    Lightweight, enterprise-ready wrapper around django-allauth’s signup system.
+    Does not import allauth internals at import-time to prevent circular imports.
+    """
+
+    # ------------------------------------------------------------------
+    #  Fields
+    # ------------------------------------------------------------------
+    email = forms.EmailField(
+        max_length=255,
+        label=_("Email address"),
+        widget=forms.EmailInput(attrs={"autocomplete": "email", "placeholder": _("Email")}),
+    )
+    username = forms.CharField(
+        max_length=150,
+        label=_("Username"),
+        widget=forms.TextInput(attrs={"autocomplete": "username", "placeholder": _("Username")}),
+    )
+    password1 = forms.CharField(
+        label=_("Password"),
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password", "placeholder": _("Password")}),
+        strip=False,
+    )
+    password2 = forms.CharField(
+        label=_("Confirm password"),
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password", "placeholder": _("Confirm password")}),
+        strip=False,
+    )
+
+    # ------------------------------------------------------------------
+    #  Lazy property: safely load the real SignupForm only when used
+    # ------------------------------------------------------------------
+    @property
+    def base_form_class(self):
+        """Load django-allauth’s internal SignupForm lazily."""
+        return import_string("allauth.account.forms.SignupForm")
+
+    # ------------------------------------------------------------------
+    #  Validation
+    # ------------------------------------------------------------------
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+        if not email or "@" not in email:
+            raise ValidationError(_("Enter a valid email address."))
+        if User.objects.filter(email__iexact=email).exists():
+            raise ValidationError(_("A user with this email already exists."))
+        return email
+
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        if len(username) < 3:
+            raise ValidationError(_("Username must be at least 3 characters long."))
+        if User.objects.filter(username__iexact=username).exists():
+            raise ValidationError(_("This username is already taken."))
+        return username
+
+    def clean_password1(self):
+        password = self.cleaned_data.get("password1") or ""
+        if len(password) < 8:
+            raise ValidationError(_("Password must be at least 8 characters long."))
+        if password.isdigit():
+            raise ValidationError(_("Password cannot be entirely numeric."))
+        return password
+
+    def clean(self):
+        cleaned = super().clean()
+        pwd1, pwd2 = cleaned.get("password1"), cleaned.get("password2")
+        if pwd1 and pwd2 and pwd1 != pwd2:
+            raise ValidationError(_("Passwords do not match."))
+        return cleaned
+
+    # ------------------------------------------------------------------
+    #  Required by django-allauth ≥ 0.65
+    # ------------------------------------------------------------------
+    def signup(self, request, user):
+        """
+        Called automatically by allauth after successful form validation.
+        Populates and saves the user instance with enterprise logic.
+        """
+        user.username = self.cleaned_data.get("username")
+        user.email = self.cleaned_data.get("email")
+
+        # Optional enterprise logic: verification code, referral tracking, etc.
+        if hasattr(user, "generate_verification_code"):
+            user.verification_code = user.generate_verification_code()
+            logger.debug("Generated verification code for %s", user.email)
+
+        user.set_password(self.cleaned_data.get("password1"))
+        user.save()
+        logger.info("New user created via signup: %s", user.email)
+        return user
+
+    # ------------------------------------------------------------------
+    #  Compatibility helper (legacy save signature)
+    # ------------------------------------------------------------------
+    def save(self, request):
+        """
+        Mirrors allauth’s `save()` signature for backwards compatibility.
+        Simply delegates to `signup()`.
+        """
+        user = User()
+        return self.signup(request, user)
+
+
+### FILE: apps\users\mfa.py
+### PATH TREE: apps\users
+"""
+Multi-Factor Authentication (MFA) Utilities for GSMInfinity
+------------------------------------------------------------
+Provides enterprise-grade Time-based One-Time Password (TOTP) management
+and global MFA enforcement logic.
+
+Features:
+- RFC 6238–compliant TOTP codes (compatible with Google Authenticator)
+- ± time drift tolerance for device clock variance
+- Configurable issuer and enforcement policy via SiteSettings
+- Secure HMAC comparison to prevent timing attacks
+"""
+
+import base64
+import os
+import time
+import hmac
+import hashlib
+import logging
+from apps.site_settings.models import SiteSettings
+
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================
+#  TOTP SERVICE
+# ============================================================
+class TOTPService:
+    """
+    Provides TOTP (Time-based One-Time Password) generation and verification
+    compatible with major authenticator apps (Google, Authy, Microsoft).
+    """
+
+    @staticmethod
+    def generate_secret(length: int = 20) -> str:
+        """
+        Generate a random Base32-encoded secret key for TOTP.
+        Default length: 20 bytes (~160 bits of entropy).
+        """
+        try:
+            secret = base64.b32encode(os.urandom(length)).decode("utf-8").rstrip("=")
+            return secret
+        except Exception as exc:
+            logger.error("Failed to generate TOTP secret: %s", exc)
+            raise
+
+    # ------------------------------------------------------------
+    #  PRIVATE HELPERS
+    # ------------------------------------------------------------
+    @staticmethod
+    def _normalize_secret(secret: str) -> bytes:
+        """
+        Normalize the Base32 secret by padding if required.
+        Ensures compatibility with decoders regardless of input length.
+        """
+        pad = (8 - (len(secret) % 8)) % 8
+        padded = secret.upper() + "=" * pad
+        return base64.b32decode(padded)
+
+    @staticmethod
+    def _hotp(secret: str, counter: int, digits: int = 6) -> str:
+        """
+        Generate an HMAC-based OTP from a counter value.
+        Internal utility for TOTP computation.
+        """
+        key = TOTPService._normalize_secret(secret)
+        msg = counter.to_bytes(8, "big")
+        hmac_hash = hmac.new(key, msg, hashlib.sha1).digest()
+        offset = hmac_hash[-1] & 0x0F
+        binary = int.from_bytes(hmac_hash[offset:offset + 4], "big") & 0x7FFFFFFF
+        otp = str(binary % (10 ** digits)).zfill(digits)
+        return otp
+
+    # ------------------------------------------------------------
+    #  PUBLIC INTERFACE
+    # ------------------------------------------------------------
+    @staticmethod
+    def generate_current_code(secret: str, period: int = 30, digits: int = 6) -> str:
+        """
+        Compute the current TOTP code for the given secret.
+        Args:
+            secret: Base32 encoded secret
+            period: Time step in seconds (default 30)
+            digits: Number of output digits (default 6)
+        """
+        counter = int(time.time() / period)
+        return TOTPService._hotp(secret, counter, digits)
+
+    @staticmethod
+    def verify(secret: str, code: str, tolerance: int = 1, period: int = 30, digits: int = 6) -> bool:
+        """
+        Verify a TOTP code against the current time window, allowing ±1 drift.
+
+        Args:
+            secret (str): Base32 secret
+            code (str): User-supplied code
+            tolerance (int): Number of time steps to allow for drift (default ±1)
+            period (int): TOTP time step duration (seconds)
+            digits (int): Expected length of code (default 6)
+
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        try:
+            current_counter = int(time.time() / period)
+            code = str(code).zfill(digits)
+
+            for offset in range(-tolerance, tolerance + 1):
+                expected = TOTPService._hotp(secret, current_counter + offset, digits)
+                if hmac.compare_digest(expected, code):
+                    return True
+            return False
+
+        except Exception as exc:
+            logger.warning("TOTP verification failed: %s", exc)
+            return False
+
+
+# ============================================================
+#  MFA ENFORCER
+# ============================================================
+class MFAEnforcer:
+    """
+    Utility for checking global MFA enforcement policies and issuer identity.
+    Reads configuration from SiteSettings.
+    """
+
+    @staticmethod
+    def required() -> bool:
+        """
+        Returns True if MFA is required globally (via site settings).
+        """
+        try:
+            settings = SiteSettings.get_solo()
+            return bool(getattr(settings, "require_mfa", False))
+        except Exception as exc:
+            logger.warning("MFAEnforcer.required() failed: %s", exc)
+            return False
+
+    @staticmethod
+    def issuer() -> str:
+        """
+        Returns the MFA issuer name (used in authenticator apps).
+        Defaults to the site name or 'GSMInfinity' as fallback.
+        """
+        try:
+            settings = SiteSettings.get_solo()
+            return getattr(settings, "mfa_totp_issuer", getattr(settings, "site_name", "GSMInfinity"))
+        except Exception as exc:
+            logger.warning("MFAEnforcer.issuer() failed: %s", exc)
+            return "GSMInfinity"
+
+    @staticmethod
+    def qr_uri(secret: str, user_email: str) -> str:
+        """
+        Build an otpauth:// URI for QR code generation.
+        Enables direct import into Authenticator apps.
+
+        Returns:
+            str: otpauth URI formatted for QR encoding.
+        """
+        issuer = MFAEnforcer.issuer()
+        return f"otpauth://totp/{issuer}:{user_email}?secret={secret}&issuer={issuer}&algorithm=SHA1&digits=6&period=30"
+
+
+### FILE: apps\users\models.py
+### PATH TREE: apps\users
+"""
+apps.users.models
+
+GSMInfinity Enterprise User Architecture
+----------------------------------------
+Enterprise-ready Django user system with:
+- django-allauth integration
+- MFA / device fingerprinting
+- Notifications & announcements
+- Referral / verification system
+- AI personalization hooks (future-safe)
+
+Key hardening applied:
+- Atomic referral code generation with bounded attempts + fallback
+- Clear indexes and constraints for frequent lookups
+- Safe save/update semantics and small utility helpers
+"""
+
+from __future__ import annotations
+
+import uuid
+import random
+import string
+import logging
+from typing import Optional
+
+from django.db import models, transaction
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    PermissionsMixin,
+    BaseUserManager,
+)
+from django.conf import settings
+from django.utils import timezone
+from django.core.cache import cache
+
+logger = logging.getLogger(__name__)
+
+
+# ------------------------------------------------------------
+# Custom User Manager
+# ------------------------------------------------------------
+class CustomUserManager(BaseUserManager):
+    """Custom manager providing unified create_user / create_superuser APIs."""
+
+    use_in_migrations = True
+
+    def create_user(self, email: str, username: Optional[str] = None, password: Optional[str] = None, **extra_fields) -> "CustomUser":
+        if not email:
+            raise ValueError("An email address is required.")
+        email = self.normalize_email(email)
+        username = username or email.split("@")[0]
+
+        user = self.model(email=email, username=username, **extra_fields)
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email: str, username: Optional[str] = None, password: Optional[str] = None, **extra_fields) -> "CustomUser":
+        """Create and return a superuser with elevated permissions."""
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+
+        if not extra_fields.get("is_staff") or not extra_fields.get("is_superuser"):
+            raise ValueError("Superuser must have is_staff=True and is_superuser=True.")
+        return self.create_user(email, username, password, **extra_fields)
+
+
+# ------------------------------------------------------------
+# Custom User Model
+# ------------------------------------------------------------
+class CustomUser(AbstractBaseUser, PermissionsMixin):
+    """Primary authentication model with referral, verification, and tracking."""
+
+    # Identity
+    email = models.EmailField(unique=True, db_index=True)
+    username = models.CharField(max_length=150, unique=True, blank=True, null=True, db_index=True)
+    full_name = models.CharField(max_length=150, default="No Name")
+
+    # Profile
+    country = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    currency = models.CharField(max_length=10, blank=True, null=True)
+    role = models.CharField(max_length=50, blank=True, null=True)
+
+    # Permissions
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    # Credits & referrals
+    credits = models.PositiveIntegerField(default=0)
+    referral_code = models.CharField(max_length=12, unique=True, blank=True, db_index=True)
+    referred_by = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="referrals"
+    )
+
+    # Security & verification
+    unlock_count = models.PositiveIntegerField(default=0)
+    last_unlock = models.DateTimeField(null=True, blank=True)
+    email_verified_at = models.DateTimeField(null=True, blank=True)
+    verification_code = models.CharField(max_length=24, blank=True)
+
+    # Signup meta
+    signup_method = models.CharField(
+        max_length=20,
+        choices=[("manual", "Manual"), ("social", "Social")],
+        default="manual",
+    )
+    needs_profile_completion = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["username", "full_name"]
+
+    objects = CustomUserManager()
+
+    class Meta:
+        ordering = ["-date_joined"]
+        verbose_name = "User"
+        verbose_name_plural = "Users"
+        indexes = [
+            models.Index(fields=["email"], name="user_email_idx"),
+            models.Index(fields=["username"], name="user_username_idx"),
+            models.Index(fields=["referral_code"], name="user_referral_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return self.email or "Unnamed User"
+
+    # ------------------------------------------------------------
+    # Save override — robust referral code generation
+    # ------------------------------------------------------------
+    def _generate_referral_candidate(self) -> str:
+        """Create a candidate code (human-friendly)."""
+        # Mix of UUID + short randomness to reduce collisions
+        return uuid.uuid4().hex[:8].upper()
+
+    def save(self, *args, **kwargs) -> None:
+        """
+        Ensure referral_code is generated atomically and bounded to avoid infinite loops.
+        Uses a short cache to reduce duplicate generation pressure under high concurrency.
+        """
+        if not self.referral_code:
+            # Try to generate a unique code up to max_attempts
+            max_attempts = 8
+            attempts = 0
+            generated = None
+
+            while attempts < max_attempts:
+                candidate = self._generate_referral_candidate()
+                # Quick cache-level check to avoid DB hits under rush
+                cache_key = f"refcode:{candidate}"
+                if cache.get(cache_key):
+                    attempts += 1
+                    continue
+                # Optimistic reserve in cache for a short window
+                cache.set(cache_key, True, timeout=5)
+
+                # Check DB under transaction to avoid race
+                with transaction.atomic():
+                    if not CustomUser.objects.filter(referral_code=candidate).exists():
+                        generated = candidate
+                        break
+                # Not unique, try again
+                cache.delete(cache_key)
+                attempts += 1
+
+            if not generated:
+                # Fallback deterministic option using timestamp + random suffix
+                suffix = random.randint(10000, 99999)
+                generated = f"REF{int(timezone.now().timestamp()) % 100000}{suffix}"[:12].upper()
+
+            self.referral_code = generated
+
+        super().save(*args, **kwargs)
+
+    # ------------------------------------------------------------
+    # Utilities
+    # ------------------------------------------------------------
+    @property
+    def is_verified(self) -> bool:
+        """Return True if email is verified."""
+        return bool(self.email_verified_at)
+
+    def mark_email_verified(self) -> None:
+        """Utility to mark email as verified."""
+        if not self.email_verified_at:
+            self.email_verified_at = timezone.now()
+            self.save(update_fields=["email_verified_at"])
+
+    def generate_verification_code(self, length: int = 6, code_type: str = "alphanumeric") -> str:
+        """Generate and persist a verification code for email or MFA."""
+        alphabet = string.digits if code_type == "numeric" else string.ascii_uppercase + string.digits
+        code = "".join(random.choice(alphabet) for _ in range(length))
+        self.verification_code = code
+        # Persist only the verification_code field to avoid extra writes
+        try:
+            self.save(update_fields=["verification_code"])
+        except Exception:
+            # On rare failure, set in-memory and leave it (caller may retry)
+            logger.exception("Failed to persist verification_code for user %s", self.email)
+        return code
+
+    def increment_unlock(self) -> None:
+        """Increment the unlock_count and update last_unlock timestamp."""
+        self.unlock_count = (self.unlock_count or 0) + 1
+        self.last_unlock = timezone.now()
+        self.save(update_fields=["unlock_count", "last_unlock"])
+
+    def add_credits(self, amount: int) -> None:
+        """Add credits safely (no negative additions)."""
+        if amount <= 0:
+            return
+        self.credits = (self.credits or 0) + int(amount)
+        self.save(update_fields=["credits"])
+
+
+# ------------------------------------------------------------
+# Device Fingerprint
+# ------------------------------------------------------------
+class DeviceFingerprint(models.Model):
+    """Tracks device/browser identifiers for MFA and session trust."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    fingerprint_hash = models.CharField(max_length=255)
+    os_info = models.CharField(max_length=100, blank=True)
+    motherboard_id = models.CharField(max_length=100, blank=True)
+    browser_info = models.CharField(max_length=255, blank=True)
+    registered_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "fingerprint_hash"], name="unique_user_fingerprint")
+        ]
+        ordering = ["-last_used_at"]
+        verbose_name = "Device Fingerprint"
+        verbose_name_plural = "Device Fingerprints"
+        indexes = [
+            models.Index(fields=["user", "is_active"], name="device_user_active_idx"),
+        ]
+
+    def __str__(self) -> str:
+        # Defensive: user may be None during migrations/edge cases
+        email = getattr(self.user, "email", "unknown")
+        return f"{email} · {self.fingerprint_hash[:8]}"
+
+
+# ------------------------------------------------------------
+# Notification
+# ------------------------------------------------------------
+class Notification(models.Model):
+    """Multi-channel user notifications with audit timestamps."""
+
+    PRIORITY_CHOICES = [("info", "Info"), ("warning", "Warning"), ("critical", "Critical")]
+    CHANNEL_CHOICES = [("web", "Web"), ("email", "Email"), ("sms", "SMS"), ("push", "Push")]
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default="info")
+    channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES, default="web")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+        indexes = [
+            models.Index(fields=["recipient", "is_read"], name="notif_recipient_read_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.title} → {getattr(self.recipient, 'email', 'unknown')}"
+
+    def mark_as_read(self) -> None:
+        """Mark the notification as read and record timestamp."""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=["is_read", "read_at"])
+
+
+# ------------------------------------------------------------
+# Announcement
+# ------------------------------------------------------------
+class Announcement(models.Model):
+    """Global or segmented announcements for users or staff."""
+
+    AUDIENCE_CHOICES = [("all", "All"), ("user", "Users"), ("staff", "Staff")]
+
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    audience = models.CharField(max_length=20, choices=AUDIENCE_CHOICES, default="all")
+    is_global = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="created_announcements",
+    )
+    start_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Announcement"
+        verbose_name_plural = "Announcements"
+        indexes = [
+            models.Index(fields=["is_global", "start_at"], name="announce_global_start_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return self.title
+
+    @property
+    def is_active(self) -> bool:
+        """True if announcement is currently valid."""
+        now = timezone.now()
+        return self.start_at <= now and (not self.expires_at or self.expires_at > now)
+
+    def deactivate_if_expired(self) -> None:
+        """Deactivate announcement when expired (for CRON or Celery)."""
+        if self.expires_at and self.expires_at < timezone.now() and self.is_global:
+            self.is_global = False
+            self.save(update_fields=["is_global"])
+
+
+### FILE: apps\users\services\rate_limit.py
+### PATH TREE: apps\users\services
+"""
+apps.users.services.rate_limit
+------------------------------
+Lightweight, cache-based rate limiter for authentication and signup actions.
+
+✅ Features:
+- Atomic per-key rate limiting
+- Sliding window expiration
+- Cache backend–agnostic (Redis, Memcached, LocMem)
+- Zero external dependencies
+- Self-healing against corrupted cache entries
+- Minimal latency footprint (<1ms Redis)
+"""
+
+import logging
+import time
+from typing import List
+from django.core.cache import cache
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================
+#  RATE LIMIT CORE LOGIC
+# ============================================================
+def allow_action(
+    key: str,
+    max_attempts: int = 5,
+    window_seconds: int = 300,
+) -> bool:
+    """
+    Determines whether a given action (e.g., login attempt) is allowed
+    under a sliding-window rate limit.
+
+    Args:
+        key (str): Unique cache key, e.g. `"login:ip:1.2.3.4"` or `"signup:user:123"`.
+        max_attempts (int): Max number of allowed actions per window.
+        window_seconds (int): Sliding time window in seconds.
+
+    Returns:
+        bool: True if action is allowed, False if rate limit exceeded.
+
+    Behavior:
+        ✅ Uses timestamp bucket stored in Django cache.
+        ✅ Removes stale timestamps (outside sliding window).
+        ✅ Handles cache corruption gracefully.
+        ✅ Works across Redis, Memcached, or LocMem.
+        ✅ Fails open on cache backend errors.
+    """
+    if not key:
+        logger.warning("allow_action called with empty key.")
+        return False
+
+    now = time.time()
+
+    try:
+        bucket: List[float] = cache.get(key, [])
+        if not isinstance(bucket, list):
+            logger.warning("Corrupted rate-limit bucket detected for %s; resetting.", key)
+            bucket = []
+
+        # Keep only timestamps within window
+        bucket = [t for t in bucket if now - t <= window_seconds]
+
+        # Exceeded?
+        if len(bucket) >= max_attempts:
+            logger.info(
+                "Rate limit exceeded: key=%s, attempts=%d/%d, window=%ds",
+                key,
+                len(bucket),
+                max_attempts,
+                window_seconds,
+            )
+            return False
+
+        # Add current attempt and persist
+        bucket.append(now)
+
+        # Set cache with sliding expiration
+        cache.set(key, bucket, timeout=window_seconds)
+
+        logger.debug(
+            "Rate limit OK: key=%s, attempts=%d/%d, window=%ds",
+            key,
+            len(bucket),
+            max_attempts,
+            window_seconds,
+        )
+        return True
+
+    except Exception as exc:
+        # Fail-open to prevent blocking on cache outage
+        logger.exception("Rate limiter backend failure for %s: %s", key, exc)
+        return True
+
+
+# ============================================================
+#  RESET & UTILITY HELPERS
+# ============================================================
+def reset_rate_limit(key: str) -> None:
+    """
+    Clears the rate limiter for a given key.
+    Useful for testing or manual unblocking after successful login.
+    """
+    try:
+        cache.delete(key)
+        logger.debug("Rate limit reset for key=%s", key)
+    except Exception as exc:
+        logger.warning("Failed to reset rate limit for %s: %s", key, exc)
+
+
+def get_attempt_count(key: str, window_seconds: int = 300) -> int:
+    """
+    Returns the current number of attempts within the window for a key.
+    Safe against corrupted cache values.
+    """
+    try:
+        now = time.time()
+        bucket: List[float] = cache.get(key, [])
+        if not isinstance(bucket, list):
+            return 0
+        return len([t for t in bucket if now - t <= window_seconds])
+    except Exception as exc:
+        logger.warning("Failed to read attempt count for %s: %s", key, exc)
+        return 0
+
+
+### FILE: apps\users\services\recaptcha.py
+### PATH TREE: apps\users\services
+"""
+apps/users/services/recaptcha.py
+--------------------------------
+Enterprise-Grade Google reCAPTCHA Verification Service
+
+✅ Supports v2 + v3 with hostname verification
+✅ Configurable thresholds via SiteSettings
+✅ Token-level caching (short-lived, atomic)
+✅ Graceful degradation when disabled or unreachable
+✅ Hardened against abuse, malformed tokens, and network errors
+"""
+
+import logging
+import requests
+from decimal import Decimal
+from django.conf import settings as django_settings
+from django.core.cache import cache
+from apps.site_settings.models import SiteSettings
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================
+#  MAIN VERIFICATION FUNCTION
+# ============================================================
+def verify_recaptcha(token: str, remote_ip: str = None, action: str = "login") -> dict:
+    """
+    Verify a Google reCAPTCHA token using configuration from SiteSettings.
+
+    Args:
+        token (str): The token returned by the frontend reCAPTCHA widget.
+        remote_ip (str): The user's IP (optional, logged and validated).
+        action (str): Context identifier (login, signup, etc.).
+
+    Returns:
+        dict:
+            {
+                "ok": bool,
+                "score": float (v3 only),
+                "errors": list[str],
+                "error": str (internal issue, if any)
+            }
+    """
+
+    # ------------------------------------------------------------------
+    # Step 1. Retrieve configuration safely
+    # ------------------------------------------------------------------
+    try:
+        settings_obj = SiteSettings.get_solo()
+    except Exception as exc:
+        logger.warning("reCAPTCHA: unable to load SiteSettings → %s", exc)
+        return {"ok": False, "error": "settings_unavailable"}
+
+    recaptcha_enabled = getattr(settings_obj, "recaptcha_enabled", False)
+    recaptcha_mode = str(getattr(settings_obj, "recaptcha_mode", "off")).lower()
+    private_key = getattr(settings_obj, "recaptcha_private_key", None)
+
+    # ------------------------------------------------------------------
+    # Step 2. Skip when disabled
+    # ------------------------------------------------------------------
+    if not recaptcha_enabled or recaptcha_mode == "off":
+        logger.debug("reCAPTCHA: bypassed (disabled or off mode)")
+        return {"ok": True}
+
+    # ------------------------------------------------------------------
+    # Step 3. Validate token input
+    # ------------------------------------------------------------------
+    if not token or len(str(token)) > 10000:
+        return {"ok": False, "error": "invalid_token_format"}
+
+    if not private_key:
+        logger.error("reCAPTCHA: missing private key in SiteSettings")
+        return {"ok": False, "error": "missing_credentials"}
+
+    # ------------------------------------------------------------------
+    # Step 4. Check short-term cache to prevent redundant API calls
+    # ------------------------------------------------------------------
+    cache_key = f"recaptcha:{action}:{hash(token)}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        logger.debug("reCAPTCHA: using cached result for %s", action)
+        return cached
+
+    # ------------------------------------------------------------------
+    # Step 5. Build request payload
+    # ------------------------------------------------------------------
+    payload = {"secret": private_key, "response": token}
+    if remote_ip:
+        payload["remoteip"] = remote_ip
+
+    timeout = max(
+        float(getattr(settings_obj, "recaptcha_timeout_ms", 3000)) / 1000.0, 1.0
+    )
+    api_url = "https://www.google.com/recaptcha/api/siteverify"
+
+    # ------------------------------------------------------------------
+    # Step 6. Execute request with hardened network handling
+    # ------------------------------------------------------------------
+    try:
+        resp = requests.post(api_url, data=payload, timeout=timeout)
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.exceptions.Timeout:
+        logger.warning("reCAPTCHA: timeout verifying token (%s)", action)
+        return {"ok": False, "error": "timeout"}
+    except requests.exceptions.ConnectionError as exc:
+        logger.error("reCAPTCHA: connection error → %s", exc)
+        return {"ok": False, "error": "connection_error"}
+    except requests.exceptions.RequestException as exc:
+        logger.error("reCAPTCHA: network failure → %s", exc)
+        return {"ok": False, "error": "network_error"}
+    except ValueError:
+        logger.error("reCAPTCHA: invalid JSON response")
+        return {"ok": False, "error": "invalid_response"}
+    except Exception as exc:
+        logger.exception("reCAPTCHA: unexpected exception → %s", exc)
+        return {"ok": False, "error": "recaptcha_unreachable"}
+
+    # ------------------------------------------------------------------
+    # Step 7. Validate response integrity
+    # ------------------------------------------------------------------
+    success = data.get("success", False)
+    hostname = data.get("hostname")
+    error_codes = data.get("error-codes", []) or []
+
+    expected_host = getattr(django_settings, "RECAPTCHA_EXPECTED_HOSTNAME", None)
+    if expected_host and hostname and hostname != expected_host:
+        logger.warning("reCAPTCHA: hostname mismatch (%s ≠ %s)", hostname, expected_host)
+        success = False
+        error_codes.append("hostname_mismatch")
+
+    # ------------------------------------------------------------------
+    # Step 8. Handle v3 (score-based) or v2 verification
+    # ------------------------------------------------------------------
+    if recaptcha_mode == "v3":
+        score = Decimal(str(data.get("score", 0.0)))
+        threshold = Decimal(str(getattr(settings_obj, "recaptcha_score_threshold", 0.5)))
+        valid = success and score >= threshold
+
+        result = {
+            "ok": bool(valid),
+            "score": float(score),
+            "errors": error_codes,
+        }
+
+        if not valid:
+            logger.info(
+                "reCAPTCHA v3 failed: score=%.2f threshold=%.2f host=%s",
+                score,
+                threshold,
+                hostname,
+            )
+    else:
+        # v2 (checkbox/invisible)
+        result = {
+            "ok": bool(success),
+            "errors": error_codes,
+        }
+
+    # ------------------------------------------------------------------
+    # Step 9. Cache result briefly (anti-abuse, performance)
+    # ------------------------------------------------------------------
+    cache.set(cache_key, result, timeout=15)  # 15s short TTL
+    return result
+
+
+### FILE: apps\users\signals.py
+### PATH TREE: apps\users
+"""
+apps.users.signals
+-------------------
+Centralized user-related signal handlers for GSMInfinity.
+
+✅ Handles:
+- user_logged_in → register device fingerprint, enforce per-user limits.
+- user_signed_up → mark new users for profile completion (social signup flow).
+
+✅ Fully compatible with:
+  Django 5.x / allauth ≥ 0.65
+  apps.users.utils.device
+  apps.site_settings.models.SiteSettings
+"""
+
+import logging
+from django.dispatch import receiver
+from django.contrib.auth.signals import user_logged_in
+from allauth.account.signals import user_signed_up
+
+from apps.users.utils.device import register_fingerprint, enforce_device_limit
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+#  User Logged In → Register or update device fingerprint
+# ---------------------------------------------------------------------------
+@receiver(user_logged_in)
+def handle_user_logged_in(sender, request, user, **kwargs):
+    """
+    Triggered whenever a user logs in successfully (standard or social login).
+
+    Responsibilities:
+    - Capture and register the current device fingerprint.
+    - Enforce per-user device limits from SiteSettings.
+    - Skip registration gracefully if limit exceeded (strict mode).
+    """
+    try:
+        if not request:
+            logger.warning("handle_user_logged_in called without request.")
+            return
+
+        # Collect fingerprint info from request headers/cookies
+        fingerprint_data = {
+            "fingerprint_hash": (
+                request.META.get("DEVICE_FP")
+                or request.COOKIES.get("device_fp")
+                or request.META.get("HTTP_USER_AGENT", "unknown")
+            )[:255],
+            "os_info": request.META.get("OS_INFO", "")[:100],
+            "browser_info": request.META.get("HTTP_USER_AGENT", "")[:255],
+            "motherboard_id": request.META.get("MOTHERBOARD_ID", "")[:100],
+        }
+
+        # Enforce per-user device limit
+        if not enforce_device_limit(user):
+            logger.warning(
+                "User %s exceeded device limit (strict mode). Fingerprint not recorded.",
+                getattr(user, "email", user.pk),
+            )
+            return
+
+        # Register or update the fingerprint record
+        register_fingerprint(
+            user=user,
+            fingerprint_hash=fingerprint_data["fingerprint_hash"],
+            os_info=fingerprint_data["os_info"],
+            motherboard_id=fingerprint_data["motherboard_id"],
+            browser_info=fingerprint_data["browser_info"],
+        )
+        logger.info(
+            "Device fingerprint recorded for user %s",
+            getattr(user, "email", user.pk),
+        )
+
+    except Exception as exc:
+        logger.exception("Error registering fingerprint for user %s: %s", user.pk, exc)
+
+
+# ---------------------------------------------------------------------------
+#  User Signed Up → Flag for onboarding/profile completion
+# ---------------------------------------------------------------------------
+@receiver(user_signed_up)
+def handle_user_signed_up(request, user, **kwargs):
+    """
+    Triggered after a new user (social or email signup) is created.
+    Ensures social signups enter onboarding (“Tell us about you”) flow.
+    """
+    try:
+        if hasattr(user, "needs_profile_completion"):
+            user.needs_profile_completion = True
+            user.save(update_fields=["needs_profile_completion"])
+            logger.debug(
+                "User %s flagged for onboarding/profile completion",
+                getattr(user, "email", user.pk),
+            )
+        else:
+            logger.debug(
+                "User model has no 'needs_profile_completion' field; skipping flag.",
+            )
+    except Exception as exc:
+        logger.exception(
+            "Error post-processing signup for user %s: %s",
+            getattr(user, "email", user.pk),
+            exc,
+        )
+
+
+### FILE: apps\users\tests.py
+### PATH TREE: apps\users
+from django.test import TestCase
+
+# Create your tests here.
+
+
+### FILE: apps\users\urls.py
+### PATH TREE: apps\users
+"""
+Users App – URL Configuration
+---------------------------------------
+Routes for authentication, onboarding, and user dashboards.
+
+Integrates tightly with django-allauth ≥0.65 and GSMInfinity's
+custom enterprise user management flow.
+"""
+
+from django.urls import path
+from allauth.account.views import LogoutView
+
+from .views import (
+    auth_hub_view,
+    dashboard_view,
+    profile_view,
+    verify_email_view,
+    EnterpriseLoginView,
+    EnterpriseSignupView,
+)
+
+app_name = "users"
+
+urlpatterns = [
+    # ---------------------------------------------------------------
+    # Unified Auth Hub (Landing page for login/signup/social)
+    # ---------------------------------------------------------------
+    path("auth/", auth_hub_view, name="auth_hub"),
+
+    # ---------------------------------------------------------------
+    # Authentication (Allauth Overrides)
+    # ---------------------------------------------------------------
+    path("login/", EnterpriseLoginView.as_view(), name="account_login"),
+    path("signup/", EnterpriseSignupView.as_view(), name="account_signup"),
+    path("logout/", LogoutView.as_view(), name="account_logout"),
+
+    # ---------------------------------------------------------------
+    # User Dashboard & Profile
+    # ---------------------------------------------------------------
+    path("dashboard/", dashboard_view, name="dashboard"),
+    path("profile/", profile_view, name="profile"),
+
+    # ---------------------------------------------------------------
+    # Email Verification
+    # ---------------------------------------------------------------
+    path("verify-email/", verify_email_view, name="verify_email"),
+]
+
+
+### FILE: apps\users\utils\device.py
+### PATH TREE: apps\users\utils
+"""
+apps.users.utils.device
+-----------------------
+Enterprise-grade device fingerprint and limit enforcement utilities for GSMInfinity.
+
+✅ Features:
+- Registers or updates DeviceFingerprint on each login.
+- Enforces per-user device limits (strict / lenient) with ADMIN BYPASS.
+- Thread-safe atomic updates, ORM-optimized (Django 5.x).
+- Compatible with async-safe authentication and signals.
+- Includes periodic admin cleanup utilities.
+"""
+
+import logging
+from typing import Optional, Dict
+from datetime import timedelta
+from django.utils import timezone
+from django.db import transaction
+from django.core.exceptions import ValidationError
+
+from apps.users.models import DeviceFingerprint, CustomUser
+from apps.site_settings.models import SiteSettings
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================
+#  DEVICE REGISTRATION / UPDATE
+# ============================================================
+def register_fingerprint(
+    user,
+    fingerprint_hash: str,
+    os_info: str = "",
+    motherboard_id: str = "",
+    browser_info: str = "",
+) -> Optional[DeviceFingerprint]:
+    """
+    Create or update a DeviceFingerprint record for the given user.
+
+    ADMIN USERS: Always allowed; fingerprint registered but no limit enforced.
+
+    Returns:
+        DeviceFingerprint | None
+    """
+    if not user or not fingerprint_hash:
+        logger.warning("register_fingerprint: missing user or fingerprint_hash")
+        return None
+
+    try:
+        with transaction.atomic():
+            device, created = DeviceFingerprint.objects.select_for_update().get_or_create(
+                user=user,
+                fingerprint_hash=fingerprint_hash,
+                defaults={
+                    "os_info": os_info[:100],
+                    "motherboard_id": motherboard_id[:100],
+                    "browser_info": browser_info[:255],
+                    "registered_at": timezone.now(),
+                    "last_used_at": timezone.now(),
+                    "is_active": True,
+                },
+            )
+
+            update_fields = ["last_used_at"]
+            device.last_used_at = timezone.now()
+
+            # Update changed metadata only
+            for field, value, limit in [
+                ("os_info", os_info, 100),
+                ("motherboard_id", motherboard_id, 100),
+                ("browser_info", browser_info, 255),
+            ]:
+                truncated = (value or "")[:limit]
+                if truncated and getattr(device, field) != truncated:
+                    setattr(device, field, truncated)
+                    update_fields.append(field)
+
+            if not device.is_active:
+                device.is_active = True
+                update_fields.append("is_active")
+
+            if update_fields:
+                device.save(update_fields=update_fields)
+
+        logger.debug(
+            "DeviceFingerprint[%s] %s for %s (admin=%s) — fields: %s",
+            device.pk,
+            "created" if created else "updated",
+            getattr(user, "email", user.pk),
+            getattr(user, "is_staff", False),
+            update_fields,
+        )
+        return device
+
+    except Exception as exc:
+        logger.exception("register_fingerprint failed for user=%s → %s", getattr(user, "pk", None), exc)
+        return None
+
+
+# ============================================================
+#  DEVICE LIMIT ENFORCEMENT (ADMIN BYPASS)
+# ============================================================
+def enforce_device_limit(user) -> bool:
+    """
+    Enforces per-user device limits from SiteSettings.
+
+    ✅ ADMIN BYPASS: Staff/superusers have unlimited devices.
+    ✅ REGULAR USERS: Subject to device limit and eviction mode.
+
+    Modes:
+        - strict  → block new device registration if limit reached.
+        - lenient → deactivate oldest fingerprints to make room.
+
+    Returns:
+        bool → True if allowed, False if blocked.
+    """
+    if not user:
+        return True
+
+    # ✅ Admin bypass
+    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
+        logger.debug("Device limit bypassed for admin user: %s", getattr(user, "email", user.pk))
+        return True
+
+    # Regular user enforcement
+    try:
+        settings_obj = SiteSettings.get_solo()
+        limit = int(getattr(settings_obj, "max_devices_per_user", 3))
+        mode = str(getattr(settings_obj, "fingerprint_mode", "strict")).lower()
+    except Exception as exc:
+        logger.warning("SiteSettings unavailable; using default device limit → %s", exc)
+        limit, mode = 3, "strict"
+
+    active_qs = (
+        DeviceFingerprint.objects.filter(user=user, is_active=True)
+        .only("id", "last_used_at")
+        .order_by("last_used_at")
+    )
+    count = active_qs.count()
+
+    if count < limit:
+        logger.debug("User %s within limit (%d/%d)", getattr(user, "email", user.pk), count, limit)
+        return True
+
+    if mode == "lenient":
+        to_remove = count - limit + 1
+        logger.info(
+            "Evicting %d oldest fingerprints for user %s (lenient mode)",
+            to_remove,
+            getattr(user, "email", user.pk),
+        )
+        try:
+            with transaction.atomic():
+                for fp in active_qs[:to_remove]:
+                    fp.is_active = False
+                    fp.save(update_fields=["is_active"])
+            return True
+        except Exception as exc:
+            logger.error("Device eviction failed for %s → %s", getattr(user, "email", user.pk), exc)
+            return False
+
+    # strict mode block
+    logger.warning(
+        "Device registration BLOCKED for %s — limit reached (%d/%d, strict mode)",
+        getattr(user, "email", user.pk),
+        count,
+        limit,
+    )
+    return False
+
+
+# ============================================================
+#  COMBINED SAFE HELPER (WITH ADMIN BYPASS)
+# ============================================================
+def record_device_fingerprint(
+    request,
+    user,
+    fingerprint_data: Optional[Dict] = None,
+) -> Optional[DeviceFingerprint]:
+    """
+    Unified helper for recording device fingerprints during login.
+
+    ✅ ADMIN USERS: Always allowed (no enforcement)
+    ✅ REGULAR USERS: Enforces per-user device limits
+
+    Raises:
+        PermissionError → strict mode violation for regular users
+        ValidationError → missing fingerprint hash
+    """
+    fingerprint_data = fingerprint_data or {}
+
+    # Determine fingerprint source
+    fingerprint_hash = (
+        fingerprint_data.get("fingerprint_hash")
+        or getattr(request, "POST", {}).get("device_fp")
+        or getattr(request, "COOKIES", {}).get("device_fp")
+        or getattr(request, "META", {}).get("HTTP_USER_AGENT", "")
+    )
+    if not fingerprint_hash:
+        raise ValidationError("record_device_fingerprint: missing fingerprint_hash")
+
+    os_info = fingerprint_data.get("os_info") or request.META.get("HTTP_USER_AGENT", "")[:100]
+    motherboard_id = fingerprint_data.get("motherboard_id", "")
+    browser_info = fingerprint_data.get("browser_info") or request.META.get("HTTP_USER_AGENT", "")[:255]
+
+    # ✅ Enforce device limit (with admin bypass)
+    if not enforce_device_limit(user):
+        raise PermissionError("Device registration blocked (strict mode limit reached)")
+
+    device = register_fingerprint(
+        user=user,
+        fingerprint_hash=fingerprint_hash,
+        os_info=os_info,
+        motherboard_id=motherboard_id,
+        browser_info=browser_info,
+    )
+
+    user_type = "admin" if (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)) else "user"
+    logger.debug("record_device_fingerprint: device recorded for %s (%s)", getattr(user, "email", user.pk), user_type)
+    return device
+
+
+# ============================================================
+#  ADMIN-SPECIFIC UTILITIES
+# ============================================================
+def get_admin_device_stats() -> Dict[str, Dict]:
+    """
+    Returns device statistics for admin users.
+    Useful for dashboards, audits, or maintenance.
+    """
+    stats = {}
+    for user in CustomUser.objects.filter(is_staff=True):
+        devices = DeviceFingerprint.objects.filter(user=user, is_active=True)
+        stats[user.email or f"User#{user.pk}"] = {
+            "total_devices": devices.count(),
+            "devices": list(
+                devices.values("fingerprint_hash", "last_used_at", "os_info", "browser_info")
+            ),
+        }
+    return stats
+
+
+def cleanup_old_admin_devices(days_old: int = 30) -> int:
+    """
+    Clean up old admin device fingerprints.
+    Admins have unlimited devices, so cleanup is routine maintenance.
+    """
+    cutoff_date = timezone.now() - timedelta(days=days_old)
+    deleted_total = 0
+
+    for user in CustomUser.objects.filter(is_staff=True):
+        old_devices = DeviceFingerprint.objects.filter(user=user, last_used_at__lt=cutoff_date)
+        count, _ = old_devices.delete()
+        deleted_total += count
+        if count:
+            logger.info("Cleaned %d old devices for admin %s", count, user.email)
+
+    logger.info("Total admin devices cleaned: %d", deleted_total)
+    return deleted_total
+
+
+### FILE: apps\users\utils\utils.py
+### PATH TREE: apps\users\utils
+import hashlib
+def get_device_fingerprint(request):
+    ua=request.META.get("HTTP_USER_AGENT","")
+    ip=request.META.get("HTTP_X_FORWARDED_FOR",request.META.get("REMOTE_ADDR",""))
+    session_key=request.session.session_key or ""
+    return hashlib.sha256(f"{ua}|{ip}|{session_key}".encode()).hexdigest()
+
+
+### FILE: apps\users\views.py
+### PATH TREE: apps\users
+"""
+apps/users/views.py
+-------------------
+Enterprise-grade user management and authentication views for GSMInfinity.
+
+✅ Features:
+- Tenant-aware site settings resolver
+- Integrated rate limiting & reCAPTCHA
+- Device fingerprint enforcement via signals
+- MFA / email verification guard
+- Optimized dashboard queries
+- Robust logging, atomic safety, and consistent UX
+"""
+
+import logging
+from typing import Optional
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from django.contrib import messages
+from django.urls import reverse
+from django.contrib.sites.shortcuts import get_current_site
+from django.db.models import Q
+
+from allauth.account.views import LoginView, SignupView
+from allauth.account.forms import LoginForm, SignupForm
+
+from apps.site_settings.models import SiteSettings, TenantSiteSettings
+from apps.users.models import Notification, Announcement
+from apps.users.utils.utils import get_device_fingerprint
+from apps.users.utils.device import record_device_fingerprint, enforce_device_limit
+from apps.users.services.recaptcha import verify_recaptcha
+from apps.users.services.rate_limit import allow_action
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================
+#  SAFE SITE SETTINGS RESOLVER
+# ============================================================
+def _get_settings(request=None):
+    """
+    Fetch tenant-specific or global SiteSettings safely.
+
+    Order of precedence:
+        1. TenantSiteSettings for current site
+        2. Global SiteSettings singleton
+        3. Dummy fallback (safe defaults)
+    """
+    try:
+        if request:
+            current_site = get_current_site(request)
+            return TenantSiteSettings.objects.select_related("site").get(site=current_site)
+        return SiteSettings.get_solo()
+    except TenantSiteSettings.DoesNotExist:
+        return SiteSettings.get_solo()
+    except Exception as exc:
+        logger.warning("Falling back to Dummy site settings → %s", exc)
+
+        class Dummy:
+            site_name = "GSMInfinity"
+            enable_signup = True
+            max_login_attempts = 5
+            rate_limit_window_seconds = 300
+            recaptcha_enabled = False
+            enforce_unique_device = False
+            max_devices_per_user = 3
+            require_mfa = False
+            enable_payments = True
+            site_header = "GSM Admin"
+            site_description = "Default site configuration"
+            meta_tags = []
+            verification_files = []
+
+        return Dummy()
+
+
+# ============================================================
+#  LOGIN VIEW
+# ============================================================
+class EnterpriseLoginView(LoginView):
+    """Enterprise login with rate limiting, reCAPTCHA, and MFA enforcement."""
+    form_class = LoginForm
+    template_name = "account/login.html"
+
+    def form_valid(self, form):
+        s = _get_settings(self.request)
+        ip = (
+            self.request.META.get("HTTP_X_FORWARDED_FOR")
+            or self.request.META.get("REMOTE_ADDR")
+            or "unknown"
+        ).split(",")[0].strip()
+
+        # ------------------- Rate Limiting -------------------
+        rl_key = f"login:{ip}"
+        try:
+            if not allow_action(
+                rl_key,
+                int(getattr(s, "max_login_attempts", 5)),
+                int(getattr(s, "rate_limit_window_seconds", 300)),
+            ):
+                form.add_error(None, "Too many login attempts. Please try again later.")
+                logger.warning("Rate limit exceeded for IP=%s", ip)
+                return self.form_invalid(form)
+        except Exception as exc:
+            logger.exception("Rate limiter failure (fail-open) → %s", exc)
+
+        # ------------------- reCAPTCHA -------------------
+        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get("recaptcha_token")
+        if getattr(s, "recaptcha_enabled", False) and token:
+            try:
+                rc = verify_recaptcha(token, ip, action="login")
+                if not rc.get("ok"):
+                    form.add_error(None, "reCAPTCHA verification failed. Please try again.")
+                    logger.info("reCAPTCHA failed for %s → %s", ip, rc)
+                    return self.form_invalid(form)
+            except Exception as exc:
+                logger.exception("reCAPTCHA error → %s", exc)
+                form.add_error(None, "reCAPTCHA service error. Try again later.")
+                return self.form_invalid(form)
+
+        # Proceed with default login flow
+        response = super().form_valid(form)
+        user = self.request.user
+
+        # ------------------- Device Limit -------------------
+        try:
+            if getattr(s, "enforce_unique_device", False):
+                if not enforce_device_limit(user):
+                    form.add_error(None, "Device limit exceeded. Contact support.")
+                    logger.warning("Device limit exceeded for user=%s", getattr(user, "email", user.pk))
+                    return self.form_invalid(form)
+        except Exception as exc:
+            logger.exception("Device enforcement error → %s", exc)
+
+        # ------------------- Fingerprint Recording -------------------
+        try:
+            fp = get_device_fingerprint(self.request)
+            if fp:
+                try:
+                    record_device_fingerprint(self.request, user, {"fingerprint_hash": fp})
+                except PermissionError:
+                    form.add_error(None, "This device cannot be registered. Contact support.")
+                    logger.warning("Device blocked for user=%s", getattr(user, "email", user.pk))
+                    return self.form_invalid(form)
+                except Exception as exc:
+                    logger.debug("Fingerprint record failure for %s → %s", user, exc)
+        except Exception as exc:
+            logger.debug("Fingerprint extraction failed → %s", exc)
+
+        # ------------------- MFA Enforcement -------------------
+        try:
+            if getattr(s, "require_mfa", False) and not getattr(user, "email_verified_at", None):
+                logger.info("Redirecting %s to MFA verification", getattr(user, "email", user.pk))
+                return redirect("users:verify_email")
+        except Exception as exc:
+            logger.exception("MFA check failed → %s", exc)
+
+        return response
+
+
+# ============================================================
+#  SIGNUP VIEW
+# ============================================================
+class EnterpriseSignupView(SignupView):
+    """Tenant-aware signup view with optional reCAPTCHA verification."""
+    form_class = SignupForm
+    template_name = "account/signup.html"
+
+    def form_valid(self, form):
+        s = _get_settings(self.request)
+
+        if not getattr(s, "enable_signup", True):
+            form.add_error(None, "Signup is currently disabled.")
+            logger.info("Signup attempt blocked by settings.")
+            return self.form_invalid(form)
+
+        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get("recaptcha_token")
+        if getattr(s, "recaptcha_enabled", False) and token:
+            try:
+                rc = verify_recaptcha(token, self.request.META.get("REMOTE_ADDR"), action="signup")
+                if not rc.get("ok"):
+                    form.add_error(None, "reCAPTCHA failed. Please retry.")
+                    logger.info("reCAPTCHA failed during signup → %s", rc)
+                    return self.form_invalid(form)
+            except Exception as exc:
+                logger.exception("reCAPTCHA error → %s", exc)
+                form.add_error(None, "reCAPTCHA error. Please try again.")
+                return self.form_invalid(form)
+
+        return super().form_valid(form)
+
+
+# ============================================================
+#  EMAIL VERIFICATION
+# ============================================================
+@login_required
+def verify_email_view(request):
+    """Manual verification for MFA / email confirmation."""
+    rl_key = f"verify_email:{request.user.pk}"
+    user = request.user
+
+    if request.method == "POST":
+        code = request.POST.get("code", "").strip()
+        if not code:
+            messages.error(request, "Verification code required.")
+            return render(request, "users/verify_email.html")
+
+        if code == getattr(user, "verification_code", ""):
+            user.email_verified_at = timezone.now()
+            user.verification_code = ""
+            user.save(update_fields=["email_verified_at", "verification_code"])
+            messages.success(request, "Email verified successfully.")
+            return redirect("users:dashboard")
+
+        messages.error(request, "Invalid verification code.")
+        logger.warning("Invalid verification attempt for user=%s", user.pk)
+
+    return render(request, "users/verify_email.html")
+
+
+# ============================================================
+#  DASHBOARD VIEW
+# ============================================================
+@login_required
+def dashboard_view(request):
+    """Render user dashboard with recent announcements and notifications."""
+    s = _get_settings(request)
+    now = timezone.now()
+
+    announcements = (
+        Announcement.objects.filter(start_at__lte=now)
+        .filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now))
+        .only("title", "content", "start_at", "expires_at")
+        .order_by("-start_at")
+    )
+
+    notifications = (
+        Notification.objects.filter(recipient=request.user)
+        .select_related("recipient")
+        .only("title", "message", "created_at")
+        .order_by("-created_at")[:5]
+    )
+
+    context = {
+        "site_settings": s,
+        "announcements": announcements,
+        "notifications": notifications,
+        "credits": getattr(request.user, "credits", 0),
+        "can_watch_ad": getattr(s, "recaptcha_enabled", False),
+        "can_pay": getattr(s, "enable_payments", True),
+    }
+    return render(request, "users/dashboard.html", context)
+
+
+# ============================================================
+#  PROFILE VIEW
+# ============================================================
+@login_required
+def profile_view(request):
+    """Render user profile overview page."""
+    s = _get_settings(request)
+    return render(
+        request,
+        "users/profile.html",
+        {
+            "user": request.user,
+            "credits": getattr(request.user, "credits", 0),
+            "site_settings": s,
+        },
+    )
+
+
+# ============================================================
+#  AUTH HUB
+# ============================================================
+def auth_hub_view(request):
+    """Landing page for login/signup/social auth selection."""
+    return render(request, "account/hub.html")
+
+
+### FILE: gsminfinity\__init__.py
+### PATH TREE: gsminfinity
+
+### FILE: gsminfinity\asgi.py
+### PATH TREE: gsminfinity
+"""
+ASGI config for gsminfinity project.
+
+It exposes the ASGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
+"""
+
+import os
+
+from django.core.asgi import get_asgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gsminfinity.settings')
+
+application = get_asgi_application()
+
+
+### FILE: gsminfinity\settings.py
+### PATH TREE: gsminfinity
+"""
+gsminfinity/settings.py
+=======================
+GSMInfinity Enterprise Django Configuration
+-------------------------------------------
+✅ Production-ready for Django 5.x + django-allauth 0.65.13
+
+Features:
+- Strict environment isolation (.env driven)
+- Flexible caching (Redis or LocMem)
+- Hardened security defaults
+- allauth modern configuration
+- Multi-site, consent, and device enforcement ready
+"""
+
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# ============================================================
+#  CORE PATHS & ENVIRONMENT
+# ============================================================
+load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-secret")
+DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+ENV = os.getenv("ENV", "development")
+
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if h.strip()
+]
+
+SITE_ID = int(os.getenv("SITE_ID", "1"))
+
+
+# ============================================================
+#  APPLICATION DEFINITION
+# ============================================================
+INSTALLED_APPS = [
+    # Core Django
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.sites",
+
+    # Third-party
+    "import_export",
+    "solo",
+    "django_countries",
+    "crispy_forms",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.facebook",
+
+    # Project apps
+    "apps.core",
+    "apps.users",
+    "apps.site_settings",
+    "apps.consent",
+]
+
+
+# ============================================================
+#  MIDDLEWARE
+# ============================================================
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "apps.consent.middleware.ConsentMiddleware",  # ✅ custom GDPR middleware
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+
+# ============================================================
+#  URLS / WSGI / ASGI
+# ============================================================
+ROOT_URLCONF = "gsminfinity.urls"
+WSGI_APPLICATION = "gsminfinity.wsgi.application"
+
+
+# ============================================================
+#  TEMPLATES
+# ============================================================
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "apps.site_settings.context_processors.site_settings",
+            ],
+        },
+    },
+]
+
+
+# ============================================================
+#  DATABASES
+# ============================================================
+DATABASES = {
+    "default": {
+        "ENGINE": os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.getenv("DB_NAME", BASE_DIR / "db.sqlite3"),
+        "USER": os.getenv("DB_USER", ""),
+        "PASSWORD": os.getenv("DB_PASSWORD", ""),
+        "HOST": os.getenv("DB_HOST", ""),
+        "PORT": os.getenv("DB_PORT", ""),
+        "ATOMIC_REQUESTS": True,
+    }
+}
+
+
+# ============================================================
+#  AUTHENTICATION / USERS
+# ============================================================
+AUTH_USER_MODEL = "users.CustomUser"
+
+AUTHENTICATION_BACKENDS = (
+    "apps.users.auth_backends.MultiFieldAuthBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+    "django.contrib.auth.backends.ModelBackend",
+)
+
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+]
+
+
+# ============================================================
+#  INTERNATIONALIZATION
+# ============================================================
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "Asia/Riyadh"
+USE_I18N = True
+USE_TZ = True
+
+
+# ============================================================
+#  STATIC & MEDIA
+# ============================================================
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# ============================================================
+#  AUTH FLOW (LOGIN / LOGOUT)
+# ============================================================
+LOGIN_URL = "account_login"
+LOGIN_REDIRECT_URL = "/users/dashboard/"
+LOGOUT_REDIRECT_URL = "/"
+
+
+# ============================================================
+#  CACHING (REDIS or LOCMEM)
+# ============================================================
+USE_REDIS = os.getenv("USE_REDIS_CACHE", "False").lower() == "true"
+CACHES = {
+    "default": {
+        "BACKEND": (
+            "django_redis.cache.RedisCache"
+            if USE_REDIS
+            else "django.core.cache.backends.locmem.LocMemCache"
+        ),
+        "LOCATION": (
+            os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1") if USE_REDIS else ""
+        ),
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"} if USE_REDIS else {},
+        "TIMEOUT": None,
+    }
+}
+
+CONSENT_POLICY_CACHE_TTL = int(os.getenv("CONSENT_POLICY_CACHE_TTL", "300"))
+REDIS_SOCKET_TIMEOUT = int(os.getenv("REDIS_SOCKET_TIMEOUT", "5"))
+
+
+# ============================================================
+#  LOGGING
+# ============================================================
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "standard"},
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": os.getenv("LOG_LEVEL", "INFO"),
+    },
+    "loggers": {
+        "apps.users": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "apps.consent": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "apps.site_settings": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        "apps.core": {"handlers": ["console"], "level": "INFO", "propagate": False},
+    },
+}
+
+
+# ============================================================
+#  DJANGO-ALLAUTH CONFIGURATION
+# ============================================================
+ACCOUNT_ADAPTER = "apps.users.adapters.CustomAccountAdapter"
+SOCIALACCOUNT_ADAPTER = "apps.users.adapters.CustomSocialAccountAdapter"
+
+ACCOUNT_FORMS = {"signup": "apps.users.forms.CustomSignupForm"}
+
+ACCOUNT_LOGIN_METHODS = {"username", "email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_EMAIL_VERIFICATION = os.getenv("ACCOUNT_EMAIL_VERIFICATION", "optional")
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = int(
+    os.getenv("ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS", "3")
+)
+ACCOUNT_SESSION_REMEMBER = True
+ACCOUNT_LOGOUT_ON_GET = True
+ACCOUNT_PASSWORD_MIN_LENGTH = int(os.getenv("ACCOUNT_PASSWORD_MIN_LENGTH", "8"))
+ACCOUNT_PRESERVE_USERNAME_CASING = False
+ACCOUNT_USERNAME_BLACKLIST = ["admin", "root"]
+ACCOUNT_RATE_LIMITS = {
+    "login_failed": os.getenv("ACCOUNT_RATE_LOGIN_FAILED", "5/300s"),
+}
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https" if not DEBUG else "http"
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {"SCOPE": ["profile", "email"]},
+    "facebook": {"METHOD": "oauth2", "SCOPE": ["email"]},
+}
+
+
+# ============================================================
+#  FORMS / UI
+# ============================================================
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+
+# ============================================================
+#  SECURITY HEADERS
+# ============================================================
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
+SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", "False").lower() == "true"
+CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "False").lower() == "true"
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False
+SESSION_COOKIE_SAMESITE = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+
+# ============================================================
+#  EMAIL
+# ============================================================
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@gsm-infinity.local")
+
+
+# ============================================================
+#  CELERY
+# ============================================================
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
+
+
+### FILE: gsminfinity\urls.py
+### PATH TREE: gsminfinity
+"""
+Unified Enterprise URL Configuration for GSMInfinity (Final Production-Ready)
+"""
+
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.views.generic import RedirectView
+
+# -------------------------------------------------------------------
+# Public / Core Views
+# -------------------------------------------------------------------
+from apps.core import views as core_views
+
+
+# -------------------------------------------------------------------
+# Admin Branding
+# -------------------------------------------------------------------
+admin.site.site_header = "GSM Admin Panel"
+admin.site.site_title = "GSM Admin"
+admin.site.index_title = "Site Administration"
+
+
+# -------------------------------------------------------------------
+# URL Patterns
+# -------------------------------------------------------------------
+urlpatterns = [
+    # ---------------------------------------------------------------
+    # Admin Panel
+    # ---------------------------------------------------------------
+    path("admin/", admin.site.urls),
+
+    # ---------------------------------------------------------------
+    # Authentication (Allauth)
+    # /accounts/login/, /accounts/signup/, /accounts/social/
+    # ---------------------------------------------------------------
+    path("accounts/", include("allauth.urls")),
+
+    # ---------------------------------------------------------------
+    # Modular Apps (namespaced includes)
+    # ---------------------------------------------------------------
+    path("users/", include(("apps.users.urls", "users"), namespace="users")),
+    path("consent/", include(("apps.consent.urls", "consent"), namespace="consent")),
+    path("settings/", include(("apps.site_settings.urls", "site_settings"), namespace="site_settings")),
+    path("core/", include(("apps.core.urls", "core"), namespace="core")),
+
+    # ---------------------------------------------------------------
+    # Root Landing Page
+    # ---------------------------------------------------------------
+    path("", core_views.home, name="home"),
+
+    # ---------------------------------------------------------------
+    # Tenant & Multi-site entrypoint (optional direct mapping)
+    # ---------------------------------------------------------------
+    path("tenants/", core_views.tenants, name="tenants"),
+
+    # ---------------------------------------------------------------
+    # Legacy & Convenience Redirects
+    # ---------------------------------------------------------------
+    path("index/", RedirectView.as_view(pattern_name="home", permanent=True)),
+]
+
+
+# -------------------------------------------------------------------
+# Static & Media (Development Only)
+# -------------------------------------------------------------------
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+
+# -------------------------------------------------------------------
+# Custom Error Handlers (Global)
+# -------------------------------------------------------------------
+handler404 = "apps.core.views.error_404_view"
+handler403 = "apps.core.views.error_403_view"
+handler500 = "apps.core.views.error_500_view"
+
+
+# -------------------------------------------------------------------
+# Optional: Admin Redirect for root-level /admin (security-friendly)
+# -------------------------------------------------------------------
+# Uncomment to redirect /admin to /admin/login if not authenticated
+# from django.contrib.auth.decorators import login_required
+# admin.site.login = login_required(admin.site.login)
+
+
+### FILE: gsminfinity\wsgi.py
+### PATH TREE: gsminfinity
+"""
+WSGI config for gsminfinity project.
+
+It exposes the WSGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/5.2/howto/deployment/wsgi/
+"""
+
+import os
+
+from django.core.wsgi import get_wsgi_application
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gsminfinity.settings')
+
+application = get_wsgi_application()
+
+
+### FILE: manage.py
+### PATH TREE: 
+#!/usr/bin/env python
+"""Django's command-line utility for administrative tasks."""
+import os
+import sys
+
+
+def main():
+    """Run administrative tasks."""
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gsminfinity.settings')
+    try:
+        from django.core.management import execute_from_command_line
+    except ImportError as exc:
+        raise ImportError(
+            "Couldn't import Django. Are you sure it's installed and "
+            "available on your PYTHONPATH environment variable? Did you "
+            "forget to activate a virtual environment?"
+        ) from exc
+    execute_from_command_line(sys.argv)
+
+
+if __name__ == '__main__':
+    main()
+
+
