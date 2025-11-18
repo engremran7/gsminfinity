@@ -1,0 +1,83 @@
+{# templates/site_settings/consent_manage.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+Cookie preferences — {{ site_settings.site_name|default:"GSMInfinity" }}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-12">
+  <div class="bg-white shadow-md rounded-lg p-6 border border-slate-200">
+
+    <h3 class="text-lg font-semibold mb-4">Cookie Preferences</h3>
+
+    <form id="consent-manage-form"
+          method="post"
+          action="{% url 'consent:consent_accept' %}">
+      {% csrf_token %}
+      <input type="hidden"
+             name="next"
+             value="{{ request.GET.next|default:'/' }}">
+
+      <div class="space-y-5">
+
+        {% if categories %}
+          {% for c in categories %}
+            <div class="flex items-start space-x-4">
+              <input
+                id="c-{{ c.slug }}"
+                name="{{ c.slug }}"
+                type="checkbox"
+                class="h-4 w-4 rounded border-slate-400"
+                {% if c.required %}checked disabled aria-disabled="true"{% endif %}
+              >
+
+              <div>
+                <label for="c-{{ c.slug }}" class="font-medium">
+                  {{ c.name }}
+                  {% if c.required %}
+                    <span class="text-xs text-red-600 ml-1">(Required)</span>
+                  {% endif %}
+                </label>
+                <p class="text-sm text-slate-600 leading-snug">
+                  {{ c.description|default:"No description available." }}
+                </p>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-slate-600 text-sm">No cookie categories are configured.</p>
+        {% endif %}
+
+      </div>
+
+      <div class="mt-8 flex items-center space-x-3">
+        <button type="submit"
+                class="btn btn-primary px-4 py-2 rounded">
+          Save preferences
+        </button>
+
+        <a href="{{ request.GET.next|default:'/' }}"
+           class="btn btn-link px-3 py-2 text-slate-600">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+(function(){
+    // Safe fallback for cancel button via JS
+    const cancel = document.getElementById("consent-cancel");
+    if (cancel) {
+        cancel.addEventListener("click", function(e){
+            e.preventDefault();
+            window.history.back();
+        });
+    }
+})();
+</script>
+{% endblock %}

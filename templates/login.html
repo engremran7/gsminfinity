@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Login — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-12">
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-medium">Sign in to your account</h3>
+    {% include "includes/messages.html" %}
+    <form method="post" action="{% url 'account_login' %}" class="mt-4 space-y-4">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="flex items-center justify-between">
+        <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Sign in</button>
+        <a href="{% url 'account_reset_password' %}" class="text-sm text-slate-600">Forgot password?</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

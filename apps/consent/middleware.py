@@ -1,205 +1,320 @@
 """
 apps.consent.middleware
-------------------------
-Enterprise-grade cookie-consent middleware for GSMInfinity.
+=======================
 
-✅ Features:
-- Ensures sessions for anonymous users.
-- Per-site active ConsentPolicy resolution with caching.
-- ConsentRecord lookup (user or session-based).
-- Required categories always enforced.
-- “Reject all” support for optional categories.
-- request.cookie_consent.<slug> namespace for templates.
-- request.consent_summary for diagnostic / analytics.
-- Fully compatible with Django 5.x and allauth ≥ 0.65.
+Enterprise-grade cookie-consent middleware.
+
+- Callable middleware (WSGI + ASGI safe)
+- Uses canonical utils (serializable policy payloads only)
+- Session guarantee for anonymous visitors (best-effort)
+- Robust ConsentRecord loading for user or session
+- Exposes request.consent_* attributes for templates/analytics
+- Defensive: never raises even if DB or cache is down
 """
 
+from __future__ import annotations
+
+import json
 import logging
 from types import SimpleNamespace
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple, Any, Set
 
 from django.conf import settings
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.cache import cache
-from django.utils.deprecation import MiddlewareMixin
 from django.http import HttpRequest, HttpResponse
 
-from apps.consent.models import ConsentRecord, ConsentPolicy
+from apps.consent.utils import (
+    consent_cache_key,
+    get_active_policy,
+    resolve_site_domain,
+)
+from apps.consent.models import ConsentRecord
 
 logger = logging.getLogger(__name__)
 
 
-class ConsentMiddleware(MiddlewareMixin):
+# =====================================================================
+#  MAIN MIDDLEWARE
+# =====================================================================
+class ConsentMiddleware:
     """
-    Attaches consent-related metadata to every request.
+    Middleware that attaches consent information to each request.
 
-    ⚙️ Notes
-    -------
-    • Works with MiddlewareMixin for async/sync support.
-    • Gracefully handles missing DB tables or sessions.
-    • Ensures one cached ConsentPolicy per site_id/domain.
+    Add:
+        "apps.consent.middleware.ConsentMiddleware"
+    AFTER:
+        AuthenticationMiddleware
+        SessionMiddleware
     """
 
-    def process_request(self, request: HttpRequest) -> None:
-        """Inject consent context into request safely."""
+    def __init__(self, get_response):
+        self.get_response = get_response
 
-        # -----------------------------------------------------------
-        # 1️⃣ Ensure session exists (for anonymous users)
-        # -----------------------------------------------------------
-        try:
-            if not getattr(request, "session", None):
-                logger.warning("ConsentMiddleware: SessionMiddleware missing.")
-            elif not request.session.session_key:
-                request.session.create()
-                request.session.modified = True
-                logger.debug("ConsentMiddleware: created new session for anonymous user.")
-        except Exception as exc:
-            logger.debug("ConsentMiddleware: session init failed → %s", exc)
+        # Avoid unsafe, brand-specific defaults — now generic
+        self.cookie_name: str = getattr(settings, "CONSENT_COOKIE_NAME", "cookie_consent")
+        self.cookie_max_age: int = int(
+            getattr(settings, "CONSENT_COOKIE_MAX_AGE", 60 * 60 * 24 * 365)
+        )
+        self.cookie_samesite: str = getattr(settings, "CONSENT_COOKIE_SAMESITE", "Lax")
+        self.cookie_secure: bool = bool(
+            getattr(settings, "CONSENT_COOKIE_SECURE", not settings.DEBUG)
+        )
 
-        # -----------------------------------------------------------
-        # 2️⃣ Resolve current site (with safe fallback)
-        # -----------------------------------------------------------
-        try:
-            current_site = get_current_site(request)
-            site_domain = getattr(current_site, "domain", None) or request.get_host()
-            site_identifier = getattr(current_site, "id", site_domain)
-        except Exception as exc:
-            logger.warning("ConsentMiddleware: failed to resolve site → %s", exc)
-            site_domain = getattr(request, "get_host", lambda: "default")() or "default"
-            site_identifier = site_domain
-
-        # -----------------------------------------------------------
-        # 3️⃣ Initialize baseline request attributes
-        # -----------------------------------------------------------
+    # =================================================================
+    #  WSGI + ASGI entrypoint
+    # =================================================================
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        # Baseline request attributes — MUST be set before any early returns
         request.has_cookie_consent = False
-        request.consent_policy: Optional[ConsentPolicy] = None
-        request.consent_version: Optional[str] = None
-        request.consent_categories: Dict[str, bool] = {}
+        request.consent_policy = None
+        request.consent_version = None
+        request.consent_categories = {}
         request.cookie_consent = SimpleNamespace()
         request.consent_summary = {}
 
-        # -----------------------------------------------------------
-        # 4️⃣ Retrieve (or cache) active ConsentPolicy per site
-        # -----------------------------------------------------------
-        cache_key = f"active_consent_policy_{site_identifier}"
-        policy: Optional[ConsentPolicy] = cache.get(cache_key)
+        # -------------------------------
+        # Ensure session exists (safe)
+        # -------------------------------
+        try:
+            self._ensure_session(request)
+        except Exception as exc:
+            logger.debug("ConsentMiddleware: session bootstrap failed -> %s", exc)
 
-        if policy is None:
-            try:
-                policy = (
-                    ConsentPolicy.objects.filter(is_active=True, site_domain=site_domain)
-                    .order_by("-created_at")
-                    .first()
-                )
-                cache_ttl = getattr(settings, "CONSENT_POLICY_CACHE_TTL", 300)
-                cache.set(cache_key, policy, timeout=cache_ttl)
-                logger.debug("ConsentMiddleware: cache MISS for %s", site_domain)
-            except Exception as exc:
-                logger.debug("ConsentMiddleware: policy lookup error → %s", exc)
-                policy = None
-        else:
-            logger.debug("ConsentMiddleware: cache HIT for %s", site_domain)
+        # -------------------------------
+        # Determine domain
+        # -------------------------------
+        try:
+            site_domain = resolve_site_domain(request)
+        except Exception as exc:
+            logger.debug("ConsentMiddleware: resolve_site_domain failed -> %s", exc)
+            site_domain = None
 
-        if policy:
-            request.consent_policy = policy
-            request.consent_version = policy.version
+        if not site_domain:
+            site_domain = getattr(settings, "DEFAULT_SITE_DOMAIN", "default")
 
-        # -----------------------------------------------------------
-        # 5️⃣ Load ConsentRecord (user or session-based)
-        # -----------------------------------------------------------
-        consent_record: Optional[ConsentRecord] = None
+        # -------------------------------
+        # Validate that cache_key works
+        # -------------------------------
+        try:
+            consent_cache_key(site_domain)
+        except Exception:
+            logger.debug("ConsentMiddleware: cache key generation failure (ignored)")
+
+        # -------------------------------
+        # Load policy payload
+        # -------------------------------
+        try:
+            policy_payload = get_active_policy(site_domain)
+        except Exception as exc:
+            logger.debug("ConsentMiddleware: policy load failed -> %s", exc)
+            policy_payload = None
+
+        if policy_payload:
+            request.consent_policy = policy_payload
+            request.consent_version = policy_payload.get("version")
+
+        # -------------------------------
+        # Try retrieving stored record
+        # -------------------------------
+        consent_record = None
         if request.consent_version:
-            lookup = {
-                "policy_version": request.consent_version,
-                "site_domain": site_domain,
-            }
-            user = getattr(request, "user", None)
-            if user and getattr(user, "is_authenticated", False):
-                lookup["user"] = user
-            else:
-                lookup["session_key"] = getattr(request.session, "session_key", None)
-
             try:
-                consent_record = ConsentRecord.objects.filter(**lookup).first()
-                logger.debug("ConsentMiddleware: record lookup %s", lookup)
-            except Exception as exc:
-                logger.debug("ConsentMiddleware: record query failed → %s", exc)
-
-        # -----------------------------------------------------------
-        # 6️⃣ Build categories baseline
-        # -----------------------------------------------------------
-        categories: Dict[str, bool] = {}
-        required_slugs = set()
-        if policy and policy.categories_snapshot:
-            for slug, data in (policy.categories_snapshot or {}).items():
-                categories[slug] = False
-                if data.get("required"):
-                    required_slugs.add(slug)
-        categories.setdefault("functional", True)
-
-        # -----------------------------------------------------------
-        # 7️⃣ Apply consent record preferences
-        # -----------------------------------------------------------
-        if consent_record:
-            accepted = consent_record.accepted_categories or {}
-
-            if accepted.get("reject_all"):
-                # Only required + functional remain true
-                for slug in categories:
-                    categories[slug] = slug in required_slugs or slug == "functional"
-                request.has_cookie_consent = False
-                logger.debug("ConsentMiddleware: reject_all enforced for %s", site_domain)
-            else:
-                for slug in categories:
-                    if slug in required_slugs or slug == "functional":
-                        categories[slug] = True
-                    else:
-                        categories[slug] = bool(accepted.get(slug))
-                # ✅ has_cookie_consent → True only if optional category accepted
-                optional_accepted = any(
-                    slug not in required_slugs and slug != "functional" and val
-                    for slug, val in categories.items()
+                consent_record = self._get_consent_record(
+                    request, request.consent_version, site_domain
                 )
-                request.has_cookie_consent = optional_accepted
-                logger.debug("ConsentMiddleware: consent record applied for %s", site_domain)
-        else:
-            # Default required+functional only
-            for slug in categories:
-                categories[slug] = slug in required_slugs or slug == "functional"
-            logger.debug("ConsentMiddleware: no record, applied defaults.")
+            except Exception as exc:
+                logger.debug("ConsentMiddleware: record lookup failed -> %s", exc)
 
-        # -----------------------------------------------------------
-        # 8️⃣ Ensure required categories enforced (safety net)
-        # -----------------------------------------------------------
-        for slug in required_slugs:
+        # -------------------------------
+        # Build baseline categories
+        # -------------------------------
+        try:
+            categories, required = self._build_baseline_categories(policy_payload)
+        except Exception:
+            logger.exception(
+                "ConsentMiddleware: baseline categories build failed, using safe fallback"
+            )
+            categories, required = {"functional": True}, {"functional"}
+
+        # -------------------------------
+        # Apply stored consent OR defaults
+        # -------------------------------
+        try:
+            if consent_record:
+                categories, has_opt_in = self._apply_consent_record(
+                    categories, required, consent_record
+                )
+                request.has_cookie_consent = has_opt_in
+            else:
+                # Anonymous fallback (required=True, optional=False)
+                for slug in list(categories.keys()):
+                    categories[slug] = bool(slug in required)
+                request.has_cookie_consent = False
+        except Exception:
+            logger.exception("ConsentMiddleware: applying record failed; fallback")
+            for slug in list(categories.keys()):
+                categories[slug] = bool(slug in required)
+            request.has_cookie_consent = False
+
+        # -------------------------------
+        # Hard enforce required categories
+        # -------------------------------
+        for slug in required:
             categories[slug] = True
 
-        # -----------------------------------------------------------
-        # 9️⃣ Attach namespace + summary
-        # -----------------------------------------------------------
+        # -------------------------------
+        # Attach attributes
+        # -------------------------------
         request.consent_categories = categories
-        request.cookie_consent = SimpleNamespace(**categories)
+        try:
+            request.cookie_consent = SimpleNamespace(**categories)
+        except Exception:
+            request.cookie_consent = SimpleNamespace()
+
         request.consent_summary = {
             "version": request.consent_version,
-            "active": bool(policy),
+            "active": bool(policy_payload),
             "has_consent": request.has_cookie_consent,
-            "required": sorted(required_slugs),
+            "required": sorted(list(required)),
             "site": site_domain,
         }
 
-        logger.debug("ConsentMiddleware summary for %s: %s", site_domain, request.consent_summary)
+        logger.debug("ConsentMiddleware summary: %s", request.consent_summary)
 
-    # -----------------------------------------------------------
-    # Response hook (optional)
-    # -----------------------------------------------------------
+        # =================================================================
+        #  Downstream request
+        # =================================================================
+        response = self.get_response(request)
+
+        # =================================================================
+        #  Response hook (cookie writer)
+        # =================================================================
+        try:
+            response = self.process_response(request, response)
+        except Exception:
+            logger.exception("ConsentMiddleware: response hook failed")
+
+        return response
+
+    # =====================================================================
+    #  INTERNAL HELPERS
+    # =====================================================================
+    def _ensure_session(self, request: HttpRequest) -> None:
+        """Ensure session exists for anonymous users."""
+        session = getattr(request, "session", None)
+        if not session:
+            logger.warning("ConsentMiddleware: SessionMiddleware missing.")
+            return
+
+        try:
+            if not session.session_key:
+                session.create()
+                session.modified = True
+                logger.debug("ConsentMiddleware: new session created")
+        except Exception as exc:
+            logger.debug("ConsentMiddleware: session create failed -> %s", exc)
+
+    # ---------------------------------------------------------------------
+    def _get_consent_record(
+        self, request: HttpRequest, policy_version: str, site_domain: str
+    ) -> Optional[ConsentRecord]:
+        """
+        Retrieve ConsentRecord applying database-accurate filters.
+        """
+        user = getattr(request, "user", None)
+        lookup = {"site_domain": site_domain, "policy_version": policy_version}
+
+        try:
+            if user and getattr(user, "is_authenticated", False):
+                lookup["user"] = user
+            else:
+                lookup["user__isnull"] = True
+                lookup["session_key"] = getattr(request.session, "session_key", None)
+
+            return (
+                ConsentRecord.objects.filter(**lookup)
+                .order_by("-updated_at", "-created_at")
+                .first()
+            )
+        except Exception as exc:
+            logger.debug("ConsentMiddleware: ORM lookup failed -> %s", exc)
+            return None
+
+    # ---------------------------------------------------------------------
+    def _build_baseline_categories(
+        self, policy_payload: Optional[dict]
+    ) -> Tuple[Dict[str, bool], Set[str]]:
+        """Build baseline categories purely from the JSON snapshot."""
+        categories: Dict[str, bool] = {}
+        required: Set[str] = set()
+
+        try:
+            snap = policy_payload.get("categories_snapshot", {}) if policy_payload else {}
+            if isinstance(snap, dict):
+                for slug, data in snap.items():
+                    slug = str(slug)
+                    categories[slug] = False
+                    if isinstance(data, dict) and data.get("required"):
+                        required.add(slug)
+        except Exception as exc:
+            logger.debug("ConsentMiddleware: category parsing failed -> %s", exc)
+
+        # Functional is always required
+        categories.setdefault("functional", True)
+        required.add("functional")
+
+        return categories, required
+
+    # ---------------------------------------------------------------------
+    def _apply_consent_record(
+        self, categories: Dict[str, bool], required: Set[str], record: ConsentRecord
+    ) -> Tuple[Dict[str, bool], bool]:
+
+        try:
+            accepted = record.accepted_categories or {}
+        except Exception:
+            accepted = {}
+
+        if accepted.get("reject_all"):
+            for slug in list(categories.keys()):
+                categories[slug] = slug in required
+            return categories, False
+
+        any_optional = False
+        for slug in list(categories.keys()):
+            if slug in required:
+                categories[slug] = True
+            else:
+                categories[slug] = bool(accepted.get(slug))
+                if categories[slug]:
+                    any_optional = True
+
+        return categories, any_optional
+
+    # =====================================================================
+    #  RESPONSE HOOK — cookie writer
+    # =====================================================================
     def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
-        """
-        Hook for cookie updates or metrics injection.
+        """Write cookie storing accepted categories — best effort."""
+        try:
+            if request.has_cookie_consent:
+                try:
+                    payload = dict(request.consent_categories)
+                except Exception:
+                    payload = {"functional": True}
 
-        ⚠️ Keep synchronous — do not return awaitables to maintain
-        middleware chain integrity under Django async.
-        """
-        # Example future use:
-        # if getattr(request, "has_cookie_consent", False):
-        #     response.set_cookie("cookie_consent", "1", httponly=True)
+                try:
+                    value = json.dumps(payload)
+                    response.set_cookie(
+                        self.cookie_name,
+                        value,
+                        max_age=self.cookie_max_age,
+                        samesite=self.cookie_samesite,
+                        secure=self.cookie_secure,
+                        httponly=False,  # UI needs access
+                    )
+                except Exception as exc:
+                    logger.debug("ConsentMiddleware: set_cookie failed -> %s", exc)
+        except Exception as exc:
+            logger.debug("ConsentMiddleware: process_response error -> %s", exc)
+
         return response

@@ -1,16 +1,19 @@
 """
-GSMInfinity - Custom Allauth Signup Form
+GSMInfinity – Custom Allauth Signup Form
 ----------------------------------------
-✅ Compatible with django-allauth ≥ 0.65.13 and Django 5.x
+✅ Compatible with django-allauth ≥ 0.65.13 and Django 5.2 LTS
 ✅ Prevents circular imports during startup
-✅ Implements the required `signup(self, request, user)` method
-✅ Adds enterprise-grade validation, password policy, and secure defaults
+✅ Implements required `signup(self, request, user)` API
+✅ Enforces enterprise-grade validation and password policy
 """
 
+from __future__ import annotations
+
 import logging
+from typing import Any
 from django import forms
+from django.contrib.auth import get_user_model, password_validation
 from django.core.exceptions import ValidationError
-from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from django.utils.module_loading import import_string
 
@@ -20,36 +23,63 @@ User = get_user_model()
 
 class CustomSignupForm(forms.Form):
     """
-    Lightweight, enterprise-ready wrapper around django-allauth’s signup system.
-    Does not import allauth internals at import-time to prevent circular imports.
+    Enterprise-grade wrapper around django-allauth’s signup system.
+    Lazy-loads allauth internals only when required to avoid circular imports.
     """
 
     # ------------------------------------------------------------------
-    #  Fields
+    # Fields
     # ------------------------------------------------------------------
     email = forms.EmailField(
         max_length=255,
         label=_("Email address"),
-        widget=forms.EmailInput(attrs={"autocomplete": "email", "placeholder": _("Email")}),
+        widget=forms.EmailInput(
+            attrs={
+                "autocomplete": "email",
+                "placeholder": _("Email"),
+                "class": "form-control",
+            }
+        ),
     )
+
     username = forms.CharField(
         max_length=150,
         label=_("Username"),
-        widget=forms.TextInput(attrs={"autocomplete": "username", "placeholder": _("Username")}),
+        widget=forms.TextInput(
+            attrs={
+                "autocomplete": "username",
+                "placeholder": _("Username"),
+                "class": "form-control",
+            }
+        ),
     )
+
     password1 = forms.CharField(
         label=_("Password"),
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password", "placeholder": _("Password")}),
         strip=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "autocomplete": "new-password",
+                "placeholder": _("Password"),
+                "class": "form-control",
+            }
+        ),
     )
+
     password2 = forms.CharField(
         label=_("Confirm password"),
-        widget=forms.PasswordInput(attrs={"autocomplete": "new-password", "placeholder": _("Confirm password")}),
         strip=False,
+        widget=forms.PasswordInput(
+            attrs={
+                "autocomplete": "new-password",
+                "placeholder": _("Confirm password"),
+                "class": "form-control",
+            }
+        ),
     )
 
     # ------------------------------------------------------------------
-    #  Lazy property: safely load the real SignupForm only when used
+    # Lazy import of base allauth SignupForm
     # ------------------------------------------------------------------
     @property
     def base_form_class(self):
@@ -57,17 +87,17 @@ class CustomSignupForm(forms.Form):
         return import_string("allauth.account.forms.SignupForm")
 
     # ------------------------------------------------------------------
-    #  Validation
+    # Field-level validation
     # ------------------------------------------------------------------
-    def clean_email(self):
-        email = (self.cleaned_data.get("email") or "").strip().lower()
+    def clean_email(self) -> str:
+        email = (self.cleaned_data.get("email") or "").strip().casefold()
         if not email or "@" not in email:
             raise ValidationError(_("Enter a valid email address."))
         if User.objects.filter(email__iexact=email).exists():
             raise ValidationError(_("A user with this email already exists."))
         return email
 
-    def clean_username(self):
+    def clean_username(self) -> str:
         username = (self.cleaned_data.get("username") or "").strip()
         if len(username) < 3:
             raise ValidationError(_("Username must be at least 3 characters long."))
@@ -75,15 +105,18 @@ class CustomSignupForm(forms.Form):
             raise ValidationError(_("This username is already taken."))
         return username
 
-    def clean_password1(self):
+    def clean_password1(self) -> str:
         password = self.cleaned_data.get("password1") or ""
         if len(password) < 8:
             raise ValidationError(_("Password must be at least 8 characters long."))
-        if password.isdigit():
-            raise ValidationError(_("Password cannot be entirely numeric."))
+        # Use Django’s configured password validators (settings.AUTH_PASSWORD_VALIDATORS)
+        try:
+            password_validation.validate_password(password)
+        except ValidationError as e:
+            raise ValidationError(e.messages)
         return password
 
-    def clean(self):
+    def clean(self) -> dict[str, Any]:
         cleaned = super().clean()
         pwd1, pwd2 = cleaned.get("password1"), cleaned.get("password2")
         if pwd1 and pwd2 and pwd1 != pwd2:
@@ -91,32 +124,42 @@ class CustomSignupForm(forms.Form):
         return cleaned
 
     # ------------------------------------------------------------------
-    #  Required by django-allauth ≥ 0.65
+    # Required by django-allauth ≥ 0.65
     # ------------------------------------------------------------------
     def signup(self, request, user):
         """
         Called automatically by allauth after successful form validation.
-        Populates and saves the user instance with enterprise logic.
+        Populates and saves the user instance using GSMInfinity logic.
         """
         user.username = self.cleaned_data.get("username")
         user.email = self.cleaned_data.get("email")
 
-        # Optional enterprise logic: verification code, referral tracking, etc.
+        # Generate a verification code if supported
         if hasattr(user, "generate_verification_code"):
-            user.verification_code = user.generate_verification_code()
-            logger.debug("Generated verification code for %s", user.email)
+            try:
+                user.verification_code = user.generate_verification_code()
+                logger.debug("Generated verification code for %s", user.email)
+            except Exception as exc:
+                logger.warning("Verification code generation failed for %s: %s", user.email, exc)
 
-        user.set_password(self.cleaned_data.get("password1"))
+        # Set password (hashing handled by Django)
+        password = self.cleaned_data.get("password1")
+        user.set_password(password)
+
+        # Initial defaults
+        if hasattr(user, "is_active") and user.is_active is False:
+            user.is_active = True
+
         user.save()
         logger.info("New user created via signup: %s", user.email)
         return user
 
     # ------------------------------------------------------------------
-    #  Compatibility helper (legacy save signature)
+    # Backward-compatible helper for legacy allauth versions
     # ------------------------------------------------------------------
     def save(self, request):
         """
-        Mirrors allauth’s `save()` signature for backwards compatibility.
+        Mirrors allauth’s legacy `save()` signature for backward compatibility.
         Simply delegates to `signup()`.
         """
         user = User()

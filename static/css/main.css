@@ -1,0 +1,35 @@
+/* static/styles/main.css
+   Enterprise-grade safe shim.
+   Ensures older templates referencing main.css still work even when the
+   actual theme/build output is styles.css.
+*/
+
+/* --------------------------------------------------------------------------
+   Canonical stylesheet import (STATIC_URL-safe)
+   - Relative import works regardless of STATIC_URL (/static/, CDN, proxy)
+   - Since main.css and styles.css are in the same folder, use ./ prefix
+--------------------------------------------------------------------------- */
+@import "./styles.css";
+
+/* --------------------------------------------------------------------------
+   Hardened fallback reset (only used if styles.css fails to load)
+--------------------------------------------------------------------------- */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure consistent box model globally */
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* Optional minimal safety baseline */
+body {
+  font-family: system-ui, -apple-system, Roboto, sans-serif;
+  background-color: #ffffff;
+  color: #000000;
+}

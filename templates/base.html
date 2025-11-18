@@ -1,0 +1,115 @@
+{% load static %}
+
+<!doctype html>
+<html lang="en" class="h-full bg-slate-50">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    {% block title %}
+      <title>{{ site_settings.site_name|default:'' }}</title>
+    {% endblock %}
+
+    {# ------------------------------------------------------------------ #}
+    {#  DYNAMIC FAVICON (Admin → fallback static)                         #}
+    {# ------------------------------------------------------------------ #}
+    {% if site_settings.favicon %}
+      <link rel="icon" type="image/png" href="{{ site_settings.favicon }}">
+      <link rel="apple-touch-icon" sizes="180x180" href="{{ site_settings.favicon }}">
+    {% else %}
+      <link rel="icon" type="image/png" href="{% static 'img/default-favicon.png' %}">
+      <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/default-favicon.png' %}">
+    {% endif %}
+
+    <meta name="theme-color" content="{{ site_settings.primary_color|default:'#0d6efd' }}">
+
+    {# ------------------------------------------------------------------ #}
+    {#  FIXED STATIC CSS PATH                                             #}
+    {# ------------------------------------------------------------------ #}
+    <link href="{% static 'styles/main.css' %}" rel="stylesheet">
+
+    {# ------------------------------------------------------------------ #}
+    {#  HTMX (CSP-safe with nonce)                                        #}
+    {# ------------------------------------------------------------------ #}
+    <script
+      src="https://unpkg.com/htmx.org@1.9.10"
+      crossorigin="anonymous"
+      nonce="{{ request.csp_nonce }}">
+    </script>
+
+    <script
+      src="https://unpkg.com/htmx.org/dist/ext/head-support.js"
+      nonce="{{ request.csp_nonce }}">
+    </script>
+
+    {% block head %}{% endblock %}
+  </head>
+
+  <body class="min-h-screen flex flex-col">
+
+    {% include "includes/site_header.html" %}
+    {% include "includes/navbar.html" %}
+
+    <div id="consent-banner-slot">
+      {% block consent_banner %}{% endblock %}
+    </div>
+
+    <main class="flex-1">
+      {% block content %}{% endblock %}
+    </main>
+
+    {% include "includes/footer.html" %}
+
+    {# Toast containers -------------------------------------------------- #}
+    <div id="global-toasts" class="fixed top-3 right-3 space-y-2 z-50"></div>
+
+    <div id="app-toasts"
+         class="fixed top-0 right-0 p-3 z-50"
+         aria-live="polite"
+         aria-atomic="true"></div>
+
+    {% block scripts %}
+
+      {# ------------------------------------------------------------------ #}
+      {#  CORE JS FILES (correct structure)                                #}
+      {# ------------------------------------------------------------------ #}
+      <script src="{% static 'js/htmx-csrf.js' %}" nonce="{{ request.csp_nonce }}"></script>
+      <script src="{% static 'js/consent.js' %}" nonce="{{ request.csp_nonce }}"></script>
+      <script src="{% static 'js/main.js' %}" nonce="{{ request.csp_nonce }}"></script>
+
+      {# ------------------------------------------------------------------ #}
+      {#  SITE_SETTINGS + CONSENT_CONFIG                                   #}
+      {# ------------------------------------------------------------------ #}
+      <script nonce="{{ request.csp_nonce }}">
+        (function () {
+          window.SITE_SETTINGS = {
+            site_name: "{{ site_settings.site_name|default:''|escapejs }}",
+            maintenance_mode: {{ site_settings.maintenance_mode|yesno:"true,false" }},
+            consent_version: "{{ consent_version|default:''|escapejs }}",
+            logo: "{{ site_settings.logo|default:''|escapejs }}",
+            dark_logo: "{{ site_settings.dark_logo|default:''|escapejs }}",
+            primary_color: "{{ site_settings.primary_color|default:'#0d6efd'|escapejs }}",
+          };
+
+          window.CONSENT_CONFIG = {
+            cookieName: "{{ consent_cookie_name|default:'consent_status' }}",
+            endpoints: {
+              banner: "{{ consent_endpoints.banner|default:'/consent/banner/' }}",
+              acceptAll: "{{ consent_endpoints.accept_all|default:'/consent/accept_all/' }}",
+              rejectAll: "{{ consent_endpoints.reject_all|default:'/consent/reject_all/' }}",
+              accept: "{{ consent_endpoints.accept|default:'/consent/accept/' }}",
+            },
+            autoLoad: {{ consent_auto_load|yesno:"true,false" }},
+          };
+        })();
+      </script>
+
+      {% if consent_auto_load %}
+        <script src="{% static 'js/consent-banner-loader.js' %}"
+                nonce="{{ request.csp_nonce }}"></script>
+      {% endif %}
+
+    {% endblock %}
+
+  </body>
+</html>

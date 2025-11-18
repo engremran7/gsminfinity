@@ -1,0 +1,50 @@
+{# HTMX toast fragment — enterprise-hardened version #}
+
+<div class="toast toast-fragment"
+     role="status"
+     aria-live="polite"
+     aria-atomic="true"
+     data-bs-delay="4000">
+  <div class="d-flex">
+    <div class="toast-body">
+      {{ message }}
+    </div>
+    <button type="button"
+            class="btn-close btn-close-white me-2 m-auto"
+            data-bs-dismiss="toast"
+            aria-label="Close"></button>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Find the *toast element associated with this script* safely.
+  // Instead of previousElementSibling (fragile), we walk DOM backwards.
+  let script = document.currentScript;
+  if (!script) return;
+
+  let sibling = script.previousElementSibling;
+  let toastEl = null;
+
+  // Walk backwards until a .toast element is found or max depth reached
+  for (let i = 0; i < 3 && sibling; i++) {
+    if (sibling.classList && sibling.classList.contains("toast")) {
+      toastEl = sibling;
+      break;
+    }
+    sibling = sibling.previousElementSibling;
+  }
+
+  if (!toastEl) return;
+
+  // Ensure Bootstrap is available – fail quietly
+  if (typeof bootstrap === "undefined" || !bootstrap.Toast) return;
+
+  try {
+    let instance = bootstrap.Toast.getOrCreateInstance(toastEl);
+    instance.show();
+  } catch (err) {
+    console.warn("Toast init failed:", err);
+  }
+})();
+</script>

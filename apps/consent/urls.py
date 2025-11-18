@@ -1,49 +1,49 @@
-"""
-apps.consent.urls
------------------
-URL configuration for user consent management and GDPR compliance system.
-
-✅ Provides:
-    - Accept / manage consent preferences
-    - Render consent banner partial (for inclusion in templates)
-    - API-like endpoint for SPA polling or JS SDKs (`/status/`)
-    - Backward-compatible aliases for older template calls
-
-This module is part of the GSMInfinity Enterprise Consent Suite.
-"""
+from __future__ import annotations
 
 from django.urls import path
-from .views import (
-    consent_accept,
-    manage_consent,
-    banner_partial,
-    consent_status,   # ✅ added for SPA / monitoring usage
-)
+from . import views
+from apps.consent.api import get_consent_status, update_consent
+
+app_name = "consent"
 
 urlpatterns = [
-    # ============================================================
-    #  Core Consent Endpoints
-    # ============================================================
-    path("accept/", consent_accept, name="consent_accept"),
-    path("manage/", manage_consent, name="consent_manage"),
-    path("banner/", banner_partial, name="consent_banner"),
+    # ------------------------------------------------------------------
+    # Banner loader (HTML partial — HTMX / JS)
+    # ------------------------------------------------------------------
+    path("banner/", views.banner_partial, name="banner"),
 
-    # ============================================================
-    #  API / Utility Endpoints
-    # ============================================================
-    path("status/", consent_status, name="consent_status"),  # ✅ NEW
-    path("accept-all/", consent_accept, name="consent_accept_all"),
-    path("save/", consent_accept, name="consent_save"),  # alias for legacy frontend
+    # ------------------------------------------------------------------
+    # Canonical HTML endpoints (UI-driven)
+    # ------------------------------------------------------------------
+    path("manage/", views.manage_consent, name="manage"),
+    path("status/", views.consent_status, name="status"),
+
+    # ------------------------------------------------------------------
+    # Consent mutation handlers (HTML/HTMX + JSON fallback)
+    # ------------------------------------------------------------------
+    path("accept/", views.consent_accept, name="accept"),
+    path("accept-all/", views.consent_accept_all, name="accept_all"),
+    path("reject-all/", views.consent_reject_all, name="reject_all"),
+
+    # ------------------------------------------------------------------
+    # Compatibility aliases for underscore URLs
+    # Required because your frontend still calls:
+    #   /consent/accept_all/
+    #   /consent/reject_all/
+    # DO NOT REMOVE
+    # ------------------------------------------------------------------
+    path("accept_all/", views.consent_accept_all, name="accept_all_u"),
+    path("reject_all/", views.consent_reject_all, name="reject_all_u"),
+
+    # ------------------------------------------------------------------
+    # Legacy alias: confirmed in frontend JS
+    # ------------------------------------------------------------------
+    path("save/", views.consent_accept, name="save"),
+
+    # ------------------------------------------------------------------
+    # JSON API (Clean, canonical, frontend-safe)
+    # apps/consent/api.py
+    # ------------------------------------------------------------------
+    path("api/status/", get_consent_status, name="api_status"),
+    path("api/update/", update_consent, name="api_update"),
 ]
-
-# Optional tip:
-# If you plan to expose a JSON endpoint for SPA apps or SDK clients,
-# the `consent_status` view should return a JSONResponse like:
-#
-#   {
-#       "has_consent": True,
-#       "required_categories": [...],
-#       "user_choices": {...}
-#   }
-#
-# That endpoint is lightweight and ideal for consent audit logging or banner state.

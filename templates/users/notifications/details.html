@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Notification Details — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-3">Notification Details</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">{{ notification.title }}</h5>
+            <p class="text-muted small">
+                {{ notification.created_at|date:"Y-m-d H:i" }}
+            </p>
+
+            <p class="card-text">
+                {{ notification.message }}
+            </p>
+
+            {% if notification.url %}
+            <a href="{{ notification.url }}" class="btn btn-primary" target="_blank">
+                Open Related Page
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <a href="{% url 'users_notifications:list' %}" class="btn btn-link mt-3">
+        ← Back to Notifications
+    </a>
+</div>
+{% endblock %}

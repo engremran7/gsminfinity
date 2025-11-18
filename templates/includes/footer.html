@@ -1,0 +1,11 @@
+{% load static %}
+<footer class="bg-slate-800 text-slate-200 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <div class="mb-3">
+      <a href="{% url 'site_settings:privacy_policy' %}" class="text-slate-200 hover:underline mx-2">Privacy</a>
+      <a href="{% url 'site_settings:terms_of_service' %}" class="text-slate-200 hover:underline mx-2">Terms</a>
+      <a href="{% url 'site_settings:cookies_policy' %}" class="text-slate-200 hover:underline mx-2">Cookies</a>
+    </div>
+    <div class="text-sm">&copy; {{ now.year }} {{ site_settings.site_name|default:"" }} — All rights reserved.</div>
+  </div>
+</footer>

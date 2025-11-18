@@ -1,0 +1,17 @@
+{
+  "name": "gsminfinity-enterprise-static",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/src_css/main.css -o ./static/css/main.css --minify",
+    "watch:css": "tailwindcss -i ./static/src_css/main.css -o ./static/css/main.css --watch",
+    "bundle:js": "esbuild static/js/ --bundle --minify --outdir=static/js/",
+    "build": "npm run build:css && npm run bundle:js"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.30",
+    "autoprefixer": "^10.4.15",
+    "esbuild": "^0.21.0"
+  }
+}

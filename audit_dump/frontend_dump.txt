@@ -1,0 +1,2938 @@
+﻿--------------------------------------------
+### FILE: static\css\main.css
+### SIZE: 1156 bytes
+### HASH: 93D3534EA7FC7FA5C2873B37A5F274629860EBB2B331E8F69914E7B0E6B315D6
+
+/* static/styles/main.css
+   Enterprise-grade safe shim.
+   Ensures older templates referencing main.css still work even when the
+   actual theme/build output is styles.css.
+*/
+
+/* --------------------------------------------------------------------------
+   Canonical stylesheet import (STATIC_URL-safe)
+   - Relative import works regardless of STATIC_URL (/static/, CDN, proxy)
+   - Since main.css and styles.css are in the same folder, use ./ prefix
+--------------------------------------------------------------------------- */
+@import "./styles.css";
+
+/* --------------------------------------------------------------------------
+   Hardened fallback reset (only used if styles.css fails to load)
+--------------------------------------------------------------------------- */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* Ensure consistent box model globally */
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* Optional minimal safety baseline */
+body {
+  font-family: system-ui, -apple-system, Roboto, sans-serif;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+
+--------------------------------------------
+### FILE: static\css\style.css
+### SIZE: 7292 bytes
+### HASH: 3AB1EB27344DF02D7686A6046704FF8DA627927B7513E4457C50185632E88232
+
+/* ==========================================================================
+   Global UI tokens + base styles
+   Framework-friendly (Tailwind / Bootstrap compatible)
+   - Accessible focus styles
+   - Reduced-motion support
+   - Mobile-first responsive design
+   ========================================================================== */
+
+/* ---------------------------
+   Theme variables
+   --------------------------- */
+:root {
+  /* Primary palette */
+  --color-primary: #0d6efd;
+  --color-primary-600: #0b5ed7;
+  --color-secondary: #6c757d;
+
+  /* Surfaces */
+  --color-bg: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-text: #222;
+  --color-muted: #6b7280;
+
+  /* Spacing scale */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+
+  /* Elevation */
+  --card-radius: 0.75rem;
+  --card-shadow: 0 8px 30px rgba(18, 38, 63, 0.04);
+
+  /* Motion */
+  --motion-fast: 150ms;
+  --motion-medium: 240ms;
+}
+
+/* ---------------------------
+   Dark Mode (HTML .dark OR system preference)
+   --------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0b1220;
+    --color-surface: #161d2e;
+    --color-text: #e6eef6;
+    --color-muted: #9ba3b3;
+    --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* ---------------------------
+   Global box model + resets
+   --------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Body baseline */
+body {
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------------------------
+   Core layout helpers
+   --------------------------- */
+.container {
+  width: 100%;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--sp-4);
+  padding-right: var(--sp-4);
+}
+
+/* Visually hidden — accessible pattern */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------
+   Focus visibility (accessible)
+   --------------------------- */
+/* Preserve focus outline for keyboard users; hide only for non-focus-visible inputs */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Base fallback for focus-visible using primary color */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* If the browser supports color-mix(), prefer a softly-mixed color for the outline */
+@supports (color: color-mix(in srgb, var(--color-primary), #ffffff 30%)) {
+  :focus-visible {
+    outline-color: color-mix(in srgb, var(--color-primary), #ffffff 30%);
+  }
+}
+
+/* ---------------------------
+   Cards
+   --------------------------- */
+.card {
+  border-radius: var(--card-radius);
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
+  padding: var(--sp-4);
+  color: inherit;
+}
+
+.stats-card {
+  border-radius: calc(var(--card-radius) + 0.25rem);
+  padding: var(--sp-4);
+  background: var(--color-surface);
+  box-shadow: var(--card-shadow);
+}
+
+/* ---------------------------
+   Headings
+   --------------------------- */
+.h1,
+h1 {
+  font-size: 1.75rem;
+  margin: 0 0 var(--sp-3) 0;
+}
+.h2,
+h2 {
+  font-size: 1.25rem;
+  margin: 0 0 var(--sp-3) 0;
+}
+
+/* ---------------------------
+   Buttons
+   --------------------------- */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: transform var(--motion-fast) ease,
+    background var(--motion-fast) ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-600);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid currentColor;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.375rem;
+}
+
+/* ---------------------------
+   Hero section
+   --------------------------- */
+.hero {
+  border-radius: 0.5rem;
+  color: #fff;
+  overflow: hidden;
+  padding: var(--sp-5);
+}
+
+.hero .overlay {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15)
+  );
+  padding: var(--sp-4);
+  border-radius: 0.5rem;
+}
+
+/* ---------------------------
+   AI Widget
+   --------------------------- */
+.ai-widget {
+  position: fixed;
+  right: var(--sp-4);
+  bottom: var(--sp-4);
+  z-index: 1200;
+  font-size: 0.95rem;
+}
+
+.ai-widget #ai-toggle {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.5rem;
+  background: var(--color-primary);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(13, 110, 253, 0.12);
+  transition: transform var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+.ai-widget #ai-toggle:active {
+  transform: translateY(1px);
+}
+
+.ai-widget .card {
+  width: 360px;
+  max-width: 92vw;
+  border-radius: 0.6rem;
+  overflow: hidden;
+}
+
+.ai-messages {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+/* ---------------------------
+   Touch target / base interactions
+   --------------------------- */
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* ---------------------------
+   Responsive adjustments
+   --------------------------- */
+@media (max-width: 576px) {
+  .hero .display-5 {
+    font-size: 1.6rem;
+    line-height: 1.2;
+  }
+
+  .container {
+    padding-left: var(--sp-3);
+    padding-right: var(--sp-3);
+  }
+
+  .ai-widget {
+    right: var(--sp-3);
+    bottom: var(--sp-3);
+  }
+
+  .ai-widget .card {
+    width: calc(100vw - 2 * var(--sp-3));
+    max-width: 100%;
+  }
+}
+
+/* ---------------------------
+   Motion reduction
+   --------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-medium: 0ms;
+  }
+  * {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
+
+/* ---------------------------
+   Utility spacing
+   --------------------------- */
+.mt-1 {
+  margin-top: var(--sp-1);
+}
+.mt-2 {
+  margin-top: var(--sp-2);
+}
+.mt-3 {
+  margin-top: var(--sp-3);
+}
+.mb-2 {
+  margin-bottom: var(--sp-2);
+}
+.p-2 {
+  padding: var(--sp-2);
+}
+.p-3 {
+  padding: var(--sp-3);
+}
+
+/* ---------------------------
+   Print adjustments
+   --------------------------- */
+@media print {
+  .ai-widget,
+  .btn-primary {
+    display: none !important;
+  }
+  body {
+    color: #000;
+    background: #fff;
+  }
+  .card {
+    box-shadow: none;
+    border: 1px solid #eee;
+  }
+}
+
+
+--------------------------------------------
+### FILE: static\js\consent.js
+### SIZE: 2986 bytes
+### HASH: A2FCD79058DD9BAED8F322C22BAB6ECFAE13BA9D2FAFCADE4C0F9C9B0C484D81
+
+// static/js/consent.js
+// HTMX trigger handlers for consent subsystem.
+// - listens for HX triggers sent by server: removeConsentBanner, showToast
+
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------------
+  // Remove consent banner (server-triggered or HTMX swap)
+  // ---------------------------------------------------------------------------
+  function onRemoveBanner() {
+    try {
+      const banner = document.querySelector("#consent-banner");
+      if (banner) banner.remove();
+
+      // Remove banner slot if loader created it and it's now empty
+      const slot = document.getElementById("consent-banner-slot");
+      if (slot && !slot.hasChildNodes()) slot.remove();
+    } catch (err) {
+      console.debug("consent.js: remove banner failed", err);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Insert toast HTML returned in payload
+  // ---------------------------------------------------------------------------
+  function onShowToast(event) {
+    try {
+      const detail = event && event.detail;
+      if (!detail) return;
+
+      const html = detail.html;
+      if (!html) return;
+
+      const container =
+        document.querySelector("#global-toasts") ||
+        document.getElementById("app-toasts");
+
+      if (!container) return;
+
+      container.insertAdjacentHTML("afterbegin", html);
+    } catch (err) {
+      console.debug("consent.js: showToast failed", err);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Listen to server-side HTMX dispatched DOM events
+  // ---------------------------------------------------------------------------
+  document.addEventListener("removeConsentBanner", onRemoveBanner);
+  document.addEventListener("showToast", onShowToast);
+
+  // ---------------------------------------------------------------------------
+  // Catch HX-Trigger header events sent by Django backend
+  // ---------------------------------------------------------------------------
+  document.body.addEventListener("htmx:afterOnLoad", function (evt) {
+    try {
+      const xhr = evt.detail && evt.detail.xhr;
+      if (!xhr) return;
+
+      const hxTrigger = xhr.getResponseHeader("HX-Trigger");
+      if (!hxTrigger) return;
+
+      let triggers = {};
+      try {
+        // Strict JSON only — NO eval, NO new Function, NO fallback
+        triggers = JSON.parse(hxTrigger);
+      } catch (e) {
+        console.debug("consent.js: invalid/non-JSON HX-Trigger payload - ignored", e);
+        return;
+      }
+
+      // Apply triggers
+      if (triggers.removeConsentBanner) onRemoveBanner();
+      if (triggers.showToast && triggers.showToast.html) {
+        onShowToast({ detail: triggers.showToast });
+      }
+    } catch (err) {
+      console.debug("consent.js: htmx after load handler failed", err);
+    }
+  });
+
+})();
+
+
+--------------------------------------------
+### FILE: static\js\consent-banner-loader.js
+### SIZE: 18571 bytes
+### HASH: 9065DFFB20C608646D399E1C8A1449A749D04C7B68F8405EC9B02BABEDD1CE35
+
+// static/js/consent-banner-loader.js
+// Hardened, CSP-safe, enterprise-grade Consent Banner Loader (final version)
+
+(function () {
+  "use strict";
+
+  // ---------------------------------------------------------------------------
+  //  A: Idempotent loader guard & runtime CONFIG
+  // ---------------------------------------------------------------------------
+  if (typeof window !== "undefined" && window.__CONSENT_BANNER_LOADER_LOADED__) return;
+  if (typeof window !== "undefined") window.__CONSENT_BANNER_LOADER_LOADED__ = true;
+
+  // Safe namespace
+  window.AppConsent = window.AppConsent || {};
+
+  var DEFAULTS = {
+    cookieName: "consent_status",
+    endpoints: {
+      banner: "/consent/banner/",
+      acceptAll: "/consent/accept_all/",
+      rejectAll: "/consent/reject_all/",
+      accept: "/consent/accept/",
+    },
+    bannerSlotId: "consent-banner-slot",
+    bannerId: "consent-banner",
+    toastsId: "app-toasts",
+    autoLoad: true,
+  };
+
+  // ---------------------------------------------------------------------------
+  //  Runtime Configuration Merge (safe)
+  // ---------------------------------------------------------------------------
+  var CONFIG = (function () {
+    try {
+      if (
+        typeof window !== "undefined" &&
+        window.CONSENT_CONFIG &&
+        typeof window.CONSENT_CONFIG === "object"
+      ) {
+        var merged = {};
+        for (var k in DEFAULTS) merged[k] = DEFAULTS[k];
+
+        for (var key in window.CONSENT_CONFIG) {
+          if (
+            Object.prototype.hasOwnProperty.call(window.CONSENT_CONFIG, key) &&
+            key !== "endpoints"
+          ) {
+            merged[key] = window.CONSENT_CONFIG[key];
+          }
+        }
+
+        merged.endpoints = Object.assign(
+          {},
+          DEFAULTS.endpoints,
+          window.CONSENT_CONFIG.endpoints || {}
+        );
+
+        return merged;
+      }
+    } catch (_) {}
+
+    return DEFAULTS;
+  })();
+
+  var CONSENT_COOKIE_NAME = String(CONFIG.cookieName || DEFAULTS.cookieName);
+  var ENDPOINTS = Object.assign({}, DEFAULTS.endpoints, CONFIG.endpoints || {});
+  var BANNER_SLOT_ID = CONFIG.bannerSlotId || DEFAULTS.bannerSlotId;
+  var BANNER_ID = CONFIG.bannerId || DEFAULTS.bannerId;
+  var TOASTS_ID = CONFIG.toastsId || DEFAULTS.toastsId;
+  var AUTO_LOAD =
+    typeof CONFIG.autoLoad !== "undefined"
+      ? !!CONFIG.autoLoad
+      : DEFAULTS.autoLoad;
+
+  // ---------------------------------------------------------------------------
+  //  Utilities
+  // ---------------------------------------------------------------------------
+  function getCookie(name) {
+    try {
+      if (!name || typeof document === "undefined" || !document.cookie) return null;
+      var parts = document.cookie.split(";");
+      for (var i = 0; i < parts.length; i++) {
+        var cookie = parts[i].trim();
+        if (cookie.indexOf(name + "=") === 0) {
+          return decodeURIComponent(cookie.substring(name.length + 1));
+        }
+      }
+    } catch (err) {
+      console.debug("consent-banner-loader.getCookie error:", err);
+    }
+    return null;
+  }
+
+  function hasConsentCookie() {
+    try {
+      var v = getCookie(CONSENT_COOKIE_NAME);
+      if (!v) return false;
+
+      if (v === "1" || v === "true") return true;
+
+      try {
+        var parsed = JSON.parse(v);
+        if (parsed && typeof parsed === "object") {
+          for (var k in parsed) {
+            if (!Object.prototype.hasOwnProperty.call(parsed, k)) continue;
+            if (parsed[k]) return true;
+          }
+        }
+      } catch (_) {}
+
+      return false;
+    } catch (err) {
+      console.debug("consent-banner-loader.hasConsentCookie error:", err);
+      return false;
+    }
+  }
+
+  function getMetaCsrf() {
+    try {
+      var m =
+        document.querySelector('meta[name="csrf-token"]') ||
+        document.querySelector('meta[name="csrfmiddlewaretoken"]') ||
+        document.querySelector('meta[name="X-CSRFToken"]') ||
+        null;
+      return m ? m.content : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Safe CSRF fetch wrapper
+  function csrfFetch(url, opts) {
+    opts = opts || {};
+    var headers = new Headers(opts.headers || {});
+
+    try {
+      if (!headers.has("X-Requested-With"))
+        headers.set("X-Requested-With", "XMLHttpRequest");
+    } catch (_) {}
+
+    try {
+      var csrftoken = getCookie("csrftoken") || getMetaCsrf();
+      if (csrftoken && !headers.has("X-CSRFToken")) {
+        headers.set("X-CSRFToken", csrftoken);
+      }
+    } catch (_) {}
+
+    return fetch(url, {
+      method: opts.method || "GET",
+      credentials: "same-origin",
+      headers: headers,
+      body: opts.body || null,
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Whitelist-based Sanitization
+  // ---------------------------------------------------------------------------
+  function sanitizeFragment(root) {
+    try {
+      if (!root || !root.querySelectorAll) return;
+
+      // Remove scripts entirely
+      root.querySelectorAll("script").forEach(function (s) {
+        if (s.parentNode) s.parentNode.removeChild(s);
+      });
+
+      // Whitelist tags allowed
+      var ALLOWED_TAGS = {
+        DIV: true,
+        P: true,
+        SPAN: true,
+        BUTTON: true,
+        A: true,
+        UL: true,
+        LI: true,
+        INPUT: true,
+        LABEL: true,
+        SECTION: true,
+        ARTICLE: true,
+        FORM: true,
+      };
+
+      root.querySelectorAll("*").forEach(function (el) {
+        // Remove non-whitelisted tags
+        if (!ALLOWED_TAGS[el.tagName]) {
+          el.remove();
+          return;
+        }
+
+        // Strip dangerous attributes
+        for (var i = el.attributes.length - 1; i >= 0; i--) {
+          var name = el.attributes[i].name;
+          var value = el.attributes[i].value || "";
+
+          // Inline event handlers
+          if (/^on/i.test(name)) {
+            el.removeAttribute(name);
+            continue;
+          }
+
+          // JS URLs
+          if (/^(href|src)$/i.test(name)) {
+            if (/^\s*javascript:/i.test(value) || /^\s*data:text\/html/i.test(value)) {
+              el.removeAttribute(name);
+            }
+          }
+        }
+      });
+    } catch (err) {
+      console.debug("consent-banner-loader.sanitizeFragment:", err);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  DOM helpers
+  // ---------------------------------------------------------------------------
+  function ensureSlot() {
+    try {
+      var slot = document.getElementById(BANNER_SLOT_ID);
+      if (!slot) {
+        var existingBanner = document.getElementById(BANNER_ID);
+        if (existingBanner && existingBanner.parentElement) {
+          slot = existingBanner.parentElement;
+        }
+      }
+      if (!slot) {
+        slot = document.createElement("div");
+        slot.id = BANNER_SLOT_ID;
+        slot.style.position = "relative";
+        slot.style.zIndex = 99999;
+        (document.body || document.documentElement).appendChild(slot);
+      }
+      return slot;
+    } catch (err) {
+      console.debug("consent-banner-loader.ensureSlot:", err);
+      return null;
+    }
+  }
+
+  function removeBanner() {
+    try {
+      var banner = document.getElementById(BANNER_ID);
+      if (banner && banner.parentElement) banner.parentElement.removeChild(banner);
+
+      var slot = document.getElementById(BANNER_SLOT_ID);
+      if (slot && !slot.hasChildNodes() && slot.parentElement) {
+        slot.parentElement.removeChild(slot);
+      }
+    } catch (err) {
+      console.debug("consent-banner-loader.removeBanner:", err);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Render banner (duplicate protection, sanitized)
+  // ---------------------------------------------------------------------------
+  function renderBanner(html) {
+    try {
+      if (!html || typeof html !== "string") return;
+
+      var slot = ensureSlot();
+      if (!slot) return;
+
+      var tpl = document.createElement("template");
+      tpl.innerHTML = html.trim();
+
+      var frag = tpl.content.cloneNode(true);
+      sanitizeFragment(frag);
+
+      var newBanner = frag.firstElementChild || null;
+      var oldBanner = document.getElementById(BANNER_ID);
+
+      if (oldBanner && newBanner) {
+        try {
+          if (oldBanner.isEqualNode(newBanner)) {
+            return; // Skip identical
+          }
+        } catch (_) {}
+        if (oldBanner.parentNode) oldBanner.parentNode.removeChild(oldBanner);
+      }
+
+      // Replace content
+      while (slot.firstChild) slot.removeChild(slot.firstChild);
+      slot.appendChild(frag);
+
+      attachHandlers();
+    } catch (err) {
+      console.error("consent-banner-loader.renderBanner:", err);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Toast Helpers (CSP-safe)
+  // ---------------------------------------------------------------------------
+  function ensureToastsArea() {
+    try {
+      var area = document.getElementById(TOASTS_ID);
+      if (!area) {
+        area = document.createElement("div");
+        area.id = TOASTS_ID;
+        area.style.position = "fixed";
+        area.style.top = "16px";
+        area.style.right = "16px";
+        area.style.zIndex = 100000;
+        document.body.appendChild(area);
+      }
+      return area;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function injectToastFromHtml(html) {
+    try {
+      if (!html) return;
+      var tmp = document.createElement("div");
+      tmp.innerHTML = html;
+
+      var toastNode =
+        tmp.querySelector(".toast") || tmp.querySelector(".toast-body");
+
+      if (!toastNode) return;
+
+      var toast = toastNode.cloneNode(true);
+      sanitizeFragment(toast);
+
+      var area = ensureToastsArea();
+      if (!area) return;
+
+      area.appendChild(toast);
+
+      try {
+        if (window.bootstrap && window.bootstrap.Toast) {
+          new window.bootstrap.Toast(toast).show();
+        } else {
+          setTimeout(function () {
+            try {
+              toast.remove();
+            } catch (_) {}
+          }, 3500);
+        }
+      } catch (_) {
+        setTimeout(function () {
+          try {
+            toast.remove();
+          } catch (_) {}
+        }, 3500);
+      }
+    } catch (err) {
+      console.debug("consent-banner-loader.injectToastFromHtml:", err);
+    }
+  }
+
+  function showToastMessage(msg) {
+    try {
+      if (!msg) return;
+      var area = ensureToastsArea();
+      if (!area) return;
+
+      var t = document.createElement("div");
+      t.className = "toast show bg-dark text-white p-3 mb-2 rounded shadow-lg";
+      t.textContent = String(msg);
+
+      area.appendChild(t);
+
+      setTimeout(function () {
+        try {
+          t.remove();
+        } catch (_) {}
+      }, 3500);
+    } catch (_) {}
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Action / Checkbox helpers
+  // ---------------------------------------------------------------------------
+  function pickAction(root, name) {
+    try {
+      if (!root || !root.querySelector) return null;
+
+      return (
+        root.querySelector('[data-consent-action="' + name + '"]') ||
+        root.querySelector('[data-hx-action="' + name + '"]') ||
+        root.querySelector("#" + name.replace(/\W/g, "-")) ||
+        null
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Attach event handlers
+  // ---------------------------------------------------------------------------
+  function attachHandlers() {
+    try {
+      var banner = document.getElementById(BANNER_ID);
+      if (!banner) return;
+
+      if (banner.dataset && banner.dataset.handlersAttached === "1") return;
+      if (banner.dataset) banner.dataset.handlersAttached = "1";
+
+      var acceptBtn = pickAction(banner, "accept-all");
+      var rejectBtn = pickAction(banner, "reject-all");
+      var closeBtn = pickAction(banner, "close");
+
+      if (acceptBtn && !acceptBtn._attached) {
+        acceptBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          doAcceptAll();
+        });
+        acceptBtn._attached = true;
+      }
+
+      if (rejectBtn && !rejectBtn._attached) {
+        rejectBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          doRejectAll();
+        });
+        rejectBtn._attached = true;
+      }
+
+      if (closeBtn && !closeBtn._attached) {
+        closeBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          removeBanner();
+        });
+        closeBtn._attached = true;
+      }
+
+      // Checkbox collection
+      var chks =
+        banner.querySelectorAll(
+          'input[type="checkbox"][data-consent-slug]'
+        ) || [];
+      if (!chks.length)
+        chks = banner.querySelectorAll('input[type="checkbox"]') || [];
+
+      for (var i = 0; i < chks.length; i++) {
+        (function (chk) {
+          if (chk._attached) return;
+          chk.addEventListener("change", function () {
+            if (window.__consent_save_timeout)
+              clearTimeout(window.__consent_save_timeout);
+            window.__consent_save_timeout = setTimeout(
+              saveGranularPreferences,
+              250
+            );
+          });
+          chk._attached = true;
+        })(chks[i]);
+      }
+    } catch (err) {
+      console.debug("consent-banner-loader.attachHandlers:", err);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  ACTIONS
+  // ---------------------------------------------------------------------------
+  async function doAcceptAll() {
+    try {
+      var res = await csrfFetch(ENDPOINTS.acceptAll, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: new URLSearchParams({ accept_all: "1" }).toString(),
+      });
+
+      var text = "";
+      try {
+        text = await res.text();
+      } catch (_) {}
+
+      removeBanner();
+
+      try {
+        var js = JSON.parse(text || "{}");
+        if (js && js.message) showToastMessage(js.message);
+        else injectToastFromHtml(text);
+      } catch (_) {
+        injectToastFromHtml(text);
+      }
+    } catch (err) {
+      console.error("consent-banner-loader.doAcceptAll:", err);
+      showToastMessage("Failed to accept cookies — please try again.");
+    }
+  }
+
+  async function doRejectAll() {
+    try {
+      var res = await csrfFetch(ENDPOINTS.rejectAll, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: new URLSearchParams({ reject_all: "1" }).toString(),
+      });
+
+      var text = "";
+      try {
+        text = await res.text();
+      } catch (_) {}
+
+      removeBanner();
+
+      try {
+        var js = JSON.parse(text || "{}");
+        if (js && js.message) showToastMessage(js.message);
+        else injectToastFromHtml(text);
+      } catch (_) {
+        injectToastFromHtml(text);
+      }
+    } catch (err) {
+      console.error("consent-banner-loader.doRejectAll:", err);
+      showToastMessage("Failed to reject cookies — please try again.");
+    }
+  }
+
+  async function saveGranularPreferences() {
+    try {
+      var banner = document.getElementById(BANNER_ID);
+      if (!banner) return;
+
+      var payload = {};
+      var chks =
+        banner.querySelectorAll(
+          'input[type="checkbox"][data-consent-slug]'
+        ) || [];
+      if (!chks.length)
+        chks = banner.querySelectorAll('input[type="checkbox"]') || [];
+
+      for (var i = 0; i < chks.length; i++) {
+        var c = chks[i];
+        try {
+          var slug =
+            c.getAttribute("data-consent-slug") ||
+            (c.dataset &&
+              (c.dataset.consentSlug ||
+                c.dataset.consent_slug ||
+                c.dataset.consent)) ||
+            c.name ||
+            null;
+          if (!slug) continue;
+          payload[String(slug)] = !!c.checked;
+        } catch (_) {}
+      }
+
+      var res = await csrfFetch(ENDPOINTS.accept, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res || !res.ok) {
+        console.warn(
+          "consent-banner-loader.saveGranularPreferences: server returned",
+          res && res.status
+        );
+        return;
+      }
+
+      try {
+        var js = await res.json();
+        if (js && js.message) {
+          showToastMessage(js.message);
+        }
+      } catch (_) {
+        var html = await res.text();
+        injectToastFromHtml(html);
+      }
+    } catch (err) {
+      console.error("consent-banner-loader.saveGranularPreferences:", err);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Load banner
+  // ---------------------------------------------------------------------------
+  async function loadBanner() {
+    try {
+      if (hasConsentCookie()) {
+        removeBanner();
+        return;
+      }
+
+      var res = await csrfFetch(ENDPOINTS.banner, { method: "GET" });
+      if (!res || !res.ok) return;
+
+      var html = await res.text();
+      if (!html || !html.trim()) {
+        removeBanner();
+        return;
+      }
+
+      renderBanner(html);
+    } catch (err) {
+      console.error("consent-banner-loader.loadBanner:", err);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  //  Auto-load
+  // ---------------------------------------------------------------------------
+  try {
+    if (AUTO_LOAD) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", loadBanner);
+      } else {
+        setTimeout(loadBanner, 0);
+      }
+    }
+  } catch (err) {
+    console.debug("consent-banner-loader.init:", err);
+  }
+})();
+
+
+--------------------------------------------
+### FILE: static\js\htmx-csrf.js
+### SIZE: 3686 bytes
+### HASH: 8D7F25D5428DC39C1C1AAFE177C37119ACB7355FD4F295C5FCADF4A463D3DC55
+
+// static/js/htmx-csrf.js
+// ============================================================================
+// Enterprise-grade CSRF injection for HTMX (Django 5.2+)
+// ============================================================================
+// Safe, idempotent, CSP-clean, and fully defensive.
+// ============================================================================
+
+(function () {
+  "use strict";
+
+  // --------------------------------------------------------------------------
+  // Prevent double-loading
+  // --------------------------------------------------------------------------
+  if (window.__HTMX_CSRF_LOADER__) return;
+  window.__HTMX_CSRF_LOADER__ = true;
+
+  // --------------------------------------------------------------------------
+  // Cookie Parser (hardened)
+  // --------------------------------------------------------------------------
+  function getCookie(name) {
+    try {
+      if (!document.cookie) return null;
+
+      const parts = document.cookie.split(";");
+
+      for (let i = 0; i < parts.length; i++) {
+        const cookie = parts[i].trim();
+        if (cookie.startsWith(name + "=")) {
+          return decodeURIComponent(cookie.substring(name.length + 1));
+        }
+      }
+    } catch (err) {
+      console.debug("htmx-csrf: cookie parsing failed:", err);
+    }
+    return null;
+  }
+
+  // --------------------------------------------------------------------------
+  // Meta Tag Fallback (audit-aware)
+  // --------------------------------------------------------------------------
+  function getMetaCsrf() {
+    try {
+      const meta =
+        document.querySelector('meta[name="csrf-token"]') ||
+        document.querySelector('meta[name="csrfmiddlewaretoken"]') ||
+        document.querySelector('meta[name="X-CSRFToken"]');
+
+      return meta ? meta.content : null;
+    } catch (err) {
+      console.debug("htmx-csrf: meta token read error:", err);
+      return null;
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Attach CSRF token to HTMX request
+  // --------------------------------------------------------------------------
+  function onHtmxConfigRequest(evt) {
+    try {
+      // malformed event → ignore safely
+      if (!evt || !evt.detail || !evt.detail.headers) {
+        console.debug("htmx-csrf: ignored malformed event");
+        return;
+      }
+
+      const headers = evt.detail.headers;
+      const csrftoken = getCookie("csrftoken") || getMetaCsrf();
+
+      if (!csrftoken) {
+        console.warn(
+          "htmx-csrf WARNING: No CSRF token available (cookie & meta missing)"
+        );
+        return;
+      }
+
+      // Attach token
+      headers["X-CSRFToken"] = csrftoken;
+
+      // Required by secure Django setups
+      if (!headers["X-Requested-With"]) {
+        headers["X-Requested-With"] = "XMLHttpRequest";
+      }
+
+      evt.detail.headers = headers;
+    } catch (err) {
+      console.debug("htmx-csrf: CSRF attach failed:", err);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Bind listener defensively (HTMX may load late)
+  // --------------------------------------------------------------------------
+  function safeRegister() {
+    try {
+      if (!document.body) {
+        document.addEventListener("DOMContentLoaded", safeRegister);
+        return;
+      }
+
+      document.body.addEventListener(
+        "htmx:configRequest",
+        onHtmxConfigRequest
+      );
+    } catch (err) {
+      console.error("htmx-csrf: listener registration failed:", err);
+    }
+  }
+
+  safeRegister();
+})();
+
+
+--------------------------------------------
+### FILE: static\js\main.js
+### SIZE: 7965 bytes
+### HASH: 28AFACD7D1E2ED5BCE0B141AD7E4599AC9FF5F0AE3DAF33AC8E4BC076C335DB8
+
+// static/js/main.js - tiny UI helpers (toasts, AI panel)
+// ============================================================================
+// Enterprise-grade, CSP-safe, framework-agnostic UI helper script
+// (Uses global Bootstrap if available)
+// ============================================================================
+
+(function () {
+  "use strict";
+
+  // Use non-brand global namespace
+  window.AppUI = window.AppUI || {};
+
+  // ---------------------------------------------------------------------------
+  // Safe DOM lookup
+  // ---------------------------------------------------------------------------
+  function safeQuery(id) {
+    if (!id || typeof id !== "string") return null;
+    try {
+      return document.getElementById(id) || null;
+    } catch (err) {
+      console.warn("main.js: safeQuery failed:", err);
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // HTML escape utility (XSS-safe)
+  // ---------------------------------------------------------------------------
+  function escapeHtml(str) {
+    if (typeof str !== "string") return String(str || "");
+    return str.replace(/[&<>"'`=\/]/g, function (s) {
+      return (
+        {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+          "/": "&#x2F;",
+          "`": "&#x60;",
+          "=": "&#x3D;",
+        }[s] || s
+      );
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Bootstrap Toast Wrapper (CSP-safe)
+  // ---------------------------------------------------------------------------
+  function showToast(message, title = "Info", autohide = true, delay = 4000) {
+    const container = safeQuery("app-toasts");
+    if (!container) {
+      console.warn("main.js: Toast container #app-toasts missing");
+      return;
+    }
+
+    const id = "t-" + Date.now();
+
+    // Build DOM manually → NO innerHTML injection
+    const toastEl = document.createElement("div");
+    toastEl.id = id;
+    toastEl.className = "toast align-items-center text-bg-white border-0 mb-2";
+    toastEl.setAttribute("role", "alert");
+    toastEl.setAttribute("aria-live", "assertive");
+    toastEl.setAttribute("aria-atomic", "true");
+
+    const flex = document.createElement("div");
+    flex.className = "d-flex";
+
+    const body = document.createElement("div");
+    body.className = "toast-body";
+
+    body.appendChild(
+      document.createTextNode(`${title ? title + ": " : ""}${message}`)
+    );
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn-close me-2 m-auto";
+    btn.setAttribute("data-bs-dismiss", "toast");
+    btn.setAttribute("aria-label", "Close");
+
+    flex.appendChild(body);
+    flex.appendChild(btn);
+    toastEl.appendChild(flex);
+    container.appendChild(toastEl);
+
+    try {
+      if (window.bootstrap?.Toast) {
+        const toast = new window.bootstrap.Toast(toastEl, {
+          autohide: !!autohide,
+          delay: Number(delay) || 4000,
+        });
+        toast.show();
+      } else {
+        // Fallback auto-remove
+        setTimeout(() => {
+          try {
+            toastEl.remove();
+          } catch (_) {}
+        }, delay);
+      }
+    } catch (err) {
+      console.warn("main.js: Toast error, falling back:", err);
+      setTimeout(() => {
+        try {
+          toastEl.remove();
+        } catch (_) {}
+      }, delay);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // AI Widget Initialization
+  // ---------------------------------------------------------------------------
+  let aiInit = false;
+
+  function initAiWidget() {
+    if (aiInit) return;
+    aiInit = true;
+
+    const aiToggle = safeQuery("ai-toggle");
+    const aiPanel = safeQuery("ai-panel");
+    const aiClose = safeQuery("ai-close");
+    const aiSend = safeQuery("ai-send");
+    const aiInput = safeQuery("ai-input");
+    const aiMessages = safeQuery("ai-messages");
+
+    // Panel toggle
+    if (aiToggle && aiPanel) {
+      aiToggle.addEventListener("click", () => {
+        try {
+          aiPanel.classList.toggle("d-none");
+        } catch (err) {
+          console.warn("main.js: ai-toggle error:", err);
+        }
+      });
+    }
+
+    if (aiClose && aiPanel) {
+      aiClose.addEventListener("click", () => {
+        try {
+          aiPanel.classList.add("d-none");
+        } catch (err) {
+          console.warn("main.js: ai-close error:", err);
+        }
+      });
+    }
+
+    // Message appender (private)
+    function appendAiMessageInternal(text, who = "bot") {
+      if (!aiMessages) return;
+
+      const msg = document.createElement("div");
+      msg.textContent = typeof text === "string" ? text : String(text || "");
+
+      msg.className = who === "user"
+        ? "small text-end p-2"
+        : "small text-muted p-2";
+
+      aiMessages.appendChild(msg);
+      aiMessages.scrollTop = aiMessages.scrollHeight;
+    }
+
+    AppUI._appendAiMessageInternal = appendAiMessageInternal;
+
+    // CSRF Retrieval
+    function getCsrfToken() {
+      const meta =
+        document.querySelector('meta[name="csrf-token"]') ||
+        document.querySelector('meta[name="csrfmiddlewaretoken"]') ||
+        document.querySelector('meta[name="csrf"]');
+      return meta?.content || null;
+    }
+
+    // AI Send handler
+    if (aiSend && aiInput && aiMessages) {
+      aiSend.addEventListener("click", async () => {
+        const q = (aiInput.value || "").trim();
+        if (!q) return;
+
+        appendAiMessageInternal(q, "user");
+        aiInput.value = "";
+        appendAiMessageInternal("Thinking...", "bot");
+
+        try {
+          const csrftoken = getCsrfToken();
+
+          const headers = {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          };
+          if (csrftoken) headers["X-CSRFToken"] = csrftoken;
+
+          const response = await fetch("/api/ai/assistant/", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ question: q }),
+            credentials: "same-origin",
+          });
+
+          if (!response.ok) {
+            appendAiMessageInternal(
+              `Assistant unavailable (status ${response.status})`,
+              "bot"
+            );
+            return;
+          }
+
+          let data = null;
+          try {
+            data = await response.json();
+          } catch (jsonErr) {
+            appendAiMessageInternal(
+              "Invalid response received from server.",
+              "bot"
+            );
+            return;
+          }
+
+          appendAiMessageInternal(
+            data?.answer || data?.result || "No answer available.",
+            "bot"
+          );
+        } catch (err) {
+          appendAiMessageInternal(
+            "Assistant error: " + (err?.message || String(err)),
+            "bot"
+          );
+        }
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public API
+  // ---------------------------------------------------------------------------
+  AppUI.showToast = showToast;
+
+  AppUI.appendAiMessage = function (text, who = "bot") {
+    if (!aiInit) initAiWidget();
+    if (typeof AppUI._appendAiMessageInternal === "function") {
+      AppUI._appendAiMessageInternal(text, who);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Auto-init on DOM ready
+  // ---------------------------------------------------------------------------
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAiWidget);
+  } else {
+    initAiWidget();
+  }
+})();
+
+
+--------------------------------------------
+### FILE: static\js\postcss.config.js
+### SIZE: 89 bytes
+### HASH: B78F5D0A0A449ECF58B6B6252E26CD2216C7AA41235E2D6D01A26B9A065CD439
+
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+
+
+--------------------------------------------
+### FILE: static\js\tailwind.config.js
+### SIZE: 238 bytes
+### HASH: AEC1DBF0F0DCE63FB01D968A66C19578DE5131AA9E195FE1226CE5F8E5914B83
+
+module.exports = {
+  content: [
+    "./templates/**/*.html",
+    "./apps/**/*.py",
+    "./static/js/**/*.js",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: "#0ea5a4",
+      },
+    },
+  },
+  plugins: [],
+};
+
+
+--------------------------------------------
+### FILE: static\src_css\main.css
+### SIZE: 205 bytes
+### HASH: C5BE07E4917EA675F41829C38B37AC042C87AA445C4E016C221D6B437B9AEFB5
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add reusable components here */
+
+.btn-primary {
+    @apply bg-primary text-white px-4 py-2 rounded-md hover:opacity-95 transition;
+}
+
+
+--------------------------------------------
+### FILE: templates\403.html
+### SIZE: 541 bytes
+### HASH: C11D58C9B7DEC3593F0400558355770CD16BD5DA1741E291E13711DF492495B4
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}403 — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="text-center">
+    <h2 class="text-4xl font-bold text-slate-900">403</h2>
+    <p class="mt-4 text-slate-600">You don't have permission to access this page.</p>
+    <a href="{% url 'core:home' %}" class="mt-6 inline-block text-primary underline">Return to homepage</a>
+  </div>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\404.html
+### SIZE: 550 bytes
+### HASH: 611DBC5AE2963785E93B8550A92DAFA272A93F5DBD63382ACEB8986DBCFD86A3
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}404 — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="text-center">
+    <h2 class="text-6xl font-bold text-slate-900">404</h2>
+    <p class="mt-4 text-slate-600">Sorry — the page you are looking for cannot be found.</p>
+    <a href="{% url 'core:home' %}" class="mt-6 inline-block text-primary underline">Return to homepage</a>
+  </div>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\500.html
+### SIZE: 563 bytes
+### HASH: 5F77D7362538B03FFE1D62497CD06082DA96A433A7C8CE990166FB6B308578DA
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}500 — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="text-center">
+    <h2 class="text-4xl font-bold text-slate-900">Something went wrong</h2>
+    <p class="mt-4 text-slate-600">Our team has been notified. Please try again later.</p>
+    <a href="{% url 'core:home' %}" class="mt-6 inline-block text-primary underline">Return to homepage</a>
+  </div>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\account\login.html
+### SIZE: 215 bytes
+### HASH: 443FA51B7344B97210C0D3A0A9214249A820388FD5C2D88108502C90A0AA507B
+
+{% extends "login.html" %}
+{% load static %}
+{% block title %}Account Login — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{# login.html acts as wrapper here; no extra content required #}
+
+
+--------------------------------------------
+### FILE: templates\account\logout.html
+### SIZE: 474 bytes
+### HASH: 9D93E2FDC30918D9974A5A08BFB1D446D419762AB2EABFB15326DAA7A926268C
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Logged out — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto py-12 text-center">
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-medium">You have been logged out</h3>
+    <a href="{% url 'core:home' %}" class="mt-4 inline-block text-primary underline">Return to homepage</a>
+  </div>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\account\password_reset.html
+### SIZE: 629 bytes
+### HASH: 6CA02FAACCF3E1679DFED6F8CAABB27AD85E0CAB8913C686C347121287A5D936
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Reset password — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-12">
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-medium">Reset your password</h3>
+    <form method="post" action="{% url 'account_reset_password' %}" class="mt-4">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div>
+        <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Send reset email</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\account\signup.html
+### SIZE: 180 bytes
+### HASH: 76B137FB962FAB883CE167054FBB803043721EBD8CB7BDA1539176CE1774A1FF
+
+{% extends "register.html" %}
+{% load static %}
+{% block title %}Sign up — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{# uses register.html wrapper #}
+
+
+--------------------------------------------
+### FILE: templates\base.html
+### SIZE: 4830 bytes
+### HASH: F920E61FB71AAE5114D0734D32CFDC2F65669AC6FEC4A1AE9DF1D4622BF88B75
+
+{% load static %}
+
+<!doctype html>
+<html lang="en" class="h-full bg-slate-50">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    {% block title %}
+      <title>{{ site_settings.site_name|default:'' }}</title>
+    {% endblock %}
+
+    {# ------------------------------------------------------------------ #}
+    {#  DYNAMIC FAVICON (Admin → fallback static)                         #}
+    {# ------------------------------------------------------------------ #}
+    {% if site_settings.favicon %}
+      <link rel="icon" type="image/png" href="{{ site_settings.favicon }}">
+      <link rel="apple-touch-icon" sizes="180x180" href="{{ site_settings.favicon }}">
+    {% else %}
+      <link rel="icon" type="image/png" href="{% static 'img/default-favicon.png' %}">
+      <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/default-favicon.png' %}">
+    {% endif %}
+
+    <meta name="theme-color" content="{{ site_settings.primary_color|default:'#0d6efd' }}">
+
+    {# ------------------------------------------------------------------ #}
+    {#  FIXED STATIC CSS PATH                                             #}
+    {# ------------------------------------------------------------------ #}
+    <link href="{% static 'styles/main.css' %}" rel="stylesheet">
+
+    {# ------------------------------------------------------------------ #}
+    {#  HTMX (CSP-safe with nonce)                                        #}
+    {# ------------------------------------------------------------------ #}
+    <script
+      src="https://unpkg.com/htmx.org@1.9.10"
+      crossorigin="anonymous"
+      nonce="{{ request.csp_nonce }}">
+    </script>
+
+    <script
+      src="https://unpkg.com/htmx.org/dist/ext/head-support.js"
+      nonce="{{ request.csp_nonce }}">
+    </script>
+
+    {% block head %}{% endblock %}
+  </head>
+
+  <body class="min-h-screen flex flex-col">
+
+    {% include "includes/site_header.html" %}
+    {% include "includes/navbar.html" %}
+
+    <div id="consent-banner-slot">
+      {% block consent_banner %}{% endblock %}
+    </div>
+
+    <main class="flex-1">
+      {% block content %}{% endblock %}
+    </main>
+
+    {% include "includes/footer.html" %}
+
+    {# Toast containers -------------------------------------------------- #}
+    <div id="global-toasts" class="fixed top-3 right-3 space-y-2 z-50"></div>
+
+    <div id="app-toasts"
+         class="fixed top-0 right-0 p-3 z-50"
+         aria-live="polite"
+         aria-atomic="true"></div>
+
+    {% block scripts %}
+
+      {# ------------------------------------------------------------------ #}
+      {#  CORE JS FILES (correct structure)                                #}
+      {# ------------------------------------------------------------------ #}
+      <script src="{% static 'js/htmx-csrf.js' %}" nonce="{{ request.csp_nonce }}"></script>
+      <script src="{% static 'js/consent.js' %}" nonce="{{ request.csp_nonce }}"></script>
+      <script src="{% static 'js/main.js' %}" nonce="{{ request.csp_nonce }}"></script>
+
+      {# ------------------------------------------------------------------ #}
+      {#  SITE_SETTINGS + CONSENT_CONFIG                                   #}
+      {# ------------------------------------------------------------------ #}
+      <script nonce="{{ request.csp_nonce }}">
+        (function () {
+          window.SITE_SETTINGS = {
+            site_name: "{{ site_settings.site_name|default:''|escapejs }}",
+            maintenance_mode: {{ site_settings.maintenance_mode|yesno:"true,false" }},
+            consent_version: "{{ consent_version|default:''|escapejs }}",
+            logo: "{{ site_settings.logo|default:''|escapejs }}",
+            dark_logo: "{{ site_settings.dark_logo|default:''|escapejs }}",
+            primary_color: "{{ site_settings.primary_color|default:'#0d6efd'|escapejs }}",
+          };
+
+          window.CONSENT_CONFIG = {
+            cookieName: "{{ consent_cookie_name|default:'consent_status' }}",
+            endpoints: {
+              banner: "{{ consent_endpoints.banner|default:'/consent/banner/' }}",
+              acceptAll: "{{ consent_endpoints.accept_all|default:'/consent/accept_all/' }}",
+              rejectAll: "{{ consent_endpoints.reject_all|default:'/consent/reject_all/' }}",
+              accept: "{{ consent_endpoints.accept|default:'/consent/accept/' }}",
+            },
+            autoLoad: {{ consent_auto_load|yesno:"true,false" }},
+          };
+        })();
+      </script>
+
+      {% if consent_auto_load %}
+        <script src="{% static 'js/consent-banner-loader.js' %}"
+                nonce="{{ request.csp_nonce }}"></script>
+      {% endif %}
+
+    {% endblock %}
+
+  </body>
+</html>
+
+
+--------------------------------------------
+### FILE: templates\consent\includes\banner.html
+### SIZE: 3235 bytes
+### HASH: DD0B035D3AEEC29C860A0E7358DEAD0F802B1490668E4FCFCEBC5799DB3EC24F
+
+{# templates/consent/includes/banner.html - canonical banner used by loader #}
+{% load static %}
+
+<div id="consent-banner"
+     class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-3xl px-4"
+     role="region"
+     aria-label="Cookie preferences"
+     data-consent-version="{{ consent_version|default:'' }}">
+  <div class="bg-white shadow-lg rounded-lg p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4">
+    <div class="flex-1">
+      <div class="font-semibold text-base text-slate-900">{{ consent_text|default:"We use cookies to improve your browsing experience." }}</div>
+
+      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
+        {% if consent_categories %}
+          {% for slug, data in consent_categories.items %}
+            {% with checked=data.checked|default:False required=data.required|default:False %}
+            <label class="inline-flex items-center space-x-2">
+              <input type="checkbox"
+                     name="{{ slug }}"
+                     value="1"
+                     data-consent-slug="{{ slug }}"
+                     {% if checked %}checked{% endif %}
+                     {% if required %}disabled{% endif %}
+                     class="h-4 w-4 rounded border-slate-400" />
+              <span class="capitalize">{{ data.name|default:slug|replace:"_"," " }}</span>
+              {% if required %}
+                <span class="text-xs text-red-600 ml-1">(required)</span>
+              {% endif %}
+            </label>
+            {% endwith %}
+          {% endfor %}
+        {% else %}
+          <div>Functional cookies are required.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2 pt-3 md:pt-0">
+      <!-- buttons contain BOTH attributes to support the loader & HTMX -->
+      <button id="consent-accept-all"
+              data-consent-action="accept-all"
+              data-hx-action="accept-all"
+              class="btn btn-primary px-3 py-2 rounded">
+        Accept all
+      </button>
+
+      <button id="consent-reject-all"
+              data-consent-action="reject-all"
+              data-hx-action="reject-all"
+              class="btn btn-outline px-3 py-2 rounded">
+        Reject optional
+      </button>
+
+      <a href="{% url 'consent:consent_manage' %}" id="consent-manage-link" class="text-sm underline text-slate-700 px-2">Manage</a>
+
+      <button id="consent-close"
+              data-consent-action="close"
+              data-hx-action="close"
+              class="text-sm text-slate-500 px-2"
+              aria-label="Close banner">&times;</button>
+    </div>
+  </div>
+</div>
+
+{# Fallback JS only — loader should normally attach; nonce added by loader/template #}
+<script nonce="{{ request.csp_nonce }}">
+  (function(){
+    if (!window.__CONSENT_FALLBACK_LOADED__) {
+      window.__CONSENT_FALLBACK_LOADED__ = true;
+      const close = document.getElementById('consent-close');
+      if (close) close.addEventListener('click', function(){
+        const el = document.getElementById('consent-banner');
+        if (el) el.remove();
+      });
+    }
+  })();
+</script>
+
+
+--------------------------------------------
+### FILE: templates\consent\manage.html
+### SIZE: 1581 bytes
+### HASH: CD51A134A27A9049EFD1D46D6DEFE959EC0E86E46BE3ABC41CB309C1511A3D5E
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Cookie Preferences — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="container py-6 max-w-3xl">
+  <h2 class="mb-4">Cookie preferences</h2>
+
+  <form method="post" action="{% url 'consent:manage' %}">
+    {% csrf_token %}
+    {% if categories %}
+      {% for c in categories %}
+        <div class="flex items-start space-x-3 mb-3">
+          <input id="c-{{ c.slug }}"
+                 name="{{ c.slug }}"
+                 value="1"
+                 type="checkbox"
+                 class="h-4 w-4 rounded border-slate-400"
+                 {% if c.required %}checked disabled aria-disabled="true"{% endif %}
+          >
+          <div>
+            <label for="c-{{ c.slug }}" class="font-medium">
+              {{ c.name }}
+              {% if c.required %}
+                <span class="text-xs text-red-600 ml-1">(Required)</span>
+              {% endif %}
+            </label>
+            <p class="text-sm text-slate-600 leading-snug">
+              {{ c.description|default:"No description available." }}
+            </p>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-slate-600 text-sm">No cookie categories are configured.</p>
+    {% endif %}
+
+    <div class="mt-6">
+      <button type="submit" class="btn btn-primary">Save preferences</button>
+      <a href="{{ request.GET.next|default:'/' }}" class="btn btn-link ml-3">Cancel</a>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\core\tenants.html
+### SIZE: 868 bytes
+### HASH: 56BA70F1394DDB1A941E36F543EC36BEADB2A744A887748DA8446854F4033DA9
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Tenants — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="mb-4">Active Tenants</h2>
+  {% if tenants %}
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr><th>Site</th><th>Domain</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for tenant in tenants %}
+            <tr>
+              <td>{{ tenant.site.name }}</td>
+              <td>{{ tenant.site.domain }}</td>
+              <td>{% if tenant.is_active %}✅ Active{% else %}❌ Inactive{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No tenants found.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\dashboard\dashboard_sidebar.html
+### SIZE: 1970 bytes
+### HASH: 2FC8BB17C8E68525D3ED7602E77C3C1B5019D2ACC1374B828913EED25AA6D053
+
+{% load static %}
+
+<aside class="w-64 bg-white border-r border-slate-200 h-screen fixed top-0 left-0 flex flex-col">
+
+  <!-- Sidebar header -->
+  <div class="h-16 flex items-center px-4 border-b border-slate-200">
+    <span class="text-lg font-semibold text-slate-900">
+      {{ site_settings.site_name|default:"" }}
+    </span>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-1">
+
+    {# Resolve URLs to variables to use in comparisons #}
+    {% url 'core:dashboard_overview' as url_dashboard_overview %}
+    {% url 'core:tenants' as url_tenants %}
+    {% url 'users:profile' as url_profile %}
+    {% url 'users_notifications:list' as url_notifications %}
+
+    <a href="{{ url_dashboard_overview }}"
+       class="block px-3 py-2 rounded-md text-sm font-medium {% if request.path == url_dashboard_overview %}bg-slate-200 text-slate-900{% else %}text-slate-700 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+      Overview
+    </a>
+
+    <a href="{{ url_tenants }}"
+       class="block px-3 py-2 rounded-md text-sm font-medium {% if request.path == url_tenants %}bg-slate-200 text-slate-900{% else %}text-slate-700 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+      Tenants
+    </a>
+
+    <a href="{{ url_profile }}"
+       class="block px-3 py-2 rounded-md text-sm font-medium {% if request.path == url_profile %}bg-slate-200 text-slate-900{% else %}text-slate-700 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+      Profile
+    </a>
+
+    <a href="{{ url_notifications }}"
+       class="block px-3 py-2 rounded-md text-sm font-medium {% if request.path == url_notifications %}bg-slate-200 text-slate-900{% else %}text-slate-700 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+      Notifications
+    </a>
+
+  </nav>
+
+  <!-- Optional footer -->
+  <div class="px-4 py-4 border-t border-slate-200 text-sm text-slate-600">
+    © {% now "Y" %}
+  </div>
+
+</aside>
+
+
+--------------------------------------------
+### FILE: templates\dashboard\overview.html
+### SIZE: 1675 bytes
+### HASH: F30BFAAFB7F90673E368EA0A8CA53BF065331EBEB00265515F930C6E1907F130
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Overview — {{ site_settings.site_name|default:"" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+    {# Sidebar #}
+    <aside class="lg:col-span-1">
+      {% include "includes/dashboard_sidebar.html" %}
+    </aside>
+
+    {# Main content #}
+    <section class="lg:col-span-3">
+
+      <h1 class="text-2xl font-semibold text-slate-900 mb-4">Overview</h1>
+
+      <p class="text-slate-600 mb-8">
+        This is a placeholder dashboard page. Replace it with your real dashboard widgets.
+      </p>
+
+      {# Dashboard cards #}
+      {% include "includes/dashboard_cards.html" %}
+      
+      {# Placeholder content below; safe for production #}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+
+        <div class="bg-white shadow rounded-lg p-6">
+          <h2 class="text-lg font-medium text-slate-900">Widget A</h2>
+          <p class="mt-2 text-sm text-slate-600">Your metric or overview goes here.</p>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-6">
+          <h2 class="text-lg font-medium text-slate-900">Widget B</h2>
+          <p class="mt-2 text-sm text-slate-600">Add more data or charts here.</p>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-6">
+          <h2 class="text-lg font-medium text-slate-900">Widget C</h2>
+          <p class="mt-2 text-sm text-slate-600">Use HTMX or API calls to make this dynamic.</p>
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\errors\403.html
+### SIZE: 362 bytes
+### HASH: EFC30188E3D8A24B7FCD6BAFD0DDCEE997771885695E717C04F146F76019FEDA
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}403 — Forbidden{% endblock %}
+{% block content %}
+<div class="container py-5 text-center">
+  <h1 class="display-5 text-danger">403</h1>
+  <p>You don't have permission to access this page.</p>
+  <a href="{% url 'core:home' %}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\errors\404.html
+### SIZE: 363 bytes
+### HASH: A6561355C3287038F0EEA3AE2E0E80694385FF378870F0C1B255D68DE821ED34
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}404 — Page Not Found{% endblock %}
+{% block content %}
+<div class="container py-5 text-center">
+  <h1 class="display-5 text-danger">404</h1>
+  <p>The page you requested could not be found.</p>
+  <a href="{% url 'core:home' %}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\errors\500.html
+### SIZE: 382 bytes
+### HASH: 5C9148EA7F809F9981D37D495C6F6DB9D348B11EE979128CE4B41B946949DF24
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}500 — Internal Server Error{% endblock %}
+{% block content %}
+<div class="container py-5 text-center">
+  <h1 class="display-5 text-danger">500</h1>
+  <p>Something went wrong on our side. We're working on it.</p>
+  <a href="{% url 'core:home' %}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\home.html
+### SIZE: 3064 bytes
+### HASH: F84EF2C58A21C9708362DCBE252AFC179C2EA55B565BE7B8C97B0F64904FA4D4
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Home — {{ site_settings.site_name|default:"" }}{% endblock %}
+
+{% block content %}
+
+<!-- HERO SECTION -->
+<section class="py-20 bg-white text-center">
+  <div class="container mx-auto px-4">
+    <h1 class="text-4xl md:text-5xl font-extrabold text-primary mb-4">
+      Welcome to {{ site_settings.site_name|default:"" }}
+    </h1>
+
+    <p class="text-gray-600 text-lg">
+      Django {{ django_version }} • Python {{ python_version }} · {{ now }}
+    </p>
+
+    <!-- Metrics Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-12">
+
+      <!-- Total Users -->
+      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-gray-100">
+        <h3 class="text-3xl font-bold text-gray-800">{{ total_users|default:"—" }}</h3>
+        <p class="text-gray-500 text-sm mt-1">Total users</p>
+      </div>
+
+      <!-- Active Devices -->
+      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-gray-100">
+        <h3 class="text-3xl font-bold text-gray-800">{{ active_devices|default:"—" }}</h3>
+        <p class="text-gray-500 text-sm mt-1">Active devices</p>
+      </div>
+
+      <!-- Unread Notifications -->
+      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-gray-100">
+        <h3 class="text-3xl font-bold text-gray-800">{{ unread_notifications|default:"—" }}</h3>
+        <p class="text-gray-500 text-sm mt-1">Unread notifications</p>
+      </div>
+
+      <!-- Active Announcements -->
+      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-gray-100">
+        <h3 class="text-3xl font-bold text-gray-800">{{ active_announcements|default:"—" }}</h3>
+        <p class="text-gray-500 text-sm mt-1">Active announcements</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ANNOUNCEMENTS LIST -->
+<section class="container mx-auto mt-16 px-4">
+  <h2 class="text-2xl font-bold mb-6">Recent announcements</h2>
+
+  {% if announcements %}
+    <div class="space-y-4">
+      {% for a in announcements %}
+        <div class="bg-white border border-gray-200 p-5 rounded-xl shadow-sm">
+          <h5 class="text-xl font-semibold text-gray-800">{{ a.title|default:"(untitled)" }}</h5>
+          <p class="text-gray-400 text-sm">{{ a.created_at|date:"M d, Y" }}</p>
+
+          <p class="text-gray-700 mt-2">
+            {{ a.message|truncatechars:200 }}
+          </p>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-blue-50 text-blue-700 border border-blue-200 p-4 rounded-lg">
+      No announcements available.
+    </div>
+  {% endif %}
+</section>
+
+
+<!-- Consent banner target container -->
+<div id="consent-banner" aria-live="polite"></div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<!-- Load consent banner loader from static (CSP-safe: nonce injected automatically) -->
+<script src="{% static 'js/consent-banner-loader.js' %}" nonce="{{ request.csp_nonce }}"></script>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\includes\cards\chart-card.html
+### SIZE: 606 bytes
+### HASH: E21B3F6EFD8F580F0201EFE1E42DF74C090311CE14B642D7779C407667673956
+
+<div class="bg-white shadow rounded-lg p-6">
+
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-medium text-slate-900">{{ title }}</h3>
+    {% if refresh_url %}
+      <button 
+        hx-get="{{ refresh_url }}"
+        hx-target="#chart-{{ chart_id }}"
+        hx-swap="innerHTML"
+        class="text-sm text-primary underline">
+        Refresh
+      </button>
+    {% endif %}
+  </div>
+
+  <div id="chart-{{ chart_id }}" class="h-64 flex items-center justify-center text-slate-500">
+    {{ placeholder_text|default:"Chart loading…" }}
+  </div>
+
+</div>
+
+
+--------------------------------------------
+### FILE: templates\includes\cards\icon-card.html
+### SIZE: 386 bytes
+### HASH: E872F1031EA1F1ABC1D72E6FD7BD99CF7372E1EAD5BFE7A6B6106BD54038DF9F
+
+<div class="bg-white shadow rounded-lg p-6 flex items-center gap-4">
+  
+  <div class="h-12 w-12 flex items-center justify-center bg-slate-100 rounded-lg">
+    <img src="{{ icon_url }}" alt="" class="h-6 w-6">
+  </div>
+
+  <div>
+    <div class="text-slate-500 text-sm">{{ label }}</div>
+    <div class="text-xl font-semibold text-slate-900">{{ value }}</div>
+  </div>
+
+</div>
+
+
+--------------------------------------------
+### FILE: templates\includes\cards\list-card.html
+### SIZE: 546 bytes
+### HASH: E5AD962C3659384403041D314DC6E9900530BFC9122E5CBED2B8C78EAB11050D
+
+<div class="bg-white shadow rounded-lg p-6">
+  <h3 class="text-lg font-medium text-slate-900 mb-4">{{ title }}</h3>
+
+  {% if items %}
+    <ul class="divide-y divide-slate-200">
+      {% for item in items %}
+        <li class="py-2 flex justify-between">
+          <span class="text-slate-700">{{ item.label }}</span>
+          <span class="text-slate-900 font-medium">{{ item.value }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-slate-500 text-sm">No data available.</p>
+  {% endif %}
+</div>
+
+
+--------------------------------------------
+### FILE: templates\includes\cards\status-card.html
+### SIZE: 358 bytes
+### HASH: EEC60C56FBE96CA5B9CC0CB5DEA8D4268E0142985CD97C1697994DC4C9ECFE0E
+
+<div class="bg-white shadow rounded-lg p-6">
+  {% if title %}<div class="text-sm text-slate-500 mb-2">{{ title }}</div>{% endif %}
+  <div class="text-2xl font-semibold text-slate-900">
+    {{ value|default:"0" }}
+  </div>
+  {% if description %}
+    <div class="text-slate-600 text-sm mt-2">
+      {{ description }}
+    </div>
+  {% endif %}
+</div>
+
+
+--------------------------------------------
+### FILE: templates\includes\footer.html
+### SIZE: 657 bytes
+### HASH: B903A0F91F6C20C2488FD8E57C8A72EA4C8A230F6C88447A9C68E496B17DF5FF
+
+{% load static %}
+<footer class="bg-slate-800 text-slate-200 py-6">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <div class="mb-3">
+      <a href="{% url 'site_settings:privacy_policy' %}" class="text-slate-200 hover:underline mx-2">Privacy</a>
+      <a href="{% url 'site_settings:terms_of_service' %}" class="text-slate-200 hover:underline mx-2">Terms</a>
+      <a href="{% url 'site_settings:cookies_policy' %}" class="text-slate-200 hover:underline mx-2">Cookies</a>
+    </div>
+    <div class="text-sm">&copy; {{ now.year }} {{ site_settings.site_name|default:"" }} — All rights reserved.</div>
+  </div>
+</footer>
+
+
+--------------------------------------------
+### FILE: templates\includes\navbar.html
+### SIZE: 3165 bytes
+### HASH: 7DC61A9EF029545EE5A9062331DE6BE438EF9AB8612543BD195C87D213682542
+
+{% load static %}
+
+{# ====================================================================== #}
+{#  ENTERPRISE-GRADE NAVBAR (ASGI-safe, no DB hits, no lazy user eval)   #}
+{# ====================================================================== #}
+
+<nav class="bg-white border-b border-slate-200">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16 items-center">
+
+      {# ================================================================ #}
+      {#  LOGO + SITE NAME (fixed path — img/, not images/)               #}
+      {#  Uses admin-configured logo if present, else fallback           #}
+      {# ================================================================ #}
+      <div class="flex items-center">
+        <a href="{% url 'core:home' %}" class="flex items-center">
+
+          {% if site_settings.logo %}
+            <img
+              src="{{ site_settings.logo }}"
+              alt="{{ site_settings.site_name|default:'' }}"
+              class="h-8 w-auto">
+          {% else %}
+            <img
+              src="{% static 'img/logo.svg' %}"
+              alt="{{ site_settings.site_name|default:'' }}"
+              class="h-8 w-auto">
+          {% endif %}
+
+          <span class="ml-3 font-semibold text-slate-900">
+            {{ site_settings.site_name|default:"" }}
+          </span>
+        </a>
+      </div>
+
+      {# ================================================================ #}
+      {#  NAVIGATION LINKS                                               #}
+      {# ================================================================ #}
+      <div class="flex items-center space-x-4">
+
+        <a href="{% url 'core:tenants' %}"
+           class="text-sm text-slate-700 hover:text-slate-900">
+          Tenants
+        </a>
+
+        <a href="{% url 'core:dashboard_overview' %}"
+           class="text-sm text-slate-700 hover:text-slate-900">
+          Dashboard
+        </a>
+
+        {# ============================================================ #}
+        {#  SAFE AUTH AREA — ASGI SAFE                                  #}
+        {#  DO NOT EVALUATE user.is_authenticated IN TEMPLATE          #}
+        {#  JS will toggle visibility based on backend-provided flag   #}
+        {# ============================================================ #}
+
+        {# Public links (visible by default) #}
+        <a href="{% url 'account_login' %}"
+           class="text-sm text-primary hover:underline auth-login">
+          Login
+        </a>
+
+        <a href="{% url 'account_signup' %}"
+           class="text-sm text-primary hover:underline auth-signup">
+          Sign up
+        </a>
+
+        {# Private links (hidden until JS toggles them) #}
+        <a href="{% url 'users:profile' %}"
+           class="text-sm text-slate-700 hover:text-slate-900 auth-profile hidden">
+          Profile
+        </a>
+
+        <a href="{% url 'account_logout' %}"
+           class="text-sm text-slate-700 hover:text-slate-900 auth-logout hidden">
+          Logout
+        </a>
+
+      </div>
+    </div>
+  </div>
+</nav>
+
+
+--------------------------------------------
+### FILE: templates\includes\notifications.html
+### SIZE: 573 bytes
+### HASH: 7EBB375BF80F32E546FD647DA9D186C3E9DD6BC8A38511ECB5421E0005EDF285
+
+<div class="container mt-3">
+  {% if messages %}
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+      {% for msg in messages %}
+        <div class="toast show align-items-center text-bg-light border-0 mb-2" role="alert">
+          <div class="d-flex">
+            <div class="toast-body">
+              {{ msg }}
+            </div>
+            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+
+--------------------------------------------
+### FILE: templates\includes\site_header.html
+### SIZE: 1243 bytes
+### HASH: E67F9B180030A87102B5229B2A2B80826DDDD8323C1E8D15489EF5E23AEA98D8
+
+{% load static %}
+
+{# ====================================================================== #}
+{#  ENTERPRISE-GRADE SITE HEADER                                          #}
+{#  - Dynamic site_header text from admin                                 #}
+{#  - Theme-aware primary color                                            #}
+{#  - Safe rendering (no ORM hits, no ASGI violations)                     #}
+{# ====================================================================== #}
+
+{% if site_settings and site_settings.site_header %}
+  <div
+    class="py-2 text-white"
+    style="background-color: {{ site_settings.primary_color|default:'#0d6efd' }}">
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+
+      {# Dynamic site header (admin editable) #}
+      <div class="text-sm leading-6">
+        {{ site_settings.site_header }}
+      </div>
+
+      {# Maintenance mode badge — only if enabled in admin #}
+      {% if site_settings.maintenance_mode %}
+        <small
+          class="inline-block px-2 py-1 rounded bg-amber-300 text-amber-900 text-xs font-medium">
+          Maintenance mode
+        </small>
+      {% endif %}
+
+    </div>
+  </div>
+{% endif %}
+
+
+--------------------------------------------
+### FILE: templates\legal\cookies.html
+### SIZE: 375 bytes
+### HASH: 3ECEDAA798EA12889C147D3EC546F182E5E4BF5F1942BB53FC9D90A7D2378DB0
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Cookies Policy — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <h2 class="mb-3">Cookies Policy</h2>
+  <p>This site uses cookies to improve your experience. You may disable cookies in your browser settings.</p>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\legal\privacy.html
+### SIZE: 365 bytes
+### HASH: 3594A44A6A46A7D2016CC7C282D4C0B1919D419BF1A405B2B27D1A3F58E56507
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Privacy Policy — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <h2 class="mb-3">Privacy Policy</h2>
+  <p>Your privacy is important to us. This policy outlines how we handle your data responsibly.</p>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\legal\terms.html
+### SIZE: 377 bytes
+### HASH: 339E388BA606BEED423067834B39286D5CCE905029BCF0623D5ED0ABD6C83619
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Terms of Service — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <h2 class="mb-3">Terms of Service</h2>
+  <p>By using {{ site_settings.site_name|default:"GSMInfinity" }}, you agree to our terms and policies.</p>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\login.html
+### SIZE: 808 bytes
+### HASH: DAC322CC84EE9D9C831AE00B8B3541641BA076EDB14D2509BE2F6BA9CB5288B2
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Login — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-12">
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-medium">Sign in to your account</h3>
+    {% include "includes/messages.html" %}
+    <form method="post" action="{% url 'account_login' %}" class="mt-4 space-y-4">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="flex items-center justify-between">
+        <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Sign in</button>
+        <a href="{% url 'account_reset_password' %}" class="text-sm text-slate-600">Forgot password?</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\partials\favicon_link.html
+### SIZE: 655 bytes
+### HASH: 84179CB2650548F86D6BD6BAB66EED75C9CC025B4F3A182DB5BC46CDD9AE45E9
+
+{# templates/partials/favicon_link.html #}
+{% load static %}
+
+{# ---------------------------------------------------------------------- #}
+{#  FAVICON + APPLE TOUCH ICON (dynamic → static fallback)                 #}
+{# ---------------------------------------------------------------------- #}
+
+{% if favicon %}
+  <link rel="icon" type="image/png" href="{{ favicon }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ favicon }}">
+{% else %}
+  <link rel="icon" type="image/png" href="{% static 'img/default-favicon.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/default-favicon.png' %}">
+{% endif %}
+
+
+--------------------------------------------
+### FILE: templates\partials\notification_list.html
+### SIZE: 1642 bytes
+### HASH: 3A067538414108FE46F0CDAA53555E33A3E052C93D63C371EF8D5E823901C75E
+
+{# templates/partials/notification_list.html #}
+
+<div class="card" style="width: 320px;">
+  <div class="card-header d-flex justify-content-between">
+    Notifications
+    <form hx-post="{% url 'users_notifications:mark_read' %}"
+          hx-include="#notif-list form"
+          hx-swap="outerHTML"
+          class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="id" value="{{ notifications|pluck:'id'|join:',' }}">
+      <button class="btn btn-sm btn-link">Mark all read</button>
+    </form>
+  </div>
+
+  <ul class="list-group list-group-flush" id="notif-list">
+    {% for n in notifications %}
+    <li class="list-group-item {% if not n.read %}bg-light{% endif %}">
+      <div class="d-flex justify-content-between">
+
+        <div>
+          <strong>{{ n.title }}</strong>
+          <div class="small text-muted">
+            {{ n.created_at|date:"SHORT_DATETIME_FORMAT" }}
+          </div>
+
+          <!-- FIXED: replaced n.body → n.message -->
+          <div class="small">{{ n.message|truncatechars:100 }}</div>
+        </div>
+
+        <div class="ms-2">
+          <form hx-post="{% url 'users_notifications:mark_read' %}"
+                hx-include="this"
+                hx-swap="outerHTML">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ n.id }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+              Mark read
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </li>
+    {% empty %}
+    <li class="list-group-item">No notifications</li>
+    {% endfor %}
+  </ul>
+</div>
+
+
+--------------------------------------------
+### FILE: templates\partials\site_branding.html
+### SIZE: 1257 bytes
+### HASH: 0E3B2202898D70C063701E6F3DFCCF72E57DEA1235B0502B0F8299961E5A5F4A
+
+{# templates/partials/site_branding.html #}
+{# Usage: {% include "partials/site_branding.html" with settings=site_settings %} #}
+
+{% load static %}
+
+{%- with s=settings or site_settings -%}
+
+  {# ---------------------------------------------------------------------- #}
+  {#  FAVICON (admin dynamic → static fallback)                             #}
+  {# ---------------------------------------------------------------------- #}
+  {% include "partials/favicon_link.html" with favicon=s.favicon %}
+
+  {# ---------------------------------------------------------------------- #}
+  {#  LOGO + BRANDING (safe, dynamic, static fallbacks)                     #}
+  {# ---------------------------------------------------------------------- #}
+  <a class="navbar-brand" href="/">
+    <picture>
+
+      {# Prefer dark logo when user prefers dark mode #}
+      <source
+        media="(prefers-color-scheme: dark)"
+        srcset="{{ s.dark_logo|default:static('img/default-logo-dark.svg') }}">
+
+      {# Default logo (light) with safe fallback #}
+      <img
+        src="{{ s.logo|default:static('img/default-logo.svg') }}"
+        alt="{{ s.site_name|default:'' }}"
+        style="height:36px;">
+    </picture>
+  </a>
+
+{%- endwith -%}
+
+
+--------------------------------------------
+### FILE: templates\partials\toast_fragment.html
+### SIZE: 1395 bytes
+### HASH: 26BAA221885F43A136BB0641BD0909ACE6CD871F529224820A7F3FA2115E9082
+
+{# HTMX toast fragment — enterprise-hardened version #}
+
+<div class="toast toast-fragment"
+     role="status"
+     aria-live="polite"
+     aria-atomic="true"
+     data-bs-delay="4000">
+  <div class="d-flex">
+    <div class="toast-body">
+      {{ message }}
+    </div>
+    <button type="button"
+            class="btn-close btn-close-white me-2 m-auto"
+            data-bs-dismiss="toast"
+            aria-label="Close"></button>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Find the *toast element associated with this script* safely.
+  // Instead of previousElementSibling (fragile), we walk DOM backwards.
+  let script = document.currentScript;
+  if (!script) return;
+
+  let sibling = script.previousElementSibling;
+  let toastEl = null;
+
+  // Walk backwards until a .toast element is found or max depth reached
+  for (let i = 0; i < 3 && sibling; i++) {
+    if (sibling.classList && sibling.classList.contains("toast")) {
+      toastEl = sibling;
+      break;
+    }
+    sibling = sibling.previousElementSibling;
+  }
+
+  if (!toastEl) return;
+
+  // Ensure Bootstrap is available – fail quietly
+  if (typeof bootstrap === "undefined" || !bootstrap.Toast) return;
+
+  try {
+    let instance = bootstrap.Toast.getOrCreateInstance(toastEl);
+    instance.show();
+  } catch (err) {
+    console.warn("Toast init failed:", err);
+  }
+})();
+</script>
+
+
+--------------------------------------------
+### FILE: templates\profile.html
+### SIZE: 774 bytes
+### HASH: 9544154C93495EB48E4721B979D68F394535B7B3621A273D3D6A206FEEAA0D0F
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Profile — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12">
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-medium">Your profile</h3>
+    {% include "includes/messages.html" %}
+    <div class="mt-4">
+      <!-- Show profile fields -->
+      <p class="text-sm text-slate-600">Name: {{ user.get_full_name }}</p>
+      <p class="text-sm text-slate-600">Email: {{ user.email }}</p>
+      <!-- Profile edit link -->
+      <div class="mt-4">
+        <a href="{% url 'users:profile_edit' %}" class="text-primary underline">Edit profile</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\register.html
+### SIZE: 621 bytes
+### HASH: 5CFA19E27CE44F9C2E1C4C7C29F5B9755C500938A18ADD30E69D784648AC1C93
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Register — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-12">
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-medium">Create an account</h3>
+    <form method="post" action="{% url 'account_signup' %}" class="mt-4 space-y-4">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div>
+        <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Create account</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\site_settings\consent_manage.html
+### SIZE: 2536 bytes
+### HASH: F29DC165BA88E4B9ECC9EB07AB32F3E5C95622EBCF83C08DBE72C13E3E7F5DB0
+
+{# templates/site_settings/consent_manage.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+Cookie preferences — {{ site_settings.site_name|default:"GSMInfinity" }}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-12">
+  <div class="bg-white shadow-md rounded-lg p-6 border border-slate-200">
+
+    <h3 class="text-lg font-semibold mb-4">Cookie Preferences</h3>
+
+    <form id="consent-manage-form"
+          method="post"
+          action="{% url 'consent:consent_accept' %}">
+      {% csrf_token %}
+      <input type="hidden"
+             name="next"
+             value="{{ request.GET.next|default:'/' }}">
+
+      <div class="space-y-5">
+
+        {% if categories %}
+          {% for c in categories %}
+            <div class="flex items-start space-x-4">
+              <input
+                id="c-{{ c.slug }}"
+                name="{{ c.slug }}"
+                type="checkbox"
+                class="h-4 w-4 rounded border-slate-400"
+                {% if c.required %}checked disabled aria-disabled="true"{% endif %}
+              >
+
+              <div>
+                <label for="c-{{ c.slug }}" class="font-medium">
+                  {{ c.name }}
+                  {% if c.required %}
+                    <span class="text-xs text-red-600 ml-1">(Required)</span>
+                  {% endif %}
+                </label>
+                <p class="text-sm text-slate-600 leading-snug">
+                  {{ c.description|default:"No description available." }}
+                </p>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-slate-600 text-sm">No cookie categories are configured.</p>
+        {% endif %}
+
+      </div>
+
+      <div class="mt-8 flex items-center space-x-3">
+        <button type="submit"
+                class="btn btn-primary px-4 py-2 rounded">
+          Save preferences
+        </button>
+
+        <a href="{{ request.GET.next|default:'/' }}"
+           class="btn btn-link px-3 py-2 text-slate-600">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+(function(){
+    // Safe fallback for cancel button via JS
+    const cancel = document.getElementById("consent-cancel");
+    if (cancel) {
+        cancel.addEventListener("click", function(e){
+            e.preventDefault();
+            window.history.back();
+        });
+    }
+})();
+</script>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\users\notifications\details.html
+### SIZE: 998 bytes
+### HASH: C42CBBFAF1CAF128B916A18DA165B0695453DD20DC044E0AA9DA4C9096A6334E
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Notification Details — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-3">Notification Details</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title">{{ notification.title }}</h5>
+            <p class="text-muted small">
+                {{ notification.created_at|date:"Y-m-d H:i" }}
+            </p>
+
+            <p class="card-text">
+                {{ notification.message }}
+            </p>
+
+            {% if notification.url %}
+            <a href="{{ notification.url }}" class="btn btn-primary" target="_blank">
+                Open Related Page
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <a href="{% url 'users_notifications:list' %}" class="btn btn-link mt-3">
+        ← Back to Notifications
+    </a>
+</div>
+{% endblock %}
+
+
+--------------------------------------------
+### FILE: templates\users\notifications\list.html
+### SIZE: 889 bytes
+### HASH: D0DE7200C4C9083121544F1324E09CACC88F10A80C3DE08E2B5DB9FA3497B368
+
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Notifications — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-3">Notifications</h2>
+
+    {% if notifications %}
+      <div class="space-y-3">
+        {% for n in notifications %}
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">{{ n.title }}</h5>
+              <p class="text-muted small">{{ n.created_at|date:"Y-m-d H:i" }}</p>
+              <p class="mb-0">{{ n.summary }}</p>
+              <a href="{% url 'users_notifications:detail' n.pk %}" class="mt-2 inline-block text-primary underline">View</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p>No notifications.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+

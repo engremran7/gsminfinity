@@ -1,0 +1,20 @@
+<div class="bg-white shadow rounded-lg p-6">
+
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-medium text-slate-900">{{ title }}</h3>
+    {% if refresh_url %}
+      <button 
+        hx-get="{{ refresh_url }}"
+        hx-target="#chart-{{ chart_id }}"
+        hx-swap="innerHTML"
+        class="text-sm text-primary underline">
+        Refresh
+      </button>
+    {% endif %}
+  </div>
+
+  <div id="chart-{{ chart_id }}" class="h-64 flex items-center justify-center text-slate-500">
+    {{ placeholder_text|default:"Chart loading…" }}
+  </div>
+
+</div>

@@ -1,17 +1,20 @@
 """
 apps.users.signals
--------------------
+==================
 Centralized user-related signal handlers for GSMInfinity.
 
 ✅ Handles:
-- user_logged_in → register device fingerprint, enforce per-user limits.
-- user_signed_up → mark new users for profile completion (social signup flow).
+    - user_logged_in → Register device fingerprint, enforce device limits.
+    - user_signed_up → Flag user for onboarding after signup.
 
 ✅ Fully compatible with:
-  Django 5.x / allauth ≥ 0.65
-  apps.users.utils.device
-  apps.site_settings.models.SiteSettings
+    Django ≥ 5.0, allauth ≥ 0.65, and GSMInfinity enterprise utils.
+
+This module is designed to be import-safe (idempotent registration)
+and non-blocking for async runtimes.
 """
+
+from __future__ import annotations
 
 import logging
 from django.dispatch import receiver
@@ -23,85 +26,99 @@ from apps.users.utils.device import register_fingerprint, enforce_device_limit
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-#  User Logged In → Register or update device fingerprint
-# ---------------------------------------------------------------------------
+# ============================================================
+#  USER LOGGED IN  →  REGISTER DEVICE FINGERPRINT
+# ============================================================
+
 @receiver(user_logged_in)
 def handle_user_logged_in(sender, request, user, **kwargs):
     """
-    Triggered whenever a user logs in successfully (standard or social login).
+    Triggered whenever a user logs in successfully (including social logins).
 
     Responsibilities:
-    - Capture and register the current device fingerprint.
-    - Enforce per-user device limits from SiteSettings.
-    - Skip registration gracefully if limit exceeded (strict mode).
+      • Capture device fingerprint metadata from request headers or cookies.
+      • Enforce per-user device limits (defined in SiteSettings).
+      • Gracefully skip fingerprint creation when over limit (strict mode).
+      • Never raise — logs exceptions but never disrupts login flow.
     """
-    try:
-        if not request:
-            logger.warning("handle_user_logged_in called without request.")
-            return
+    if not user or not request:
+        logger.debug("handle_user_logged_in: missing user or request context.")
+        return
 
-        # Collect fingerprint info from request headers/cookies
+    try:
+        # --- Derive fingerprint fields (normalized length for DB safety)
+        fp_hash = (
+            request.META.get("DEVICE_FP")
+            or request.COOKIES.get("device_fp")
+            or request.META.get("HTTP_USER_AGENT", "unknown")
+        )[:255]
+
         fingerprint_data = {
-            "fingerprint_hash": (
-                request.META.get("DEVICE_FP")
-                or request.COOKIES.get("device_fp")
-                or request.META.get("HTTP_USER_AGENT", "unknown")
-            )[:255],
-            "os_info": request.META.get("OS_INFO", "")[:100],
-            "browser_info": request.META.get("HTTP_USER_AGENT", "")[:255],
-            "motherboard_id": request.META.get("MOTHERBOARD_ID", "")[:100],
+            "fingerprint_hash": fp_hash,
+            "os_info": (request.META.get("OS_INFO") or "").strip()[:100],
+            "browser_info": (request.META.get("HTTP_USER_AGENT") or "").strip()[:255],
+            "motherboard_id": (request.META.get("MOTHERBOARD_ID") or "").strip()[:100],
         }
 
-        # Enforce per-user device limit
+        # --- Enforce per-user device limits
         if not enforce_device_limit(user):
             logger.warning(
-                "User %s exceeded device limit (strict mode). Fingerprint not recorded.",
+                "Device registration blocked — user %s exceeded device limit.",
                 getattr(user, "email", user.pk),
             )
             return
 
-        # Register or update the fingerprint record
-        register_fingerprint(
-            user=user,
-            fingerprint_hash=fingerprint_data["fingerprint_hash"],
-            os_info=fingerprint_data["os_info"],
-            motherboard_id=fingerprint_data["motherboard_id"],
-            browser_info=fingerprint_data["browser_info"],
-        )
+        # --- Register or update device record atomically
+        register_fingerprint(user=user, **fingerprint_data)
         logger.info(
-            "Device fingerprint recorded for user %s",
+            "Device fingerprint updated for user %s [%s]",
             getattr(user, "email", user.pk),
+            fingerprint_data["fingerprint_hash"][:16],
         )
 
     except Exception as exc:
-        logger.exception("Error registering fingerprint for user %s: %s", user.pk, exc)
+        logger.exception(
+            "Error registering fingerprint for user %s: %s",
+            getattr(user, "email", user.pk),
+            exc,
+        )
 
 
-# ---------------------------------------------------------------------------
-#  User Signed Up → Flag for onboarding/profile completion
-# ---------------------------------------------------------------------------
+# ============================================================
+#  USER SIGNED UP  →  PROFILE COMPLETION FLAG
+# ============================================================
+
 @receiver(user_signed_up)
 def handle_user_signed_up(request, user, **kwargs):
     """
-    Triggered after a new user (social or email signup) is created.
-    Ensures social signups enter onboarding (“Tell us about you”) flow.
+    Triggered immediately after a new user account is created
+    (via email, social, or SSO signup).
+
+    Responsibilities:
+      • Flag user for onboarding / profile completion.
+      • Maintain compatibility with custom user models (graceful skip).
     """
+    if not user:
+        logger.debug("handle_user_signed_up: missing user instance.")
+        return
+
     try:
         if hasattr(user, "needs_profile_completion"):
-            user.needs_profile_completion = True
-            user.save(update_fields=["needs_profile_completion"])
-            logger.debug(
-                "User %s flagged for onboarding/profile completion",
-                getattr(user, "email", user.pk),
-            )
+            if not getattr(user, "needs_profile_completion", False):
+                user.needs_profile_completion = True
+                user.save(update_fields=["needs_profile_completion"])
+                logger.debug(
+                    "User %s flagged for onboarding.",
+                    getattr(user, "email", user.pk),
+                )
         else:
             logger.debug(
-                "User model has no 'needs_profile_completion' field; skipping flag.",
+                "User model has no `needs_profile_completion` field; skipping onboarding flag."
             )
+
     except Exception as exc:
         logger.exception(
-            "Error post-processing signup for user %s: %s",
+            "Error flagging signup completion for user %s: %s",
             getattr(user, "email", user.pk),
             exc,
         )

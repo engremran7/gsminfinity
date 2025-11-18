@@ -1,164 +1,264 @@
 """
-Multi-Factor Authentication (MFA) Utilities for GSMInfinity
-------------------------------------------------------------
-Provides enterprise-grade Time-based One-Time Password (TOTP) management
-and global MFA enforcement logic.
+apps.users.mfa
+==============
 
-Features:
-- RFC 6238–compliant TOTP codes (compatible with Google Authenticator)
-- ± time drift tolerance for device clock variance
-- Configurable issuer and enforcement policy via SiteSettings
-- Secure HMAC comparison to prevent timing attacks
+Enterprise-grade Multi-Factor Authentication (MFA) utilities.
+
+✔ Django 5.2 / Python 3.12 compliant
+✔ RFC 6238 (TOTP) + RFC 4226 (HOTP) compliant
+✔ Timing-attack resistant comparisons
+✔ Stable issuer rules with no branding
+✔ Hardened Base32 handling (no secret leakage)
+✔ Drift-tolerant window verification
 """
 
-import base64
-import os
-import time
-import hmac
-import hashlib
-import logging
-from apps.site_settings.models import SiteSettings
+from __future__ import annotations
 
+import base64
+import binascii
+import hashlib
+import hmac
+import logging
+import secrets
+import time
+from typing import Optional
+from urllib.parse import quote_plus
+
+from apps.site_settings.models import SiteSettings
 
 logger = logging.getLogger(__name__)
 
 
-# ============================================================
-#  TOTP SERVICE
-# ============================================================
+# =====================================================================
+# BASE32 HELPERS
+# =====================================================================
+def _base32_pad(secret: str) -> str:
+    """
+    Normalize & pad Base32 secret for decoding.
+    - Removes spaces
+    - Uppercases
+    - Pads to a multiple of 8 chars
+    """
+    s = secret.strip().replace(" ", "").upper()
+    if not s:
+        raise ValueError("Empty Base32 secret.")
+    pad = (-len(s)) % 8
+    return s + ("=" * pad)
+
+
+def _base32_decode(secret: str) -> bytes:
+    """
+    Decode Base32 secret with strict safety.
+    Logs errors without leaking the secret.
+    Raises ValueError on failure.
+    """
+    try:
+        padded = _base32_pad(secret)
+        return base64.b32decode(padded, casefold=True)
+    except (binascii.Error, ValueError, TypeError) as exc:
+        logger.exception("Invalid Base32 secret (decode failure).")
+        raise ValueError("Invalid Base32 secret") from exc
+
+
+# =====================================================================
+# TOTP (RFC-6238)
+# =====================================================================
 class TOTPService:
     """
-    Provides TOTP (Time-based One-Time Password) generation and verification
-    compatible with major authenticator apps (Google, Authy, Microsoft).
+    RFC 6238 TOTP implementation.
+    Generates TOTP codes compatible with:
+        - Google Authenticator
+        - Authy
+        - Microsoft Authenticator
+
+    Public methods:
+        generate_secret()
+        generate_current_code()
+        verify()
     """
 
     @staticmethod
-    def generate_secret(length: int = 20) -> str:
+    def generate_secret(num_bytes: int = 20) -> str:
         """
-        Generate a random Base32-encoded secret key for TOTP.
-        Default length: 20 bytes (~160 bits of entropy).
+        Generate a secure Base32 secret.
+        Returned secret contains no '=' padding.
         """
-        try:
-            secret = base64.b32encode(os.urandom(length)).decode("utf-8").rstrip("=")
-            return secret
-        except Exception as exc:
-            logger.error("Failed to generate TOTP secret: %s", exc)
-            raise
-
-    # ------------------------------------------------------------
-    #  PRIVATE HELPERS
-    # ------------------------------------------------------------
-    @staticmethod
-    def _normalize_secret(secret: str) -> bytes:
-        """
-        Normalize the Base32 secret by padding if required.
-        Ensures compatibility with decoders regardless of input length.
-        """
-        pad = (8 - (len(secret) % 8)) % 8
-        padded = secret.upper() + "=" * pad
-        return base64.b32decode(padded)
+        raw = secrets.token_bytes(num_bytes)
+        enc = base64.b32encode(raw).decode("ascii")
+        return enc.rstrip("=")
 
     @staticmethod
-    def _hotp(secret: str, counter: int, digits: int = 6) -> str:
+    def _hotp_from_bytes(key: bytes, counter: int, digits: int = 6) -> str:
         """
-        Generate an HMAC-based OTP from a counter value.
-        Internal utility for TOTP computation.
+        RFC-4226 HOTP implementation using HMAC-SHA1.
         """
-        key = TOTPService._normalize_secret(secret)
         msg = counter.to_bytes(8, "big")
-        hmac_hash = hmac.new(key, msg, hashlib.sha1).digest()
-        offset = hmac_hash[-1] & 0x0F
-        binary = int.from_bytes(hmac_hash[offset:offset + 4], "big") & 0x7FFFFFFF
-        otp = str(binary % (10 ** digits)).zfill(digits)
-        return otp
-
-    # ------------------------------------------------------------
-    #  PUBLIC INTERFACE
-    # ------------------------------------------------------------
-    @staticmethod
-    def generate_current_code(secret: str, period: int = 30, digits: int = 6) -> str:
-        """
-        Compute the current TOTP code for the given secret.
-        Args:
-            secret: Base32 encoded secret
-            period: Time step in seconds (default 30)
-            digits: Number of output digits (default 6)
-        """
-        counter = int(time.time() / period)
-        return TOTPService._hotp(secret, counter, digits)
+        digest = hmac.new(key, msg, hashlib.sha1).digest()
+        offset = digest[-1] & 0x0F
+        part = digest[offset: offset + 4]
+        binary = int.from_bytes(part, "big") & 0x7FFFFFFF
+        return str(binary % (10 ** digits)).zfill(digits)
 
     @staticmethod
-    def verify(secret: str, code: str, tolerance: int = 1, period: int = 30, digits: int = 6) -> bool:
+    def generate_current_code(
+        secret: str,
+        period: int = 30,
+        digits: int = 6,
+        at_time: Optional[int] = None,
+    ) -> str:
         """
-        Verify a TOTP code against the current time window, allowing ±1 drift.
+        Generate TOTP code for current time or custom timestamp.
+        """
+        ts = int(at_time if at_time is not None else time.time())
+        counter = ts // period
+        key = _base32_decode(secret)
+        return TOTPService._hotp_from_bytes(key, counter, digits)
 
-        Args:
-            secret (str): Base32 secret
-            code (str): User-supplied code
-            tolerance (int): Number of time steps to allow for drift (default ±1)
-            period (int): TOTP time step duration (seconds)
-            digits (int): Expected length of code (default 6)
+    @staticmethod
+    def verify(
+        secret: str,
+        code: str,
+        tolerance: int = 1,
+        period: int = 30,
+        digits: int = 6,
+    ) -> bool:
+        """
+        Verify TOTP with ±tolerance window.
 
         Returns:
-            bool: True if valid, False otherwise
+            True  — valid token
+            False — invalid or malformed
+
+        Never raises; logs safe diagnostic info only.
         """
         try:
-            current_counter = int(time.time() / period)
-            code = str(code).zfill(digits)
+            code_str = str(code).strip().zfill(digits)
+            key = _base32_decode(secret)
+            counter = int(time.time()) // period
 
             for offset in range(-tolerance, tolerance + 1):
-                expected = TOTPService._hotp(secret, current_counter + offset, digits)
-                if hmac.compare_digest(expected, code):
+                expected = TOTPService._hotp_from_bytes(key, counter + offset, digits)
+                if hmac.compare_digest(expected, code_str):
                     return True
+
             return False
 
-        except Exception as exc:
-            logger.warning("TOTP verification failed: %s", exc)
+        except Exception:
+            logger.exception("TOTP verification error (invalid secret or input).")
             return False
 
 
-# ============================================================
-#  MFA ENFORCER
-# ============================================================
+# =====================================================================
+# MFA POLICY (from SiteSettings)
+# =====================================================================
 class MFAEnforcer:
     """
-    Utility for checking global MFA enforcement policies and issuer identity.
-    Reads configuration from SiteSettings.
+    Read-only MFA policy provider.
+
+    Reads from SiteSettings:
+        require_mfa
+        mfa_totp_issuer
+        site_name
+
+    Never raises — always returns safe values.
     """
 
     @staticmethod
     def required() -> bool:
-        """
-        Returns True if MFA is required globally (via site settings).
-        """
+        """Return True if MFA is globally required."""
         try:
-            settings = SiteSettings.get_solo()
-            return bool(getattr(settings, "require_mfa", False))
-        except Exception as exc:
-            logger.warning("MFAEnforcer.required() failed: %s", exc)
+            settings_obj = SiteSettings.get_solo()
+            return bool(getattr(settings_obj, "require_mfa", False))
+        except Exception:
+            logger.warning("Failed to read require_mfa; defaulting to False.")
             return False
 
     @staticmethod
     def issuer() -> str:
         """
-        Returns the MFA issuer name (used in authenticator apps).
-        Defaults to the site name or 'GSMInfinity' as fallback.
+        Return MFA issuer string with safe fallbacks:
+            1) mfa_totp_issuer
+            2) site_name
+            3) "Site"
         """
         try:
-            settings = SiteSettings.get_solo()
-            return getattr(settings, "mfa_totp_issuer", getattr(settings, "site_name", "GSMInfinity"))
-        except Exception as exc:
-            logger.warning("MFAEnforcer.issuer() failed: %s", exc)
-            return "GSMInfinity"
+            s = SiteSettings.get_solo()
+            return (
+                getattr(s, "mfa_totp_issuer", None)
+                or getattr(s, "site_name", None)
+                or "Site"
+            )
+        except Exception:
+            logger.warning("Failed to read MFA issuer; using 'Site'.")
+            return "Site"
 
     @staticmethod
-    def qr_uri(secret: str, user_email: str) -> str:
+    def provisioning_uri(
+        secret: str,
+        user_email: str,
+        label: Optional[str] = None,
+        digits: int = 6,
+        period: int = 30,
+        issuer: Optional[str] = None,
+    ) -> str:
         """
-        Build an otpauth:// URI for QR code generation.
-        Enables direct import into Authenticator apps.
+        Build otpauth:// URI for QR provisioning.
 
-        Returns:
-            str: otpauth URI formatted for QR encoding.
+        Example:
+            otpauth://totp/Issuer:email?secret=ABC123&issuer=Issuer&digits=6&period=30
         """
-        issuer = MFAEnforcer.issuer()
-        return f"otpauth://totp/{issuer}:{user_email}?secret={secret}&issuer={issuer}&algorithm=SHA1&digits=6&period=30"
+        try:
+            actual_issuer = issuer or MFAEnforcer.issuer()
+
+            if label:
+                full_label = f"{actual_issuer}:{label}"
+            else:
+                full_label = f"{actual_issuer}:{user_email}"
+
+            label_encoded = quote_plus(full_label)
+            issuer_encoded = quote_plus(actual_issuer)
+            secret_str = _base32_pad(secret).replace("=", "")
+
+            params = (
+                f"secret={secret_str}"
+                f"&issuer={issuer_encoded}"
+                f"&algorithm=SHA1"
+                f"&digits={digits}"
+                f"&period={period}"
+            )
+
+            return f"otpauth://totp/{label_encoded}?{params}"
+
+        except Exception:
+            logger.exception("Failed to build provisioning URI.")
+            raise
+
+
+# =====================================================================
+# OPTIONAL SECRET STORAGE HELPERS
+# =====================================================================
+def hmac_store_secret(secret: str, pepper: str) -> str:
+    """
+    Hash a secret using server-side pepper. Store the resulting digest in DB.
+    """
+    if not pepper:
+        raise ValueError("pepper is required.")
+    return hmac.new(pepper.encode(), secret.encode(), hashlib.sha256).hexdigest()
+
+
+def compare_hmac_secret(stored_hmac: str, candidate_secret: str, pepper: str) -> bool:
+    """
+    Validate candidate secret against stored HMAC using constant-time comparison.
+    """
+    if not pepper:
+        logger.warning("compare_hmac_secret() called without pepper.")
+        return False
+    try:
+        candidate = hmac.new(pepper.encode(), candidate_secret.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(stored_hmac, candidate)
+    except Exception:
+        logger.exception("compare_hmac_secret() error.")
+        return False
+
+
+__all__ = ["TOTPService", "MFAEnforcer", "hmac_store_secret", "compare_hmac_secret"]

@@ -1,54 +1,104 @@
 """
-Site & Tenant Settings Models
-=============================
-Enterprise configuration module for GSMInfinity.
+Enterprise-grade Site & Tenant Settings
 
-Provides:
-- Singleton global site settings (via django-solo)
-- Tenant-specific overrides
-- Meta tag and file verification records
-- Security, rate-limiting, and AI personalization controls
+✓ Django 5.2 / Python 3.12
+✓ Admin-uploadable branding assets (logo, dark logo, favicon)
+✓ Generic, non-branded defaults
+✓ Hardened validation (colors, file uploads, limits)
+✓ Fully safe file URL helpers (static() fallback)
+✓ Strict ManyToMany consistency
+✓ Tenant-aware
 """
 
+from __future__ import annotations
+
+import logging
+from pathlib import Path
+from typing import Optional, Any
+
+from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
 from django.db import models
 from django.contrib.sites.models import Site
+from django.templatetags.static import static
 from solo.models import SingletonModel
 
+logger = logging.getLogger(__name__)
 
-# ============================================================
-#  GLOBAL SITE SETTINGS
-# ============================================================
+# =====================================================================
+# GLOBAL CONSTANTS
+# =====================================================================
+_ALLOWED_VERIFICATION_EXTENSIONS = {".txt", ".html", ".xml", ".json"}
+_MAX_VERIFICATION_FILE_BYTES = 1 * 1024 * 1024  # 1 MiB
+
+_HEX_COLOR_VALIDATOR = RegexValidator(
+    regex=r"^#(?:[A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$",
+    message="Enter a valid hex color like #0d6efd",
+)
+
+
+# =====================================================================
+# GLOBAL / DEFAULT SITE SETTINGS (SINGLETON)
+# =====================================================================
 class SiteSettings(SingletonModel):
     """
-    Singleton model storing enterprise-wide configuration.
-    Supports caching via django-solo and automatic fallback in templates.
+    Global site-wide configuration (non-branded, fully generic).
     """
 
-    # ------------------------------------------------------------
-    # Branding & Identity
-    # ------------------------------------------------------------
-    site_name = models.CharField(max_length=100, default="GsmInfinity")
-    site_header = models.CharField(max_length=100, default="GSM Admin")
+    # ------------------------------------------------------------------
+    # Branding – MUST remain generic (no “GSM” or “Infinity”!)
+    # ------------------------------------------------------------------
+    site_name = models.CharField(max_length=100, default="Site")
+    site_header = models.CharField(max_length=100, default="Admin")
     site_description = models.TextField(blank=True, default="")
-    favicon = models.ImageField(upload_to="branding/", blank=True, null=True)
 
-    # ------------------------------------------------------------
-    # Theme & Appearance
-    # ------------------------------------------------------------
+    logo = models.ImageField(
+        upload_to="branding/",
+        blank=True,
+        null=True,
+        help_text="Primary site logo (SVG/PNG)",
+    )
+    dark_logo = models.ImageField(
+        upload_to="branding/",
+        blank=True,
+        null=True,
+        help_text="Dark mode logo",
+    )
+    favicon = models.ImageField(
+        upload_to="branding/",
+        blank=True,
+        null=True,
+        help_text="Favicon (PNG/ICO/SVG)",
+    )
+
+    # ------------------------------------------------------------------
+    # Theme
+    # ------------------------------------------------------------------
     theme_profile = models.CharField(max_length=50, blank=True, null=True)
-    primary_color = models.CharField(max_length=20, blank=True, null=True)
-    secondary_color = models.CharField(max_length=20, blank=True, null=True)
 
-    # ------------------------------------------------------------
-    # Locale & Internationalization
-    # ------------------------------------------------------------
+    primary_color = models.CharField(
+        max_length=7,
+        blank=True,
+        null=True,
+        validators=[_HEX_COLOR_VALIDATOR],
+    )
+    secondary_color = models.CharField(
+        max_length=7,
+        blank=True,
+        null=True,
+        validators=[_HEX_COLOR_VALIDATOR],
+    )
+
+    # ------------------------------------------------------------------
+    # Localization
+    # ------------------------------------------------------------------
     default_language = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=50, default="UTC")
     enable_localization = models.BooleanField(default=False)
 
-    # ------------------------------------------------------------
+    # ------------------------------------------------------------------
     # AI Personalization
-    # ------------------------------------------------------------
+    # ------------------------------------------------------------------
     enable_ai_personalization = models.BooleanField(default=False)
     ai_theme_mode = models.CharField(
         max_length=20,
@@ -57,17 +107,22 @@ class SiteSettings(SingletonModel):
     )
     ai_model_version = models.CharField(max_length=20, blank=True, null=True)
 
-    # ------------------------------------------------------------
-    # Security & Feature Toggles
-    # ------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Security & Features
+    # ------------------------------------------------------------------
     enable_signup = models.BooleanField(default=True)
     enable_password_reset = models.BooleanField(default=True)
     enable_notifications = models.BooleanField(default=True)
     maintenance_mode = models.BooleanField(default=False)
 
-    # ------------------------------------------------------------
-    # reCAPTCHA Configuration
-    # ------------------------------------------------------------
+    force_https = models.BooleanField(
+        default=False,
+        help_text="Enable only if TLS is enforced by reverse proxy",
+    )
+
+    # ------------------------------------------------------------------
+    # reCAPTCHA
+    # ------------------------------------------------------------------
     recaptcha_enabled = models.BooleanField(default=False)
     recaptcha_mode = models.CharField(
         max_length=20,
@@ -76,12 +131,16 @@ class SiteSettings(SingletonModel):
     )
     recaptcha_public_key = models.CharField(max_length=100, blank=True, null=True)
     recaptcha_private_key = models.CharField(max_length=100, blank=True, null=True)
-    recaptcha_score_threshold = models.FloatField(default=0.5)
+
+    recaptcha_score_threshold = models.FloatField(
+        default=0.5,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+    )
     recaptcha_timeout_ms = models.PositiveIntegerField(default=3000)
 
-    # ------------------------------------------------------------
-    # Device & MFA Policies
-    # ------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # MFA / Device Security
+    # ------------------------------------------------------------------
     max_devices_per_user = models.PositiveIntegerField(default=3)
     lock_duration_minutes = models.PositiveIntegerField(default=15)
     fingerprint_mode = models.CharField(
@@ -91,71 +150,128 @@ class SiteSettings(SingletonModel):
     )
     enforce_unique_device = models.BooleanField(default=True)
     require_mfa = models.BooleanField(default=False)
-    mfa_totp_issuer = models.CharField(max_length=50, default="GsmInfinity")
 
-    # ------------------------------------------------------------
+    mfa_totp_issuer = models.CharField(max_length=50, default="Site")
+
+    # ------------------------------------------------------------------
     # Email Verification
-    # ------------------------------------------------------------
-    email_verification_code_length = models.PositiveIntegerField(default=6)
+    # ------------------------------------------------------------------
+    email_verification_code_length = models.PositiveIntegerField(
+        default=6,
+        validators=[MinValueValidator(4), MaxValueValidator(12)],
+    )
     email_verification_code_type = models.CharField(
         max_length=20,
         choices=[("numeric", "Numeric"), ("alphanumeric", "Alphanumeric")],
         default="alphanumeric",
     )
 
-    # ------------------------------------------------------------
-    # Robustness & Rate Limiting
-    # ------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Rate limiting
+    # ------------------------------------------------------------------
     max_login_attempts = models.PositiveIntegerField(default=5)
     rate_limit_window_seconds = models.PositiveIntegerField(default=300)
+
+    # Cache TTL (consumed by the context processor)
     cache_ttl_seconds = models.PositiveIntegerField(default=600)
 
-    # ------------------------------------------------------------
-    # Verification Resources
-    # ------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Meta Tags & Verification Files
+    # ------------------------------------------------------------------
     meta_tags = models.ManyToManyField(
-        "VerificationMetaTag", blank=True, related_name="site_settings_meta"
+        "VerificationMetaTag",
+        through="SiteSettingsMetaTagLink",
+        blank=True,
     )
     verification_files = models.ManyToManyField(
-        "VerificationFile", blank=True, related_name="site_settings_files"
+        "VerificationFile",
+        through="SiteSettingsVerificationFileLink",
+        blank=True,
     )
 
     class Meta:
         verbose_name = "Site Settings"
         verbose_name_plural = "Site Settings"
 
-    def __str__(self):
-        return self.site_name
+    def __str__(self) -> str:
+        return self.site_name or "Site Settings"
 
-    # ------------------------------------------------------------
-    # Utility Methods
-    # ------------------------------------------------------------
-    def get_theme(self):
-        """Return dict of theme configuration for templates."""
+    # =================================================================
+    # SAFE FILE URL HELPERS (always static fallback)
+    # =================================================================
+    def _safe_file_url(self, field, fallback: str) -> str:
+        try:
+            if field and getattr(field, "url", None):
+                url = field.url
+                if isinstance(url, str) and url.strip():
+                    return url
+        except Exception:
+            pass
+        return static(fallback)
+
+    @property
+    def logo_url(self) -> str:
+        return self._safe_file_url(self.logo, "img/default-logo.svg")
+
+    @property
+    def dark_logo_url(self) -> str:
+        # Try dark → fallback to normal → fallback to static
+        url = self._safe_file_url(self.dark_logo, "")
+        if url:
+            return url
+        url = self._safe_file_url(self.logo, "")
+        if url:
+            return url
+        return static("img/default-logo-dark.svg")
+
+    @property
+    def favicon_url(self) -> str:
+        return self._safe_file_url(self.favicon, "img/default-favicon.png")
+
+    # =================================================================
+    # VALIDATION
+    # =================================================================
+    def clean(self):
+        errors = {}
+
+        for name, val in [
+            ("primary_color", self.primary_color),
+            ("secondary_color", self.secondary_color),
+        ]:
+            if val:
+                try:
+                    _HEX_COLOR_VALIDATOR(val)
+                except ValidationError as exc:
+                    errors[name] = exc.messages
+
+        if errors:
+            raise ValidationError(errors)
+
+    # =================================================================
+    # FRONTEND CONFIG HELPERS
+    # =================================================================
+    def get_theme(self) -> dict[str, Any]:
         return {
-            "theme_profile": self.theme_profile,
-            "primary_color": self.primary_color,
-            "secondary_color": self.secondary_color,
+            "profile": self.theme_profile or "default",
+            "primary_color": self.primary_color or "#0d6efd",
+            "secondary_color": self.secondary_color or "#6c757d",
             "ai_mode": self.ai_theme_mode,
         }
 
-    def recaptcha_config(self):
-        """Return configuration dict for frontend injection."""
+    def recaptcha_config(self) -> dict[str, Any]:
         return {
-            "enabled": self.recaptcha_enabled,
+            "enabled": bool(self.recaptcha_enabled),
             "mode": self.recaptcha_mode,
-            "public_key": self.recaptcha_public_key,
+            "public_key": self.recaptcha_public_key or "",
+            "threshold": float(self.recaptcha_score_threshold),
+            "timeout": int(self.recaptcha_timeout_ms),
         }
 
 
-# ============================================================
-#  META TAG VERIFICATION
-# ============================================================
+# =====================================================================
+# META TAGS
+# =====================================================================
 class VerificationMetaTag(models.Model):
-    """
-    Stores meta tag verification data for services (Google, Bing, etc.).
-    Used for SEO or ownership validation.
-    """
     provider = models.CharField(max_length=50, db_index=True)
     name_attr = models.CharField(max_length=100)
     content_attr = models.CharField(max_length=255)
@@ -164,21 +280,18 @@ class VerificationMetaTag(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["provider", "name_attr"])]
-        verbose_name = "Verification Meta Tag"
-        verbose_name_plural = "Verification Meta Tags"
+        indexes = [
+            models.Index(fields=["provider", "name_attr"], name="ver_meta_idx")
+        ]
 
     def __str__(self):
         return f"{self.provider}: {self.name_attr}"
 
 
-# ============================================================
-#  FILE-BASED VERIFICATION
-# ============================================================
+# =====================================================================
+# VERIFICATION FILES (SAFE)
+# =====================================================================
 class VerificationFile(models.Model):
-    """
-    Stores verification files for domain ownership (e.g., Google Search Console).
-    """
     provider = models.CharField(max_length=50, db_index=True)
     file = models.FileField(upload_to="verification/")
     description = models.TextField(blank=True, default="")
@@ -186,39 +299,107 @@ class VerificationFile(models.Model):
 
     class Meta:
         ordering = ["-uploaded_at"]
-        indexes = [models.Index(fields=["provider"])]
-        verbose_name = "Verification File"
-        verbose_name_plural = "Verification Files"
+        indexes = [
+            models.Index(fields=["provider"], name="ver_file_idx")
+        ]
 
     def __str__(self):
-        return f"{self.provider}: {self.file.name}"
+        name = getattr(self.file, "name", None)
+        return f"{self.provider}: {name or '(invalid file)'}"
+
+    # SAFE VALIDATION
+    def clean(self):
+        errors = {}
+
+        # extension check
+        try:
+            ext = Path(self.file.name).suffix.lower()
+            if ext not in _ALLOWED_VERIFICATION_EXTENSIONS:
+                errors.setdefault("file", []).append(
+                    f"Unsupported extension: {ext}"
+                )
+        except Exception:
+            pass
+
+        # size check
+        try:
+            if self.file.size > _MAX_VERIFICATION_FILE_BYTES:
+                errors.setdefault("file", []).append(
+                    f"File exceeds {_MAX_VERIFICATION_FILE_BYTES} bytes"
+                )
+        except Exception:
+            pass
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *a, **kw):
+        self.full_clean()
+        return super().save(*a, **kw)
 
 
-# ============================================================
-#  TENANT-SPECIFIC SETTINGS
-# ============================================================
+# =====================================================================
+# THROUGH MODELS
+# =====================================================================
+class SiteSettingsMetaTagLink(models.Model):
+    site_settings = models.ForeignKey(
+        SiteSettings, on_delete=models.CASCADE, related_name="meta_tag_links"
+    )
+    meta_tag = models.ForeignKey(
+        VerificationMetaTag, on_delete=models.CASCADE, related_name="site_links"
+    )
+    linked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("site_settings", "meta_tag")
+        indexes = [
+            models.Index(fields=["site_settings", "meta_tag"], name="site_meta_link_idx")
+        ]
+
+
+class SiteSettingsVerificationFileLink(models.Model):
+    site_settings = models.ForeignKey(
+        SiteSettings, on_delete=models.CASCADE, related_name="verification_file_links"
+    )
+    verification_file = models.ForeignKey(
+        VerificationFile, on_delete=models.CASCADE, related_name="site_links"
+    )
+    linked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("site_settings", "verification_file")
+        indexes = [
+            models.Index(fields=["site_settings", "verification_file"], name="site_file_link_idx")
+        ]
+
+
+# =====================================================================
+# TENANT SETTINGS
+# =====================================================================
 class TenantSiteSettings(models.Model):
-    """
-    Per-site configuration for multi-tenant deployments.
-    Overrides global color themes and verification metadata.
-    """
-    site = models.OneToOneField(Site, on_delete=models.CASCADE, related_name="tenant_settings")
+    site = models.OneToOneField(
+        Site, on_delete=models.CASCADE, related_name="tenant_settings"
+    )
+
     theme_profile = models.CharField(max_length=50, blank=True, null=True)
-    primary_color = models.CharField(max_length=20, blank=True, null=True)
-    secondary_color = models.CharField(max_length=20, blank=True, null=True)
+    primary_color = models.CharField(
+        max_length=7, blank=True, null=True, validators=[_HEX_COLOR_VALIDATOR]
+    )
+    secondary_color = models.CharField(
+        max_length=7, blank=True, null=True, validators=[_HEX_COLOR_VALIDATOR]
+    )
+
     meta_tags = models.ManyToManyField(VerificationMetaTag, blank=True)
     verification_files = models.ManyToManyField(VerificationFile, blank=True)
 
     class Meta:
         verbose_name = "Tenant Site Settings"
-        verbose_name_plural = "Tenant Site Settings"
 
     def __str__(self):
-        return f"Settings for {self.site.domain}"
+        return f"Tenant settings for {getattr(self.site, 'domain', 'unknown')}"
 
-    def get_colors(self):
-        """Return color configuration for this tenant."""
+    def get_colors(self) -> dict[str, str]:
         return {
-            "primary": self.primary_color or "#007bff",
+            "primary": self.primary_color or "#0d6efd",
             "secondary": self.secondary_color or "#6c757d",
         }

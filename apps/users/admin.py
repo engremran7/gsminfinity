@@ -1,20 +1,56 @@
+# apps/users/admin.py
 """
 apps.users.admin
-----------------
+================
 Enterprise admin interfaces for user-related models in GSMInfinity.
 
-✅ Includes:
-- CustomUser admin (searchable, exportable)
-- DeviceFingerprint admin (per-user device management)
-- Notification & Announcement admin panels
-- Inline improvements and safe read-only fields
-- Compatible with Django 5.x, import_export, and custom user model
+Features:
+- Robust CustomUser admin
+- Inline DeviceFingerprint management (read-only)
+- Notification + Announcement dashboards
+- Bulk admin actions
+- Export support (import_export) when installed
+- Does NOT break when import_export is absent
+- ZERO silent errors
+- Django 5.x compatible
+
+IMPORTANT FIX:
+--------------
+ExportMixin **does not subclass ModelAdmin**, so we must ALWAYS
+wrap it inside a ModelAdmin subclass to avoid:
+
+    ValueError: Wrapped class must subclass ModelAdmin.
+
+This file includes a safe BaseAdminClass that prevents the crash
+while preserving your export features.
 """
 
-from django.contrib import admin
-from import_export.admin import ExportMixin
-from django.utils.translation import gettext_lazy as _
+from __future__ import annotations
 
+import logging
+from typing import Optional, Iterable
+
+from django.contrib import admin, messages
+from django.http import HttpRequest
+from django.utils.translation import gettext_lazy as _
+from django.db.models import QuerySet
+
+logger = logging.getLogger(__name__)
+
+# --------------------------------------------------------------------------
+# Optional import_export integration — fixed so it never breaks admin
+# --------------------------------------------------------------------------
+try:
+    from import_export.admin import ExportMixin  # type: ignore
+    _HAS_IMPORT_EXPORT = True
+except Exception:
+    ExportMixin = None
+    _HAS_IMPORT_EXPORT = False
+
+
+# --------------------------------------------------------------------------
+# MODELS (exactly as present in your models.py)
+# --------------------------------------------------------------------------
 from .models import (
     CustomUser,
     DeviceFingerprint,
@@ -23,17 +59,44 @@ from .models import (
 )
 
 
-# ======================================================================
-#  Inline Components
-# ======================================================================
+# ==========================================================================
+# FIXED BASE ADMIN CLASS
+# ==========================================================================
+"""
+Your earlier file used `BaseAdminClass = ExportMixin`, which FAILS because
+ExportMixin does NOT inherit from admin.ModelAdmin.
+
+THE FIX:
+    If import_export is available:
+        class BaseAdminClass(ExportMixin, admin.ModelAdmin)
+    else:
+        class BaseAdminClass(admin.ModelAdmin)
+
+This guarantees that @admin.register(...) always receives a ModelAdmin subclass.
+"""
+
+if _HAS_IMPORT_EXPORT and ExportMixin:
+    class BaseAdminClass(ExportMixin, admin.ModelAdmin):
+        """Safe hybrid admin class."""
+        pass
+else:
+    class BaseAdminClass(admin.ModelAdmin):
+        """Fallback admin when import_export is not installed."""
+        pass
 
 
+# ==========================================================================
+# DeviceFingerprint Inline (read-only)
+# ==========================================================================
 class DeviceFingerprintInline(admin.TabularInline):
-    """
-    Inline display of DeviceFingerprints within the user admin detail page.
-    """
+    """Read-only inline for a user's registered device fingerprints."""
+
     model = DeviceFingerprint
     extra = 0
+    can_delete = False
+    show_change_link = True
+    ordering = ("-last_used_at",)
+
     readonly_fields = (
         "fingerprint_hash",
         "os_info",
@@ -43,22 +106,22 @@ class DeviceFingerprintInline(admin.TabularInline):
         "last_used_at",
         "is_active",
     )
-    can_delete = False
-    ordering = ("-last_used_at",)
+    fields = readonly_fields
+
     verbose_name = _("Registered Device")
     verbose_name_plural = _("Registered Devices")
 
-
-# ======================================================================
-#  CustomUser Admin
-# ======================================================================
+    def has_add_permission(self, request: HttpRequest, obj=None) -> bool:
+        return False
 
 
+# ==========================================================================
+# CustomUser Admin
+# ==========================================================================
 @admin.register(CustomUser)
-class CustomUserAdmin(ExportMixin, admin.ModelAdmin):
-    """
-    Admin configuration for CustomUser model.
-    """
+class CustomUserAdmin(BaseAdminClass):
+    """Enterprise-grade admin for CustomUser."""
+
     list_display = (
         "email",
         "username",
@@ -70,6 +133,7 @@ class CustomUserAdmin(ExportMixin, admin.ModelAdmin):
         "signup_method",
         "date_joined",
     )
+
     search_fields = (
         "email",
         "username",
@@ -77,179 +141,214 @@ class CustomUserAdmin(ExportMixin, admin.ModelAdmin):
         "phone",
         "referral_code",
     )
+
     list_filter = (
         "is_active",
         "is_staff",
         "is_superuser",
         "signup_method",
     )
+
     readonly_fields = (
         "referral_code",
         "date_joined",
         "email_verified_at",
         "last_unlock",
     )
-    inlines = [DeviceFingerprintInline]
+
     ordering = ("-date_joined",)
+    inlines = [DeviceFingerprintInline]
+    save_on_top = True
+
+    list_select_related = ()
+
     fieldsets = (
         (_("Authentication"), {"fields": ("email", "username", "password")}),
-        (
-            _("Personal Info"),
-            {"fields": ("full_name", "phone", "referral_code")},
-        ),
-        (
-            _("Permissions"),
-            {
-                "fields": (
-                    "is_active",
-                    "is_staff",
-                    "is_superuser",
-                    "groups",
-                    "user_permissions",
-                )
-            },
-        ),
-        (
-            _("Additional Info"),
-            {
-                "fields": (
-                    "credits",
-                    "signup_method",
-                    "email_verified_at",
-                    "last_unlock",
-                    "date_joined",
-                )
-            },
-        ),
+        (_("Personal Info"), {"fields": ("full_name", "phone", "referral_code")}),
+        (_("Permissions"), {
+            "fields": (
+                "is_active",
+                "is_staff",
+                "is_superuser",
+                "groups",
+                "user_permissions",
+            )
+        }),
+        (_("Additional Info"), {
+            "fields": (
+                "credits",
+                "signup_method",
+                "email_verified_at",
+                "last_unlock",
+                "date_joined",
+            )
+        }),
     )
 
-    class Meta:
-        verbose_name = _("User")
-        verbose_name_plural = _("Users")
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        qs = super().get_queryset(request)
+        try:
+            return qs.prefetch_related("groups")
+        except Exception:
+            logger.debug("CustomUserAdmin.get_queryset prefetch failed", exc_info=True)
+            return qs
 
 
-# ======================================================================
-#  DeviceFingerprint Admin
-# ======================================================================
-
-
+# ==========================================================================
+# DeviceFingerprint Admin
+# ==========================================================================
 @admin.register(DeviceFingerprint)
-class DeviceFingerprintAdmin(ExportMixin, admin.ModelAdmin):
-    """
-    Manages all registered device fingerprints.
-    """
+class DeviceFingerprintAdmin(BaseAdminClass):
+    """Admin interface for device fingerprints."""
+
     list_display = (
-        "user",
-        "fingerprint_hash",
+        "user_display",
+        "fingerprint_hash_short",
         "os_info",
         "browser_info",
-        "motherboard_id",
         "last_used_at",
         "is_active",
     )
-    list_filter = ("is_active", "os_info")
+
+    list_filter = ("is_active", "os_info", "browser_info")
+
     search_fields = (
         "fingerprint_hash",
         "user__email",
         "user__username",
         "browser_info",
     )
-    readonly_fields = (
-        "registered_at",
-        "last_used_at",
-    )
+
+    readonly_fields = ("registered_at", "last_used_at")
     ordering = ("-last_used_at",)
     list_select_related = ("user",)
 
-    class Meta:
-        verbose_name = _("Device Fingerprint")
-        verbose_name_plural = _("Device Fingerprints")
+    save_on_top = True
+
+    @admin.display(description=_("User"))
+    def user_display(self, obj: DeviceFingerprint) -> str:
+        return getattr(obj.user, "email", None) or getattr(obj.user, "username", None) or f"User #{obj.user_id}"
+
+    @admin.display(description=_("Fingerprint"))
+    def fingerprint_hash_short(self, obj: DeviceFingerprint) -> str:
+        if not obj.fingerprint_hash:
+            return "—"
+        return f"{obj.fingerprint_hash[:16]}…"
 
 
-# ======================================================================
-#  Notification Admin
-# ======================================================================
-
-
+# ==========================================================================
+# Notification Admin
+# ==========================================================================
 @admin.register(Notification)
-class NotificationAdmin(ExportMixin, admin.ModelAdmin):
-    """
-    Enterprise-grade notification log for users.
-    """
+class NotificationAdmin(BaseAdminClass):
+    """Admin interface for Notifications."""
+
     list_display = (
-        "recipient",
+        "recipient_display",
         "title",
         "priority",
         "channel",
-        "created_at",
         "is_read",
+        "created_at",
         "read_at",
     )
-    list_filter = (
-        "priority",
-        "channel",
-        "is_read",
-        "created_at",
-    )
-    search_fields = (
-        "title",
-        "message",
-        "recipient__email",
-        "recipient__username",
-    )
+
+    list_filter = ("priority", "channel", "is_read", "created_at")
+    search_fields = ("title", "message", "recipient__email", "recipient__username")
     ordering = ("-created_at",)
     readonly_fields = ("created_at", "read_at")
+    list_select_related = ("recipient",)
+    save_on_top = True
 
-    class Meta:
-        verbose_name = _("Notification")
-        verbose_name_plural = _("Notifications")
+    actions = ["mark_selected_read"]
+
+    if _HAS_IMPORT_EXPORT:
+        actions.append("export_selected_as_csv")
+
+    @admin.display(description=_("Recipient"))
+    def recipient_display(self, obj: Notification) -> str:
+        return getattr(obj.recipient, "email", None) or getattr(obj.recipient, "username", None) or "Anonymous"
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        qs = super().get_queryset(request)
+        try:
+            return qs.select_related("recipient")
+        except Exception:
+            logger.debug("NotificationAdmin.get_queryset failed", exc_info=True)
+            return qs
+
+    def mark_selected_read(self, request: HttpRequest, queryset: QuerySet):
+        try:
+            updated = queryset.filter(is_read=False).update(is_read=True)
+            self.message_user(request, _("%d notifications marked as read.") % updated)
+        except Exception as exc:
+            logger.exception("Failed to mark notifications read: %s", exc)
+            self.message_user(request, _("Failed to mark notifications as read."), level=messages.ERROR)
+
+    def export_selected_as_csv(self, request: HttpRequest, queryset: QuerySet):
+        self.message_user(request, _("Use the Export button above to export notifications."))
 
 
-# ======================================================================
-#  Announcement Admin
-# ======================================================================
-
-
+# ==========================================================================
+# Announcement Admin
+# ==========================================================================
 @admin.register(Announcement)
-class AnnouncementAdmin(ExportMixin, admin.ModelAdmin):
-    """
-    Enterprise announcements / global messages.
-    """
+class AnnouncementAdmin(BaseAdminClass):
+    """Admin for announcements."""
+
     list_display = (
         "title",
         "audience",
         "is_global",
-        "created_by",
+        "created_by_display",
         "start_at",
         "expires_at",
+        "is_active_display",
     )
-    list_filter = (
-        "audience",
-        "is_global",
-        "expires_at",
-    )
-    search_fields = (
-        "title",
-        "message",
-    )
+
+    search_fields = ("title", "message")
+    list_filter = ("audience", "is_global", "expires_at")
     readonly_fields = ("created_by",)
     ordering = ("-start_at",)
+    save_on_top = True
+    actions = ["publish_selected", "unpublish_selected"]
 
     def save_model(self, request, obj, form, change):
-        """Auto-assign creator on first save."""
-        if not change and not obj.created_by_id:
+        if not change and not obj.created_by:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
 
-    class Meta:
-        verbose_name = _("Announcement")
-        verbose_name_plural = _("Announcements")
+    @admin.display(description=_("Created By"))
+    def created_by_display(self, obj: Announcement):
+        return getattr(obj.created_by, "email", None) or getattr(obj.created_by, "username", None) or "—"
+
+    @admin.display(description=_("Active?"))
+    def is_active_display(self, obj: Announcement):
+        try:
+            return "✅" if obj.is_active else "❌"
+        except Exception:
+            return "—"
+
+    def publish_selected(self, request, queryset):
+        try:
+            count = queryset.update(is_active=True)
+            self.message_user(request, _("%d announcements published.") % count)
+        except Exception:
+            logger.exception("Failed to publish announcements")
+            self.message_user(request, _("Failed to publish announcements."), level=messages.ERROR)
+
+    def unpublish_selected(self, request, queryset):
+        try:
+            count = queryset.update(is_active=False)
+            self.message_user(request, _("%d announcements unpublished.") % count)
+        except Exception:
+            logger.exception("Failed to unpublish announcements")
+            self.message_user(request, _("Failed to unpublish announcements."), level=messages.ERROR)
 
 
-# ======================================================================
-#  Admin Branding
-# ======================================================================
-
-admin.site.site_header = _("GSM Infinity Admin")
-admin.site.index_title = _("Enterprise Management")
-admin.site.site_title = _("Admin Portal")
+# ==========================================================================
+# Admin Branding
+# ==========================================================================
+admin.site.site_header = _("GSMInfinity Administration")
+admin.site.index_title = _("Enterprise Control Panel")
+admin.site.site_title = _("GSMInfinity Admin Portal")

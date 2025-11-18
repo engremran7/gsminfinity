@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add reusable components here */
+
+.btn-primary {
+    @apply bg-primary text-white px-4 py-2 rounded-md hover:opacity-95 transition;
+}

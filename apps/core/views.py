@@ -1,159 +1,366 @@
 # apps/core/views.py
-from django.shortcuts import render
+"""
+Core views — Enterprise-grade, Django 5.2+ ready.
+
+Hardened to:
+ - never return async/coroutine objects
+ - never leak errors from ORM calls in async event loops
+ - return only serializable objects to templates
+ - load only existing templates safely
+ - provide fully brand-neutral, tenant-safe site settings snapshot
+"""
+
+from __future__ import annotations
+
+import logging
+import sys
+import django
+from typing import Any, Dict, Optional, Iterable, List
+
 from django.core.cache import cache
-from apps.site_settings.models import SiteSettings, TenantSiteSettings
+from django.http import HttpRequest, HttpResponse, HttpResponseServerError
+from django.shortcuts import render
+from django.template import TemplateDoesNotExist
+from django.template.loader import get_template
+from django.utils.timezone import now
+from django.views.decorators.cache import never_cache
+
+logger = logging.getLogger(__name__)
+
+# Snapshot cache keys
+_SITE_SETTINGS_SNAPSHOT_KEY = "core_site_settings_snapshot_v1"
+_SITE_SETTINGS_VERSION_KEY = "site_settings_version"
+
+# Valid home templates
+_HOME_TEMPLATE_PRIORITY: List[str] = ["home.html", "core/home.html"]
 
 
 # ============================================================
-#  INTERNAL UTILITY — GLOBAL SETTINGS RESOLVER
+# INTERNAL UTILITIES
 # ============================================================
-def _get_site_settings():
-    """
-    Retrieve the global SiteSettings object with caching and fallback safety.
+def _safe_count(q: Any) -> int:
+    """Safe count for any queryset or iterable."""
+    try:
+        qs = q() if callable(q) else q
+        if qs is None:
+            return 0
+        if hasattr(qs, "count"):
+            return int(qs.count())
+        return int(len(qs))
+    except Exception as exc:
+        logger.debug("_safe_count fallback 0: %s", exc)
+        return 0
 
-    Features:
-    - Cached for 5 minutes (configurable).
-    - Safe fallback to dummy defaults when DB not initialized.
-    - Prevents repeated DB hits per request.
+
+def _safe_iter(q: Any, limit: int = 5) -> list:
+    """Safe slice/iteration over queryset or iterable."""
+    try:
+        qs = q() if callable(q) else q
+        if qs is None:
+            return []
+        if hasattr(qs, "order_by"):
+            return list(qs.order_by("-created_at")[:limit])
+        return list(qs)[:limit]
+    except Exception as exc:
+        logger.debug("_safe_iter fallback empty: %s", exc)
+        return []
+
+
+# ============================================================
+# SNAPSHOT OF SITE SETTINGS (BRAND-NEUTRAL)
+# ============================================================
+def _get_site_settings_snapshot() -> Dict[str, Any]:
     """
-    cache_key = "global_site_settings"
-    site_settings = cache.get(cache_key)
-    if site_settings:
-        return site_settings
+    Returns a fully serializable dict for templates.
+    Never returns ORM objects and never raises.
+    """
+
+    # Versioned cache key
+    try:
+        version = cache.get(_SITE_SETTINGS_VERSION_KEY) or 0
+        key = f"{_SITE_SETTINGS_SNAPSHOT_KEY}_v{version}"
+    except Exception:
+        key = _SITE_SETTINGS_SNAPSHOT_KEY
+
+    # Load from cache
+    try:
+        payload = cache.get(key)
+        if payload:
+            return payload
+    except Exception:
+        payload = None
+
+    # Build snapshot
+    try:
+        from apps.site_settings.models import SiteSettings  # type: ignore
+
+        obj = SiteSettings.get_solo() if hasattr(SiteSettings, "get_solo") else SiteSettings.objects.first()
+
+        payload = {
+            "site_name": getattr(obj, "site_name", "Site"),
+            "site_header": getattr(obj, "site_header", "Admin"),
+            "site_description": getattr(obj, "site_description", ""),
+            "enable_signup": bool(getattr(obj, "enable_signup", True)),
+            "require_mfa": bool(getattr(obj, "require_mfa", False)),
+            "maintenance_mode": bool(getattr(obj, "maintenance_mode", False)),
+            "primary_color": getattr(obj, "primary_color", "#0d6efd"),
+            "secondary_color": getattr(obj, "secondary_color", "#6c757d"),
+            "logo": getattr(obj, "logo", None).url if getattr(obj, "logo", None) else None,
+            "dark_logo": getattr(obj, "dark_logo", None).url if getattr(obj, "dark_logo", None) else None,
+            "favicon": getattr(obj, "favicon", None).url if getattr(obj, "favicon", None) else None,
+        }
+    except Exception as exc:
+        logger.debug("site settings fallback: %s", exc)
+        payload = {
+            "site_name": "Site",
+            "site_header": "Admin",
+            "site_description": "",
+            "enable_signup": True,
+            "require_mfa": False,
+            "maintenance_mode": False,
+            "primary_color": "#0d6efd",
+            "secondary_color": "#6c757d",
+            "logo": None,
+            "dark_logo": None,
+            "favicon": None,
+        }
 
     try:
-        # Solo manager preferred
-        if hasattr(SiteSettings, "get_solo"):
-            site_settings = SiteSettings.get_solo()
-        else:
-            site_settings = SiteSettings.objects.first()
-
-        cache.set(cache_key, site_settings, timeout=300)
-        return site_settings
-
+        cache.set(key, payload, timeout=300)
     except Exception:
-        # Fallback Dummy (pre-migrate / debug environments)
-        class DummySettings:
-            site_name = "GSMInfinity"
-            site_header = "GSM Admin"
-            site_description = "Default configuration"
-            enable_signup = True
-            recaptcha_enabled = False
-            require_mfa = False
-            maintenance_mode = False
-            primary_color = "#0d6efd"
-            secondary_color = "#6c757d"
+        pass
 
-        dummy = DummySettings()
-        cache.set(cache_key, dummy, timeout=60)
-        return dummy
+    return payload
 
 
 # ============================================================
-#  PUBLIC HOME VIEW
+# SAFE RENDERING WRAPPER
 # ============================================================
-def home(request):
-    """
-    Display the landing dashboard (system KPIs + branding context).
-    Placeholder KPIs can be replaced by live metrics or async APIs.
-    """
-    s = _get_site_settings()
+def _render_safe(request: HttpRequest, template: str, context: Dict[str, Any], status: int = 200) -> HttpResponse:
+    """Completely safe render wrapper."""
+    try:
+        return render(request, template, context, status=status)
+    except TemplateDoesNotExist as exc:
+        logger.warning("Missing template: %s (%s)", template, exc)
+        sn = context.get("site_name") or context.get("site_settings", {}).get("site_name") or "Site"
+        return HttpResponse(
+            f"<html><head><title>{sn}</title></head>"
+            f"<body><h1>{sn}</h1><p>Content temporarily unavailable.</p></body></html>",
+            status=status,
+        )
+    except Exception as exc:
+        logger.exception("Render error for %s: %s", template, exc)
+        return HttpResponseServerError("Internal server error")
+
+
+def _first_existing_template(candidates: Iterable[str]) -> Optional[str]:
+    """Pick first existing template (safe)."""
+    for name in candidates:
+        try:
+            get_template(name)
+            return name
+        except TemplateDoesNotExist:
+            continue
+        except Exception:
+            continue
+    return None
+
+
+# ============================================================
+# HOME PAGE
+# ============================================================
+@never_cache
+def home(request: HttpRequest) -> HttpResponse:
+    settings_snapshot = _get_site_settings_snapshot()
+
+    # Maintenance mode?
+    if settings_snapshot.get("maintenance_mode"):
+        return _render_safe(
+            request,
+            "errors/503.html",
+            {
+                "site_settings": settings_snapshot,
+                "site_name": settings_snapshot.get("site_name"),
+                "message": "This site is currently under maintenance.",
+            },
+            status=503,
+        )
+
+    # Query factories
+    def _u():
+        try:
+            from apps.users.models import CustomUser  # type: ignore
+            return CustomUser.objects.all()
+        except Exception:
+            return []
+
+    def _d():
+        try:
+            from apps.users.models import DeviceFingerprint  # type: ignore
+            return DeviceFingerprint.objects.filter(is_active=True)
+        except Exception:
+            return []
+
+    def _n():
+        try:
+            from apps.users.models import Notification  # type: ignore
+            if request.user.is_authenticated:
+                return Notification.objects.filter(user=request.user, is_read=False)
+            return Notification.objects.none()
+        except Exception:
+            return []
+
+    def _a():
+        try:
+            from apps.users.models import Announcement  # type: ignore
+            return Announcement.objects.filter(is_active=True)
+        except Exception:
+            return []
+
+    # System info
+    try:
+        django_version = django.get_version()
+    except Exception:
+        django_version = "unknown"
+
+    try:
+        python_version = sys.version.split()[0]
+    except Exception:
+        python_version = "unknown"
+
     context = {
-        "site_settings": s,
-        "active_users": 1245,
-        "mfa_adoption": "87%",
-        "revenue": "$12,340",
+        "site_settings": settings_snapshot,
+        "site_name": settings_snapshot.get("site_name"),
+        "django_version": django_version,
+        "python_version": python_version,
+        "now": now(),
+        "total_users": _safe_count(_u),
+        "active_devices": _safe_count(_d),
+        "unread_notifications": _safe_count(_n),
+        "active_announcements": _safe_count(_a),
+        "announcements": _safe_iter(_a, limit=5),
     }
-    return render(request, "core/home.html", context)
 
+    # Select homepage template
+    template_name = _first_existing_template(_HOME_TEMPLATE_PRIORITY)
+    if template_name:
+        return _render_safe(request, template_name, context)
 
-# ============================================================
-#  DASHBOARD SECTIONS (OVERVIEW / SECURITY / ETC.)
-# ============================================================
-def overview(request):
-    """System overview dashboard page."""
-    return render(request, "dashboard/overview.html", {"site_settings": _get_site_settings()})
-
-
-def security(request):
-    """Security metrics dashboard (MFA, auth logs, suspicious activity)."""
-    return render(request, "dashboard/security.html", {"site_settings": _get_site_settings()})
-
-
-def monetization(request):
-    """Revenue, plans, and payment analytics dashboard."""
-    return render(request, "dashboard/monetization.html", {"site_settings": _get_site_settings()})
-
-
-def notifications(request):
-    """System alerts, notifications, and message center."""
-    return render(request, "dashboard/notifications.html", {"site_settings": _get_site_settings()})
-
-
-def announcements(request):
-    """Public changelog and administrative announcements."""
-    return render(request, "dashboard/announcements.html", {"site_settings": _get_site_settings()})
-
-
-def users_dashboard(request):
-    """User management and behavioral analytics dashboard."""
-    return render(request, "dashboard/users.html", {"site_settings": _get_site_settings()})
-
-
-def system_health(request):
-    """System health, uptime, and diagnostic dashboard."""
-    return render(request, "dashboard/system_health.html", {"site_settings": _get_site_settings()})
-
-
-# ============================================================
-#  TENANT MANAGEMENT VIEW
-# ============================================================
-def tenants(request):
-    """
-    Render a list of tenant configurations with prefetch optimizations.
-    Supports multi-tenant environments sharing the same backend.
-    """
-    s = _get_site_settings()
-    tenants_qs = (
-        TenantSiteSettings.objects.select_related("site")
-        .prefetch_related("meta_tags", "verification_files")
-        .order_by("site__domain")
+    # Ultimate fallback
+    logger.error("No homepage template found among: %s", _HOME_TEMPLATE_PRIORITY)
+    sn = context["site_name"]
+    return HttpResponse(
+        f"<html><head><title>{sn}</title></head>"
+        f"<body><h1>{sn}</h1><p>Home page temporarily unavailable.</p></body></html>",
+        status=503,
     )
-    return render(
+
+
+# ============================================================
+# DASHBOARD / STATIC PAGES
+# ============================================================
+def overview(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "dashboard/overview.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+def security(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "dashboard/security.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+def monetization(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "dashboard/monetization.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+def notifications(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "dashboard/notifications.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+def announcements(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "dashboard/announcements.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+def users_dashboard(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "dashboard/users.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+def system_health(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "dashboard/system_health.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+# ============================================================
+# TENANTS
+# ============================================================
+def tenants(request: HttpRequest) -> HttpResponse:
+    try:
+        from apps.site_settings.models import TenantSiteSettings  # type: ignore
+        qs = TenantSiteSettings.objects.select_related("site").prefetch_related("meta_tags", "verification_files")
+        tenants = list(qs.order_by("site__domain"))
+    except Exception as exc:
+        logger.debug("TenantSiteSettings unavailable: %s", exc)
+        tenants = []
+
+    return _render_safe(
         request,
         "core/tenants.html",
-        {"site_settings": s, "tenants": tenants_qs},
+        {
+            "site_settings": _get_site_settings_snapshot(),
+            "tenants": tenants,
+        },
     )
 
 
 # ============================================================
-#  CUSTOM ERROR HANDLERS (404 / 403 / 500)
+# LEGAL PAGES
 # ============================================================
-def error_404_view(request, exception):
-    """Custom 404 Not Found handler with branding context."""
-    return render(
+def privacy(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "legal/privacy.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+def terms(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "legal/terms.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+def cookies(request: HttpRequest) -> HttpResponse:
+    return _render_safe(request, "legal/cookies.html", {"site_settings": _get_site_settings_snapshot()})
+
+
+# ============================================================
+# ERROR HANDLERS
+# ============================================================
+def error_400_view(request: HttpRequest, exception: Optional[Exception] = None) -> HttpResponse:
+    return _render_safe(
         request,
-        "errors/404.html",
-        {"site_settings": _get_site_settings()},
-        status=404,
+        "errors/400.html",
+        {"site_settings": _get_site_settings_snapshot(), "error": str(exception or "")},
+        status=400,
     )
 
 
-def error_403_view(request, exception):
-    """Custom 403 Forbidden handler (permissions)."""
-    return render(
+def error_403_view(request: HttpRequest, exception: Optional[Exception] = None) -> HttpResponse:
+    return _render_safe(
         request,
         "errors/403.html",
-        {"site_settings": _get_site_settings()},
+        {"site_settings": _get_site_settings_snapshot(), "error": str(exception or "")},
         status=403,
     )
 
 
-def error_500_view(request):
-    """Custom 500 Internal Server Error handler."""
-    return render(
+def error_404_view(request: HttpRequest, exception: Optional[Exception] = None) -> HttpResponse:
+    return _render_safe(
         request,
-        "errors/500.html",
-        {"site_settings": _get_site_settings()},
-        status=500,
+        "errors/404.html",
+        {"site_settings": _get_site_settings_snapshot(), "error": str(exception or "")},
+        status=404,
     )
+
+
+def error_500_view(request: HttpRequest) -> HttpResponse:
+    try:
+        return _render_safe(
+            request,
+            "errors/500.html",
+            {"site_settings": _get_site_settings_snapshot()},
+            status=500,
+        )
+    except Exception:
+        return HttpResponseServerError("Internal server error")

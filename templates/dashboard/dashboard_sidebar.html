@@ -1,0 +1,48 @@
+{% load static %}
+
+<aside class="w-64 bg-white border-r border-slate-200 h-screen fixed top-0 left-0 flex flex-col">
+
+  <!-- Sidebar header -->
+  <div class="h-16 flex items-center px-4 border-b border-slate-200">
+    <span class="text-lg font-semibold text-slate-900">
+      {{ site_settings.site_name|default:"" }}
+    </span>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-1">
+
+    {# Resolve URLs to variables to use in comparisons #}
+    {% url 'core:dashboard_overview' as url_dashboard_overview %}
+    {% url 'core:tenants' as url_tenants %}
+    {% url 'users:profile' as url_profile %}
+    {% url 'users_notifications:list' as url_notifications %}
+
+    <a href="{{ url_dashboard_overview }}"
+       class="block px-3 py-2 rounded-md text-sm font-medium {% if request.path == url_dashboard_overview %}bg-slate-200 text-slate-900{% else %}text-slate-700 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+      Overview
+    </a>
+
+    <a href="{{ url_tenants }}"
+       class="block px-3 py-2 rounded-md text-sm font-medium {% if request.path == url_tenants %}bg-slate-200 text-slate-900{% else %}text-slate-700 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+      Tenants
+    </a>
+
+    <a href="{{ url_profile }}"
+       class="block px-3 py-2 rounded-md text-sm font-medium {% if request.path == url_profile %}bg-slate-200 text-slate-900{% else %}text-slate-700 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+      Profile
+    </a>
+
+    <a href="{{ url_notifications }}"
+       class="block px-3 py-2 rounded-md text-sm font-medium {% if request.path == url_notifications %}bg-slate-200 text-slate-900{% else %}text-slate-700 hover:bg-slate-100 hover:text-slate-900{% endif %}">
+      Notifications
+    </a>
+
+  </nav>
+
+  <!-- Optional footer -->
+  <div class="px-4 py-4 border-t border-slate-200 text-sm text-slate-600">
+    © {% now "Y" %}
+  </div>
+
+</aside>

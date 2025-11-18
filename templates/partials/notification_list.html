@@ -1,0 +1,49 @@
+{# templates/partials/notification_list.html #}
+
+<div class="card" style="width: 320px;">
+  <div class="card-header d-flex justify-content-between">
+    Notifications
+    <form hx-post="{% url 'users_notifications:mark_read' %}"
+          hx-include="#notif-list form"
+          hx-swap="outerHTML"
+          class="d-inline">
+      {% csrf_token %}
+      <input type="hidden" name="id" value="{{ notifications|pluck:'id'|join:',' }}">
+      <button class="btn btn-sm btn-link">Mark all read</button>
+    </form>
+  </div>
+
+  <ul class="list-group list-group-flush" id="notif-list">
+    {% for n in notifications %}
+    <li class="list-group-item {% if not n.read %}bg-light{% endif %}">
+      <div class="d-flex justify-content-between">
+
+        <div>
+          <strong>{{ n.title }}</strong>
+          <div class="small text-muted">
+            {{ n.created_at|date:"SHORT_DATETIME_FORMAT" }}
+          </div>
+
+          <!-- FIXED: replaced n.body → n.message -->
+          <div class="small">{{ n.message|truncatechars:100 }}</div>
+        </div>
+
+        <div class="ms-2">
+          <form hx-post="{% url 'users_notifications:mark_read' %}"
+                hx-include="this"
+                hx-swap="outerHTML">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ n.id }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+              Mark read
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </li>
+    {% empty %}
+    <li class="list-group-item">No notifications</li>
+    {% endfor %}
+  </ul>
+</div>

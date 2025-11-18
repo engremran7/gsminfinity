@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}403 — Forbidden{% endblock %}
+{% block content %}
+<div class="container py-5 text-center">
+  <h1 class="display-5 text-danger">403</h1>
+  <p>You don't have permission to access this page.</p>
+  <a href="{% url 'core:home' %}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %}

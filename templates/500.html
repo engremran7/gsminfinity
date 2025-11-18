@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}500 — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-[60vh] flex items-center justify-center">
+  <div class="text-center">
+    <h2 class="text-4xl font-bold text-slate-900">Something went wrong</h2>
+    <p class="mt-4 text-slate-600">Our team has been notified. Please try again later.</p>
+    <a href="{% url 'core:home' %}" class="mt-6 inline-block text-primary underline">Return to homepage</a>
+  </div>
+</div>
+{% endblock %}
