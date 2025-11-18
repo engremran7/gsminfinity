@@ -1,21 +1,30 @@
-# Virtual environments
+# Virtual env
 venv/
-ENV/
+env/
 
-# Python cache
+# Python
+*.pyc
 __pycache__/
-*.py[cod]
+*.pyo
+*.pyd
 
-# Logs and local DB
-*.log
-db.sqlite3
+# Django
+*.sqlite3
 
 # Environment variables
 .env
+*.env
 
-# VS Code settings
-.vscode/
+# Logs
+*.log
 
 # OS files
-Thumbs.db
 .DS_Store
+
+# Node modules (if frontend uses npm)
+node_modules/
+
+# Django collectstatic output (STATIC_ROOT)
+staticfiles/
+static_root/
+assets_collected/
