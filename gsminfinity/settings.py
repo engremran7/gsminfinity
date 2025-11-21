@@ -7,15 +7,17 @@ Airtight • Modern • CSP-Safe • Zero Silent Failures • Hardened Imports
 
 from __future__ import annotations
 
-import os
 import logging
+import os
 from pathlib import Path
 from typing import Any
+
 from django.core.exceptions import ImproperlyConfigured
 
 # Optional .env loader (non-fatal)
 try:
     from dotenv import load_dotenv  # type: ignore
+
     load_dotenv()
 except Exception:
     pass
@@ -167,12 +169,10 @@ DATABASES = {
         "PASSWORD": env_str(os.getenv("DB_PASSWORD")),
         "HOST": env_str(os.getenv("DB_HOST")),
         "PORT": env_str(os.getenv("DB_PORT")),
-
         # IMPORTANT:
         # async views (lazy_loader) cannot run with ATOMIC_REQUESTS=True
         # this caused your RuntimeError
         "ATOMIC_REQUESTS": False,
-
         "CONN_MAX_AGE": 60 if not DEBUG else 0,
     }
 }
@@ -190,8 +190,13 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 8},
+    },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
@@ -216,8 +221,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STATICFILES_STORAGE = (
     "django.contrib.staticfiles.storage.StaticFilesStorage"
-    if DEBUG else
-    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    if DEBUG
+    else "whitenoise.storage.CompressedManifestStaticFilesStorage"
 )
 
 MEDIA_URL = "/media/"
@@ -330,7 +335,9 @@ ACCOUNT_FORMS = {"signup": "apps.users.forms.CustomSignupForm"}
 ACCOUNT_LOGIN_METHODS = {"username", "email"}
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
-ACCOUNT_EMAIL_VERIFICATION = env_str(os.getenv("ACCOUNT_EMAIL_VERIFICATION"), "optional")
+ACCOUNT_EMAIL_VERIFICATION = env_str(
+    os.getenv("ACCOUNT_EMAIL_VERIFICATION"), "optional"
+)
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 ACCOUNT_PREVENT_ENUMERATION = True
 ACCOUNT_SESSION_REMEMBER = True
@@ -356,14 +363,18 @@ CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = env_str(os.getenv("SESSION_COOKIE_SAMESITE"), "Lax")
 
 SECURE_HSTS_SECONDS = int(env_str(os.getenv("SECURE_HSTS_SECONDS"), "0"))
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS"), False)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(
+    os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS"), False
+)
 SECURE_HSTS_PRELOAD = env_bool(os.getenv("SECURE_HSTS_PRELOAD"), False)
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 X_FRAME_OPTIONS = env_str(os.getenv("X_FRAME_OPTIONS"), "DENY")
-SECURE_REFERRER_POLICY = env_str(os.getenv("SECURE_REFERRER_POLICY"), "strict-origin-when-cross-origin")
+SECURE_REFERRER_POLICY = env_str(
+    os.getenv("SECURE_REFERRER_POLICY"), "strict-origin-when-cross-origin"
+)
 
 
 # Trusted CSRF origins
@@ -379,7 +390,11 @@ for host in _csrf_hosts:
 # ---------------------------
 EMAIL_BACKEND = env_str(
     os.getenv("EMAIL_BACKEND"),
-    "django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
+    (
+        "django.core.mail.backends.console.EmailBackend"
+        if DEBUG
+        else "django.core.mail.backends.smtp.EmailBackend"
+    ),
 )
 DEFAULT_FROM_EMAIL = env_str(os.getenv("DEFAULT_FROM_EMAIL"), "no-reply@local")
 EMAIL_USE_TLS = env_bool(os.getenv("EMAIL_USE_TLS"), True)
@@ -399,7 +414,9 @@ CELERY_TIMEZONE = TIME_ZONE
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication"
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "EXCEPTION_HANDLER": "apps.core.exceptions.EnterpriseExceptionHandler.handle_api_exception",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",

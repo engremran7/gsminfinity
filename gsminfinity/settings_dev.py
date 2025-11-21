@@ -12,8 +12,10 @@ Overrides production `settings.py` for safe local development.
 """
 
 from __future__ import annotations
-from .settings import *  # import production defaults
+
 from pathlib import Path
+
+from .settings import *  # import production defaults
 
 # ============================================================
 # Environment / Debug
