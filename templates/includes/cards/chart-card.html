@@ -3,7 +3,7 @@
   <div class="flex justify-between items-center mb-4">
     <h3 class="text-lg font-medium text-slate-900">{{ title }}</h3>
     {% if refresh_url %}
-      <button 
+      <button
         hx-get="{{ refresh_url }}"
         hx-target="#chart-{{ chart_id }}"
         hx-swap="innerHTML"

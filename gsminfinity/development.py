@@ -10,9 +10,10 @@ Overrides production settings for local development.
 ✅ Supports local runserver (no SSL certs required)
 """
 
-from .settings import *  # import all production defaults
 import os
 from pathlib import Path
+
+from .settings import *  # import all production defaults
 
 # -------------------------
 # Core environment
