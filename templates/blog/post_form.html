@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}New Post - {{ site_settings.site_name|default:"Site" }}{% endblock %}
+{% block meta_description %}Compose a new blog post with AI-assisted title and summary suggestions.{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+  <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div>
+      <p class="text-xs uppercase tracking-wide text-primary font-semibold">Create</p>
+      <h1 class="text-3xl font-bold text-slate-900 inline-flex items-center gap-2">
+        <svg class="icon w-5 h-5" aria-hidden="true"><use href="#icon-pencil"></use></svg>
+        New Post
+      </h1>
+      <p class="text-sm text-slate-600">Use AI to jump-start your title and summary.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" class="btn-outline text-sm px-3 py-2 rounded-md" data-ai-action="generate_seo" data-ai-target="id_summary">Generate SEO</button>
+      <button type="button" class="btn-outline text-sm px-3 py-2 rounded-md" data-ai-action="summarize" data-ai-target="id_body">Summarize</button>
+    </div>
+  </header>
+
+  <form method="post" class="space-y-5 bg-white border border-slate-200 rounded-xl p-6 shadow-sm" data-autosave-url="{% url 'blog:post_autosave' %}" data-preview-url="{% url 'blog:post_preview' %}">
+    {% csrf_token %}
+    <input type="hidden" name="post_id" value="{{ form.instance.id|default_if_none:'' }}">
+
+    <div class="space-y-6">
+      <div>
+        <label class="block text-sm font-semibold text-slate-800" for="id_title">Title</label>
+        {{ form.title }}
+        <div class="mt-1 flex justify-end">
+          <button type="button" class="text-xs text-primary hover:text-primary-600 inline-flex items-center gap-1" data-ai-action="generate_title" data-ai-target="id_title">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-wand"></use></svg>
+            Generate title
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-800" for="id_summary">Summary</label>
+        {{ form.summary }}
+        <div class="mt-1 flex justify-end">
+          <button type="button" class="text-xs text-primary hover:text-primary-600 inline-flex items-center gap-1" data-ai-action="generate_excerpt" data-ai-target="id_summary">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
+            Generate excerpt
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-800" for="id_body">Body</label>
+        {{ form.body }}
+        <p class="text-xs text-slate-500 mt-1">Use clear headings and short paragraphs. Markdown supported if enabled.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-800" for="id_category">Category</label>
+          {{ form.category }}
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold text-slate-800" for="id_tags">Tags</label>
+          {{ form.tags }}
+          <p class="text-xs text-slate-500">Add tags to improve discovery. Type to search existing tags; avoid fragmentation.</p>
+          {% include "tags/includes/autocomplete_help.html" %}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-slate-800" for="id_status">Status</label>
+          {{ form.status }}
+          <p class="text-xs text-slate-500">Draft, scheduled, or published. Published respects publish_at.</p>
+        </div>
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-slate-800" for="id_publish_at">Publish at</label>
+          {{ form.publish_at }}
+          <p class="text-xs text-slate-500">Schedule posts; past times publish immediately.</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label class="inline-flex items-center gap-2 text-sm font-medium text-slate-800">
+          {{ form.featured }} <span>Featured</span>
+        </label>
+        <div>
+          <label class="block text-sm font-semibold text-slate-800" for="id_hero_image">Hero image URL</label>
+          {{ form.hero_image }}
+          <p class="text-xs text-slate-500">Optional hero/banner image URL.</p>
+        </div>
+      </div>
+
+      <div class="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50/60">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-semibold text-slate-900">SEO Panel</p>
+            <p class="text-xs text-slate-600">Regenerate only when content changes. Locks respected in admin.</p>
+          </div>
+          <button type="button" class="text-xs text-primary hover:text-primary-600 inline-flex items-center gap-1" data-ai-action="generate_seo" data-ai-target="id_seo_description">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
+            AI: Suggest meta
+          </button>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-800" for="id_seo_title">Meta title</label>
+          {{ form.seo_title }}
+          <p class="text-xs text-slate-500">Default falls back to post title. Aim for < 60 characters.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-800" for="id_seo_description">Meta description</label>
+          {{ form.seo_description }}
+          <p class="text-xs text-slate-500">Keep under 160 characters. Avoid frequent rewrites.</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-800" for="id_canonical_url">Canonical URL</label>
+          {{ form.canonical_url }}
+          <p class="text-xs text-slate-500">Set only when needed; otherwise auto-filled on publish.</p>
+        </div>
+      </div>
+
+      <div class="border border-slate-200 rounded-lg p-4 bg-white">
+        <p class="text-sm font-semibold text-slate-900">Ads & placements</p>
+        <p class="text-xs text-slate-600">Ad slots are auto-discovered in templates. Control fills from Ads dashboard; consent gating is enforced.</p>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between pt-2">
+      <p class="text-xs text-slate-500">Autosave runs while you type.</p>
+      <button type="submit" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
+        <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-check"></use></svg>
+        Save
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/blog.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+{% endblock %}

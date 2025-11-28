@@ -28,12 +28,14 @@ while preserving your export features.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Iterable
+from typing import Iterable, Optional
 
 from django.contrib import admin, messages
-from django.http import HttpRequest
-from django.utils.translation import gettext_lazy as _
 from django.db.models import QuerySet
+from django.http import HttpRequest
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +44,7 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------------------------------
 try:
     from import_export.admin import ExportMixin  # type: ignore
+
     _HAS_IMPORT_EXPORT = True
 except Exception:
     ExportMixin = None
@@ -51,13 +54,7 @@ except Exception:
 # --------------------------------------------------------------------------
 # MODELS (exactly as present in your models.py)
 # --------------------------------------------------------------------------
-from .models import (
-    CustomUser,
-    DeviceFingerprint,
-    Notification,
-    Announcement,
-)
-
+from .models import Announcement, CustomUser, DeviceFingerprint, Notification
 
 # ==========================================================================
 # FIXED BASE ADMIN CLASS
@@ -76,12 +73,17 @@ This guarantees that @admin.register(...) always receives a ModelAdmin subclass.
 """
 
 if _HAS_IMPORT_EXPORT and ExportMixin:
+
     class BaseAdminClass(ExportMixin, admin.ModelAdmin):
         """Safe hybrid admin class."""
+
         pass
+
 else:
+
     class BaseAdminClass(admin.ModelAdmin):
         """Fallback admin when import_export is not installed."""
+
         pass
 
 
@@ -152,7 +154,6 @@ class CustomUserAdmin(BaseAdminClass):
     readonly_fields = (
         "referral_code",
         "date_joined",
-        "email_verified_at",
         "last_unlock",
     )
 
@@ -165,24 +166,29 @@ class CustomUserAdmin(BaseAdminClass):
     fieldsets = (
         (_("Authentication"), {"fields": ("email", "username", "password")}),
         (_("Personal Info"), {"fields": ("full_name", "phone", "referral_code")}),
-        (_("Permissions"), {
-            "fields": (
-                "is_active",
-                "is_staff",
-                "is_superuser",
-                "groups",
-                "user_permissions",
-            )
-        }),
-        (_("Additional Info"), {
-            "fields": (
-                "credits",
-                "signup_method",
-                "email_verified_at",
-                "last_unlock",
-                "date_joined",
-            )
-        }),
+        (
+            _("Permissions"),
+            {
+                "fields": (
+                    "is_active",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                )
+            },
+        ),
+        (
+            _("Additional Info"),
+            {
+                "fields": (
+                    "credits",
+                    "signup_method",
+                    "last_unlock",
+                    "date_joined",
+                )
+            },
+        ),
     )
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
@@ -192,6 +198,34 @@ class CustomUserAdmin(BaseAdminClass):
         except Exception:
             logger.debug("CustomUserAdmin.get_queryset prefetch failed", exc_info=True)
             return qs
+
+    # ------------------------------------------------------------------
+    # Admin action: mark selected users as email verified
+    # ------------------------------------------------------------------
+    @admin.action(description="Mark selected users as email verified (set now)")
+    def mark_email_verified(self, request: HttpRequest, queryset: QuerySet) -> None:
+        updated = (
+            queryset.filter(email_verified_at__isnull=True)
+            .update(email_verified_at=timezone.now())
+        )
+        # Sync allauth EmailAddress if installed
+        try:
+            from allauth.account.models import EmailAddress
+
+            EmailAddress.objects.filter(user__in=queryset).update(
+                verified=True, primary=True
+            )
+        except Exception:
+            logger.debug("EmailAddress sync skipped or failed", exc_info=True)
+
+        if updated:
+            self.message_user(
+                request, _(f"{updated} user(s) marked as verified."), messages.SUCCESS
+            )
+        else:
+            self.message_user(request, _("No users updated."), messages.INFO)
+
+    actions = ["mark_email_verified"]
 
 
 # ==========================================================================
@@ -227,7 +261,11 @@ class DeviceFingerprintAdmin(BaseAdminClass):
 
     @admin.display(description=_("User"))
     def user_display(self, obj: DeviceFingerprint) -> str:
-        return getattr(obj.user, "email", None) or getattr(obj.user, "username", None) or f"User #{obj.user_id}"
+        return (
+            getattr(obj.user, "email", None)
+            or getattr(obj.user, "username", None)
+            or f"User #{obj.user_id}"
+        )
 
     @admin.display(description=_("Fingerprint"))
     def fingerprint_hash_short(self, obj: DeviceFingerprint) -> str:
@@ -267,7 +305,11 @@ class NotificationAdmin(BaseAdminClass):
 
     @admin.display(description=_("Recipient"))
     def recipient_display(self, obj: Notification) -> str:
-        return getattr(obj.recipient, "email", None) or getattr(obj.recipient, "username", None) or "Anonymous"
+        return (
+            getattr(obj.recipient, "email", None)
+            or getattr(obj.recipient, "username", None)
+            or "Anonymous"
+        )
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
         qs = super().get_queryset(request)
@@ -283,10 +325,16 @@ class NotificationAdmin(BaseAdminClass):
             self.message_user(request, _("%d notifications marked as read.") % updated)
         except Exception as exc:
             logger.exception("Failed to mark notifications read: %s", exc)
-            self.message_user(request, _("Failed to mark notifications as read."), level=messages.ERROR)
+            self.message_user(
+                request,
+                _("Failed to mark notifications as read."),
+                level=messages.ERROR,
+            )
 
     def export_selected_as_csv(self, request: HttpRequest, queryset: QuerySet):
-        self.message_user(request, _("Use the Export button above to export notifications."))
+        self.message_user(
+            request, _("Use the Export button above to export notifications.")
+        )
 
 
 # ==========================================================================
@@ -320,7 +368,11 @@ class AnnouncementAdmin(BaseAdminClass):
 
     @admin.display(description=_("Created By"))
     def created_by_display(self, obj: Announcement):
-        return getattr(obj.created_by, "email", None) or getattr(obj.created_by, "username", None) or "—"
+        return (
+            getattr(obj.created_by, "email", None)
+            or getattr(obj.created_by, "username", None)
+            or "—"
+        )
 
     @admin.display(description=_("Active?"))
     def is_active_display(self, obj: Announcement):
@@ -335,7 +387,9 @@ class AnnouncementAdmin(BaseAdminClass):
             self.message_user(request, _("%d announcements published.") % count)
         except Exception:
             logger.exception("Failed to publish announcements")
-            self.message_user(request, _("Failed to publish announcements."), level=messages.ERROR)
+            self.message_user(
+                request, _("Failed to publish announcements."), level=messages.ERROR
+            )
 
     def unpublish_selected(self, request, queryset):
         try:
@@ -343,7 +397,9 @@ class AnnouncementAdmin(BaseAdminClass):
             self.message_user(request, _("%d announcements unpublished.") % count)
         except Exception:
             logger.exception("Failed to unpublish announcements")
-            self.message_user(request, _("Failed to unpublish announcements."), level=messages.ERROR)
+            self.message_user(
+                request, _("Failed to unpublish announcements."), level=messages.ERROR
+            )
 
 
 # ==========================================================================

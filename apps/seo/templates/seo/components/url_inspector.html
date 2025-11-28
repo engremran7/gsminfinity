@@ -1,0 +1,7 @@
+<div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm mt-4">
+  <h2 class="text-lg font-semibold text-slate-900 mb-2">URL Inspector</h2>
+  <form method="get" action="{% url 'seo:inspect_url' %}" class="flex items-center gap-2">
+    <input type="url" name="url" placeholder="https://example.com" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" required>
+    <button type="submit" class="btn-outline text-sm px-3 py-2 rounded-md">Inspect</button>
+  </form>
+</div>

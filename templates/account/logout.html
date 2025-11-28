@@ -1,11 +1,9 @@
 {% extends "base.html" %}
-{% load static %}
 {% block title %}Logged out — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
-{% block content %}
-<div class="max-w-md mx-auto py-12 text-center">
-  <div class="bg-white shadow rounded-lg p-6">
-    <h3 class="text-lg font-medium">You have been logged out</h3>
-    <a href="{% url 'core:home' %}" class="mt-4 inline-block text-primary underline">Return to homepage</a>
-  </div>
+{% block auth_heading %}You have been logged out{% endblock %}
+{% block auth_description %}Thanks for visiting {{ site_settings.site_name|default:"GSMInfinity" }}.{% endblock %}
+{% block auth_body %}
+<div class="text-center">
+  <a href="{% url 'account_login' %}" class="bg-primary text-white px-4 py-2 rounded">Sign in again</a>
 </div>
 {% endblock %}

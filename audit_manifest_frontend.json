@@ -1,0 +1,632 @@
+﻿[
+    {
+        "file":  ".vscode\\settings.json",
+        "size":  84,
+        "hash":  "78C86AD7908CD38AFAB6636892A016AA4721F315DCDE419676E98191A8D508E4",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\ads\\templates\\ads\\components\\slot.html",
+        "size":  661,
+        "hash":  "5FF50CBE36AEDFC8C2B8FD8CA13F66C18EDE8A6306A59C9C9F1000FB763153AF",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\ads\\templates\\ads\\dashboard.html",
+        "size":  12198,
+        "hash":  "4CE9E5E10C16D2860096A4ADF7F27976975F5E0FB455EAFF1CB45275C67C0AA2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\link_status_row.html",
+        "size":  338,
+        "hash":  "4881C524BC8BF44361ECDBA2DE1D48C169198B4E55788F08DB0263C1709B93DF",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\meta.html",
+        "size":  1199,
+        "hash":  "76732B69F84B54E6705292CF07F2E171FA9519CB8EF03BA7566845E1E0CA3E02",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\redirects.html",
+        "size":  3136,
+        "hash":  "E85344FF19AE7AD539AECA3D2EAEDD1891597B6946E073DB56BE419BBE1BBBA5",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\url_inspector.html",
+        "size":  497,
+        "hash":  "1D14E19D976FADF2DBD7925A950972C3822FE06C2FD7BF7262765D65FDEA4062",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\dashboard.html",
+        "size":  9866,
+        "hash":  "F7BCF9B6863642613EA64506D303C4073F0D027D8E5A5B1D2995CCC7BB2950B5",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "package.json",
+        "size":  180,
+        "hash":  "A50A44005EF8BDB887A2A131FE8A4D32A916E93DCEC4FF626B622D7751BA5FD3",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "package-lock.json",
+        "size":  37913,
+        "hash":  "E58468505FBBEED5BBE1F3414904CD509B38C5E8FDB3FC55DAAAA4975E8A3FA5",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\css\\main.css",
+        "size":  63576,
+        "hash":  "F515F55C98E21F1B3DABFE391F6152029D0C013B87B5F6087B8ABAF19CAD58A4",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\css\\style.css",
+        "size":  14930,
+        "hash":  "F5D3001FD4FF0D0BBC740683ED9C5014E9F1F234C4322FC4D92E8D1E84F0D8DC",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\css\\theme-bridge.css",
+        "size":  975,
+        "hash":  "2174A6CF036C16E24683A1F4B26EB3C3AE1FA3C3CED21981CE00AAF0BE5D12E2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\ads.js",
+        "size":  4468,
+        "hash":  "04042060F8663BDC822F650897D0DEC2E3D66B924C6451070B3E27858F192B09",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\ai_helpers.js",
+        "size":  2630,
+        "hash":  "18186B82B93532CD6EEA639EC234224EA05224042D74A28BD6810ED9F15D6CAE",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\blog.js",
+        "size":  7989,
+        "hash":  "B6EC6D8DBB960E2011267534CA3348F46C9888C1495B7739B6B96F474A31B80C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\consent.js",
+        "size":  1069,
+        "hash":  "DBF9EBCCF9EF396CC632B56EA49D3EC3A65E14F87431B3D71264704F8B79E105",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\consent-banner-loader.js",
+        "size":  8296,
+        "hash":  "3F56067EC3331784D46F7D39A0AEF276B21453A6D94AE23542FC97C76A71377E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\htmx-csrf.js",
+        "size":  1423,
+        "hash":  "F2FF6E1ED7625B23588A1568DD569AC92B3E1402833E9D1CF7033899D7A702FB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\main.js",
+        "size":  15846,
+        "hash":  "2F6B21D5639D9990730F67835FA9BAEAA6212006F4BC27142064E80E1BC98535",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\package.json",
+        "size":  596,
+        "hash":  "5F01EEE535F578196E5C93E0F9A22F8251AD93792EE99F6A50EF1F89F8BD2C7C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\package-lock.json",
+        "size":  54814,
+        "hash":  "9E4286C02A9FE1CDA23873348EC312AA5A7774892BB53E5B4A13BE5FC3821978",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\postcss.config.js",
+        "size":  87,
+        "hash":  "D53CC7A39618F570F19C5F055340A4C99BCD53D9EB733CEE876EEFC47F399105",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\static\\js\\package-lock.json",
+        "size":  81,
+        "hash":  "5BA22B2D874C8A913D0A73107555074A70EB5FF550048D0FBA42D730BCC02A77",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\tailwind.config.js",
+        "size":  1469,
+        "hash":  "23A0C118306D82D60575A2AA855E965E2EA92FA9624453E966587634A5514CEE",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\src_css\\main.css",
+        "size":  1239,
+        "hash":  "26C3779681EF2248CA6BC1F209ECB80A11ACEF1784131D8862D3218CA7687E68",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\403.html",
+        "size":  578,
+        "hash":  "AA491C4132991FFF0C6E95C9319EEBABA110BAF7EB581E34C55D4B0635D10491",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\404.html",
+        "size":  587,
+        "hash":  "7D3007562B1454544B035B1F3A31A232681BA293F3D89366ABC290C164B41D78",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\500.html",
+        "size":  600,
+        "hash":  "2EB59722B264179E61F89EC610EF8108F2F838825CD10E1E19DDC8E381702C22",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\account_inactive.html",
+        "size":  320,
+        "hash":  "613696B9A4D9A8F175787B69EBFF17BC2BC3FDB8AF5AC030DEA5135B54063C19",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\auth_base.html",
+        "size":  526,
+        "hash":  "A59740DD0ACAC1AAC97D9E8BC71816D2E288A746A24043FDF30AA9475A8E3487",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\auth_form.html",
+        "size":  1675,
+        "hash":  "73591B88DAB8BB332CAC46597F044D8FA6B0B387BE5F83C856A3FF71B9164B3E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\email.html",
+        "size":  1257,
+        "hash":  "ACE1666793F6146E7E3AE367F6EC4C29F51D5B20A601F8740198883BF29BFFF1",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\email_confirm.html",
+        "size":  802,
+        "hash":  "31EDD66E59C50D16C509BA37111476F08C2F7D46B0269B8A9701875EE242E435",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\hub.html",
+        "size":  703,
+        "hash":  "43B80EC296673E848FF2D017506F40CAECE570448CAC66F8E62227B31206B9A7",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\login.html",
+        "size":  661,
+        "hash":  "7BD9F749BF545FC35323A121DDF73A917318ED0ECC6B70BED095717D7BAB8D5D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\logout.html",
+        "size":  476,
+        "hash":  "DF7EAB4759F11C0781A6655C889B612B7A7EE25A357CD5EFEA1E154AABA6D82C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_change.html",
+        "size":  408,
+        "hash":  "547BBD7AC2D8953C5D3C782A2E46A95C077CED3D8EC3A0D1F1933C7BE47019CB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_change_done.html",
+        "size":  285,
+        "hash":  "053C56D6815152EE56FC3AA4E7D22A8B6E952CC1A653934F6924125D254F733E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_reset.html",
+        "size":  419,
+        "hash":  "963579F3A1BC5E6A94BDFD58332016C9FAE80CDADF83DD372B6AC48A85B79670",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_reset_done.html",
+        "size":  431,
+        "hash":  "4510E02C26AFEE30115D3452FEA66B781132A2A4EF51392EDED942F4B95803DB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_reset_from_key.html",
+        "size":  761,
+        "hash":  "62F1D6C7D24F0C105604F2FF3B99A4B4CF520113F61626DF961CD5934C9E662E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_reset_from_key_done.html",
+        "size":  289,
+        "hash":  "558776B3E1B1FF2B4BE75BB665642CAB7463664A946F3BD969DF08653FE73247",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_set.html",
+        "size":  404,
+        "hash":  "E6CDE60C2D8B58AA1828CA9409F0B20F4AA088CF00B619FAA19408D46AD77ED8",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_set_done.html",
+        "size":  281,
+        "hash":  "FCAA4463AC4EDA1A2669684537BFCE315DCB8A6D8B13CFE6267AB1F92508E2FA",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\signup.html",
+        "size":  30,
+        "hash":  "BA5C0E8A8B8B4E54A8D805BD4134823B2D512C65531C9DFFF3BFA8CF4FBDE8CD",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\signup_closed.html",
+        "size":  437,
+        "hash":  "62EAB44CB72F8E01220F16423B9C6798AB8895BBA915BD2AC0116FD1A8BCE631",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\verification_sent.html",
+        "size":  426,
+        "hash":  "F8A8C983B0081D43503B7EB2631D4D90DA9808475483594399D74D1723E38E44",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\ads\\components\\slot.html",
+        "size":  820,
+        "hash":  "9A25C3B3F945FAD93DCEFAC88D5C49A090232DAE97E166AF554C294FCBAA83D4",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\base.html",
+        "size":  11403,
+        "hash":  "5E3B3289F96F8DB74ECDE44D424C8E9EE41818B1E03D8539D107BDEA983B988C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\partials\\bounty_widget.html",
+        "size":  575,
+        "hash":  "C33F6D9E6B97534743F2DABD95EA7B9D580D8F1CBA3609D63A6C070D9DCDE8B1",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\partials\\latest_widget.html",
+        "size":  576,
+        "hash":  "D132F07E0E43E86B924C6F2D4E17BF524CE61C5A185E34CF45328C9CD24D782B",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\partials\\related_widget.html",
+        "size":  450,
+        "hash":  "322FDE282ACD175FCBACA78580CCBED4CBE17757C9C01C451697CECB1EA9A353",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\partials\\trending_widget.html",
+        "size":  632,
+        "hash":  "2D5BE984514C5F145C6E71E72BE63DCFE1BB515A72E0EC7B73FC2EF2EEC5D886",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\post_detail.html",
+        "size":  8377,
+        "hash":  "46467E157B34CB4FE6CF8AC3E272486231D949E2DD6F36533E3033A55BED264F",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\post_form.html",
+        "size":  6966,
+        "hash":  "BB785E03644C914B6E70252021B46839415B8B60CE213005532C6279A104DF7A",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\post_list.html",
+        "size":  4682,
+        "hash":  "B294EF86ECDDC623A95EF97BB26BAFF43EDE8210091E5AD620615F4950C6DC77",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\comments\\moderation.html",
+        "size":  3780,
+        "hash":  "8DA90FF22F3881393B18D02FDEF2269B2D6D706425E372ED7E7C1AA88D90C36F",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\buttons.html",
+        "size":  1886,
+        "hash":  "8E024DCAC7C7CC4F129A7B57AF35E355EDBFD8504598B2240ABF89E41B41E605",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\cards.html",
+        "size":  2100,
+        "hash":  "01ABF8FF81B9BC0B6309168A63BEBF27164F60541E7F1363B709E5BA799D739C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\forms.html",
+        "size":  1683,
+        "hash":  "40B6221035EF2E267A71594714C8A76DD8EB58C2ED7C18857176CD64BEF115FC",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\modals.html",
+        "size":  1328,
+        "hash":  "655FD3F62099E3771F6B5ED24E89F4B8FC0A861B7C1DCBACC9894304AC71DFC9",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\nav.html",
+        "size":  191,
+        "hash":  "36E3E7FDB614ED5276609F5B4584AD21676B3BA23ECD6B0FF223AB932EE4BDC8",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\pagination.html",
+        "size":  857,
+        "hash":  "C5520061CBFAD9A642474D327067C0B9F93A674D7EB76EC2E27C9D4462413A7E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\tag_badges.html",
+        "size":  854,
+        "hash":  "2370BFBC63C2A9FD3B6C18EACD705917F963829F84D083A6D805F30FD0BB77E2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\consent\\includes\\banner.html",
+        "size":  3417,
+        "hash":  "0BE3B5D7D893D6EA292C66F47C67125191E6509E9E2714B6E35173BA8ED53EB2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\consent\\manage.html",
+        "size":  1538,
+        "hash":  "50EB50C6E02200E5B4BED2735F8D2C31156C15A7FEF2B3A82BABFAD82D48F352",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\core\\tenants.html",
+        "size":  891,
+        "hash":  "CDE337CF76626FF178E5A624915343B256B398F95E5C44210C19BBBF6FEC003F",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\errors\\403.html",
+        "size":  358,
+        "hash":  "B4FCE998EBE5FFF115EC0A09ABAACDD930D08BACA6B4B3170A6E5E5F679D6B60",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\errors\\404.html",
+        "size":  359,
+        "hash":  "FCFCFDF526A6DA4AF302B955DD8D885B79513431C336DF20F247D913404F5039",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\errors\\500.html",
+        "size":  378,
+        "hash":  "084482C67DDF184504149B86C7BDEFDEBE90FDFD34CA86A32775E365CB949532",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\home.html",
+        "size":  3001,
+        "hash":  "05BFC0046594E3B7888AD9087A5BCC954D5332D31141B8D0DE9136BB97E4C2C5",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\cards\\chart-card.html",
+        "size":  605,
+        "hash":  "AD7BD3347DFCF7E4C64F86B631AA5268790972F948CAE7AEB9026D4229A5710D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\cards\\icon-card.html",
+        "size":  389,
+        "hash":  "D6378B1EBAC6E2B7D230A219DA4689284FF9C7688D114A6938F5CC62F3DA341C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\cards\\list-card.html",
+        "size":  518,
+        "hash":  "FA1C82397C1E24FA81F66562207CD8A24D7AB2743D76C4C9C3541E20783F8F42",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\cards\\status-card.html",
+        "size":  348,
+        "hash":  "10FC00E3FC3098DF981ECA409C12919E405A4FB7A4003519B9D355222FD18438",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\dashboard_cards.html",
+        "size":  672,
+        "hash":  "33C70AA1C64031EF505C84D080E62548F326219F77A84204BE0C23F2E25B3A84",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\dashboard_sidebar.html",
+        "size":  507,
+        "hash":  "B9091B978F2FF35D8DBB261E0ACBB0C86DABACCC2EA453B3ECF31CE3A3821568",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\footer.html",
+        "size":  817,
+        "hash":  "6B93E78AA1836B29555B8BE2487A253D6C5C8C80A3F3F1881BED939D240A8D1D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\icon_sprite.html",
+        "size":  2588,
+        "hash":  "D841F6890615484EA761CB4F056BF88E8AD543CE96F6415D7269B3CD2B237B00",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\messages.html",
+        "size":  162,
+        "hash":  "B3AD8A3758649BEE2B9C89078CE3A4EEDFE780650167EE943E03B4780AAE9C9D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\navbar.html",
+        "size":  5343,
+        "hash":  "22689972A2A84F50132B7E379CF01EE68773BFB9C71022164BEE0465ADB7250F",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\notifications.html",
+        "size":  582,
+        "hash":  "B5FDD615BEC7201126678E6395FC154030418EAA7BFB1F0DC63C2A8DFE46D318",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\site_header.html",
+        "size":  1047,
+        "hash":  "60A133DE86FEFEEA8C42B7D2205D2D5FAA056E612730F5D337828118B7C30D67",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\legal\\cookies.html",
+        "size":  387,
+        "hash":  "2E5F84A95E546D13C60A7ECE3C433DE2AB5441634DD86F5B8F31A006C4FC34F8",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\legal\\privacy.html",
+        "size":  377,
+        "hash":  "6182E688C8BF990C47A3C1C3BB09F61748D0456989F46CE3C90AC4BA9FBEC3D2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\legal\\terms.html",
+        "size":  389,
+        "hash":  "D95A62F492FA14EAE76DF63D12A6399EAB984561466366FE3A251877F7FC0E40",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\login.html",
+        "size":  137,
+        "hash":  "E0383B01E48B3218172046032F61476AD1CD04A37BD9B8D38C06D2C325C5EA10",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\partials\\favicon_link.html",
+        "size":  625,
+        "hash":  "76D4D58A20836F83895520489C767C8A833E0ADB30C0008DBC58F037ED9EBA63",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\partials\\notification_list.html",
+        "size":  1691,
+        "hash":  "C868D06CBA444045369249021BE7A814813200467C974474F76FED54921B0A1D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\partials\\site_branding.html",
+        "size":  1141,
+        "hash":  "6CBA8903B9517DE6ACF178FE63089BF1D056DAC4C24BED5AC7B5FAF66EF514DF",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\partials\\toast_fragment.html",
+        "size":  2999,
+        "hash":  "297695CED748F721C2938CAAB533282DB3802E2275B3DF3AC32EA580C0425765",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\profile.html",
+        "size":  137,
+        "hash":  "BC7252B6DE751CB1CF98A35162FF6A6787BC6A8F915BF03F533DBF103317C298",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\register.html",
+        "size":  138,
+        "hash":  "F2D6ABEE444593360D9AFE07421C3D42E4FC982E26D854C7000EE426A9E19AE7",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\site_settings\\consent_manage.html",
+        "size":  2538,
+        "hash":  "1E328ECF0998E2CEF51E9ACB0B1A77EAB05AC5FFAE8E91EBA49E0F42E2B0BA78",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\tags\\detail.html",
+        "size":  1916,
+        "hash":  "4A871BFD93E6CA595E3F42148408609A351D5D1E122B5F84E54A94820E82B5FB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\tags\\includes\\autocomplete_help.html",
+        "size":  201,
+        "hash":  "3A17B044986B52D54B22114A46AA8B75FB4E8755A0094977D3100F3E4ED95DB4",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\tags\\list.html",
+        "size":  1261,
+        "hash":  "8E55180735D7A9699F69D51174ADBCF6E087E26EE9DC231F5805062F927D81D8",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\dashboard.html",
+        "size":  5412,
+        "hash":  "5734CEF5C8A20E3E4FF5F8072B69D2C974AA98D339AE712CD4FD38CFB82842E7",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\devices.html",
+        "size":  2567,
+        "hash":  "2EA70085F92BCCA32E96D149F58488C939F62FF2D9BD3539C66638C09202B478",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\notifications\\details.html",
+        "size":  875,
+        "hash":  "F1E9102B547E66F42846E296FA139799AFC986FD1DA0EB68C468A8EDEABE1FFB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\notifications\\list.html",
+        "size":  1995,
+        "hash":  "E729384DE048F58A5507A1BAFE120D7DD6AEC265330CD1DE33B3A406BDF6BD65",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\profile.html",
+        "size":  724,
+        "hash":  "F6CDC904DE3CA7DD11D17E5AC6444473759787250765D1807B1DEBBF75436A03",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\tell_us_about_you.html",
+        "size":  1724,
+        "hash":  "0C13025FDDDFDCD6B97E0FD7C6467ADF205445FB47E3962AD0D0200402579C32",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\verify_email.html",
+        "size":  727,
+        "hash":  "350F5161F566E1BB12F7D1F309789FC2CF4ED522735D7665E8CFAB9C882A730B",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    }
+]

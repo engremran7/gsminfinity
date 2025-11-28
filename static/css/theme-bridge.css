@@ -1,0 +1,38 @@
+/* Runtime theme bridge: maps common utility classes to Theme Designer CSS variables */
+:root {
+  --color-primary: var(--theme-primary, #0ea5a4);
+  --color-primary-600: var(--theme-primary-600, #0a7f82);
+  --color-text: var(--theme-text, #0f172a);
+  --color-surface: var(--theme-surface, #f8fafc);
+  --color-surface-2: var(--theme-surface-2, #ffffff);
+}
+
+.bg-primary,
+.text-bg-primary {
+  background-color: var(--color-primary) !important;
+}
+
+.bg-primary-600 {
+  background-color: var(--color-primary-600) !important;
+}
+
+.text-primary,
+a.text-primary {
+  color: var(--color-primary) !important;
+}
+
+.border-primary {
+  border-color: var(--color-primary) !important;
+}
+
+.btn-primary {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #fff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background-color: var(--color-primary-600) !important;
+  border-color: var(--color-primary-600) !important;
+}

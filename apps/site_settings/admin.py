@@ -13,6 +13,7 @@ Enterprise Admin Configuration for Site + Tenant Settings.
 from __future__ import annotations
 
 import logging
+
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
@@ -22,11 +23,12 @@ from solo.admin import SingletonModelAdmin
 from .models import (
     SiteSettings,
     TenantSiteSettings,
-    VerificationMetaTag,
     VerificationFile,
+    VerificationMetaTag,
 )
 
 logger = logging.getLogger(__name__)
+
 
 # ------------------------------------------------------------
 #  INLINE THROUGH-MODELS
@@ -76,7 +78,14 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
         "maintenance_mode",
         "force_https",
         "enable_signup",
+        "enable_tenants",
         "enable_notifications",
+        "enable_blog",
+        "enable_blog_comments",
+        "allow_user_blog_posts",
+        "allow_user_bounty_posts",
+        "seo_enabled",
+        "ads_enabled",
         "require_mfa",
         "recaptcha_enabled",
     )
@@ -95,89 +104,122 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
     # Fieldsets
     # ----------------------
     fieldsets = (
-        ("🔖 Branding & Theme", {
-            "fields": (
-                "site_name",
-                "site_header",
-                "site_description",
-
-                "logo",
-                "logo_preview",
-
-                "dark_logo",
-                "dark_logo_preview",
-
-                "favicon",
-                "favicon_preview",
-
-                "theme_profile",
-                "primary_color",
-                "secondary_color",
-            ),
-        }),
-
-        ("🌍 Locale & Internationalization", {
-            "fields": (
-                "default_language",
-                "timezone",
-                "enable_localization",
-            ),
-        }),
-
-        ("🤖 AI Personalization", {
-            "fields": (
-                "enable_ai_personalization",
-                "ai_theme_mode",
-                "ai_model_version",
-            ),
-        }),
-
-        ("🔐 Security & Features", {
-            "fields": (
-                "enable_signup",
-                "enable_password_reset",
-                "enable_notifications",
-                "maintenance_mode",
-                "force_https",
-            ),
-        }),
-
-        ("🧠 reCAPTCHA Configuration", {
-            "fields": (
-                "recaptcha_enabled",
-                "recaptcha_mode",
-                "recaptcha_public_key",
-                "recaptcha_private_key",
-                "recaptcha_score_threshold",
-                "recaptcha_timeout_ms",
-            ),
-        }),
-
-        ("📱 Device & MFA Policies", {
-            "fields": (
-                "max_devices_per_user",
-                "lock_duration_minutes",
-                "fingerprint_mode",
-                "enforce_unique_device",
-                "require_mfa",
-                "mfa_totp_issuer",
-            ),
-        }),
-
-        ("📧 Email Verification", {
-            "fields": (
-                "email_verification_code_length",
-                "email_verification_code_type",
-            ),
-        }),
-
-        ("🛡️ Rate Limiting & Robustness", {
-            "fields": (
-                "max_login_attempts",
-                "rate_limit_window_seconds",
-                "cache_ttl_seconds",
-            ),
-        }),
+        (
+            "🔖 Branding & Theme",
+            {
+                "fields": (
+                    "site_name",
+                    "site_header",
+                    "site_description",
+                    "logo",
+                    "logo_preview",
+                    "dark_logo",
+                    "dark_logo_preview",
+                    "favicon",
+                    "favicon_preview",
+                    "theme_profile",
+                    "primary_color",
+                    "secondary_color",
+                ),
+            },
+        ),
+        (
+            "🌍 Locale & Internationalization",
+            {
+                "fields": (
+                    "default_language",
+                    "timezone",
+                    "enable_localization",
+                ),
+            },
+        ),
+        (
+            "🤖 AI Personalization",
+            {
+                "fields": (
+                    "enable_ai_personalization",
+                    "ai_theme_mode",
+                    "ai_model_version",
+                ),
+            },
+        ),
+        (
+            "Security & Features",
+            {
+                "fields": (
+                    "enable_signup",
+                    "enable_tenants",
+                    "enable_password_reset",
+                    "enable_notifications",
+                    "maintenance_mode",
+                    "force_https",
+                ),
+            },
+        ),
+        (
+            "Content / SEO / Ads Toggles",
+            {
+                "fields": (
+                    "enable_blog",
+                    "enable_blog_comments",
+                    "allow_user_blog_posts",
+                    "allow_user_bounty_posts",
+                    "seo_enabled",
+                    "auto_meta_enabled",
+                    "auto_schema_enabled",
+                    "auto_linking_enabled",
+                    "ads_enabled",
+                    "affiliate_enabled",
+                    "ad_networks_enabled",
+                    "ad_aggressiveness_level",
+                ),
+            },
+        ),
+        (
+            "🧠 reCAPTCHA Configuration",
+            {
+                "fields": (
+                    "recaptcha_enabled",
+                    "recaptcha_mode",
+                    "recaptcha_public_key",
+                    "recaptcha_private_key",
+                    "recaptcha_score_threshold",
+                    "recaptcha_timeout_ms",
+                ),
+            },
+        ),
+        (
+            "📱 Device & MFA Policies",
+            {
+                "fields": (
+                    "max_devices_per_user",
+                    "lock_duration_minutes",
+                    "fingerprint_mode",
+                    "enforce_unique_device",
+                    "require_mfa",
+                    "mfa_totp_issuer",
+                ),
+            },
+        ),
+        (
+            "📧 Email Verification",
+            {
+                "fields": (
+                    "email_verification_code_length",
+                    "email_verification_code_type",
+                ),
+            },
+        ),
+        (
+            "🛡️ Rate Limiting & Robustness",
+            {
+                "fields": (
+                    "max_login_attempts",
+                    "rate_limit_window_seconds",
+                    "cache_ttl_seconds",
+                ),
+            },
+        ),
     )
 
     inlines = [SiteSettingsMetaTagInline, SiteSettingsFileInline]

@@ -2,8 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Add reusable components here */
+@layer base {
+  :root {
+    --color-primary: #0ea5a4;
+    --color-primary-600: #0a7f82;
+    --color-accent: #6366f1;
+    --color-surface: #f8fafc;
+    --color-border: #e2e8f0;
+    --color-text: #0f172a;
+    --color-muted: #475569;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+  a {
+    @apply transition-colors;
+  }
+}
 
-.btn-primary {
-    @apply bg-primary text-white px-4 py-2 rounded-md hover:opacity-95 transition;
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-primary text-white px-4 py-2 rounded-md font-semibold hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary shadow-sm;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 border border-slate-300 text-slate-800 px-4 py-2 rounded-md font-semibold hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary bg-white;
+  }
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-card;
+  }
+  .input {
+    @apply w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20;
+  }
 }

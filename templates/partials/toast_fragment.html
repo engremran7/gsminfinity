@@ -1,50 +1,85 @@
 {# HTMX toast fragment — enterprise-hardened version #}
+{% load static %}
 
-<div class="toast toast-fragment"
-     role="status"
-     aria-live="polite"
-     aria-atomic="true"
-     data-bs-delay="4000">
+{% comment %}
+    This fragment is designed to be returned via an HTMX response (e.g., as part
+    of a hx-swap='afterbegin' action).
+
+    Context variables expected:
+    - message (string): The main body text of the toast.
+    - toast_class (string, optional): Bootstrap class like 'text-bg-danger', 'text-bg-success'.
+    - toast_delay (int, optional): Delay in milliseconds (defaults to 4000).
+{% endcomment %}
+
+{% with final_class=toast_class|default:'text-bg-primary' final_delay=toast_delay|default:4000 %}
+<div
+  class="toast toast-fragment align-items-center mb-2 {{ final_class }}"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+  data-bs-delay="{{ final_delay }}"
+>
   <div class="d-flex">
-    <div class="toast-body">
-      {{ message }}
-    </div>
-    <button type="button"
-            class="btn-close btn-close-white me-2 m-auto"
-            data-bs-dismiss="toast"
-            aria-label="Close"></button>
+    <div class="toast-body">{{ message }}</div>
+    <button
+      type="button"
+      {# Use btn-close-white for dark backgrounds like danger/success #}
+      class="btn-close me-2 m-auto {% if final_class != 'text-bg-white' and final_class != 'text-bg-primary' %}btn-close-white{% endif %}"
+      data-bs-dismiss="toast"
+      aria-label="Close"
+    ></button>
   </div>
 </div>
+{% endwith %}
 
-<script>
-(function() {
-  // Find the *toast element associated with this script* safely.
-  // Instead of previousElementSibling (fragile), we walk DOM backwards.
-  let script = document.currentScript;
-  if (!script) return;
+<script nonce="{{ request.csp_nonce }}">
+  (function () {
+    // Note: The toast container must have the ID #app-toasts in base.html
+    
+    // 1. Find the *toast element associated with this script* safely.
+    let script = document.currentScript;
+    if (!script) return;
 
-  let sibling = script.previousElementSibling;
-  let toastEl = null;
+    let sibling = script.previousElementSibling;
+    let toastEl = null;
 
-  // Walk backwards until a .toast element is found or max depth reached
-  for (let i = 0; i < 3 && sibling; i++) {
-    if (sibling.classList && sibling.classList.contains("toast")) {
-      toastEl = sibling;
-      break;
+    // Walk backwards until a .toast element is found (max 3 steps for safety)
+    for (let i = 0; i < 3 && sibling; i++) {
+      if (sibling.classList && sibling.classList.contains("toast")) {
+        toastEl = sibling;
+        break;
+      }
+      sibling = sibling.previousElementSibling;
     }
-    sibling = sibling.previousElementSibling;
-  }
 
-  if (!toastEl) return;
+    if (!toastEl) return;
 
-  // Ensure Bootstrap is available – fail quietly
-  if (typeof bootstrap === "undefined" || !bootstrap.Toast) return;
+    // 2. Ensure Bootstrap is available
+    if (typeof window.bootstrap === "undefined" || !window.bootstrap.Toast) {
+        console.warn("Bootstrap Toast not found. Falling back to simple removal.");
+        // Fallback: Manually remove the toast after delay
+        const delay = parseInt(toastEl.getAttribute('data-bs-delay'), 10) || 4000;
+        setTimeout(() => {
+            try { toastEl.remove(); } catch (_) {}
+        }, delay + 500);
+        return;
+    }
 
-  try {
-    let instance = bootstrap.Toast.getOrCreateInstance(toastEl);
-    instance.show();
-  } catch (err) {
-    console.warn("Toast init failed:", err);
-  }
-})();
+    // 3. Initialize and show the toast (FIXED: use standard constructor)
+    try {
+      // Use standard constructor for Bootstrap 5+
+      let instance = new window.bootstrap.Toast(toastEl);
+      instance.show();
+
+      // Clean up toast element after it's hidden by Bootstrap
+      toastEl.addEventListener('hidden.bs.toast', () => {
+          toastEl.remove();
+      });
+
+    } catch (err) {
+      console.error("Toast initialization failed:", err);
+      // Ensure the element is cleaned up if initialization fails
+      try { toastEl.remove(); } catch (_) {}
+    }
+  })();
 </script>

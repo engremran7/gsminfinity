@@ -1,26 +1,43 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}Notifications — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% load static humanize %}
+
+{% block title %}Notifications · {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <h2 class="mb-3">Notifications</h2>
+<div class="container py-6 space-y-4">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold text-slate-900">Notifications</h1>
+      <p class="text-sm text-slate-500">Security, account, and system messages for your profile.</p>
+    </div>
+    <div class="flex items-center space-x-2">
+      <a href="?scope=unread" class="btn btn-sm {% if scope == 'unread' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Unread</a>
+      <a href="?scope=all" class="btn btn-sm {% if scope != 'unread' %}btn-primary{% else %}btn-outline-secondary{% endif %}">All</a>
+    </div>
+  </div>
 
-    {% if notifications %}
-      <div class="space-y-3">
-        {% for n in notifications %}
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">{{ n.title }}</h5>
-              <p class="text-muted small">{{ n.created_at|date:"Y-m-d H:i" }}</p>
-              <p class="mb-0">{{ n.summary }}</p>
-              <a href="{% url 'users_notifications:detail' n.pk %}" class="mt-2 inline-block text-primary underline">View</a>
+  {% if notifications %}
+    <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-200 overflow-hidden">
+      {% for n in notifications %}
+        <a href="{% url 'users_notifications:detail' n.pk %}"
+           class="flex items-start px-4 py-3 hover:bg-slate-50 {% if not n.read_at %}bg-blue-50/50{% endif %}">
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-medium text-slate-900">{{ n.title }}</span>
+              <span class="text-xs text-slate-400">{{ n.created_at|naturaltime }}</span>
             </div>
+            <p class="text-xs text-slate-600 line-clamp-2">{{ n.body|default:n.summary|truncatechars:180 }}</p>
           </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p>No notifications.</p>
-    {% endif %}
+          {% if not n.read_at %}
+            <span class="w-2 h-2 rounded-full bg-primary ms-3 mt-2"></span>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-white border border-dashed border-slate-300 rounded-xl p-6 text-center">
+      <p class="text-sm text-slate-500">No notifications yet. Security and activity alerts will appear here.</p>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}

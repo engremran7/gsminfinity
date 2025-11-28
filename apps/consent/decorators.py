@@ -12,10 +12,11 @@ Features:
 - Graceful fallback when middleware missing
 """
 
-import logging
 import asyncio
+import logging
 from functools import wraps
 from inspect import iscoroutinefunction
+
 from django.http import HttpResponseForbidden, JsonResponse
 
 log = logging.getLogger(__name__)
@@ -43,7 +44,9 @@ def require_consent(category: str = "analytics", ajax_friendly: bool = True):
             request.headers.get("x-requested-with") == "XMLHttpRequest"
             or (request.content_type or "").startswith("application/json")
         ):
-            return JsonResponse({"error": "consent_required", "category": category}, status=403)
+            return JsonResponse(
+                {"error": "consent_required", "category": category}, status=403
+            )
         return HttpResponseForbidden(msg, content_type="text/plain; charset=utf-8")
 
     def decorator(view_func):
@@ -53,7 +56,11 @@ def require_consent(category: str = "analytics", ajax_friendly: bool = True):
             async def _wrapped_async(request, *args, **kwargs):
                 try:
                     cookie_ns = getattr(request, "cookie_consent", None)
-                    has_category = bool(getattr(cookie_ns, category, False)) if cookie_ns else False
+                    has_category = (
+                        bool(getattr(cookie_ns, category, False))
+                        if cookie_ns
+                        else False
+                    )
                     has_overall = bool(getattr(request, "has_cookie_consent", False))
 
                     if not (has_category and has_overall):
@@ -66,7 +73,9 @@ def require_consent(category: str = "analytics", ajax_friendly: bool = True):
                         )
                         return _deny_access(request, category)
                 except Exception as exc:
-                    log.warning("Consent validation failed (async) for %s → %s", category, exc)
+                    log.warning(
+                        "Consent validation failed (async) for %s → %s", category, exc
+                    )
                     return HttpResponseForbidden("Consent validation error.")
                 return await view_func(request, *args, **kwargs)
 
@@ -77,7 +86,9 @@ def require_consent(category: str = "analytics", ajax_friendly: bool = True):
         def _wrapped(request, *args, **kwargs):
             try:
                 cookie_ns = getattr(request, "cookie_consent", None)
-                has_category = bool(getattr(cookie_ns, category, False)) if cookie_ns else False
+                has_category = (
+                    bool(getattr(cookie_ns, category, False)) if cookie_ns else False
+                )
                 has_overall = bool(getattr(request, "has_cookie_consent", False))
 
                 if not (has_category and has_overall):

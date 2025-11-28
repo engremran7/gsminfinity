@@ -1,30 +1,22 @@
 {% load static %}
 
-{# ====================================================================== #}
-{#  ENTERPRISE-GRADE NAVBAR (ASGI-safe, no DB hits, no lazy user eval)   #}
-{# ====================================================================== #}
-
-<nav class="bg-white border-b border-slate-200">
+<nav class="site-nav">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between h-16 items-center">
-
-      {# ================================================================ #}
-      {#  LOGO + SITE NAME (fixed path — img/, not images/)               #}
-      {#  Uses admin-configured logo if present, else fallback           #}
-      {# ================================================================ #}
       <div class="flex items-center">
-        <a href="{% url 'core:home' %}" class="flex items-center">
-
+        <a href="{% url 'home' %}" class="flex items-center">
           {% if site_settings.logo %}
-            <img
-              src="{{ site_settings.logo }}"
-              alt="{{ site_settings.site_name|default:'' }}"
-              class="h-8 w-auto">
+          <img
+            src="{{ site_settings.logo }}"
+            alt="{{ site_settings.site_name|default:'' }}"
+            class="h-8 w-auto"
+          />
           {% else %}
-            <img
-              src="{% static 'img/logo.svg' %}"
-              alt="{{ site_settings.site_name|default:'' }}"
-              class="h-8 w-auto">
+          <img
+            src="{% static 'img/default-logo.svg' %}"
+            alt="{{ site_settings.site_name|default:'Site' }}"
+            class="h-8 w-auto"
+          />
           {% endif %}
 
           <span class="ml-3 font-semibold text-slate-900">
@@ -33,49 +25,107 @@
         </a>
       </div>
 
-      {# ================================================================ #}
-      {#  NAVIGATION LINKS                                               #}
-      {# ================================================================ #}
       <div class="flex items-center space-x-4">
+        {% if site_settings.enable_tenants %}
+          <a href="{% url 'core:tenants' %}" class="text-sm inline-flex items-center gap-1">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-building"></use></svg>
+            <span>Tenants</span>
+          </a>
+        {% endif %}
 
-        <a href="{% url 'core:tenants' %}"
-           class="text-sm text-slate-700 hover:text-slate-900">
-          Tenants
+        {% if site_settings.enable_blog %}
+          <a href="{% url 'blog:post_list' %}" class="text-sm inline-flex items-center gap-1">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-notes"></use></svg>
+            <span>Blog</span>
+          </a>
+        {% endif %}
+
+        <a href="{% url 'users:dashboard' %}" class="text-sm inline-flex items-center gap-1">
+          <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-layout"></use></svg>
+          <span>Dashboard</span>
         </a>
 
-        <a href="{% url 'core:dashboard_overview' %}"
-           class="text-sm text-slate-700 hover:text-slate-900">
-          Dashboard
-        </a>
+        {% if request.user.is_authenticated %}
+          <!-- Notification bell -->
+          <div class="relative inline-block" id="app-notifications">
+            <button
+              type="button"
+              class="relative inline-flex items-center justify-center w-10 h-10 rounded-full hover:bg-slate-100"
+              data-notify-toggle
+              aria-label="Notifications"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-600" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2a6 6 0 00-6 6v3.586L3.293 13.293A1 1 0 004 15h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z" />
+                <path d="M10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+              </svg>
+              <span
+                id="notify-badge"
+                class="hidden absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white bg-red-500 rounded-full"
+              >
+                0
+              </span>
+            </button>
+            <div
+              id="notify-panel"
+              class="hidden absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-xl border border-slate-100 z-20"
+            >
+              <div class="p-3 border-b border-slate-100 flex items-center justify-between">
+                <span class="font-semibold text-sm text-slate-800">Notifications</span>
+                <button
+                  type="button"
+                  id="notify-mark-all"
+                  class="text-xs text-slate-500 hover:text-slate-800"
+                  aria-label="Mark all read"
+                >
+                  Mark all read
+                </button>
+              </div>
+              <div id="notify-list" class="max-h-80 overflow-y-auto divide-y divide-slate-100"></div>
+            </div>
+          </div>
 
-        {# ============================================================ #}
-        {#  SAFE AUTH AREA — ASGI SAFE                                  #}
-        {#  DO NOT EVALUATE user.is_authenticated IN TEMPLATE          #}
-        {#  JS will toggle visibility based on backend-provided flag   #}
-        {# ============================================================ #}
+          <span class="text-sm text-slate-600 hidden sm:inline">
+            Logged in as {{ request.user.email|default:request.user.username }}
+          </span>
+          <a href="{% url 'users:profile' %}" class="text-sm text-slate-700 hover:text-slate-900 inline-flex items-center gap-1">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-user"></use></svg>
+            <span>Profile</span>
+          </a>
+          <a href="{% url 'users:devices' %}" class="text-sm text-slate-700 hover:text-slate-900 inline-flex items-center gap-1">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-devices"></use></svg>
+            <span>Devices</span>
+          </a>
+          <a href="{% url 'account_logout' %}" class="text-sm text-slate-700 hover:text-slate-900 inline-flex items-center gap-1">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-logout"></use></svg>
+            <span>Logout</span>
+          </a>
+        {% else %}
+          <a
+            href="{% url 'account_login' %}"
+            class="text-sm theme-accent hover:underline"
+          >
+            Login
+          </a>
+          <a
+            href="{% url 'account_signup' %}"
+            class="text-sm theme-accent hover:underline"
+          >
+            Sign up
+          </a>
+        {% endif %}
 
-        {# Public links (visible by default) #}
-        <a href="{% url 'account_login' %}"
-           class="text-sm text-primary hover:underline auth-login">
-          Login
-        </a>
-
-        <a href="{% url 'account_signup' %}"
-           class="text-sm text-primary hover:underline auth-signup">
-          Sign up
-        </a>
-
-        {# Private links (hidden until JS toggles them) #}
-        <a href="{% url 'users:profile' %}"
-           class="text-sm text-slate-700 hover:text-slate-900 auth-profile hidden">
-          Profile
-        </a>
-
-        <a href="{% url 'account_logout' %}"
-           class="text-sm text-slate-700 hover:text-slate-900 auth-logout hidden">
-          Logout
-        </a>
-
+        <button
+          type="button"
+          id="theme-fab"
+          class="theme-fab theme-chip"
+          aria-label="Open theme designer"
+          title="Theme designer"
+        >
+          <svg class="icon" aria-hidden="true">
+            <use href="#icon-wand"></use>
+          </svg>
+          <span class="hidden sm:inline">Theme</span>
+        </button>
       </div>
     </div>
   </div>

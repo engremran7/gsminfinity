@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from typing import Iterable
+
 from django.shortcuts import redirect
-from django.urls import reverse, resolve
+from django.urls import resolve, reverse
 
 
 class EnforceProfileCompletionMiddleware:
@@ -43,7 +44,8 @@ class EnforceProfileCompletionMiddleware:
         "/media",
         "/api",
         "/health",
-        "/consent",    # prevent blocking when consent banner loads
+        "/consent",  # prevent blocking when consent banner loads
+        "/.well-known",  # allow ACME / verification endpoints
     )
 
     def __init__(self, get_response):
@@ -57,6 +59,17 @@ class EnforceProfileCompletionMiddleware:
     def __call__(self, request):
 
         user = getattr(request, "user", None)
+
+        # Feature flag: allow disabling enforcement from SiteSettings
+        try:
+            from apps.site_settings.models import SiteSettings
+
+            ss = SiteSettings.get_solo()
+            # Only enforce profile/MFA flow when require_mfa flag is on
+            if not getattr(ss, "require_mfa", False):
+                return self.get_response(request)
+        except Exception:
+            pass
 
         # --- Fast exit for anonymous users ----------------------------------
         if not (user and user.is_authenticated):

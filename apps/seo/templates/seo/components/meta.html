@@ -1,0 +1,16 @@
+{% if meta %}
+  <title>{{ meta.meta_title|default:meta.social_title }}</title>
+  {% if meta.meta_description %}<meta name="description" content="{{ meta.meta_description|default:meta.social_description|truncatechars:160 }}">{% endif %}
+  {% if meta.focus_keywords %}<meta name="keywords" content="{{ meta.focus_keywords|join:',' }}">{% endif %}
+  {% if meta.robots_directives %}<meta name="robots" content="{{ meta.robots_directives }}">{% endif %}
+  {% if meta.canonical_url %}<link rel="canonical" href="{{ meta.canonical_url }}">{% endif %}
+  {% if meta.noindex %}<meta name="robots" content="noindex">{% endif %}
+  {% if meta.nofollow %}<meta name="robots" content="nofollow">{% endif %}
+  <meta property="og:title" content="{{ meta.social_title|default:meta.meta_title }}">
+  <meta property="og:description" content="{{ meta.social_description|default:meta.meta_description }}">
+  {% if meta.social_image %}<meta property="og:image" content="{{ meta.social_image }}">{% endif %}
+  {% if meta.canonical_url %}<meta property="og:url" content="{{ meta.canonical_url }}">{% endif %}
+{% endif %}
+{% for s in schemas %}
+  <script type="application/ld+json">{{ s.payload|safe }}</script>
+{% endfor %}

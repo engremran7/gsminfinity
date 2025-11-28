@@ -1,0 +1,14 @@
+<div
+  class="ad-slot border border-dashed border-slate-200 rounded-lg p-2 text-center text-xs text-slate-500 bg-white/60 backdrop-blur"
+  data-ad-slot="{{ placement.code|default:placement.slug|default:fallback_slug }}"
+  data-allowed-types="{{ allowed_types }}"
+  data-allowed-sizes="{{ allowed_sizes }}"
+  data-context="{{ placement.context|default:placement.page_context }}"
+>
+  {% if placement %}
+    <span class="font-semibold text-slate-600">Ad slot: {{ placement.name }}</span>
+    <p class="text-[11px] text-slate-500">Code: {{ placement.code|default:placement.slug }}</p>
+  {% else %}
+    <span>Ad slot: {{ fallback_slug }}</span>
+  {% endif %}
+</div>

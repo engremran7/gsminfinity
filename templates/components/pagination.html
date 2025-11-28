@@ -1,0 +1,22 @@
+{# Pagination component. Expects page_obj and request. #}
+{% if page_obj.has_other_pages %}
+  <nav class="flex items-center justify-between mt-6" aria-label="Pagination">
+    <div>
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="text-sm text-primary hover:text-primary-600">Previous</a>
+      {% else %}
+        <span class="text-sm text-slate-400">Previous</span>
+      {% endif %}
+    </div>
+    <div class="text-xs text-slate-600">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </div>
+    <div>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="text-sm text-primary hover:text-primary-600">Next</a>
+      {% else %}
+        <span class="text-sm text-slate-400">Next</span>
+      {% endif %}
+    </div>
+  </nav>
+{% endif %}

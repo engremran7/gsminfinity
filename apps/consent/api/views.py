@@ -18,19 +18,14 @@ import json
 import logging
 from typing import Any, Dict
 
+from apps.consent.models import ConsentRecord
+from apps.consent.utils import consent_cache_key, get_active_policy, resolve_site_domain
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import transaction
 from django.http import HttpRequest, JsonResponse
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_GET, require_POST
-
-from apps.consent.models import ConsentRecord
-from apps.consent.utils import (
-    consent_cache_key,
-    get_active_policy,
-    resolve_site_domain,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +40,7 @@ _MAX_PAYLOAD_BYTES = 1_048_576  # 1MB limit to prevent abuse
 # ---------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------
+
 
 def _safe_json_parse(request: HttpRequest) -> Dict[str, Any]:
     """
@@ -80,7 +76,9 @@ def _safe_json_parse(request: HttpRequest) -> Dict[str, Any]:
         return {}
 
 
-def _sanitize_categories(policy_snapshot: Dict[str, Any], user_data: Dict[str, Any]) -> Dict[str, bool]:
+def _sanitize_categories(
+    policy_snapshot: Dict[str, Any], user_data: Dict[str, Any]
+) -> Dict[str, bool]:
     """
     Convert user categories → {slug: bool}, enforcing required categories as True.
 
@@ -115,6 +113,7 @@ def _sanitize_categories(policy_snapshot: Dict[str, Any], user_data: Dict[str, A
 # GET /consent/status
 # ---------------------------------------------------------------
 
+
 @require_GET
 def get_consent_status(request: HttpRequest) -> JsonResponse:
     """
@@ -140,12 +139,15 @@ def get_consent_status(request: HttpRequest) -> JsonResponse:
                 status=404,
             )
 
+        version = str(policy.get("version", "") or "")
+        categories = policy.get("categories_snapshot") or {}
+
         return JsonResponse(
             {
                 "ok": True,
-                "version": policy.version,
+                "version": version,
                 "site_domain": site_domain,
-                "categories": policy.categories_snapshot or {},
+                "categories": categories,
             },
             status=200,
         )
@@ -158,6 +160,7 @@ def get_consent_status(request: HttpRequest) -> JsonResponse:
 # ---------------------------------------------------------------
 # POST /consent/update
 # ---------------------------------------------------------------
+
 
 @csrf_protect
 @login_required
@@ -193,7 +196,8 @@ def update_consent(request: HttpRequest) -> JsonResponse:
                 status=404,
             )
 
-        snapshot = policy.categories_snapshot or {}
+        snapshot = policy.get("categories_snapshot") or {}
+        policy_version = str(policy.get("version", "") or "")
 
         # 3) Sanitize categories
         sanitized = _sanitize_categories(snapshot, data)
@@ -203,7 +207,7 @@ def update_consent(request: HttpRequest) -> JsonResponse:
             with transaction.atomic():
                 ConsentRecord.objects.update_or_create(
                     user=request.user,
-                    policy_version=policy.version,
+                    policy_version=policy_version,
                     site_domain=site_domain,
                     defaults={"accepted_categories": sanitized},
                 )
@@ -224,13 +228,13 @@ def update_consent(request: HttpRequest) -> JsonResponse:
             "Consent updated: user=%s site=%s policy=%s",
             getattr(request.user, "email", request.user.pk),
             site_domain,
-            policy.version,
+            policy_version,
         )
 
         return JsonResponse(
             {
                 "ok": True,
-                "version": policy.version,
+                "version": policy_version,
                 "site_domain": site_domain,
             },
             status=200,

@@ -16,12 +16,13 @@ from __future__ import annotations
 
 import secrets
 from datetime import timedelta
-from django.utils import timezone
 
+from django.utils import timezone
 
 # ============================================================
 #  TOKEN GENERATION
 # ============================================================
+
 
 def generate_token(length: int = 32) -> str:
     """
@@ -44,6 +45,7 @@ def generate_token(length: int = 32) -> str:
 #  TOKEN EXPIRY UTILITIES
 # ============================================================
 
+
 def token_expiry(hours: int = 24) -> timezone.datetime:
     """
     Compute an expiry datetime for a token using Django's timezone utilities.
@@ -61,6 +63,7 @@ def token_expiry(hours: int = 24) -> timezone.datetime:
 # ============================================================
 #  TOKEN VALIDATION (Optional Utility)
 # ============================================================
+
 
 def is_token_expired(created_at: timezone.datetime, hours: int = 24) -> bool:
     """

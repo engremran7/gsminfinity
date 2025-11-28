@@ -2,7 +2,19 @@ from __future__ import annotations
 
 from django.urls import path
 from . import views
-from apps.consent.api import get_consent_status, update_consent
+
+# If you have a lazy loader utility, import it here.
+# Otherwise, implement with django.utils.module_loading.import_string.
+try:
+    from gsminfinity.urls import lazy_view
+except ImportError:
+    from django.utils.module_loading import import_string
+
+    def lazy_view(dotted_path: str):
+        def _wrapped(*args, **kwargs):
+            view = import_string(dotted_path)
+            return view(*args, **kwargs)
+        return _wrapped
 
 app_name = "consent"
 
@@ -26,24 +38,28 @@ urlpatterns = [
     path("reject-all/", views.consent_reject_all, name="reject_all"),
 
     # ------------------------------------------------------------------
-    # Compatibility aliases for underscore URLs
-    # Required because your frontend still calls:
-    #   /consent/accept_all/
-    #   /consent/reject_all/
-    # DO NOT REMOVE
+    # Compatibility aliases (underscore style)
+    # Required because frontend still calls /consent/accept_all/ etc.
     # ------------------------------------------------------------------
-    path("accept_all/", views.consent_accept_all, name="accept_all_u"),
-    path("reject_all/", views.consent_reject_all, name="reject_all_u"),
+    path("accept_all/", views.consent_accept_all, name="accept_all_alias"),
+    path("reject_all/", views.consent_reject_all, name="reject_all_alias"),
 
     # ------------------------------------------------------------------
-    # Legacy alias: confirmed in frontend JS
+    # Legacy alias (deprecated, kept for JS compatibility)
     # ------------------------------------------------------------------
     path("save/", views.consent_accept, name="save"),
 
     # ------------------------------------------------------------------
-    # JSON API (Clean, canonical, frontend-safe)
-    # apps/consent/api.py
+    # JSON API (canonical, frontend-safe)
     # ------------------------------------------------------------------
-    path("api/status/", get_consent_status, name="api_status"),
-    path("api/update/", update_consent, name="api_update"),
+    path(
+        "api/status/",
+        lazy_view("apps.consent.api.get_consent_status"),
+        name="api_status",
+    ),
+    path(
+        "api/update/",
+        lazy_view("apps.consent.api.update_consent"),
+        name="api_update",
+    ),
 ]

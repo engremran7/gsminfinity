@@ -3,17 +3,19 @@ GSMInfinity Development Settings
 ================================
 Overrides production `settings.py` for safe local development.
 
-✅ DEBUG mode enabled
-✅ HTTPS redirection fully disabled
-✅ No HSTS / CSRF secure cookie enforcement
-✅ Console email backend
-✅ Local-only allowed hosts
-✅ Fast logging and hashing
+- DEBUG mode enabled
+- HTTPS redirection fully disabled
+- No HSTS / CSRF secure cookie enforcement
+- Console email backend
+- Local-only allowed hosts
+- Fast logging and hashing
 """
 
 from __future__ import annotations
-from .settings import *  # import production defaults
+
 from pathlib import Path
+
+from .settings import *  # import production defaults
 
 # ============================================================
 # Environment / Debug
@@ -21,7 +23,12 @@ from pathlib import Path
 DEBUG = True
 ENV = "development"
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+# Allow sync DB/session access in async dev server contexts (suppress SynchronousOnlyOperation)
+os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
+
+ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = False
+
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0", "testserver"]
 SITE_ID = 1
 
 
@@ -39,12 +46,21 @@ SECURE_CONTENT_TYPE_NOSNIFF = False
 SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_AGE = 1209600  # 14 days
+SESSION_SAVE_EVERY_REQUEST = False
 
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# Dev: do not trust X-Forwarded-Proto by default
+SECURE_PROXY_SSL_HEADER = None
 
 # Ensure SslToggleMiddleware never forces HTTPS in dev
 os.environ["FORCE_HTTPS_DEV_OVERRIDE"] = "0"
+MIDDLEWARE = [
+    mw for mw in MIDDLEWARE if mw != "apps.core.middleware.ssl_toggle.SslToggleMiddleware"
+]
 
 
 # ============================================================
@@ -54,6 +70,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://localhost:8000",
 ]
+
+# When already authenticated, redirect away from login/signup to the dashboard
+ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True
 
 
 # ============================================================
@@ -65,9 +84,9 @@ SSL_CERT_FILE = CERT_DIR / "localhost.pem"
 SSL_KEY_FILE = CERT_DIR / "localhost-key.pem"
 
 if SSL_CERT_FILE.exists() and SSL_KEY_FILE.exists():
-    print(f"🔒 Local HTTPS certs available: {SSL_CERT_FILE.name}")
+    print(f"[DEV] Local HTTPS certs available: {SSL_CERT_FILE.name}")
 else:
-    print("⚠️  No local certs found — running HTTP-only")
+    print("[DEV] No local certs found - running HTTP-only")
 
 
 # ============================================================
@@ -116,4 +135,4 @@ PASSWORD_HASHERS = [
 # ============================================================
 # Final notice
 # ============================================================
-print("⚙️  GSMInfinity Development Settings Loaded (HTTP-only, DEBUG=True)")
+print("[DEV] GSMInfinity Development Settings Loaded (HTTP-only, DEBUG=True)")

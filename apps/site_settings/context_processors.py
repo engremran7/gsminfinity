@@ -1,12 +1,12 @@
 """
 Enterprise-grade Site Settings Context Processor (FINAL, SYNC-ONLY)
 
-✓ 100% synchronous (no await / no sync_to_async / no async context switching)
-✓ WSGI + ASGI safe
-✓ ORM calls fully wrapped in defensive guards
-✓ Never leaks exceptions into templates
-✓ Returns consistent, normalized schema
-✓ No recursion risk, no unsafe attributes
+- 100% synchronous (no await / no sync_to_async / no async context switching)
+- WSGI + ASGI safe
+- ORM calls fully wrapped in defensive guards
+- Never leaks exceptions into templates
+- Returns consistent, normalized schema
+- No recursion risk, no unsafe attributes
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ CACHE_KEY_PREFIX = "active_site_settings"
 # KEY HELPERS
 # ---------------------------------------------------------------------
 def _safe_domain_key(domain: Optional[str]) -> str:
-    """Convert domain → cache key (collision-resistant, no unsafe chars)."""
+    """Convert domain to cache key (collision-resistant, no unsafe chars)."""
     safe = (domain or "global").strip().lower()
     digest = hashlib.sha256(safe.encode("utf-8")).hexdigest()[:16]
     return f"{CACHE_KEY_PREFIX}_{digest}"
@@ -43,11 +43,13 @@ def _iter_related(obj: Any, attr: str) -> Iterable:
         if rel is None:
             return ()
         if hasattr(rel, "all"):
+            # Execute ORM query defensively
             return tuple(rel.all())
         if isinstance(rel, (list, tuple, set)):
             return tuple(rel)
         return (rel,)
     except Exception:
+        # Never break template rendering due to ORM lookup failure
         return ()
 
 
@@ -76,7 +78,7 @@ def _safe_defaults() -> Dict[str, Any]:
         "site_description": "",
         "logo": static("img/default-logo.svg"),
         "dark_logo": static("img/default-logo-dark.svg"),
-        "favicon": static("img/default-favicon.png"),
+        "favicon": static("img/default-favicon.svg"),
         "theme": "default",
         "primary_color": "#0d6efd",
         "secondary_color": "#6c757d",
@@ -85,6 +87,19 @@ def _safe_defaults() -> Dict[str, Any]:
         "maintenance_mode": False,
         "force_https": False,
         "recaptcha_enabled": False,
+        # Feature toggles (ads/seo)
+        "seo_enabled": False,
+        "auto_meta_enabled": False,
+        "auto_schema_enabled": False,
+        "auto_linking_enabled": False,
+        "ads_enabled": False,
+        "affiliate_enabled": False,
+        "ad_networks_enabled": False,
+        "ad_aggressiveness_level": "balanced",
+        # Feature toggles (admin controlled)
+        "enable_tenants": False,
+        "enable_blog": False,
+        "enable_blog_comments": False,
         "cache_ttl_seconds": DEFAULT_TTL_SECONDS,
         "meta_tags": [],
         "verification_files": [],
@@ -92,7 +107,7 @@ def _safe_defaults() -> Dict[str, Any]:
 
 
 def _serialize(obj: Any) -> Dict[str, Any]:
-    """Convert ORM object → dict (fully isolated, exception-proof)."""
+    """Convert ORM object to dict (fully isolated, exception-proof)."""
 
     if obj is None:
         return _safe_defaults()
@@ -111,16 +126,20 @@ def _serialize(obj: Any) -> Dict[str, Any]:
             name = getattr(m, "name", None) or getattr(m, "name_attr", None)
             content = getattr(m, "content", None) or getattr(m, "content_attr", None)
             if isinstance(name, str) and name.strip():
-                meta_tags.append({
-                    "name": name.strip(),
-                    "content": content or "",
-                })
+                meta_tags.append(
+                    {
+                        "name": name.strip(),
+                        "content": content or "",
+                    }
+                )
 
         # VERIFICATION FILES
         verification_files = []
         for f in _iter_related(obj, "verification_files"):
             file_field = getattr(f, "file", None)
-            raw_name = getattr(file_field, "name", None) or getattr(f, "filename", None) or ""
+            raw_name = (
+                getattr(file_field, "name", None) or getattr(f, "filename", None) or ""
+            )
             raw_url = getattr(file_field, "url", None) or ""
 
             filename = raw_name if isinstance(raw_name, str) else ""
@@ -129,11 +148,13 @@ def _serialize(obj: Any) -> Dict[str, Any]:
             if not url.strip():
                 url = static("img/default-verification.txt")
 
-            verification_files.append({
-                "filename": filename,
-                "url": url,
-                "provider": getattr(f, "provider", "") or "",
-            })
+            verification_files.append(
+                {
+                    "filename": filename,
+                    "url": url,
+                    "provider": getattr(f, "provider", "") or "",
+                }
+            )
 
         ttl = getattr(obj, "cache_ttl_seconds", DEFAULT_TTL_SECONDS)
         try:
@@ -147,9 +168,15 @@ def _serialize(obj: Any) -> Dict[str, Any]:
             "site_name": getattr(obj, "site_name", "Site"),
             "site_header": getattr(obj, "site_header", "Admin"),
             "site_description": getattr(obj, "site_description", "") or "",
-            "logo": _file_url_or_default(getattr(obj, "logo", None), "img/default-logo.svg"),
-            "dark_logo": _file_url_or_default(getattr(obj, "dark_logo", None), "img/default-logo-dark.svg"),
-            "favicon": _file_url_or_default(getattr(obj, "favicon", None), "img/default-favicon.png"),
+            "logo": _file_url_or_default(
+                getattr(obj, "logo", None), "img/default-logo.svg"
+            ),
+            "dark_logo": _file_url_or_default(
+                getattr(obj, "dark_logo", None), "img/default-logo-dark.svg"
+            ),
+            "favicon": _file_url_or_default(
+                getattr(obj, "favicon", None), "img/default-favicon.svg"
+            ),
             "theme": getattr(obj, "theme", "default"),
             "primary_color": getattr(obj, "primary_color", "#0d6efd"),
             "secondary_color": getattr(obj, "secondary_color", "#6c757d"),
@@ -158,6 +185,24 @@ def _serialize(obj: Any) -> Dict[str, Any]:
             "maintenance_mode": bool(getattr(obj, "maintenance_mode", False)),
             "force_https": bool(getattr(obj, "force_https", False)),
             "recaptcha_enabled": bool(getattr(obj, "recaptcha_enabled", False)),
+            # Feature toggles (admin controlled)
+            "enable_tenants": bool(getattr(obj, "enable_tenants", False)),
+            "enable_blog": bool(getattr(obj, "enable_blog", False)),
+            "enable_blog_comments": bool(
+                getattr(obj, "enable_blog_comments", False)
+            ),
+            # Ads/SEO toggles (for template gating)
+            "seo_enabled": bool(getattr(obj, "seo_enabled", False)),
+            "auto_meta_enabled": bool(getattr(obj, "auto_meta_enabled", False)),
+            "auto_schema_enabled": bool(getattr(obj, "auto_schema_enabled", False)),
+            "auto_linking_enabled": bool(getattr(obj, "auto_linking_enabled", False)),
+            "ads_enabled": bool(getattr(obj, "ads_enabled", False)),
+            "affiliate_enabled": bool(getattr(obj, "affiliate_enabled", False)),
+            "ad_networks_enabled": bool(getattr(obj, "ad_networks_enabled", False)),
+            "ad_aggressiveness_level": getattr(
+                obj, "ad_aggressiveness_level", "balanced"
+            )
+            or "balanced",
             "cache_ttl_seconds": ttl,
             "meta_tags": meta_tags,
             "verification_files": verification_files,
@@ -174,6 +219,7 @@ def _serialize(obj: Any) -> Dict[str, Any]:
 def _load_sync(site):
     """Loads tenant → global settings in strict sync mode."""
     try:
+        # Lazy Import
         from apps.site_settings import models as m
     except Exception:
         logger.error("Import failure: apps.site_settings missing", exc_info=True)
@@ -184,8 +230,7 @@ def _load_sync(site):
         if site and hasattr(site, "id"):
             try:
                 t = (
-                    m.TenantSiteSettings.objects
-                    .select_related("site")
+                    m.TenantSiteSettings.objects.select_related("site")
                     .prefetch_related("meta_tags", "verification_files")
                     .filter(site=site)
                     .first()
@@ -196,17 +241,20 @@ def _load_sync(site):
                 pass
 
         # Global singleton
-        if hasattr(m.SiteSettings, "get_solo"):
-            try:
-                return m.SiteSettings.get_solo()
-            except Exception:
-                pass
-
-        # Fallback: first record
         try:
-            return m.SiteSettings.objects.first()
+            # Use prefetch on global singleton for consistency
+            qs = m.SiteSettings.objects.prefetch_related("meta_tags", "verification_files")
+
+            if hasattr(m.SiteSettings, "get_solo"):
+                return m.SiteSettings.get_solo()
+            
+            # Fallback to first record on prefetched queryset
+            return qs.first()
+            
         except Exception:
+            # Fallback for error during get_solo/first()
             return None
+
 
     except Exception:
         logger.debug("_load_sync failed → None")
@@ -218,9 +266,21 @@ def _load_sync(site):
 # ---------------------------------------------------------------------
 def site_settings(request: HttpRequest) -> Dict[str, Any]:
     try:
+        # 1. Determine Auth status (Request-specific, cannot be cached with site settings)
+        is_authenticated = False
+        try:
+            user = getattr(request, 'user', None)
+            if user is not None and getattr(user, 'is_authenticated', False):
+                is_authenticated = True
+        except Exception:
+            pass
+        # --------------------------------------------------------------------
+
         try:
             site = get_current_site(request)
-            domain = getattr(site, "domain", None) or f"id-{getattr(site, 'id', 'global')}"
+            domain = (
+                getattr(site, "domain", None) or f"id-{getattr(site, 'id', 'global')}"
+            )
         except Exception:
             site = None
             domain = "global"
@@ -231,11 +291,13 @@ def site_settings(request: HttpRequest) -> Dict[str, Any]:
         try:
             cached = cache.get(cache_key)
             if isinstance(cached, dict):
+                # Inject request-specific context (auth status)
                 return {
                     "site_settings": cached,
                     "settings": cached,
                     "meta_tags": cached.get("meta_tags", []),
                     "verification_files": cached.get("verification_files", []),
+                    "auth_is_authenticated": is_authenticated,  # 🔥 FIXED: Non-cached variable injected
                 }
         except Exception:
             pass
@@ -250,21 +312,26 @@ def site_settings(request: HttpRequest) -> Dict[str, Any]:
         except Exception:
             pass
 
+        # Final Return
+        # Inject request-specific context (auth status)
         return {
             "site_settings": payload,
             "settings": payload,
             "meta_tags": payload.get("meta_tags", []),
             "verification_files": payload.get("verification_files", []),
+            "auth_is_authenticated": is_authenticated,  # 🔥 FIXED: Non-cached variable injected
         }
 
     except Exception:
         logger.error("site_settings processor fatal → defaults", exc_info=True)
         payload = _safe_defaults()
+        # Ensure 'auth_is_authenticated' is returned even on fatal failure
         return {
             "site_settings": payload,
             "settings": payload,
             "meta_tags": [],
             "verification_files": [],
+            "auth_is_authenticated": False,  # 🔥 FIXED: Non-cached variable injected
         }
 
 

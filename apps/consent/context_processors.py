@@ -15,11 +15,11 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Dict
-from django.http import HttpRequest
-from django.utils.functional import SimpleLazyObject
-from django.conf import settings
 
 from apps.consent.models import ConsentPolicy
+from django.conf import settings
+from django.http import HttpRequest
+from django.utils.functional import SimpleLazyObject
 
 logger = logging.getLogger(__name__)
 
@@ -107,16 +107,22 @@ def consent_context(request: HttpRequest) -> Dict[str, Any]:
             "consent_version": getattr(request, "consent_version", None),
             "consent_summary": dict(getattr(request, "consent_summary", {}) or {}),
             "active_consent_policy": SimpleLazyObject(_lazy_active_policy),
-            "consent_cookie_name": getattr(settings, "CONSENT_COOKIE_NAME", "consent_status"),
+            "consent_cookie_name": getattr(
+                settings, "CONSENT_COOKIE_NAME", "consent_status"
+            ),
             "consent_cookie_secure": bool(
-                getattr(settings, "CONSENT_COOKIE_SECURE", not getattr(settings, "DEBUG", False))
+                getattr(
+                    settings,
+                    "CONSENT_COOKIE_SECURE",
+                    not getattr(settings, "DEBUG", False),
+                )
             ),
             "consent_cookie_samesite": getattr(
                 settings, "CONSENT_COOKIE_SAMESITE", "Lax"
             ),
             "consent_cookie_max_age": int(
-                getattr(settings, "CONSENT_COOKIE_MAX_AGE", 31536000
-            )),
+                getattr(settings, "CONSENT_COOKIE_MAX_AGE", 31536000)
+            ),
         }
 
         return ctx

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Verify email — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-12">
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-medium mb-2">Verify your email</h3>
+    <p class="text-sm text-slate-600 mb-4">Enter the verification code sent to your email.</p>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <input type="text" name="code" class="w-full border border-slate-300 rounded px-3 py-2" placeholder="Verification code" />
+      <button type="submit" class="bg-primary text-white px-4 py-2 rounded w-full">Verify</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

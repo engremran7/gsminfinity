@@ -1,43 +1,48 @@
-{% extends "base.html" %}
-{% load static %}
-{% block title %}Cookie Preferences — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% load static %} {% block title %}Cookie Preferences
+— {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %} {% block
+content %}
 <div class="container py-6 max-w-3xl">
   <h2 class="mb-4">Cookie preferences</h2>
 
   <form method="post" action="{% url 'consent:manage' %}">
-    {% csrf_token %}
-    {% if categories %}
-      {% for c in categories %}
-        <div class="flex items-start space-x-3 mb-3">
-          <input id="c-{{ c.slug }}"
-                 name="{{ c.slug }}"
-                 value="1"
-                 type="checkbox"
-                 class="h-4 w-4 rounded border-slate-400"
-                 {% if c.required %}checked disabled aria-disabled="true"{% endif %}
-          >
-          <div>
-            <label for="c-{{ c.slug }}" class="font-medium">
-              {{ c.name }}
-              {% if c.required %}
-                <span class="text-xs text-red-600 ml-1">(Required)</span>
-              {% endif %}
-            </label>
-            <p class="text-sm text-slate-600 leading-snug">
-              {{ c.description|default:"No description available." }}
-            </p>
-          </div>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p class="text-slate-600 text-sm">No cookie categories are configured.</p>
+    {% csrf_token %} {% if categories %} {% for c in categories %}
+    <div class="flex items-start space-x-3 mb-3">
+      <input
+        id="c-{{ c.slug }}"
+        name="{{ c.slug }}"
+        value="1"
+        type="checkbox"
+        class="h-4 w-4 rounded border-slate-400"
+        {%
+        if
+        c.required
+        %}checked
+        disabled
+        aria-disabled="true"
+        {%
+        endif
+        %}
+      />
+      <div>
+        <label for="c-{{ c.slug }}" class="font-medium">
+          {{ c.name }} {% if c.required %}
+          <span class="text-xs text-red-600 ml-1">(Required)</span>
+          {% endif %}
+        </label>
+        <p class="text-sm text-slate-600 leading-snug">
+          {{ c.description|default:"No description available." }}
+        </p>
+      </div>
+    </div>
+    {% endfor %} {% else %}
+    <p class="text-slate-600 text-sm">No cookie categories are configured.</p>
     {% endif %}
 
     <div class="mt-6">
       <button type="submit" class="btn btn-primary">Save preferences</button>
-      <a href="{{ request.GET.next|default:'/' }}" class="btn btn-link ml-3">Cancel</a>
+      <a href="{{ request.GET.next|default:'/' }}" class="btn btn-link ml-3"
+        >Cancel</a
+      >
     </div>
   </form>
 </div>

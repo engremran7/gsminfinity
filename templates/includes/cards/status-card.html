@@ -1,11 +1,11 @@
 <div class="bg-white shadow rounded-lg p-6">
-  {% if title %}<div class="text-sm text-slate-500 mb-2">{{ title }}</div>{% endif %}
+  {% if title %}
+  <div class="text-sm text-slate-500 mb-2">{{ title }}</div>
+  {% endif %}
   <div class="text-2xl font-semibold text-slate-900">
     {{ value|default:"0" }}
   </div>
   {% if description %}
-    <div class="text-slate-600 text-sm mt-2">
-      {{ description }}
-    </div>
+  <div class="text-slate-600 text-sm mt-2">{{ description }}</div>
   {% endif %}
 </div>

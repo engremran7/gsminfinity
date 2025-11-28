@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Tags - {{ site_settings.site_name|default:"Site" }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+  <header class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900">Tags</h1>
+      <p class="text-sm text-slate-600">Browse tags and usage.</p>
+      <p class="text-xs text-slate-500">Use existing tags where possible to avoid fragmentation. Synonyms help discovery.</p>
+    </div>
+  </header>
+  <div class="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+    {% for tag in tags %}
+      <a href="{% url 'tags:detail' slug=tag.slug %}" class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 hover:-translate-y-0.5 transition">
+        <div class="flex items-center justify-between">
+          <div class="text-slate-900 font-semibold">#{{ tag.name }}</div>
+          <span class="text-xs text-slate-500">{{ tag.usage_count }} posts</span>
+        </div>
+        {% if tag.description %}<p class="text-sm text-slate-600 mt-1 line-clamp-2">{{ tag.description }}</p>{% endif %}
+      </a>
+    {% empty %}
+      <div class="text-sm text-slate-500">No tags yet.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

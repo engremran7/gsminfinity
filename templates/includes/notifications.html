@@ -1,16 +1,22 @@
 <div class="container mt-3">
   {% if messages %}
-    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
-      {% for msg in messages %}
-        <div class="toast show align-items-center text-bg-light border-0 mb-2" role="alert">
-          <div class="d-flex">
-            <div class="toast-body">
-              {{ msg }}
-            </div>
-            <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-          </div>
-        </div>
-      {% endfor %}
+  <div class="position-fixed top-0 end-0 p-3" style="z-index: 1055">
+    {% for msg in messages %}
+    <div
+      class="toast show align-items-center text-bg-light border-0 mb-2"
+      role="alert"
+    >
+      <div class="d-flex">
+        <div class="toast-body">{{ msg }}</div>
+        <button
+          type="button"
+          class="btn-close me-2 m-auto"
+          data-bs-dismiss="toast"
+          aria-label="Close"
+        ></button>
+      </div>
     </div>
+    {% endfor %}
+  </div>
   {% endif %}
 </div>

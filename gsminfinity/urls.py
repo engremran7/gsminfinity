@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Callable, Any
+from typing import Any, Callable
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -26,6 +26,7 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from django.utils.module_loading import import_string
 from django.views.generic import RedirectView
+from apps.core import views as core_views
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ def lazy_view(dotted_path: str) -> Callable[..., Any]:
     Import view lazily at call time.
     Supports sync, async, and class-based views.
     """
+
     async def _wrapper(request, *args, **kwargs):
         view_obj = import_string(dotted_path)
 
@@ -69,45 +71,62 @@ admin.site.index_title = "System Management Console"
 # URL Patterns
 # =====================================================================
 urlpatterns = [
-
     # Admin
     path("admin/", admin.site.urls),
-
     # Authentication (allauth)
     path("accounts/", include("allauth.urls")),
-
     # Users module
     path("users/", include(("apps.users.urls", "users"), namespace="users")),
-
     # Notifications (implemented inside users app)
     # NOTE: module apps.users.notifications_urls defines app_name="users_notifications",
     # so we include it with the same internal app_name and namespace to avoid conflicts.
     path(
         "notifications/",
-        include(("apps.users.notifications_urls", "users_notifications"), namespace="users_notifications"),
+        include(
+            ("apps.users.notifications_urls", "users_notifications"),
+            namespace="users_notifications",
+        ),
     ),
-
     # Consent subsystem
     path("consent/", include(("apps.consent.urls", "consent"), namespace="consent")),
-
     # Site settings
-    path("site_settings/", include(("apps.site_settings.urls", "site_settings"), namespace="site_settings")),
-
-    # Core module
-    path("core/", include(("apps.core.urls", "core"), namespace="core")),
-
-    # Public root pages
+    path(
+        "site_settings/",
+        include(
+            ("apps.site_settings.urls", "site_settings"), namespace="site_settings"
+        ),
+    ),
+    # Ads subsystem
+    path("ads/", include(("apps.ads.urls", "ads"), namespace="ads")),
+    # Tags API
+    path("tags/", include(("apps.tags.urls", "tags"), namespace="tags")),
+    # Blog (public)
+    path("blog/", include(("apps.blog.urls", "blog"), namespace="blog")),
+    # Comments API
+    path("comments/", include(("apps.comments.urls", "comments"), namespace="comments")),
+    # Public root pages (core namespace + plain names for templates)
+    path("", include(("apps.core.urls", "core"), namespace="core")),
     path("", lazy_view("apps.core.views.home"), name="home"),
     path("tenants/", lazy_view("apps.core.views.tenants"), name="tenants"),
-
+    path("privacy/", lazy_view("apps.core.views.privacy"), name="privacy"),
+    path("terms/", lazy_view("apps.core.views.terms"), name="terms"),
+    path("cookies/", lazy_view("apps.core.views.cookies"), name="cookies"),
     # Health check (well-known)
-    path(".well-known/health", lazy_view("apps.core.views.health_check"), name="health_check"),
-
+    path(
+        ".well-known/health",
+        lazy_view("apps.core.views.health_check"),
+        name="health_check",
+    ),
+    # AI assistant endpoint (frontend widget)
+    path("api/ai/ask", core_views.ai_assistant_view, name="api_ai_ask"),
     # Legacy redirect
     path("index/", RedirectView.as_view(pattern_name="home", permanent=True)),
-
+    # Legacy dashboard redirect removed (user dashboard lives under /users/dashboard/)
     # Favicon
-    re_path(r"^favicon\.ico$", RedirectView.as_view(url="/static/favicon.ico", permanent=True)),
+    re_path(
+        r"^favicon\.ico$",
+        RedirectView.as_view(url="/static/favicon.ico", permanent=True),
+    ),
 ]
 
 
@@ -120,6 +139,7 @@ if settings.DEBUG:
 
     try:
         from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
         urlpatterns += staticfiles_urlpatterns()
     except Exception as exc:
         logger.warning("staticfiles_urlpatterns() unavailable: %s", exc)

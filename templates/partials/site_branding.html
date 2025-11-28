@@ -1,32 +1,29 @@
 {# templates/partials/site_branding.html #}
 {# Usage: {% include "partials/site_branding.html" with settings=site_settings %} #}
-
 {% load static %}
-
 {%- with s=settings or site_settings -%}
+{# ---------------------------------------------------------------------- #}
+{# FAVICON (admin dynamic to static fallback) #}
+{# ---------------------------------------------------------------------- #}
+{% include "partials/favicon_link.html" with favicon=s.favicon %}
+{# ---------------------------------------------------------------------- #}
+{# LOGO + BRANDING (safe, dynamic, static fallbacks) #}
+{# ---------------------------------------------------------------------- #}
+<a class="navbar-brand" href="/">
+  <picture>
+    {# Prefer dark logo when user prefers dark mode #}
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="{{ s.dark_logo|default:static('img/default-logo-dark.svg') }}"
+    />
 
-  {# ---------------------------------------------------------------------- #}
-  {#  FAVICON (admin dynamic → static fallback)                             #}
-  {# ---------------------------------------------------------------------- #}
-  {% include "partials/favicon_link.html" with favicon=s.favicon %}
-
-  {# ---------------------------------------------------------------------- #}
-  {#  LOGO + BRANDING (safe, dynamic, static fallbacks)                     #}
-  {# ---------------------------------------------------------------------- #}
-  <a class="navbar-brand" href="/">
-    <picture>
-
-      {# Prefer dark logo when user prefers dark mode #}
-      <source
-        media="(prefers-color-scheme: dark)"
-        srcset="{{ s.dark_logo|default:static('img/default-logo-dark.svg') }}">
-
-      {# Default logo (light) with safe fallback #}
-      <img
-        src="{{ s.logo|default:static('img/default-logo.svg') }}"
-        alt="{{ s.site_name|default:'' }}"
-        style="height:36px;">
-    </picture>
-  </a>
+    {# Default logo (light) with safe fallback #}
+    <img
+      src="{{ s.logo|default:static('img/default-logo.svg') }}"
+      alt="{{ s.site_name|default:'' }}"
+      style="height: 36px"
+    />
+  </picture>
+</a>
 
 {%- endwith -%}

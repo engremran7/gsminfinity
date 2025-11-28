@@ -16,6 +16,7 @@ class CoreConfig(AppConfig):
         """
         try:
             from django.contrib.sites.models import Site
+
             Site.objects.clear_cache()
         except Exception:
             pass

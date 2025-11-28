@@ -17,17 +17,12 @@ from __future__ import annotations
 import json
 import logging
 from types import SimpleNamespace
-from typing import Dict, Optional, Tuple, Any, Set
+from typing import Any, Dict, Optional, Set, Tuple
 
+from apps.consent.models import ConsentRecord
+from apps.consent.utils import consent_cache_key, get_active_policy, resolve_site_domain
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
-
-from apps.consent.utils import (
-    consent_cache_key,
-    get_active_policy,
-    resolve_site_domain,
-)
-from apps.consent.models import ConsentRecord
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +45,9 @@ class ConsentMiddleware:
         self.get_response = get_response
 
         # Avoid unsafe, brand-specific defaults — now generic
-        self.cookie_name: str = getattr(settings, "CONSENT_COOKIE_NAME", "cookie_consent")
+        self.cookie_name: str = getattr(
+            settings, "CONSENT_COOKIE_NAME", "cookie_consent"
+        )
         self.cookie_max_age: int = int(
             getattr(settings, "CONSENT_COOKIE_MAX_AGE", 60 * 60 * 24 * 365)
         )
@@ -248,7 +245,9 @@ class ConsentMiddleware:
         required: Set[str] = set()
 
         try:
-            snap = policy_payload.get("categories_snapshot", {}) if policy_payload else {}
+            snap = (
+                policy_payload.get("categories_snapshot", {}) if policy_payload else {}
+            )
             if isinstance(snap, dict):
                 for slug, data in snap.items():
                     slug = str(slug)
@@ -293,7 +292,9 @@ class ConsentMiddleware:
     # =====================================================================
     #  RESPONSE HOOK — cookie writer
     # =====================================================================
-    def process_response(self, request: HttpRequest, response: HttpResponse) -> HttpResponse:
+    def process_response(
+        self, request: HttpRequest, response: HttpResponse
+    ) -> HttpResponse:
         """Write cookie storing accepted categories — best effort."""
         try:
             if request.has_cookie_consent:

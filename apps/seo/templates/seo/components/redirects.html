@@ -1,0 +1,70 @@
+<div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm mt-4">
+  <h2 class="text-lg font-semibold text-slate-900 mb-2">Redirects</h2>
+  <p class="text-sm text-slate-600 mb-3">Manage active redirects.</p>
+
+  <form method="post" action="{% url 'seo:manage_redirect' %}" class="grid md:grid-cols-4 gap-2 mb-4 items-end">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="create">
+    <div>
+      <label class="block text-xs text-slate-500">Source</label>
+      <input name="source" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" placeholder="/old-path" required>
+    </div>
+    <div>
+      <label class="block text-xs text-slate-500">Target</label>
+      <input name="target" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" placeholder="/new-path" required>
+    </div>
+    <div class="flex items-center gap-3">
+      <label class="flex items-center gap-1 text-xs text-slate-600">
+        <input type="checkbox" name="is_permanent" value="1" class="h-4 w-4">
+        Permanent
+      </label>
+      <label class="flex items-center gap-1 text-xs text-slate-600">
+        <input type="checkbox" name="is_active" value="1" checked class="h-4 w-4">
+        Active
+      </label>
+    </div>
+    <button type="submit" class="btn-primary px-3 py-2 rounded text-white text-sm">Add redirect</button>
+  </form>
+
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-xs text-slate-500">
+        <th class="py-1">Source</th>
+        <th class="py-1">Target</th>
+        <th class="py-1">Permanent</th>
+        <th class="py-1">Active</th>
+        <th class="py-1 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for r in redirects %}
+        <tr>
+          <td class="py-1">{{ r.source }}</td>
+          <td class="py-1">{{ r.target }}</td>
+          <td class="py-1">{{ r.is_permanent }}</td>
+          <td class="py-1">{{ r.is_active }}</td>
+          <td class="py-1 text-right space-x-2">
+            <form method="post" action="{% url 'seo:manage_redirect' %}" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="id" value="{{ r.id }}">
+              <input type="hidden" name="action" value="toggle_active">
+              <button class="text-xs text-primary hover:text-primary-600" type="submit">
+                {% if r.is_active %}Disable{% else %}Enable{% endif %}
+              </button>
+            </form>
+            <form method="post" action="{% url 'seo:manage_redirect' %}" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="id" value="{{ r.id }}">
+              <input type="hidden" name="action" value="toggle_permanent">
+              <button class="text-xs text-slate-600 hover:text-slate-900" type="submit">
+                {% if r.is_permanent %}Make 302{% else %}Make 301{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="py-2 text-slate-500">No redirects.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

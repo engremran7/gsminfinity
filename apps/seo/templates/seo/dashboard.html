@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}SEO Dashboard{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900">SEO Dashboard</h1>
+    <p class="text-sm text-slate-600">SEO enabled: {{ seo_enabled }}</p>
+    <div class="mt-3 grid sm:grid-cols-3 gap-3 text-xs">
+      <div class="bg-blue-50 text-blue-800 border border-blue-100 rounded-md p-3">Regenerate meta only when content changes; lock once approved.</div>
+      <div class="bg-amber-50 text-amber-800 border border-amber-100 rounded-md p-3">Stability: auto-linking respects locks; run suggestions after new posts.</div>
+      <div class="bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-md p-3">Consent-aware: tracking/crawls respect global toggles.</div>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-sm text-slate-600">Sitemap entries</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ sitemaps }}</div>
+      <p class="text-xs text-slate-500 mt-1">Issues: {{ link_issues }} | Unknown: {{ link_unknown }}</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-sm text-slate-600">Redirects</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ redirects }}</div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-sm text-slate-600">Linkable entities</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ entities }}</div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-sm text-slate-600">Missing meta</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ missing_meta }}</div>
+      <p class="text-xs text-slate-500">Pages missing title/description.</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-sm text-slate-600">Duplicate titles</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ duplicate_titles }}</div>
+      <p class="text-xs text-slate-500">Resolve duplicates to reduce SERP cannibalization.</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-sm text-slate-600">SERP score (recent)</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ serp_stats.serp_score|default:"0" }}</div>
+      <p class="text-xs text-slate-500">Heuristic based on meta length.</p>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-sm text-slate-600">Heatmap</div>
+      <div class="text-xs text-slate-500">Total: {{ heatmap.total }} | OK: {{ heatmap.ok }} | Errors: {{ heatmap.errors }} | Unknown: {{ heatmap.unknown }}</div>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+    <h2 class="text-lg font-semibold text-slate-900 mb-2">Link Suggestions</h2>
+    <p class="text-sm text-slate-600 mb-3">Apply or lock suggestions to prevent churn.</p>
+    <div class="divide-y divide-slate-100 text-sm">
+      {% for s in suggestions %}
+        <div class="py-2 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-semibold text-slate-800">{{ s.source.title }}</div>
+            <div class="text-xs text-slate-500">→ {{ s.target.title }}</div>
+          </div>
+          <form method="post" action="{% url 'seo:apply_link_suggestion' %}" class="flex items-center gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="id" value="{{ s.id }}">
+            <input type="hidden" name="apply" value="1">
+            <button type="submit" class="text-xs text-primary hover:text-primary-600">Apply</button>
+            <button type="submit" name="lock" value="1" class="text-xs text-slate-500 hover:text-slate-800">Lock</button>
+          </form>
+        </div>
+      {% empty %}
+        <div class="py-2 text-slate-500">No suggestions.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+    <h2 class="text-lg font-semibold text-slate-900 mb-2">Meta Regeneration (stable)</h2>
+    <p class="text-sm text-slate-600 mb-3">Generate metadata only when content changes or when you explicitly request it. Lock to freeze SEO output.</p>
+    {% if recent_posts %}
+      <form method="post" action="{% url 'seo:regenerate_metadata' %}" class="space-y-3" data-seo-meta-form>
+        {% csrf_token %}
+        <input type="hidden" name="content_type" value="{{ post_content_type_id }}">
+        <label class="block text-sm font-medium text-slate-700">Post</label>
+        <select name="object_id" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm">
+          {% for post in recent_posts %}
+            <option value="{{ post.id }}">{{ post.title }}</option>
+          {% endfor %}
+        </select>
+        <label class="block text-sm font-medium text-slate-700">Focus keywords (comma separated)</label>
+        <input type="text" name="focus_keywords" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" placeholder="performance, analytics">
+        <label class="block text-sm font-medium text-slate-700">Source text</label>
+        <textarea name="text" rows="4" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" placeholder="Paste summary or body for AI to read"></textarea>
+        <label class="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="lock" value="1" class="h-4 w-4">
+          <span>Lock metadata after regeneration</span>
+        </label>
+        <div class="flex items-center gap-3 text-sm">
+          <button type="submit" class="btn-primary px-4 py-2 rounded text-white">Generate &amp; Save</button>
+          <button type="button" data-meta-action="unlock" class="btn-outline px-3 py-2 rounded">Unlock metadata</button>
+        </div>
+        <div class="text-xs text-slate-500" data-seo-meta-output></div>
+      </form>
+    {% else %}
+      <p class="text-sm text-slate-600">No posts available for regeneration yet.</p>
+    {% endif %}
+  </div>
+
+  {% include "seo/components/url_inspector.html" %}
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+    <h2 class="text-lg font-semibold text-slate-900 mb-2">Link Checker</h2>
+    <p class="text-sm text-slate-600 mb-3">Run <code>python manage.py check_links</code> to refresh; failing URLs are highlighted.</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-slate-500">
+            <th class="py-1">URL</th>
+            <th class="py-1">Status</th>
+            <th class="py-1">Checked</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for entry in sitemap_entries %}
+            {% with status=entry.last_status %}
+              {% if status and status|add:0 >= 400 %}
+                {% include "seo/components/link_status_row.html" with entry=entry status_class="text-red-600 bg-red-50" %}
+              {% elif status %}
+                {% include "seo/components/link_status_row.html" with entry=entry status_class="text-green-700 bg-green-50" %}
+              {% else %}
+                {% include "seo/components/link_status_row.html" with entry=entry status_class="text-amber-700 bg-amber-50" %}
+              {% endif %}
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="3" class="py-2 text-slate-500">No link checks recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% include "seo/components/redirects.html" with redirects=redirects_list %}
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script nonce="{{ request.csp_nonce }}">
+  (function() {
+    const form = document.querySelector('[data-seo-meta-form]');
+    if (!form) return;
+    const output = form.querySelector('[data-seo-meta-output]');
+    function updateStatus(msg) {
+      if (output) output.textContent = msg || "";
+    }
+    async function postForm(url, data) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": (form.querySelector('input[name=\"csrfmiddlewaretoken\"]') || {}).value || ""
+        },
+        body: data,
+      });
+      return res.json();
+    }
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      updateStatus("Generating...");
+      try {
+        const fd = new FormData(form);
+        const res = await postForm(form.action, fd);
+        if (res.ok) {
+          updateStatus(`Saved. Title: ${res.title || ''} | Description: ${res.description || ''}`);
+        } else {
+          updateStatus(res.error || "Failed to regenerate metadata.");
+        }
+      } catch (err) {
+        updateStatus("Error generating metadata.");
+      }
+    });
+    const unlockBtn = form.querySelector('[data-meta-action=\"unlock\"]');
+    if (unlockBtn) {
+      unlockBtn.addEventListener('click', async () => {
+        updateStatus("Unlocking...");
+        try {
+          const fd = new FormData();
+          fd.append("content_type", form.querySelector('input[name=\"content_type\"]').value);
+          fd.append("object_id", form.querySelector('select[name=\"object_id\"]').value);
+          fd.append("action", "unlock");
+          const res = await postForm("{% url 'seo:update_metadata_controls' %}", fd);
+          updateStatus(res.ok ? "Unlocked." : res.error || "Unlock failed.");
+        } catch (err) {
+          updateStatus("Unlock failed.");
+        }
+      });
+    }
+  })();
+</script>
+{% endblock %}

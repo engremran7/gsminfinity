@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 32" role="img" aria-labelledby="title desc">
+  <title id="title">Default Logo</title>
+  <desc id="desc">Simple placeholder logo for GSMInfinity</desc>
+  <rect width="140" height="32" rx="6" fill="#0f172a"/>
+  <rect x="10" y="8" width="24" height="16" rx="3" fill="#38bdf8"/>
+  <rect x="42" y="8" width="24" height="16" rx="3" fill="#06b6d4"/>
+  <rect x="74" y="8" width="24" height="16" rx="3" fill="#6366f1"/>
+  <text x="108" y="21" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#e2e8f0" font-weight="600">GSM</text>
+</svg>

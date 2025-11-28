@@ -1,84 +1,81 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Home — {{ site_settings.site_name|default:"" }}{% endblock %}
+
+{% block title %}Home - {{ site_settings.site_name|default:"Site" }}{% endblock %}
 
 {% block content %}
-
-<!-- HERO SECTION -->
-<section class="py-20 bg-white text-center">
-  <div class="container mx-auto px-4">
-    <h1 class="text-4xl md:text-5xl font-extrabold text-primary mb-4">
-      Welcome to {{ site_settings.site_name|default:"" }}
+<section class="py-16 bg-white text-center">
+  <div class="container mx-auto px-4 space-y-4">
+    <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">
+      Welcome to {{ site_settings.site_name|default:"Site" }}
     </h1>
-
-    <p class="text-gray-600 text-lg">
-      Django {{ django_version }} • Python {{ python_version }} · {{ now }}
+    <p class="text-slate-600 text-lg">
+      Django {{ django_version }} · Python {{ python_version }} · {{ now|date:"M j, Y, P" }}
     </p>
+    {% if not request.user.is_authenticated %}
+      <div class="mt-6 flex justify-center gap-3">
+        <a href="{% url 'account_login' %}" class="btn-primary px-5 py-3 rounded-md text-white">
+          Sign in
+        </a>
+        <a href="{% url 'account_signup' %}" class="btn-outline px-5 py-3 rounded-md">
+          Create account
+        </a>
+      </div>
+    {% endif %}
 
-    <!-- Metrics Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-12">
-
-      <!-- Total Users -->
-      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-gray-100">
-        <h3 class="text-3xl font-bold text-gray-800">{{ total_users|default:"—" }}</h3>
-        <p class="text-gray-500 text-sm mt-1">Total users</p>
+      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-slate-100">
+        <h3 class="text-3xl font-bold text-slate-900">
+          {{ total_users|default:"-" }}
+        </h3>
+        <p class="text-slate-600 text-sm mt-1">Total users</p>
       </div>
 
-      <!-- Active Devices -->
-      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-gray-100">
-        <h3 class="text-3xl font-bold text-gray-800">{{ active_devices|default:"—" }}</h3>
-        <p class="text-gray-500 text-sm mt-1">Active devices</p>
+      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-slate-100">
+        <h3 class="text-3xl font-bold text-slate-900">
+          {{ active_devices|default:"-" }}
+        </h3>
+        <p class="text-slate-600 text-sm mt-1">Active devices</p>
       </div>
 
-      <!-- Unread Notifications -->
-      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-gray-100">
-        <h3 class="text-3xl font-bold text-gray-800">{{ unread_notifications|default:"—" }}</h3>
-        <p class="text-gray-500 text-sm mt-1">Unread notifications</p>
+      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-slate-100">
+        <h3 class="text-3xl font-bold text-slate-900">
+          {{ unread_notifications|default:"-" }}
+        </h3>
+        <p class="text-slate-600 text-sm mt-1">Unread notifications</p>
       </div>
 
-      <!-- Active Announcements -->
-      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-gray-100">
-        <h3 class="text-3xl font-bold text-gray-800">{{ active_announcements|default:"—" }}</h3>
-        <p class="text-gray-500 text-sm mt-1">Active announcements</p>
+      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-slate-100">
+        <h3 class="text-3xl font-bold text-slate-900">
+          {{ active_announcements|default:"-" }}
+        </h3>
+        <p class="text-slate-600 text-sm mt-1">Active announcements</p>
       </div>
-
     </div>
   </div>
 </section>
 
-
-<!-- ANNOUNCEMENTS LIST -->
-<section class="container mx-auto mt-16 px-4">
-  <h2 class="text-2xl font-bold mb-6">Recent announcements</h2>
+<section class="container mx-auto mt-12 px-4">
+  <h2 class="text-2xl font-bold mb-6 text-slate-900">Recent announcements</h2>
 
   {% if announcements %}
     <div class="space-y-4">
       {% for a in announcements %}
-        <div class="bg-white border border-gray-200 p-5 rounded-xl shadow-sm">
-          <h5 class="text-xl font-semibold text-gray-800">{{ a.title|default:"(untitled)" }}</h5>
-          <p class="text-gray-400 text-sm">{{ a.created_at|date:"M d, Y" }}</p>
-
-          <p class="text-gray-700 mt-2">
-            {{ a.message|truncatechars:200 }}
-          </p>
+        <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
+          <h5 class="text-xl font-semibold text-slate-900">
+            {{ a.title|default:"(untitled)" }}
+          </h5>
+          <p class="text-slate-500 text-sm">{{ a.created_at|date:"M d, Y" }}</p>
+          <p class="text-slate-700 mt-2">{{ a.message|truncatechars:200 }}</p>
         </div>
       {% endfor %}
     </div>
   {% else %}
-    <div class="bg-blue-50 text-blue-700 border border-blue-200 p-4 rounded-lg">
+    <div class="bg-blue-50 text-blue-800 border border-blue-200 p-4 rounded-lg">
       No announcements available.
     </div>
   {% endif %}
 </section>
 
-
-<!-- Consent banner target container -->
-<div id="consent-banner" aria-live="polite"></div>
-
-{% endblock %}
-
-
-{% block scripts %}
-<!-- Load consent banner loader from static (CSP-safe: nonce injected automatically) -->
-<script src="{% static 'js/consent-banner-loader.js' %}" nonce="{{ request.csp_nonce }}"></script>
+<div id="consent-banner-slot"></div>
 {% endblock %}

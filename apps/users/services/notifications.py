@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import logging
 from typing import Optional
-from django.db import transaction
-from django.utils import timezone
 
 from apps.users.models import Notification
 from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -16,10 +16,10 @@ def send_notification(
     recipient: User,
     title: str,
     message: str,
-    level: str = "info",       # mapped to model.priority
+    level: str = "info",  # mapped to model.priority
     url: Optional[str] = None,
     actor: Optional[User] = None,
-    channel: Optional[str] = None,   # NEW: support channel field
+    channel: Optional[str] = None,  # NEW: support channel field
 ) -> Optional[Notification]:
     """
     Safely create a notification for a user.
@@ -32,10 +32,10 @@ def send_notification(
                 recipient=recipient,
                 title=title[:255],
                 message=message,
-                priority=level,          # FIXED: your model uses 'priority'
+                priority=level,  # FIXED: your model uses 'priority'
                 url=url or "",
                 actor=actor,
-                channel=channel,         # NEW: support channel usage
+                channel=channel,  # NEW: support channel usage
                 # created_at auto_set by model default (best practice)
             )
 

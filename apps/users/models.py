@@ -15,16 +15,20 @@ Design:
 from __future__ import annotations
 
 import logging
+import re
 import secrets
 import string
 import uuid
-import re
-from typing import Optional, Any, Dict
+from typing import Any, Dict, Optional
 
 from django.conf import settings
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
+)
 from django.core.cache import cache
-from django.db import models, transaction, IntegrityError
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -38,6 +42,7 @@ _PHONE_NORMALIZE_RE = re.compile(r"[^\d+]")  # keep digits and leading +
 # --------------------------------------------------------------------------
 class CustomUserManager(BaseUserManager):
     """Custom manager with unified user/superuser creation."""
+
     use_in_migrations = True
 
     def _create_user(
@@ -100,14 +105,23 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     # Identity
     email = models.EmailField(unique=True, db_index=True)
-    username = models.CharField(max_length=150, unique=True, null=True, blank=True, db_index=True)
+    username = models.CharField(
+        max_length=150, unique=True, null=True, blank=True, db_index=True
+    )
     full_name = models.CharField(max_length=150, blank=True, default="")
 
     # Profile
     country = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
     currency = models.CharField(max_length=10, null=True, blank=True)
-    role = models.CharField(max_length=50, null=True, blank=True)
+    class Roles(models.TextChoices):
+        ADMIN = "admin", "Admin"
+        EDITOR = "editor", "Editor"
+        AUTHOR = "author", "Author"
+        MODERATOR = "moderator", "Moderator"
+        READER = "reader", "Reader"
+
+    role = models.CharField(max_length=50, null=True, blank=True, choices=Roles.choices)
 
     # Permissions
     is_active = models.BooleanField(default=True)
@@ -115,9 +129,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     # Credits & referrals
     credits = models.PositiveIntegerField(default=0)
-    referral_code = models.CharField(max_length=12, unique=True, blank=True, db_index=True)
+    referral_code = models.CharField(
+        max_length=12, unique=True, blank=True, db_index=True
+    )
     referred_by = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="referrals"
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="referrals",
     )
 
     # Security & verification
@@ -132,9 +152,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         choices=[("manual", "Manual"), ("social", "Social")],
         default="manual",
     )
+    manual_signup = models.BooleanField(default=False)
     profile_completed = models.BooleanField(
         default=False,
-        help_text="Indicates whether the user has completed their onboarding/profile setup."
+        help_text="Indicates whether the user has completed their onboarding/profile setup.",
     )
     date_joined = models.DateTimeField(auto_now_add=True)
 
@@ -253,7 +274,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
                         try:
                             cache.delete(reserve_key)
                         except Exception:
-                            logger.debug("Failed to delete referral reservation key %s", reserve_key)
+                            logger.debug(
+                                "Failed to delete referral reservation key %s",
+                                reserve_key,
+                            )
 
             if not assigned_candidate:
                 # fallback deterministic but unique-ish default
@@ -270,14 +294,20 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
                         else:
                             self.referral_code = obj.referral_code
                 except Exception as exc:
-                    logger.exception("Failed to persist fallback referral code for user %s → %s", getattr(self, "pk", None), exc)
+                    logger.exception(
+                        "Failed to persist fallback referral code for user %s → %s",
+                        getattr(self, "pk", None),
+                        exc,
+                    )
                     self.referral_code = fallback
 
         # Final save to persist any other unsaved changes
         try:
             super().save(*args, **kwargs)
         except Exception as exc:
-            logger.exception("Failed to save user %s → %s", getattr(self, "email", None), exc)
+            logger.exception(
+                "Failed to save user %s → %s", getattr(self, "email", None), exc
+            )
             raise
 
     # ============================================================
@@ -286,6 +316,23 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     @property
     def is_verified(self) -> bool:
         return bool(self.email_verified_at)
+
+    def has_role(self, *roles: str) -> bool:
+        if not self.role:
+            return False
+        return self.role in roles
+
+    def is_admin(self) -> bool:
+        return self.is_superuser or self.has_role(self.Roles.ADMIN)
+
+    def is_editor(self) -> bool:
+        return self.has_role(self.Roles.EDITOR)
+
+    def is_author(self) -> bool:
+        return self.has_role(self.Roles.AUTHOR)
+
+    def is_moderator(self) -> bool:
+        return self.has_role(self.Roles.MODERATOR)
 
     def mark_email_verified(self) -> None:
         if not self.email_verified_at:
@@ -298,14 +345,20 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def generate_verification_code(
         self, length: int = 6, code_type: str = "alphanumeric"
     ) -> str:
-        alphabet = string.digits if code_type == "numeric" else (string.ascii_uppercase + string.digits)
+        alphabet = (
+            string.digits
+            if code_type == "numeric"
+            else (string.ascii_uppercase + string.digits)
+        )
         length = max(1, min(length, 24))
         code = "".join(secrets.choice(alphabet) for _ in range(length))
         self.verification_code = code
         try:
             self.save(update_fields=["verification_code"])
         except Exception as exc:
-            logger.exception("Verification code save failed for %s → %s", self.email, exc)
+            logger.exception(
+                "Verification code save failed for %s → %s", self.email, exc
+            )
         return code
 
     def increment_unlock(self) -> None:
@@ -353,7 +406,9 @@ class DeviceFingerprint(models.Model):
         ordering = ["-last_used_at"]
         verbose_name = "Device Fingerprint"
         verbose_name_plural = "Device Fingerprints"
-        indexes = [models.Index(fields=["user", "is_active"], name="device_user_active_idx")]
+        indexes = [
+            models.Index(fields=["user", "is_active"], name="device_user_active_idx")
+        ]
 
     def __str__(self) -> str:
         return f"{getattr(self.user, 'email', 'unknown')} · {self.fingerprint_hash[:8]}"
@@ -398,7 +453,9 @@ class Notification(models.Model):
         verbose_name = "Notification"
         verbose_name_plural = "Notifications"
         indexes = [
-            models.Index(fields=["recipient", "is_read"], name="notif_recipient_read_idx")
+            models.Index(
+                fields=["recipient", "is_read"], name="notif_recipient_read_idx"
+            )
         ]
 
     def __str__(self) -> str:
@@ -427,6 +484,14 @@ class Notification(models.Model):
 
     def to_json(self) -> Dict[str, Any]:
         return self.to_dict()
+
+    def author_schema(self) -> Dict[str, Any]:
+        """Basic author schema info for SEO."""
+        return {
+            "@type": "Person",
+            "name": self.full_name or self.username or self.email,
+            "url": getattr(self, "profile_url", None) or "",
+        }
 
 
 # --------------------------------------------------------------------------
@@ -460,7 +525,9 @@ class Announcement(models.Model):
         verbose_name = "Announcement"
         verbose_name_plural = "Announcements"
         indexes = [
-            models.Index(fields=["is_global", "start_at"], name="announce_global_start_idx")
+            models.Index(
+                fields=["is_global", "start_at"], name="announce_global_start_idx"
+            )
         ]
 
     def __str__(self) -> str:
@@ -491,7 +558,9 @@ class Announcement(models.Model):
             "is_global": bool(self.is_global),
             "start_at": self.start_at.isoformat() if self.start_at else None,
             "expires_at": self.expires_at.isoformat() if self.expires_at else None,
-            "created_by": getattr(self.created_by, "email", None) or getattr(self.created_by, "username", None) or None,
+            "created_by": getattr(self.created_by, "email", None)
+            or getattr(self.created_by, "username", None)
+            or None,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 

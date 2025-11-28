@@ -12,9 +12,10 @@ Features:
 Namespace: "core"
 """
 
+from typing import Any, Callable
+
 from django.urls import path
 from django.utils.module_loading import import_string
-from typing import Callable, Any
 
 
 # ----------------------------------------------------------------------
@@ -50,23 +51,10 @@ urlpatterns = [
     #  Public Home / Landing
     # ---------------------------------------------------------------
     path("", view("home"), name="home"),
-
     # ---------------------------------------------------------------
     #  Tenants (Multi-Site Overview)
     # ---------------------------------------------------------------
     path("tenants/", view("tenants"), name="tenants"),
-
-    # ---------------------------------------------------------------
-    #  Dashboard Routes
-    # ---------------------------------------------------------------
-    path("dashboard/", view("overview"), name="dashboard_overview"),
-    path("dashboard/security/", view("security"), name="dashboard_security"),
-    path("dashboard/monetization/", view("monetization"), name="dashboard_monetization"),
-    path("dashboard/notifications/", view("notifications"), name="dashboard_notifications"),
-    path("dashboard/announcements/", view("announcements"), name="dashboard_announcements"),
-    path("dashboard/users/", view("users_dashboard"), name="dashboard_users"),
-    path("dashboard/system/", view("system_health"), name="dashboard_system"),
-
     # ---------------------------------------------------------------
     #  Legal / Policy Page Aliases
     # ---------------------------------------------------------------

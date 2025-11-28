@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Ads Dashboard{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900">Ads Dashboard</h1>
+    <p class="text-sm text-slate-600">Manage placements, campaigns, and creatives. Ads enabled: {{ ads_enabled }}</p>
+    <p class="text-xs text-slate-500">Aggressiveness: {{ ad_aggressiveness_level|default:"balanced" }}</p>
+    <div class="mt-3 grid sm:grid-cols-3 gap-3 text-xs">
+      <div class="bg-blue-50 text-blue-800 border border-blue-100 rounded-md p-3">Tip: Use placement codes in templates; auto-scan will keep DB in sync.</div>
+      <div class="bg-amber-50 text-amber-800 border border-amber-100 rounded-md p-3">Stability: Lock placements/campaigns to prevent auto edits.</div>
+      <div class="bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-md p-3">Consent: Tracking only fires when users accept ads.</div>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">Placements</h2>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-slate-500">
+            <th class="py-1">Name</th>
+            <th class="py-1">Context</th>
+            <th class="py-1">Enabled</th>
+            <th class="py-1">Lock</th>
+            <th class="py-1">Fill</th>
+            <th class="py-1">Actions</th>
+            <th class="py-1">Stats</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for p in placements %}
+            <tr>
+              <td class="py-1">{{ p.name }} ({{ p.slug }})</td>
+              <td class="py-1 text-xs text-slate-500">{{ p.page_context }}</td>
+              <td class="py-1">{{ p.is_enabled }}</td>
+              <td class="py-1">{{ p.locked }}</td>
+              <td class="py-1 text-xs text-slate-500">
+                {% with fills=placement_campaigns|get_item:p.id %}
+                  {% if fills %}
+                    {% for fill in fills %}
+                      <div class="flex items-center gap-1">
+                        <span class="text-slate-800">{{ fill.campaign|default:"(no campaign)" }}</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-100">{{ fill.creative }}</span>
+                        {% if fill.locked %}<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700">Locked</span>{% endif %}
+                        {% if fill.active %}<span class="px-2 py-0.5 rounded bg-green-50 text-green-700">Live</span>{% else %}<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600">Idle</span>{% endif %}
+                      </div>
+                    {% endfor %}
+                  {% else %}
+                    <span class="text-amber-600">Unfilled</span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+              <td class="py-1">
+                <form method="post" action="{% url 'ads:toggle_settings' %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="placement" value="{{ p.id }}">
+                  <input type="hidden" name="action" value="{% if p.is_enabled %}disable_placement{% else %}enable_placement{% endif %}">
+                  <button type="submit" class="text-xs text-primary hover:text-primary-600">
+                    {% if p.is_enabled %}Disable{% else %}Enable{% endif %}
+                  </button>
+                </form>
+                <form method="post" action="{% url 'ads:toggle_settings' %}" class="inline ml-2">
+                  {% csrf_token %}
+                  <input type="hidden" name="placement" value="{{ p.id }}">
+                  <input type="hidden" name="action" value="toggle_lock">
+                  <button type="submit" class="text-xs text-slate-500 hover:text-slate-800">
+                    {% if p.locked %}Unlock{% else %}Lock{% endif %}
+                  </button>
+                </form>
+              </td>
+              {% with stats=placement_stats|get_item:p.id %}
+                <td class="py-1 text-xs text-slate-500">
+                  {{ stats.impressions|default:0 }} / {{ stats.clicks|default:0 }} ({{ stats.ctr|default:"0" }}% CTR)
+                </td>
+              {% endwith %}
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="py-2 text-slate-500">No placements</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">Campaigns</h2>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-slate-500">
+            <th class="py-1">Name</th>
+            <th class="py-1">Network</th>
+            <th class="py-1">Active</th>
+            <th class="py-1">Lock</th>
+            <th class="py-1">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for c in campaigns %}
+            <tr>
+              <td class="py-1">{{ c.name }}</td>
+              <td class="py-1 text-xs text-slate-500">{{ c.ad_network }}</td>
+              <td class="py-1">{{ c.is_active }}</td>
+              <td class="py-1">{{ c.locked }}</td>
+              <td class="py-1">
+                <form method="post" action="{% url 'ads:toggle_settings' %}" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="campaign" value="{{ c.id }}">
+                  <input type="hidden" name="action" value="{% if c.is_active %}disable_campaign{% else %}enable_campaign{% endif %}">
+                  <button type="submit" class="text-xs text-primary hover:text-primary-600">
+                    {% if c.is_active %}Disable{% else %}Enable{% endif %}
+                  </button>
+                </form>
+                <form method="post" action="{% url 'ads:toggle_settings' %}" class="inline ml-2">
+                  {% csrf_token %}
+                  <input type="hidden" name="campaign" value="{{ c.id }}">
+                  <input type="hidden" name="action" value="toggle_campaign_lock">
+                  <button type="submit" class="text-xs text-slate-500 hover:text-slate-800">
+                    {% if c.locked %}Unlock{% else %}Lock{% endif %}
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="py-2 text-slate-500">No campaigns</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+    <h2 class="text-lg font-semibold text-slate-900 mb-2">Performance</h2>
+    <div class="grid grid-cols-3 gap-4 text-center">
+      <div>
+        <div class="text-xs text-slate-500">Impressions</div>
+        <div class="text-xl font-semibold text-slate-900">{{ impressions }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500">Clicks</div>
+        <div class="text-xl font-semibold text-slate-900">{{ clicks }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-500">CTR</div>
+        <div class="text-xl font-semibold text-slate-900">{{ ctr }}%</div>
+      </div>
+    </div>
+    <div class="mt-4 text-xs text-slate-500">Use admin to enable/disable placements, campaigns, and lock overrides. Consent-aware tracking is enforced automatically.</div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+    <h2 class="text-lg font-semibold text-slate-900 mb-2">Overrides</h2>
+    <p class="text-sm text-slate-600">Toggle aggressiveness and ad enablement. (Persists via Site Settings.)</p>
+    <form method="post" action="{% url 'ads:toggle_settings' %}" class="space-y-3">
+      {% csrf_token %}
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="ads_enabled" value="1" {% if ads_enabled %}checked{% endif %} class="h-4 w-4">
+        <span>Ads enabled</span>
+      </label>
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="ad_networks_enabled" value="1" {% if ad_networks_enabled %}checked{% endif %} class="h-4 w-4">
+        <span>Ad networks enabled</span>
+      </label>
+      <label class="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="affiliate_enabled" value="1" {% if affiliate_enabled %}checked{% endif %} class="h-4 w-4">
+        <span>Affiliate links enabled</span>
+      </label>
+      <div>
+        <label class="text-sm font-semibold text-slate-800">Aggressiveness</label>
+        <select name="ad_aggressiveness_level" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm">
+          <option value="minimal" {% if ad_aggressiveness_level == "minimal" %}selected{% endif %}>Minimal</option>
+          <option value="balanced" {% if ad_aggressiveness_level == "balanced" %}selected{% endif %}>Balanced</option>
+          <option value="aggressive" {% if ad_aggressiveness_level == "aggressive" %}selected{% endif %}>Aggressive</option>
+        </select>
+      </div>
+      <button type="submit" class="btn-primary px-4 py-2 rounded text-white">Save</button>
+      <p class="text-xs text-slate-500">Changes apply site-wide; lock placements/campaigns for granular control.</p>
+    </form>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+    <h2 class="text-lg font-semibold text-slate-900 mb-2">Affiliate sources</h2>
+    <p class="text-sm text-slate-600">Manage affiliate providers and link health.</p>
+    <div class="grid md:grid-cols-2 gap-3 text-sm">
+      {% for src in affiliate_sources %}
+        <div class="border border-slate-100 rounded-lg p-3">
+          <div class="font-semibold text-slate-800">{{ src.name }}</div>
+          <p class="text-xs text-slate-500">Base URL: {{ src.base_url|default:"-" }}</p>
+          <p class="text-xs text-slate-500">Links: {{ src.links.count }}</p>
+          <div class="mt-1 space-y-1">
+            {% for link in src.links.all|slice:":3" %}
+              <div class="flex items-center justify-between text-[11px] text-slate-600">
+                <span>{{ link.name }}</span>
+                <span class="text-slate-500">{{ link.usage_count }} uses</span>
+              </div>
+            {% empty %}
+              <div class="text-[11px] text-slate-500">No links</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% empty %}
+        <p class="text-xs text-slate-500">No affiliate sources configured.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+    <h2 class="text-lg font-semibold text-slate-900 mb-2">Creative performance</h2>
+    <p class="text-sm text-slate-600">Impressions, clicks, and CTR per creative.</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs text-slate-500">
+            <th class="py-1 text-left">Creative</th>
+            <th class="py-1">Campaign</th>
+            <th class="py-1">Impressions</th>
+            <th class="py-1">Clicks</th>
+            <th class="py-1">CTR</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for creative in creatives %}
+            {% with stats=creative_stats|get_item:creative.id %}
+            <tr>
+              <td class="py-1 text-left">{{ creative.name }}</td>
+              <td class="py-1 text-center">{{ creative.campaign.name }}</td>
+              <td class="py-1 text-center">{{ stats.impressions|default:0 }}</td>
+              <td class="py-1 text-center">{{ stats.clicks|default:0 }}</td>
+              <td class="py-1 text-center">{{ stats.ctr|default:"0" }}%</td>
+            </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="5" class="py-2 text-slate-500 text-center">No creatives yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

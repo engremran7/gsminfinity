@@ -1,0 +1,22 @@
+{% with tag_list=tags|default:None %}
+  {% if tag_list %}
+    <div class="flex flex-wrap gap-2 text-xs">
+      {% for tag in tag_list %}
+        {% if url_name and tag.slug %}
+          <a href="{% url url_name tag.slug %}"
+             class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 hover:bg-primary/10 hover:text-primary transition">
+            #{{ tag.name|default:tag }}
+          </a>
+        {% else %}
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">#{{ tag.name|default:tag }}</span>
+        {% endif %}
+      {% empty %}
+        <span class="text-slate-400">No tags</span>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="flex flex-wrap gap-2 text-xs">
+      <span class="text-slate-400">No tags</span>
+    </div>
+  {% endif %}
+{% endwith %}

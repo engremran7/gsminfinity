@@ -22,17 +22,12 @@ from decimal import Decimal
 from typing import Any, Dict, Optional
 
 import requests
-from requests import Response
-from requests.exceptions import (
-    Timeout,
-    ConnectionError as RequestsConnectionError,
-    RequestException,
-)
-
+from apps.site_settings.models import SiteSettings
 from django.conf import settings as django_settings
 from django.core.cache import cache
-
-from apps.site_settings.models import SiteSettings
+from requests import Response
+from requests.exceptions import ConnectionError as RequestsConnectionError
+from requests.exceptions import RequestException, Timeout
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +38,7 @@ CACHE_TTL_SECONDS = 15
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _token_digest(token: str) -> str:
     """
@@ -63,6 +59,7 @@ def _safe_decimal(value: Any, default: Decimal = Decimal("0")) -> Decimal:
 # ---------------------------------------------------------------------------
 # Main Verification Function
 # ---------------------------------------------------------------------------
+
 
 def verify_recaptcha(
     token: str,
@@ -164,9 +161,13 @@ def verify_recaptcha(
     hostname: Optional[str] = data.get("hostname")
     error_codes: list[str] = list(data.get("error-codes", []) or [])
 
-    expected_host: Optional[str] = getattr(django_settings, "RECAPTCHA_EXPECTED_HOSTNAME", None)
+    expected_host: Optional[str] = getattr(
+        django_settings, "RECAPTCHA_EXPECTED_HOSTNAME", None
+    )
     if expected_host and hostname and hostname != expected_host:
-        logger.warning("reCAPTCHA: hostname mismatch (%s ≠ %s)", hostname, expected_host)
+        logger.warning(
+            "reCAPTCHA: hostname mismatch (%s ≠ %s)", hostname, expected_host
+        )
         success = False
         error_codes.append("hostname_mismatch")
 
@@ -175,7 +176,9 @@ def verify_recaptcha(
     # ----------------------------------------------------------
     if recaptcha_mode == "v3":
         score = _safe_decimal(data.get("score", 0))
-        threshold = _safe_decimal(getattr(settings_obj, "recaptcha_score_threshold", 0.5))
+        threshold = _safe_decimal(
+            getattr(settings_obj, "recaptcha_score_threshold", 0.5)
+        )
         valid = success and score >= threshold
 
         result: Dict[str, Any] = {
@@ -205,7 +208,9 @@ def verify_recaptcha(
     # ----------------------------------------------------------
     try:
         cache.set(cache_key, result, timeout=CACHE_TTL_SECONDS)
-        logger.debug("reCAPTCHA: cached result key=%s TTL=%ss", cache_key, CACHE_TTL_SECONDS)
+        logger.debug(
+            "reCAPTCHA: cached result key=%s TTL=%ss", cache_key, CACHE_TTL_SECONDS
+        )
     except Exception as exc:
         logger.debug("reCAPTCHA: cache.set failed for %s → %s", cache_key, exc)
 

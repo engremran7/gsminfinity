@@ -11,8 +11,8 @@ Unified routing for GSMInfinity Site Settings module.
 """
 
 from django.urls import path
-from . import views
 
+from . import views
 
 app_name = "site_settings"
 
@@ -26,7 +26,6 @@ urlpatterns = [
         views.site_settings_view,
         name="site_settings",
     ),  # Admin diagnostic readable settings page
-
     # ---------------------------------------------------------------------
     # 🔧 JSON API for Frontend Bootstrapping
     # ---------------------------------------------------------------------
@@ -35,7 +34,6 @@ urlpatterns = [
         views.settings_info,
         name="settings_info",
     ),
-
     # ---------------------------------------------------------------------
     # 🔐 Domain Verification Files (Google / Apple / Facebook)
     # ---------------------------------------------------------------------
@@ -44,7 +42,6 @@ urlpatterns = [
         views.verification_file,
         name="verification_file",
     ),
-
     # ---------------------------------------------------------------------
     # 📜 Public Policy & Legal Pages (GDPR Compliant)
     # ---------------------------------------------------------------------
@@ -53,13 +50,11 @@ urlpatterns = [
         views.privacy_policy,
         name="privacy_policy",
     ),
-
     path(
         "terms/",
         views.terms_of_service,
         name="terms_of_service",
     ),
-
     path(
         "cookies/",
         views.cookies_policy,

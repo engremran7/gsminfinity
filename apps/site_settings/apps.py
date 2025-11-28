@@ -4,8 +4,8 @@ from django.utils.module_loading import autodiscover_modules
 
 class SiteSettingsConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "apps.site_settings"      # full Python path
-    label = "site_settings"          # short label
+    name = "apps.site_settings"  # full Python path
+    label = "site_settings"  # short label
     verbose_name = "Site Settings"
 
     def ready(self):

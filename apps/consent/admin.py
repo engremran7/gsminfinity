@@ -14,10 +14,10 @@ from django.contrib import admin
 from django.db import transaction
 from django.db.models import QuerySet
 from django.http import HttpResponse
-from django.utils.html import format_html, mark_safe
 from django.utils.encoding import smart_str
+from django.utils.html import format_html, mark_safe
 
-from .models import ConsentPolicy, ConsentRecord, ConsentLog
+from .models import ConsentLog, ConsentPolicy, ConsentRecord
 
 
 # =====================================================================
@@ -120,15 +120,24 @@ class ConsentPolicyAdmin(admin.ModelAdmin):
     actions = ["activate_policy", "export_policy_json"]
 
     fieldsets = (
-        ("Policy Versioning", {
-            "fields": ("version", "site_domain", "is_active"),
-        }),
-        ("Snapshot (read-only)", {
-            "fields": ("categories_snapshot_pretty",),
-        }),
-        ("Timestamps", {
-            "fields": ("created_at", "updated_at"),
-        }),
+        (
+            "Policy Versioning",
+            {
+                "fields": ("version", "site_domain", "is_active"),
+            },
+        ),
+        (
+            "Snapshot (read-only)",
+            {
+                "fields": ("categories_snapshot_pretty",),
+            },
+        ),
+        (
+            "Timestamps",
+            {
+                "fields": ("created_at", "updated_at"),
+            },
+        ),
     )
 
     # ---------------- JSON Pretty Printer ----------------
@@ -291,30 +300,34 @@ class ConsentRecordAdmin(admin.ModelAdmin):
         response.write("\ufeff")  # Excel-safe BOM
 
         writer = csv.writer(response)
-        writer.writerow([
-            "User",
-            "Session Key",
-            "Policy Version",
-            "Site Domain",
-            "Accepted Categories",
-            "Rejected All",
-            "Accepted At",
-            "Updated At",
-        ])
+        writer.writerow(
+            [
+                "User",
+                "Session Key",
+                "Policy Version",
+                "Site Domain",
+                "Accepted Categories",
+                "Rejected All",
+                "Accepted At",
+                "Updated At",
+            ]
+        )
 
         recs: Iterable[ConsentRecord] = queryset.select_related("user", "policy")
 
         for rec in recs:
-            writer.writerow([
-                smart_str(rec.user.email if rec.user else "Anonymous"),
-                smart_str(rec.session_key or ""),
-                smart_str(rec.policy_version),
-                smart_str(rec.site_domain),
-                json.dumps(rec.accepted_categories or {}, ensure_ascii=False),
-                rec.is_reject_all(),
-                rec.accepted_at.isoformat() if rec.accepted_at else "",
-                rec.updated_at.isoformat() if rec.updated_at else "",
-            ])
+            writer.writerow(
+                [
+                    smart_str(rec.user.email if rec.user else "Anonymous"),
+                    smart_str(rec.session_key or ""),
+                    smart_str(rec.policy_version),
+                    smart_str(rec.site_domain),
+                    json.dumps(rec.accepted_categories or {}, ensure_ascii=False),
+                    rec.is_reject_all(),
+                    rec.accepted_at.isoformat() if rec.accepted_at else "",
+                    rec.updated_at.isoformat() if rec.updated_at else "",
+                ]
+            )
 
         return response
 

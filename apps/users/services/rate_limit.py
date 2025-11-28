@@ -15,6 +15,7 @@ Lightweight, cache-based rate limiter for authentication and signup actions.
 import logging
 import time
 from typing import List
+
 from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
@@ -56,7 +57,9 @@ def allow_action(
     try:
         bucket: List[float] = cache.get(key, [])
         if not isinstance(bucket, list):
-            logger.warning("Corrupted rate-limit bucket detected for %s; resetting.", key)
+            logger.warning(
+                "Corrupted rate-limit bucket detected for %s; resetting.", key
+            )
             bucket = []
 
         # Keep only timestamps within window

@@ -14,16 +14,24 @@ from __future__ import annotations
 
 import logging
 import sys
-import django
-from typing import Any, Dict, Optional, Iterable, List
+from typing import Any, Dict, Iterable, List, Optional
 
+import django
 from django.core.cache import cache
-from django.http import HttpRequest, HttpResponse, HttpResponseServerError
+from django.http import (
+    Http404,
+    HttpRequest,
+    HttpResponse,
+    HttpResponseServerError,
+    JsonResponse,
+)
 from django.shortcuts import render
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template
-from django.utils.timezone import now
+from django.utils.timezone import now, timezone
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +41,7 @@ _SITE_SETTINGS_VERSION_KEY = "site_settings_version"
 
 # Valid home templates
 _HOME_TEMPLATE_PRIORITY: List[str] = ["home.html", "core/home.html"]
+MAX_QUESTION_CHARS = 4_000
 
 
 # ============================================================
@@ -94,7 +103,11 @@ def _get_site_settings_snapshot() -> Dict[str, Any]:
     try:
         from apps.site_settings.models import SiteSettings  # type: ignore
 
-        obj = SiteSettings.get_solo() if hasattr(SiteSettings, "get_solo") else SiteSettings.objects.first()
+        obj = (
+            SiteSettings.get_solo()
+            if hasattr(SiteSettings, "get_solo")
+            else SiteSettings.objects.first()
+        )
 
         payload = {
             "site_name": getattr(obj, "site_name", "Site"),
@@ -103,11 +116,31 @@ def _get_site_settings_snapshot() -> Dict[str, Any]:
             "enable_signup": bool(getattr(obj, "enable_signup", True)),
             "require_mfa": bool(getattr(obj, "require_mfa", False)),
             "maintenance_mode": bool(getattr(obj, "maintenance_mode", False)),
+            # Feature toggles (admin controlled)
+            "enable_tenants": bool(getattr(obj, "enable_tenants", False)),
+            "enable_blog": bool(getattr(obj, "enable_blog", True)),
+            "enable_blog_comments": bool(
+                getattr(obj, "enable_blog_comments", True)
+            ),
+            "allow_user_blog_posts": bool(getattr(obj, "allow_user_blog_posts", False)),
+            "allow_user_bounty_posts": bool(
+                getattr(obj, "allow_user_bounty_posts", False)
+            ),
             "primary_color": getattr(obj, "primary_color", "#0d6efd"),
             "secondary_color": getattr(obj, "secondary_color", "#6c757d"),
-            "logo": getattr(obj, "logo", None).url if getattr(obj, "logo", None) else None,
-            "dark_logo": getattr(obj, "dark_logo", None).url if getattr(obj, "dark_logo", None) else None,
-            "favicon": getattr(obj, "favicon", None).url if getattr(obj, "favicon", None) else None,
+            "logo": (
+                getattr(obj, "logo", None).url if getattr(obj, "logo", None) else None
+            ),
+            "dark_logo": (
+                getattr(obj, "dark_logo", None).url
+                if getattr(obj, "dark_logo", None)
+                else None
+            ),
+            "favicon": (
+                getattr(obj, "favicon", None).url
+                if getattr(obj, "favicon", None)
+                else None
+            ),
         }
     except Exception as exc:
         logger.debug("site settings fallback: %s", exc)
@@ -118,6 +151,9 @@ def _get_site_settings_snapshot() -> Dict[str, Any]:
             "enable_signup": True,
             "require_mfa": False,
             "maintenance_mode": False,
+            "enable_tenants": False,
+            "enable_blog": False,
+            "enable_blog_comments": False,
             "primary_color": "#0d6efd",
             "secondary_color": "#6c757d",
             "logo": None,
@@ -136,13 +172,19 @@ def _get_site_settings_snapshot() -> Dict[str, Any]:
 # ============================================================
 # SAFE RENDERING WRAPPER
 # ============================================================
-def _render_safe(request: HttpRequest, template: str, context: Dict[str, Any], status: int = 200) -> HttpResponse:
+def _render_safe(
+    request: HttpRequest, template: str, context: Dict[str, Any], status: int = 200
+) -> HttpResponse:
     """Completely safe render wrapper."""
     try:
         return render(request, template, context, status=status)
     except TemplateDoesNotExist as exc:
         logger.warning("Missing template: %s (%s)", template, exc)
-        sn = context.get("site_name") or context.get("site_settings", {}).get("site_name") or "Site"
+        sn = (
+            context.get("site_name")
+            or context.get("site_settings", {}).get("site_name")
+            or "Site"
+        )
         return HttpResponse(
             f"<html><head><title>{sn}</title></head>"
             f"<body><h1>{sn}</h1><p>Content temporarily unavailable.</p></body></html>",
@@ -190,6 +232,7 @@ def home(request: HttpRequest) -> HttpResponse:
     def _u():
         try:
             from apps.users.models import CustomUser  # type: ignore
+
             return CustomUser.objects.all()
         except Exception:
             return []
@@ -197,6 +240,7 @@ def home(request: HttpRequest) -> HttpResponse:
     def _d():
         try:
             from apps.users.models import DeviceFingerprint  # type: ignore
+
             return DeviceFingerprint.objects.filter(is_active=True)
         except Exception:
             return []
@@ -204,6 +248,7 @@ def home(request: HttpRequest) -> HttpResponse:
     def _n():
         try:
             from apps.users.models import Notification  # type: ignore
+
             if request.user.is_authenticated:
                 return Notification.objects.filter(user=request.user, is_read=False)
             return Notification.objects.none()
@@ -213,6 +258,7 @@ def home(request: HttpRequest) -> HttpResponse:
     def _a():
         try:
             from apps.users.models import Announcement  # type: ignore
+
             return Announcement.objects.filter(is_active=True)
         except Exception:
             return []
@@ -257,43 +303,28 @@ def home(request: HttpRequest) -> HttpResponse:
 
 
 # ============================================================
-# DASHBOARD / STATIC PAGES
-# ============================================================
-def overview(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "dashboard/overview.html", {"site_settings": _get_site_settings_snapshot()})
-
-
-def security(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "dashboard/security.html", {"site_settings": _get_site_settings_snapshot()})
-
-
-def monetization(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "dashboard/monetization.html", {"site_settings": _get_site_settings_snapshot()})
-
-
-def notifications(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "dashboard/notifications.html", {"site_settings": _get_site_settings_snapshot()})
-
-
-def announcements(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "dashboard/announcements.html", {"site_settings": _get_site_settings_snapshot()})
-
-
-def users_dashboard(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "dashboard/users.html", {"site_settings": _get_site_settings_snapshot()})
-
-
-def system_health(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "dashboard/system_health.html", {"site_settings": _get_site_settings_snapshot()})
-
-
-# ============================================================
 # TENANTS
 # ============================================================
 def tenants(request: HttpRequest) -> HttpResponse:
+    # Gate tenants listing behind SiteSettings.enable_tenants
+    try:
+        from apps.site_settings.models import SiteSettings  # type: ignore
+
+        ss = SiteSettings.get_solo()
+        if not getattr(ss, "enable_tenants", False):
+            raise Http404("Tenants listing is disabled.")
+    except Http404:
+        raise
+    except Exception as exc:
+        logger.debug("SiteSettings unavailable for tenants: %s", exc)
+        raise Http404("Tenants listing is disabled.")
+
     try:
         from apps.site_settings.models import TenantSiteSettings  # type: ignore
-        qs = TenantSiteSettings.objects.select_related("site").prefetch_related("meta_tags", "verification_files")
+
+        qs = TenantSiteSettings.objects.select_related("site").prefetch_related(
+            "meta_tags", "verification_files"
+        )
         tenants = list(qs.order_by("site__domain"))
     except Exception as exc:
         logger.debug("TenantSiteSettings unavailable: %s", exc)
@@ -313,21 +344,29 @@ def tenants(request: HttpRequest) -> HttpResponse:
 # LEGAL PAGES
 # ============================================================
 def privacy(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "legal/privacy.html", {"site_settings": _get_site_settings_snapshot()})
+    return _render_safe(
+        request, "legal/privacy.html", {"site_settings": _get_site_settings_snapshot()}
+    )
 
 
 def terms(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "legal/terms.html", {"site_settings": _get_site_settings_snapshot()})
+    return _render_safe(
+        request, "legal/terms.html", {"site_settings": _get_site_settings_snapshot()}
+    )
 
 
 def cookies(request: HttpRequest) -> HttpResponse:
-    return _render_safe(request, "legal/cookies.html", {"site_settings": _get_site_settings_snapshot()})
+    return _render_safe(
+        request, "legal/cookies.html", {"site_settings": _get_site_settings_snapshot()}
+    )
 
 
 # ============================================================
 # ERROR HANDLERS
 # ============================================================
-def error_400_view(request: HttpRequest, exception: Optional[Exception] = None) -> HttpResponse:
+def error_400_view(
+    request: HttpRequest, exception: Optional[Exception] = None
+) -> HttpResponse:
     return _render_safe(
         request,
         "errors/400.html",
@@ -336,7 +375,9 @@ def error_400_view(request: HttpRequest, exception: Optional[Exception] = None) 
     )
 
 
-def error_403_view(request: HttpRequest, exception: Optional[Exception] = None) -> HttpResponse:
+def error_403_view(
+    request: HttpRequest, exception: Optional[Exception] = None
+) -> HttpResponse:
     return _render_safe(
         request,
         "errors/403.html",
@@ -345,7 +386,9 @@ def error_403_view(request: HttpRequest, exception: Optional[Exception] = None) 
     )
 
 
-def error_404_view(request: HttpRequest, exception: Optional[Exception] = None) -> HttpResponse:
+def error_404_view(
+    request: HttpRequest, exception: Optional[Exception] = None
+) -> HttpResponse:
     return _render_safe(
         request,
         "errors/404.html",
@@ -364,3 +407,125 @@ def error_500_view(request: HttpRequest) -> HttpResponse:
         )
     except Exception:
         return HttpResponseServerError("Internal server error")
+
+
+# ============================================================
+# AI ASSISTANT ENDPOINT (Frontend widget)
+# ============================================================
+def _parse_json_body(request: HttpRequest, max_bytes: int = 64_000) -> dict:
+    """Safe JSON body parser with size guard."""
+    raw = request.body or b""
+    if len(raw) > max_bytes:
+        return {"__error__": "payload_too_large"}
+    if not raw:
+        return {}
+    try:
+        import json
+
+        return json.loads(raw.decode("utf-8", errors="ignore"))
+    except Exception:
+        return {"__error__": "bad_json"}
+
+
+def _enforce_ai_rate_limit(request: HttpRequest) -> Optional[JsonResponse]:
+    """
+    Optional per-view rate-limit hook. Integrate with middleware flags if present.
+    Return a JsonResponse to short-circuit, or None to continue.
+    """
+    try:
+        if getattr(request, "ai_rate_limited", False):
+            return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+
+        # Simple per-session throttle: enforce a short cooldown between requests
+        session = getattr(request, "session", None)
+        if session is not None:
+            if not session.session_key:
+                session.save()
+            last = session.get("ai_last_ts")
+            now_ts = timezone.now().timestamp()
+            if last and (now_ts - float(last)) < 3:  # 3-second cooldown
+                return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+            session["ai_last_ts"] = now_ts
+            session.modified = True
+
+        # Per-user soft cap: 10 requests per minute
+        user = getattr(request, "user", None)
+        if user and getattr(user, "is_authenticated", False):
+            key = f"ai_rl_user_{user.pk}"
+            try:
+                count = cache.get(key, 0)
+                if count and int(count) >= 10:
+                    return JsonResponse(
+                        {"ok": False, "error": "rate_limited"}, status=429
+                    )
+                cache.set(key, int(count) + 1, timeout=60)
+            except Exception:
+                # Fail open if cache misbehaves
+                pass
+    except Exception:
+        pass
+    return None
+
+
+@login_required
+@require_POST
+def ai_assistant_view(request: HttpRequest) -> JsonResponse:
+    """
+    Hardened AI assistant endpoint used by the frontend chat widget.
+
+    Expects JSON: {"question": "<user question>"} or {"action": "generate_title", "payload": {...}}
+    Returns: {"ok": true, "answer": "<assistant answer>"} or {"ok": false, "error": "..."}
+    """
+    payload = _parse_json_body(request)
+    if payload.get("__error__"):
+        return JsonResponse({"ok": False, "error": payload["__error__"]}, status=400)
+
+    question = (payload.get("question") or "").strip()
+    action = (payload.get("action") or "").strip()
+    if not question and not action:
+        return JsonResponse({"ok": False, "error": "empty_question"}, status=400)
+    if question and len(question) > MAX_QUESTION_CHARS:
+        return JsonResponse({"ok": False, "error": "question_too_long"}, status=400)
+
+    rl_response = _enforce_ai_rate_limit(request)
+    if rl_response is not None:
+        return rl_response
+
+    try:
+        from apps.core import ai_client  # type: ignore
+
+        if action:
+            payload_text = ""
+            try:
+                payload_text = (payload.get("payload") or {}).get("text", "")
+            except Exception:
+                payload_text = ""
+            if action == "generate_title":
+                answer = ai_client.generate_title(payload_text or question, request.user)
+            elif action == "generate_excerpt":
+                answer = ai_client.generate_excerpt(payload_text or question, request.user)
+            elif action == "generate_seo":
+                answer = ai_client.generate_seo_description(payload_text or question, request.user)
+            elif action == "suggest_tags":
+                answer = ", ".join(ai_client.suggest_tags(payload_text or question, request.user))
+            elif action in ("summarize", "summarize_comments"):
+                answer = ai_client.summarize_text(payload_text or question, request.user)
+            elif action == "moderate":
+                answer = ai_client.moderate_text(payload_text or question, request.user)
+            else:
+                answer = f"AI action '{action}' processed."
+        else:
+            answer = ai_client.generate_answer(question=question, user=request.user)
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.exception("ai_assistant_view failed: %s", exc)
+        return JsonResponse(
+            {
+                "ok": False,
+                "error": "ai_failure",
+                "message": "Assistant is temporarily unavailable.",
+            },
+            status=503,
+        )
+
+    return JsonResponse({"ok": True, "answer": answer}, status=200)
+

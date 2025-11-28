@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Comment Moderation{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+  <header class="flex items-center justify-between gap-3">
+    <div>
+      <p class="text-xs font-semibold text-primary uppercase tracking-wide">Moderation</p>
+      <h1 class="text-2xl font-bold text-slate-900 inline-flex items-center gap-2">
+        <svg class="icon w-5 h-5" aria-hidden="true"><use href="#icon-shield"></use></svg>
+        Comments Queue
+      </h1>
+      <p class="text-sm text-slate-600">AI flagged comments need review before publishing.</p>
+      <p class="text-xs text-slate-500">Only approved comments are displayed publicly; spam stays locked.</p>
+    </div>
+  </header>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <section class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Pending</h2>
+          <p class="text-xs text-slate-600">Review and approve or reject.</p>
+        </div>
+        <span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">{{ pending|length }} pending</span>
+      </div>
+      <div class="divide-y divide-slate-100 mt-3 space-y-3">
+        {% for c in pending %}
+          <div class="py-3 space-y-2">
+            <div class="text-xs text-slate-500">By {{ c.user }} on {{ c.created_at }}</div>
+            <p class="text-sm text-slate-800">{{ c.body }}</p>
+            {% if c.moderation_flags.moderation %}
+              <div class="text-[11px] text-red-700 bg-red-50 border border-red-100 px-2 py-1 rounded">AI flagged: {{ c.moderation_flags.moderation.label }} ({{ c.moderation_flags.moderation.toxicity_score }})</div>
+            {% endif %}
+            <form method="post" action="{% url 'comments:moderation_action' %}" class="flex items-center flex-wrap gap-2">
+              {% csrf_token %}
+              <input type="hidden" name="comment_id" value="{{ c.id }}">
+              <button class="btn-primary text-xs px-3 py-1 rounded text-white" name="action" value="approve">Approve</button>
+              <button class="btn-outline text-xs px-3 py-1 rounded" name="action" value="reject">Reject</button>
+              <button class="text-xs text-red-600 hover:text-red-700" name="action" value="spam">Spam</button>
+            </form>
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-500 py-2">No pending comments.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Recent</h2>
+          <p class="text-xs text-slate-600">Approved and rejected comments.</p>
+        </div>
+      </div>
+      <div class="divide-y divide-slate-100 mt-3">
+        {% for c in recent %}
+          <div class="py-3 space-y-1">
+            <div class="text-xs text-slate-500 flex items-center gap-2">
+              <span>{{ c.user }}</span>
+              <span>&middot;</span>
+              <span class="px-2 py-0.5 rounded-full text-[11px]
+                {% if c.status == 'approved' %}bg-emerald-100 text-emerald-700{% elif c.status == 'rejected' %}bg-slate-100 text-slate-700{% else %}bg-red-100 text-red-700{% endif %}">
+                {{ c.status }}
+              </span>
+            </div>
+            <p class="text-sm text-slate-800">{{ c.body|truncatechars:140 }}</p>
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-500 py-2">No recent moderation actions.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

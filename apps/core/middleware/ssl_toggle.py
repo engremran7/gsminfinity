@@ -2,21 +2,17 @@
 """
 apps/core/middleware/ssl_toggle
 ===============================
-Dynamic HTTPS Enforcement Middleware for GSMInfinity.
-
-✅ Safe across all environments
-✅ Controlled by SiteSettings.force_https (admin-managed)
-✅ Can be globally disabled via ENV variable FORCE_HTTPS_DEV_OVERRIDE
-✅ Compatible with Django 5.2+
-✅ No deprecations or recursion risks
+Dynamic HTTPS enforcement driven by SiteSettings.force_https with safe dev defaults.
 """
 
 from __future__ import annotations
-import os
+
 import logging
+import os
 from typing import Optional
-from django.http import HttpRequest, HttpResponseRedirect
-from django.utils.deprecation import MiddlewareMixin
+
+from django.conf import settings
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +20,7 @@ logger = logging.getLogger(__name__)
 def _should_force_https() -> bool:
     """
     Runtime-safe evaluation of SiteSettings.force_https.
+
     - Returns False on any import/config errors.
     - Can be overridden via the env var FORCE_HTTPS_DEV_OVERRIDE=0.
     """
@@ -33,31 +30,57 @@ def _should_force_https() -> bool:
 
     try:
         from apps.site_settings.models import SiteSettings  # local import
+
         settings_obj = SiteSettings.get_solo()
         return bool(getattr(settings_obj, "force_https", False))
-    except Exception as e:
-        logger.debug(f"[SslToggle] Fallback to HTTP: {e}")
+    except Exception as exc:
+        logger.debug("[SslToggle] Fallback to HTTP: %s", exc)
         return False
 
 
-class SslToggleMiddleware(MiddlewareMixin):
+class SslToggleMiddleware:
     """
     Middleware to redirect HTTP -> HTTPS only when:
       1. The current request is insecure, AND
       2. SiteSettings.force_https == True, AND
-      3. FORCE_HTTPS_DEV_OVERRIDE is not disabling enforcement.
+      3. FORCE_HTTPS_DEV_OVERRIDE is not disabling enforcement, AND
+      4. settings.DEBUG is False.
     """
 
-    def process_request(self, request: HttpRequest) -> Optional[HttpResponseRedirect]:
-        # Skip if already HTTPS or behind secure proxy
-        if request.is_secure() or request.META.get("HTTP_X_FORWARDED_PROTO") == "https":
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        redirect_response = self._maybe_redirect(request)
+        if redirect_response is not None:
+            return redirect_response
+        return self.get_response(request)
+
+    def _maybe_redirect(self, request: HttpRequest) -> Optional[HttpResponse]:
+        # Never interfere with local/dev debugging
+        try:
+            if getattr(settings, "DEBUG", False):
+                return None
+        except Exception:
+            # If settings is weirdly inaccessible, fail open.
             return None
 
-        if _should_force_https():
-            absolute = request.build_absolute_uri(request.get_full_path())
-            if absolute.startswith("http://"):
-                https_url = "https://" + absolute[len("http://") :]
-                logger.info(f"[SslToggle] Redirecting to HTTPS: {https_url}")
-                return HttpResponseRedirect(https_url)
+        # Already secure -> nothing to do
+        if request.is_secure():
+            return None
 
-        return None
+        # Respect SiteSettings + env override
+        if not _should_force_https():
+            return None
+
+        # Only redirect idempotent methods (avoid breaking POST/PUT forms)
+        if request.method not in ("GET", "HEAD"):
+            return None
+
+        # Build HTTPS URL preserving path + querystring
+        host = request.get_host()
+        path = request.get_full_path()
+        url = f"https://{host}{path}"
+
+        logger.debug("[SslToggle] Redirecting to HTTPS: %s", url)
+        return HttpResponseRedirect(url)

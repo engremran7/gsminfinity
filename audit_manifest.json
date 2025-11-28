@@ -1,0 +1,1454 @@
+﻿[
+    {
+        "file":  "apps\\__init__.py",
+        "size":  22,
+        "hash":  "D081173FB16841717481041259B8FA09A1628AB385FBB1BBA8668CB53833526C",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\__init__.py",
+        "size":  47,
+        "hash":  "A11B864944CA227E93442A5DBCE447B3DC5AAACC005BA57F19AB0140C7B4A8F0",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\admin.py",
+        "size":  2266,
+        "hash":  "7510F060C26CA8C213CCC981EBE3E7255CF5D2A8D4E6147B22E12516AEF82B3E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\apps.py",
+        "size":  292,
+        "hash":  "065092B5C6C75815F7A768925DEE93583CA9133836ED2AE5833A995CE8AD8F1C",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\management\\commands\\scan_ad_placements.py",
+        "size":  3007,
+        "hash":  "53D5C3DA03123E737AC7E6DFF92C4A53BCFC5B4E586A2EA69A21444AFFC255BC",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\models.py",
+        "size":  7632,
+        "hash":  "20BFFAD6258E39620EE7B657A812881422FF21ACAC71D1BAE44BE2D78B5C6F65",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\services\\__init__.py",
+        "size":  74,
+        "hash":  "15FAEB9C40053F42BE6443EB795ECD82D06DA29E8E4D4A6332948A4B12103153",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\services\\affiliates\\resolver.py",
+        "size":  733,
+        "hash":  "24B8F7A98BB2869716CC9F4F2834CEB8A64CEAF17FBB54672D7311DF974FEFD5",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\services\\analytics\\tracker.py",
+        "size":  1602,
+        "hash":  "34CA772EFB6E93B508F32F57FA1250CC77C8E4E948FA65395C3A6F04E876CFB9",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\services\\rotation\\engine.py",
+        "size":  1806,
+        "hash":  "C1EC56A3F558C8A08A895D72812568F96D29E14C548A996BBA2ADC5F43FFB855",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\services\\targeting\\engine.py",
+        "size":  1042,
+        "hash":  "CD620A48AE521965DA8756AE039F206EDF265A4251FE6F39B85EB842B04F8E6A",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\signals.py",
+        "size":  117,
+        "hash":  "81C1A0DE5A1144A49BD34C17C00E5DB965E68C1AEA2BD0369CC2B2EED1BB2463",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\templatetags\\ads_tags.py",
+        "size":  1998,
+        "hash":  "BB16F5E45DB9A0163C983EF88890E609343266AA8560BFA5F9A0A534B2D82F2E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\tests.py",
+        "size":  2466,
+        "hash":  "2E729414499D65D0A3FEF85D0702D990F21957B3B4F563D4FBB6C92AFFAFF3A7",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\urls.py",
+        "size":  485,
+        "hash":  "CBA799884C392175E48427F611F06C01875A744C041CDBE4F989A0BC3A244EC7",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\ads\\views.py",
+        "size":  12728,
+        "hash":  "7ACFA27158ACC71C933584299D8659D2A0B8BDCACE7D57C663675C771C5AF06B",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\blog\\__init__.py",
+        "size":  16,
+        "hash":  "BC399080B060ABCA14BCD307E5F82287A20E72F1B4646BCEA310C054CB551881",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\blog\\admin.py",
+        "size":  653,
+        "hash":  "8FA56822DE0D8C5A4B05A4EB4499AC2F5EB76024499611981BC305C224108D78",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\blog\\apps.py",
+        "size":  237,
+        "hash":  "98A0D181E7E2629A74505094B2440F65409968B50CBEEE82F3020A201F863094",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\blog\\forms.py",
+        "size":  899,
+        "hash":  "90ABB8BBC438944EE5AEB5D118831F92240ACEA8BCBA98F777B7D589DC4091E7",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\blog\\models.py",
+        "size":  5324,
+        "hash":  "83E1581EB918C91C07B84645AD0A792F654A6C8A456F403C13DCC41DC78E261E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\blog\\signals.py",
+        "size":  1825,
+        "hash":  "EC90F9A8EB2CBD5A1EEB1A537FD54AC4D2F2DF89D0904BA3789F0E7699D47F9F",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\blog\\urls.py",
+        "size":  893,
+        "hash":  "8E193E702A4B83EDDC042E08BD990FE3B11C6F179DFF38FA2D43BC4F5F5BE91D",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\blog\\views.py",
+        "size":  14212,
+        "hash":  "0D2F88D0CA20CC204775129E98989BD12E8A1E00C43B122D3E2F420B4329D2E8",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\comments\\__init__.py",
+        "size":  20,
+        "hash":  "E17757CB2D8DB4E4E532128172567FE2B70C7C37314BD7836EACFB8A2F60C8D3",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\comments\\admin.py",
+        "size":  1115,
+        "hash":  "B8A2F7B4AE46614418E309B8927F0CEE1650239C798F4C1A8E6D6C9A8CE61B53",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\comments\\apps.py",
+        "size":  183,
+        "hash":  "F813082AA1033CE88C2E974E846A71C0F47B07643613832F4F35F27E8BC38F88",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\comments\\models.py",
+        "size":  1609,
+        "hash":  "FE0756A9270710E9A3D75859F80909CD77CF42663DCF8C15DC1D07F5914B6DCC",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\comments\\tests.py",
+        "size":  3381,
+        "hash":  "1A50237641946B7291766E4800F344CCE11012D60F149B747072CA44F67B1572",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\comments\\urls.py",
+        "size":  562,
+        "hash":  "3925031A3240B82CDF236E077411E3400AE23453EA8D8D202C9DFE7242A30A3E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\comments\\views.py",
+        "size":  8680,
+        "hash":  "79563568031C4407E5222928E536651735954E33946BE844CFD5187030CE832E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\common\\totp.py",
+        "size":  857,
+        "hash":  "E7DFF054F6B6CB4E744B70F16001820B2A886BB93B18D80347FBCD8B25D367F5",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\common\\utils.py",
+        "size":  160,
+        "hash":  "997918FFB6E684F7526BF9CABE00EB5787DFF606C5AC26A918669F66CAE5B04D",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\__init__.py",
+        "size":  889,
+        "hash":  "6F9BACE649A07D2C0255153473413710F76AE68C852D43DF35E7D273E3F4E0DE",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\admin.py",
+        "size":  12263,
+        "hash":  "5CF996F86CD54B7D05A68A1A5E807A74089D14A5AE3C66E3CE4BF2B7EEB9A8B3",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\api.py",
+        "size":  1376,
+        "hash":  "8B7D6D237944BBB548FE8514513E45B5E3099CBF7A49467021C6EC52FD3AC115",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\api\\__init__.py",
+        "size":  195,
+        "hash":  "BEAA64B0D097CBC2FE6804B35124C6E201D042D183F4EFF5B0D924FFDF1F2123",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\api\\views.py",
+        "size":  7601,
+        "hash":  "ED40FC0F77C53FA9C4CE32B420A1A49137BE689BABB78419669D240B96C7B841",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\apps.py",
+        "size":  1284,
+        "hash":  "081C2B5EDA87456EE57D37164768D843AAAA98BD2F464558EA72D013EC0D7BD7",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\context_processors.py",
+        "size":  5432,
+        "hash":  "D8770B99E5D4BC7AB0075C1D5A5D8DB11E5B1FD03776DFBB747CCF57C13C54CA",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\decorators.py",
+        "size":  4470,
+        "hash":  "EFD43AB0BAF74325714563EDE2D3CDA7DBA45729806E1833444F278214E2B5B3",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\middleware.py",
+        "size":  12514,
+        "hash":  "DA7E1A37A45439727E6ED1C3E4133A45ED3F018504C019D8A1A47C3D666815C3",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\models.py",
+        "size":  13420,
+        "hash":  "A7E8CE853428965FF3D592274EEC74FDFE6037A6D0E0C63603CC466439D79DDC",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\signals.py",
+        "size":  6634,
+        "hash":  "85CE3C9FF92BA1D0AD6E46761F999C06BE855B97ADA196ED859608C9793780B6",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\urls.py",
+        "size":  2705,
+        "hash":  "037AD701C64865AC82DEE940051E960332B0D0549C453F3D1249956D7C895B61",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\utils.py",
+        "size":  5981,
+        "hash":  "0838EE7A508340C02C71EDC1D47FFE54445656309D5059704232B0FC4F411BD7",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\consent\\views.py",
+        "size":  21660,
+        "hash":  "F44090AD880F52AB9F9D3A3C566C4BCC9AAE34ABB40806AB6F29E103AD27BF83",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\__init__.py",
+        "size":  198,
+        "hash":  "42AB58497CD5DB429005E3A9067135FE0CCF1301D1A6472DA1E2A4598D9EA8B3",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\admin.py",
+        "size":  7513,
+        "hash":  "D74C956026749B9916BDAB75AC93DC8A3E38AFF13A8F2195F52A46F6153FEFBA",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\ai.py",
+        "size":  1656,
+        "hash":  "791DA12E8383A1DBA7B083562D9C917DCA50A52625D636494636D60314FB3708",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\ai_client.py",
+        "size":  10474,
+        "hash":  "E59B4C7AB85320FD20DFAF7E8637C7E6F881ADB6DE896D180C535218F55C0ACB",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\api.py",
+        "size":  1555,
+        "hash":  "6CBD3523A8C73DB31089C3F3A7830CDEC2B694A840B1EE69C83A3FD08A3B2355",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\apps.py",
+        "size":  726,
+        "hash":  "1998C280D9D1AE9B0CEB127614888BAC55509D20D5A2367346FFAE7A6B73912F",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\cache.py",
+        "size":  8067,
+        "hash":  "6373E3B62AD89BB125A869B36D012CCBA21F31EE597657369146FF133CB1DB73",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\context_processors.py",
+        "size":  11529,
+        "hash":  "D7AA75C3E8724CB43E7D77381692F59F6A13D0DC15B7DDE93B80001747DC828B",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\exceptions.py",
+        "size":  6697,
+        "hash":  "672127167534EF22B192F4C2417A274AA44B259CF7C2ACC0E157B4C48D795232",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\middleware\\correlation.py",
+        "size":  790,
+        "hash":  "949BBEF9CA1881BF41BD8B279D41AFAB76567613BC4E45853D093CAB09E81FBA",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\middleware\\rate_limit_bridge.py",
+        "size":  1523,
+        "hash":  "6E8E89D5B873DCAA1D8535C6ACAFC19883B6C5E6A3F58057053DB01AEA9223BC",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\middleware\\request_meta.py",
+        "size":  2622,
+        "hash":  "A6C107165E0CDB3E2D9C58CD27B2D5911AD7D19566300D0A5100F3FA847CFB83",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\middleware\\security_headers.py",
+        "size":  3614,
+        "hash":  "693D90C46BA893753BEADA6CC66621274C7E156D071CE06C02D3BA872DB8732D",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\middleware\\ssl_toggle.py",
+        "size":  2711,
+        "hash":  "96E42F45ED883F05E679006E901005AA907BFF1478360A800D5A14969050805A",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\models.py",
+        "size":  1705,
+        "hash":  "7D25EE41C5346F99411949C991462ABC419DBBC9EA9850F89DA52196DAD86B1B",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\tests.py",
+        "size":  61,
+        "hash":  "16BD2BFAA5A5193DBE66207AF62D6B157D55F883C23F32F344103BCF9BB7C506",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\urls.py",
+        "size":  3267,
+        "hash":  "7698862C5AE9521E296CFB70FE5FB0C8978C337096AC054C427E99DE1CE8669B",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\utils\\feature_flags.py",
+        "size":  1537,
+        "hash":  "8BDCAB4D9A460B99D40FD8FA434839F11F539EA4D5123AD114205EDE6F0C2D8D",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\utils\\logging.py",
+        "size":  1000,
+        "hash":  "6BC264FD42D8C3E8851E84829617AA25A2430314BCD77FADA96FEE1144F3CC86",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\utils\\sanitize.py",
+        "size":  953,
+        "hash":  "DDF258AF29A5E7481187DCD1B3BF2F1B924F4F6FD006736886B194A487BA69F5",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\core\\views.py",
+        "size":  18199,
+        "hash":  "163336BD6DCCBED940847AC364CC3D489DAA24609CBFA84E4DDF7077F8AF54A7",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\__init__.py",
+        "size":  47,
+        "hash":  "B2E33B64209791D6040DFE93351304ED13AAA4C2678198FE2734CB6355E05665",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\admin.py",
+        "size":  1704,
+        "hash":  "5A47618D6BF19BE50063DB48671DFC7C81A290137B859865BE40F1EE6994F691",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\apps.py",
+        "size":  241,
+        "hash":  "7D36B453C6A612BE63FD2FF1539AAE63DCEBCD5483904B766BC58DA21A5DBF8E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\management\\commands\\build_sitemap.py",
+        "size":  1238,
+        "hash":  "AFDE0287F0D4825EA5238DED7B2E28396B47056E49096779F51C4313033F2B2F",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\management\\commands\\check_links.py",
+        "size":  1359,
+        "hash":  "41D3DC1561AABDE4FD0724527651F8E638653DD6FC632347090CAE15D9F5BA89",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\management\\commands\\inspect_url.py",
+        "size":  853,
+        "hash":  "E149E4BC75173C377387D44ED48389820BD2BCB813CA475934308B828D2928BF",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\management\\commands\\rebuild_linkable.py",
+        "size":  772,
+        "hash":  "3A339C63B609D172EBF0D89648B53B53123112C8C67BB242F4E342F50AA0034F",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\management\\commands\\suggest_links.py",
+        "size":  777,
+        "hash":  "2A67F710CC0261A6E2C863551DCF1D2AE3854DD04084DE6435DB87EEB3A558BC",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\models.py",
+        "size":  4844,
+        "hash":  "9A9D0101B620C084340F475A4E60C18DB0827DF45235005A18CF3B6FAB67921A",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\services\\__init__.py",
+        "size":  71,
+        "hash":  "C133FA71C88D318B865CDDE3F29C2A482BEA0926D0D443ACA683927C14C89A10",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\services\\ai\\metadata.py",
+        "size":  596,
+        "hash":  "D834110B31FD2E7806F9C23C95C78484235006119F33E300AB2C9DAF0FE77772",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\services\\ai\\schema.py",
+        "size":  488,
+        "hash":  "CDF94F6962A8BFEE99E561E218FCE71697FEFB9DC29FA0A757DD31AEAEF2CC8F",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\services\\crawlers\\crawler.py",
+        "size":  320,
+        "hash":  "5CA3CEABD24292BC68C3613E6750F0F81636139AFB6C3EFA067804B4EC233B59",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\services\\crawlers\\heatmap.py",
+        "size":  854,
+        "hash":  "9AE11F477226DD1174E0ECD7E47A8FBA1ABB88D73A7DD849E56A94BC79C73A5E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\services\\internal_linking\\engine.py",
+        "size":  3015,
+        "hash":  "D8750DE5F8D4E02717E761D34FC565E304CE6828E4DBAC5465A19956ACB21034",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\services\\readability.py",
+        "size":  834,
+        "hash":  "C0763AAEB3F16D6589E4FEA753D23FE71E0E1C8FBA0E6A5E54B070DB695D64EB",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\services\\scoring\\serp.py",
+        "size":  707,
+        "hash":  "5B984CA390F4B2D931F9256E1F2774B77ABE0ADDD91BD500B93F05855C5F2D4F",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\signals.py",
+        "size":  734,
+        "hash":  "FE84AF1271C83E62CB016ADBB9D91AD540201B4F3A6D5991734CF6153622DF7E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\templatetags\\seo_tags.py",
+        "size":  1901,
+        "hash":  "1B05930CD631CAFDDCCBBE1C85B196662CEFD46C7954C1F383970BC932684BE0",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\tests.py",
+        "size":  939,
+        "hash":  "1A8B308C8FF4F72F81B4EFFC761F8747E17C25A3231F5B69C7A9AE79C7983793",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\urls.py",
+        "size":  641,
+        "hash":  "F0784B69087CC0A295E37AFFABA123DD9D8DA4FDB9383F99BFC62DD35DEE7D40",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\seo\\views.py",
+        "size":  11263,
+        "hash":  "552D7EF781431C931F7DC5F07F582B18C6EC746B529B323881907F434B505A1C",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\__init__.py",
+        "size":  200,
+        "hash":  "68839FF24F95642BE97E71EF29A3BDCB6A3AB68BF827B5B3088874F55B2D8904",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\admin.py",
+        "size":  9118,
+        "hash":  "617E045B838AF96ADB744D5FFA3161A26B39D47195D12DA7C109C3C845AAC1E0",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\apps.py",
+        "size":  775,
+        "hash":  "434457A094C7EAADFD7085AA46E0C35E5073C67889DAAED6B5757A4D4EC6BC66",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\context_processors.py",
+        "size":  12789,
+        "hash":  "17F72F47DB3DCF542D3F05072324DF4EF2D7BB64D57574D690EBEE2D99F0D22B",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\management\\commands\\clear_site_settings_cache.py",
+        "size":  382,
+        "hash":  "79B9EFE6F6C3595E7ECACA31A3C67C2C99F9AD2CC69738A34BCAAF4E1CDA5125",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\models.py",
+        "size":  16469,
+        "hash":  "A3CA27DF9BA187A7455523700564532DFF7B21B3FEF43656D8C6725DBA4F7B3E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\signals.py",
+        "size":  1462,
+        "hash":  "8F3B6DE19D4934F12A7177F57D58C75FE5B203986344359EC2B91901D27CFE46",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\tests.py",
+        "size":  61,
+        "hash":  "16BD2BFAA5A5193DBE66207AF62D6B157D55F883C23F32F344103BCF9BB7C506",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\urls.py",
+        "size":  1927,
+        "hash":  "6B3A48C3B2566A9F82D2CED042446324EC459C1F7D278FBE2664D2C2E352A421",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\site_settings\\views.py",
+        "size":  12157,
+        "hash":  "809991DCED047FDF55A6964C6B39C19C5708B34AA9BF2D5EE4FE5F2EEBBAEAD3",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\tags\\__init__.py",
+        "size":  16,
+        "hash":  "593CE5DE23A74F92C03B67A68C8B2A638D060F5F60F9F16A8AF62E4399F8EB29",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\tags\\admin.py",
+        "size":  373,
+        "hash":  "E491DE480EB1711E09E197FC517ECE778D3B1C85BD7A611B08E3E115991D2863",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\tags\\apps.py",
+        "size":  171,
+        "hash":  "ECCAF46E61ED8B94BD588085D638F07C5EDD4CC31B2DBCD99AA0E680615AB945",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\tags\\models.py",
+        "size":  1586,
+        "hash":  "4EBEFF905A5AF3040C50E8C6162EFBD01D22953B77A32FC5FC8823BCEC49AB02",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\tags\\urls.py",
+        "size":  413,
+        "hash":  "1D8E008E54EF2DCE9FB7C061DC47DB7B69EBCE6CB972F2323590918FA189721E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\tags\\views.py",
+        "size":  4599,
+        "hash":  "D0B4FC092C03BC1D7EAD54BE73DC23ACC2972DB07A4989941E9EBA7056084E8F",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\__init__.py",
+        "size":  0,
+        "hash":  "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\adapters.py",
+        "size":  5026,
+        "hash":  "5DD063FCA63893F667C328EA4336ECEE9B2745677C55E8B2FCCA39EF851D2F03",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\admin.py",
+        "size":  13092,
+        "hash":  "44B0CAE20CC92CFA629399AA2A63A31C1B6E9BCA28819A1475387B88CA30ADC1",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\api.py",
+        "size":  873,
+        "hash":  "7BB2D84CAF5E11669BDB4BA0A8F20D9A0E2E82B82D54B02F9944F3E192CF2A4F",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\apps.py",
+        "size":  3158,
+        "hash":  "0B0BFFCBD5D85B5F5C695A4A325B16B7A1D5CAD6AF818E385CFB6244FA30B274",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\auth_backends.py",
+        "size":  5040,
+        "hash":  "5DF9C55512D249A9E28691C22FCE678150F57ADA64FF3AAB52C356AB6A496542",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\backends.py",
+        "size":  467,
+        "hash":  "EA05FFAA2F6F72194FA586EDE69D8BBFE8CE540E9BCD02CDDB71DFD06D70166E",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\context_processors.py",
+        "size":  477,
+        "hash":  "8E0CA3FFC97AC1514281BB273FCC85A4DF4262BA5B5B72C1A04CA507017FD368",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\forms.py",
+        "size":  11054,
+        "hash":  "69DE3581DE04D8B31C2C2EA1999DC3B84F35B6D178EA9C6D6FE646F9355996A7",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\mfa.py",
+        "size":  8175,
+        "hash":  "BFF9405521928A7A18166E2CE847EAA043564A05C3673E1CC779C2050A38763A",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\middleware\\mfa_enforce.py",
+        "size":  2040,
+        "hash":  "8B79574BD5DA238C7DDE863A9187F78D67AD4BAF8B3D68D061686A2243FF6DC1",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\middleware\\profile_completion.py",
+        "size":  4497,
+        "hash":  "EF8A8CF3FFC1E5FE56D42A1933F1843230E780240372E87B2A5A45E0A2FFFFF1",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\models.py",
+        "size":  21280,
+        "hash":  "472D93A2CB9E8F552572CAA2B6E8DD43E2F0DF775834F70F06CCA2129109A1F6",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\notifications_urls.py",
+        "size":  723,
+        "hash":  "A710032E055F47E01D781FD3B4716779D03358DE455A55D673903B54ADDA8626",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\services\\notifications.py",
+        "size":  1561,
+        "hash":  "E13897E24EA167AF173A169D79D25A19B4E572C9D14D8FFB89F28273AEAD203B",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\services\\rate_limit.py",
+        "size":  4040,
+        "hash":  "6245F08D790316E126636596AFA70627C2E71EDA12E5918AEED1583E6CEA5F64",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\services\\recaptcha.py",
+        "size":  8359,
+        "hash":  "8AF91790E35355C98C11FDBA22060EE76907296841E59ECC36679B7882190926",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\signals.py",
+        "size":  6777,
+        "hash":  "73DE70D3F20FE7CB94A2B0299D0F46EAC1B1D55583530EEC1217A3BD28B90EEA",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\tests.py",
+        "size":  61,
+        "hash":  "16BD2BFAA5A5193DBE66207AF62D6B157D55F883C23F32F344103BCF9BB7C506",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\tokens.py",
+        "size":  2407,
+        "hash":  "C5370D9F26CBD189600465E1F1C717C7585ABCEBC3FDF69668A39AF93F3B57BE",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\urls.py",
+        "size":  1767,
+        "hash":  "AB529BCA13D50C12A14F0841D8D9C3A9F857F71445084C50B5DF49DEB7DBC47F",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\utils\\device.py",
+        "size":  12197,
+        "hash":  "0ECC98759D8E0F7443E6CDA1D951653A959A6D6141DB52F58BBA3B4B293E5D24",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\utils\\utils.py",
+        "size":  1822,
+        "hash":  "9B51BC5A3097E4D3E6C26EC288ED7A132A8F894FEBCF6CD17D4F73B2B95ADEAA",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\views.py",
+        "size":  23959,
+        "hash":  "F2BF7B85EFB5DC82B877DEF0027418BC3842F6120E5BB4CA64EC1D02956D0802",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "apps\\users\\views_notifications.py",
+        "size":  3632,
+        "hash":  "E471928FC5DB0841497B37BF0C2AFCEE8C5FC05A35AA5210CCDAD4260EE7CC60",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "conftest.py",
+        "size":  277,
+        "hash":  "B9FDF0BC53312CE0867C9B10A1CEBB45ED5918AAAA466EB7589FB0C13A04E9CA",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "gsminfinity\\__init__.py",
+        "size":  1467,
+        "hash":  "51F960650E5051A934BD17FAB50E3CAD908CE6A8CF06C4F9AE61A5F372FE80F2",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "gsminfinity\\development.py",
+        "size":  3100,
+        "hash":  "2BFB78031DBBF763D0983FE2D314A038FA2B9BE3510EE3D63CAECED9AAA56989",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "gsminfinity\\settings.py",
+        "size":  15815,
+        "hash":  "EAFB06D94890F2F5B4578920A20752A4728143E1351E611AC1536104B7907D88",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "gsminfinity\\settings_dev.py",
+        "size":  4329,
+        "hash":  "F19B6657DAC5088A877DCB9E92EE0E1ABB455F064CC64E9B7E837571AC372438",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  "gsminfinity\\urls.py",
+        "size":  5620,
+        "hash":  "996E5745E2EA62E8CBFEA6A47B907633CD870A5D0FE7C4E454D4C7F2E4F51F10",
+        "category":  "Backend (.py)"
+    },
+    {
+        "file":  ".vscode\\settings.json",
+        "size":  84,
+        "hash":  "78C86AD7908CD38AFAB6636892A016AA4721F315DCDE419676E98191A8D508E4",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\ads\\templates\\ads\\components\\slot.html",
+        "size":  661,
+        "hash":  "5FF50CBE36AEDFC8C2B8FD8CA13F66C18EDE8A6306A59C9C9F1000FB763153AF",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\ads\\templates\\ads\\dashboard.html",
+        "size":  12198,
+        "hash":  "4CE9E5E10C16D2860096A4ADF7F27976975F5E0FB455EAFF1CB45275C67C0AA2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\link_status_row.html",
+        "size":  338,
+        "hash":  "4881C524BC8BF44361ECDBA2DE1D48C169198B4E55788F08DB0263C1709B93DF",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\meta.html",
+        "size":  1199,
+        "hash":  "76732B69F84B54E6705292CF07F2E171FA9519CB8EF03BA7566845E1E0CA3E02",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\redirects.html",
+        "size":  3136,
+        "hash":  "E85344FF19AE7AD539AECA3D2EAEDD1891597B6946E073DB56BE419BBE1BBBA5",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\url_inspector.html",
+        "size":  497,
+        "hash":  "1D14E19D976FADF2DBD7925A950972C3822FE06C2FD7BF7262765D65FDEA4062",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\dashboard.html",
+        "size":  9866,
+        "hash":  "F7BCF9B6863642613EA64506D303C4073F0D027D8E5A5B1D2995CCC7BB2950B5",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "package.json",
+        "size":  180,
+        "hash":  "A50A44005EF8BDB887A2A131FE8A4D32A916E93DCEC4FF626B622D7751BA5FD3",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "package-lock.json",
+        "size":  37913,
+        "hash":  "E58468505FBBEED5BBE1F3414904CD509B38C5E8FDB3FC55DAAAA4975E8A3FA5",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\css\\main.css",
+        "size":  63576,
+        "hash":  "F515F55C98E21F1B3DABFE391F6152029D0C013B87B5F6087B8ABAF19CAD58A4",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\css\\style.css",
+        "size":  14930,
+        "hash":  "F5D3001FD4FF0D0BBC740683ED9C5014E9F1F234C4322FC4D92E8D1E84F0D8DC",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\css\\theme-bridge.css",
+        "size":  975,
+        "hash":  "2174A6CF036C16E24683A1F4B26EB3C3AE1FA3C3CED21981CE00AAF0BE5D12E2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\ads.js",
+        "size":  4468,
+        "hash":  "04042060F8663BDC822F650897D0DEC2E3D66B924C6451070B3E27858F192B09",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\ai_helpers.js",
+        "size":  2630,
+        "hash":  "18186B82B93532CD6EEA639EC234224EA05224042D74A28BD6810ED9F15D6CAE",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\blog.js",
+        "size":  7989,
+        "hash":  "B6EC6D8DBB960E2011267534CA3348F46C9888C1495B7739B6B96F474A31B80C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\consent.js",
+        "size":  1069,
+        "hash":  "DBF9EBCCF9EF396CC632B56EA49D3EC3A65E14F87431B3D71264704F8B79E105",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\consent-banner-loader.js",
+        "size":  8296,
+        "hash":  "3F56067EC3331784D46F7D39A0AEF276B21453A6D94AE23542FC97C76A71377E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\htmx-csrf.js",
+        "size":  1423,
+        "hash":  "F2FF6E1ED7625B23588A1568DD569AC92B3E1402833E9D1CF7033899D7A702FB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\main.js",
+        "size":  15846,
+        "hash":  "2F6B21D5639D9990730F67835FA9BAEAA6212006F4BC27142064E80E1BC98535",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\package.json",
+        "size":  596,
+        "hash":  "5F01EEE535F578196E5C93E0F9A22F8251AD93792EE99F6A50EF1F89F8BD2C7C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\package-lock.json",
+        "size":  54814,
+        "hash":  "9E4286C02A9FE1CDA23873348EC312AA5A7774892BB53E5B4A13BE5FC3821978",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\postcss.config.js",
+        "size":  87,
+        "hash":  "D53CC7A39618F570F19C5F055340A4C99BCD53D9EB733CEE876EEFC47F399105",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\static\\js\\package-lock.json",
+        "size":  81,
+        "hash":  "5BA22B2D874C8A913D0A73107555074A70EB5FF550048D0FBA42D730BCC02A77",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\js\\tailwind.config.js",
+        "size":  1469,
+        "hash":  "23A0C118306D82D60575A2AA855E965E2EA92FA9624453E966587634A5514CEE",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "static\\src_css\\main.css",
+        "size":  1239,
+        "hash":  "26C3779681EF2248CA6BC1F209ECB80A11ACEF1784131D8862D3218CA7687E68",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\403.html",
+        "size":  578,
+        "hash":  "AA491C4132991FFF0C6E95C9319EEBABA110BAF7EB581E34C55D4B0635D10491",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\404.html",
+        "size":  587,
+        "hash":  "7D3007562B1454544B035B1F3A31A232681BA293F3D89366ABC290C164B41D78",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\500.html",
+        "size":  600,
+        "hash":  "2EB59722B264179E61F89EC610EF8108F2F838825CD10E1E19DDC8E381702C22",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\account_inactive.html",
+        "size":  320,
+        "hash":  "613696B9A4D9A8F175787B69EBFF17BC2BC3FDB8AF5AC030DEA5135B54063C19",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\auth_base.html",
+        "size":  526,
+        "hash":  "A59740DD0ACAC1AAC97D9E8BC71816D2E288A746A24043FDF30AA9475A8E3487",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\auth_form.html",
+        "size":  1675,
+        "hash":  "73591B88DAB8BB332CAC46597F044D8FA6B0B387BE5F83C856A3FF71B9164B3E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\email.html",
+        "size":  1257,
+        "hash":  "ACE1666793F6146E7E3AE367F6EC4C29F51D5B20A601F8740198883BF29BFFF1",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\email_confirm.html",
+        "size":  802,
+        "hash":  "31EDD66E59C50D16C509BA37111476F08C2F7D46B0269B8A9701875EE242E435",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\hub.html",
+        "size":  703,
+        "hash":  "43B80EC296673E848FF2D017506F40CAECE570448CAC66F8E62227B31206B9A7",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\login.html",
+        "size":  661,
+        "hash":  "7BD9F749BF545FC35323A121DDF73A917318ED0ECC6B70BED095717D7BAB8D5D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\logout.html",
+        "size":  476,
+        "hash":  "DF7EAB4759F11C0781A6655C889B612B7A7EE25A357CD5EFEA1E154AABA6D82C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_change.html",
+        "size":  408,
+        "hash":  "547BBD7AC2D8953C5D3C782A2E46A95C077CED3D8EC3A0D1F1933C7BE47019CB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_change_done.html",
+        "size":  285,
+        "hash":  "053C56D6815152EE56FC3AA4E7D22A8B6E952CC1A653934F6924125D254F733E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_reset.html",
+        "size":  419,
+        "hash":  "963579F3A1BC5E6A94BDFD58332016C9FAE80CDADF83DD372B6AC48A85B79670",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_reset_done.html",
+        "size":  431,
+        "hash":  "4510E02C26AFEE30115D3452FEA66B781132A2A4EF51392EDED942F4B95803DB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_reset_from_key.html",
+        "size":  761,
+        "hash":  "62F1D6C7D24F0C105604F2FF3B99A4B4CF520113F61626DF961CD5934C9E662E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_reset_from_key_done.html",
+        "size":  289,
+        "hash":  "558776B3E1B1FF2B4BE75BB665642CAB7463664A946F3BD969DF08653FE73247",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_set.html",
+        "size":  404,
+        "hash":  "E6CDE60C2D8B58AA1828CA9409F0B20F4AA088CF00B619FAA19408D46AD77ED8",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\password_set_done.html",
+        "size":  281,
+        "hash":  "FCAA4463AC4EDA1A2669684537BFCE315DCB8A6D8B13CFE6267AB1F92508E2FA",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\signup.html",
+        "size":  30,
+        "hash":  "BA5C0E8A8B8B4E54A8D805BD4134823B2D512C65531C9DFFF3BFA8CF4FBDE8CD",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\signup_closed.html",
+        "size":  437,
+        "hash":  "62EAB44CB72F8E01220F16423B9C6798AB8895BBA915BD2AC0116FD1A8BCE631",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\account\\verification_sent.html",
+        "size":  426,
+        "hash":  "F8A8C983B0081D43503B7EB2631D4D90DA9808475483594399D74D1723E38E44",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\ads\\components\\slot.html",
+        "size":  820,
+        "hash":  "9A25C3B3F945FAD93DCEFAC88D5C49A090232DAE97E166AF554C294FCBAA83D4",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\base.html",
+        "size":  11403,
+        "hash":  "5E3B3289F96F8DB74ECDE44D424C8E9EE41818B1E03D8539D107BDEA983B988C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\partials\\bounty_widget.html",
+        "size":  575,
+        "hash":  "C33F6D9E6B97534743F2DABD95EA7B9D580D8F1CBA3609D63A6C070D9DCDE8B1",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\partials\\latest_widget.html",
+        "size":  576,
+        "hash":  "D132F07E0E43E86B924C6F2D4E17BF524CE61C5A185E34CF45328C9CD24D782B",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\partials\\related_widget.html",
+        "size":  450,
+        "hash":  "322FDE282ACD175FCBACA78580CCBED4CBE17757C9C01C451697CECB1EA9A353",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\partials\\trending_widget.html",
+        "size":  632,
+        "hash":  "2D5BE984514C5F145C6E71E72BE63DCFE1BB515A72E0EC7B73FC2EF2EEC5D886",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\post_detail.html",
+        "size":  8377,
+        "hash":  "46467E157B34CB4FE6CF8AC3E272486231D949E2DD6F36533E3033A55BED264F",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\post_form.html",
+        "size":  6966,
+        "hash":  "BB785E03644C914B6E70252021B46839415B8B60CE213005532C6279A104DF7A",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\blog\\post_list.html",
+        "size":  4682,
+        "hash":  "B294EF86ECDDC623A95EF97BB26BAFF43EDE8210091E5AD620615F4950C6DC77",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\comments\\moderation.html",
+        "size":  3780,
+        "hash":  "8DA90FF22F3881393B18D02FDEF2269B2D6D706425E372ED7E7C1AA88D90C36F",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\buttons.html",
+        "size":  1886,
+        "hash":  "8E024DCAC7C7CC4F129A7B57AF35E355EDBFD8504598B2240ABF89E41B41E605",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\cards.html",
+        "size":  2100,
+        "hash":  "01ABF8FF81B9BC0B6309168A63BEBF27164F60541E7F1363B709E5BA799D739C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\forms.html",
+        "size":  1683,
+        "hash":  "40B6221035EF2E267A71594714C8A76DD8EB58C2ED7C18857176CD64BEF115FC",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\modals.html",
+        "size":  1328,
+        "hash":  "655FD3F62099E3771F6B5ED24E89F4B8FC0A861B7C1DCBACC9894304AC71DFC9",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\nav.html",
+        "size":  191,
+        "hash":  "36E3E7FDB614ED5276609F5B4584AD21676B3BA23ECD6B0FF223AB932EE4BDC8",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\pagination.html",
+        "size":  857,
+        "hash":  "C5520061CBFAD9A642474D327067C0B9F93A674D7EB76EC2E27C9D4462413A7E",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\components\\tag_badges.html",
+        "size":  854,
+        "hash":  "2370BFBC63C2A9FD3B6C18EACD705917F963829F84D083A6D805F30FD0BB77E2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\consent\\includes\\banner.html",
+        "size":  3417,
+        "hash":  "0BE3B5D7D893D6EA292C66F47C67125191E6509E9E2714B6E35173BA8ED53EB2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\consent\\manage.html",
+        "size":  1538,
+        "hash":  "50EB50C6E02200E5B4BED2735F8D2C31156C15A7FEF2B3A82BABFAD82D48F352",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\core\\tenants.html",
+        "size":  891,
+        "hash":  "CDE337CF76626FF178E5A624915343B256B398F95E5C44210C19BBBF6FEC003F",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\errors\\403.html",
+        "size":  358,
+        "hash":  "B4FCE998EBE5FFF115EC0A09ABAACDD930D08BACA6B4B3170A6E5E5F679D6B60",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\errors\\404.html",
+        "size":  359,
+        "hash":  "FCFCFDF526A6DA4AF302B955DD8D885B79513431C336DF20F247D913404F5039",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\errors\\500.html",
+        "size":  378,
+        "hash":  "084482C67DDF184504149B86C7BDEFDEBE90FDFD34CA86A32775E365CB949532",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\home.html",
+        "size":  3001,
+        "hash":  "05BFC0046594E3B7888AD9087A5BCC954D5332D31141B8D0DE9136BB97E4C2C5",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\cards\\chart-card.html",
+        "size":  605,
+        "hash":  "AD7BD3347DFCF7E4C64F86B631AA5268790972F948CAE7AEB9026D4229A5710D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\cards\\icon-card.html",
+        "size":  389,
+        "hash":  "D6378B1EBAC6E2B7D230A219DA4689284FF9C7688D114A6938F5CC62F3DA341C",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\cards\\list-card.html",
+        "size":  518,
+        "hash":  "FA1C82397C1E24FA81F66562207CD8A24D7AB2743D76C4C9C3541E20783F8F42",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\cards\\status-card.html",
+        "size":  348,
+        "hash":  "10FC00E3FC3098DF981ECA409C12919E405A4FB7A4003519B9D355222FD18438",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\dashboard_cards.html",
+        "size":  672,
+        "hash":  "33C70AA1C64031EF505C84D080E62548F326219F77A84204BE0C23F2E25B3A84",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\dashboard_sidebar.html",
+        "size":  507,
+        "hash":  "B9091B978F2FF35D8DBB261E0ACBB0C86DABACCC2EA453B3ECF31CE3A3821568",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\footer.html",
+        "size":  817,
+        "hash":  "6B93E78AA1836B29555B8BE2487A253D6C5C8C80A3F3F1881BED939D240A8D1D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\icon_sprite.html",
+        "size":  2588,
+        "hash":  "D841F6890615484EA761CB4F056BF88E8AD543CE96F6415D7269B3CD2B237B00",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\messages.html",
+        "size":  162,
+        "hash":  "B3AD8A3758649BEE2B9C89078CE3A4EEDFE780650167EE943E03B4780AAE9C9D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\navbar.html",
+        "size":  5343,
+        "hash":  "22689972A2A84F50132B7E379CF01EE68773BFB9C71022164BEE0465ADB7250F",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\notifications.html",
+        "size":  582,
+        "hash":  "B5FDD615BEC7201126678E6395FC154030418EAA7BFB1F0DC63C2A8DFE46D318",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\includes\\site_header.html",
+        "size":  1047,
+        "hash":  "60A133DE86FEFEEA8C42B7D2205D2D5FAA056E612730F5D337828118B7C30D67",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\legal\\cookies.html",
+        "size":  387,
+        "hash":  "2E5F84A95E546D13C60A7ECE3C433DE2AB5441634DD86F5B8F31A006C4FC34F8",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\legal\\privacy.html",
+        "size":  377,
+        "hash":  "6182E688C8BF990C47A3C1C3BB09F61748D0456989F46CE3C90AC4BA9FBEC3D2",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\legal\\terms.html",
+        "size":  389,
+        "hash":  "D95A62F492FA14EAE76DF63D12A6399EAB984561466366FE3A251877F7FC0E40",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\login.html",
+        "size":  137,
+        "hash":  "E0383B01E48B3218172046032F61476AD1CD04A37BD9B8D38C06D2C325C5EA10",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\partials\\favicon_link.html",
+        "size":  625,
+        "hash":  "76D4D58A20836F83895520489C767C8A833E0ADB30C0008DBC58F037ED9EBA63",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\partials\\notification_list.html",
+        "size":  1691,
+        "hash":  "C868D06CBA444045369249021BE7A814813200467C974474F76FED54921B0A1D",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\partials\\site_branding.html",
+        "size":  1141,
+        "hash":  "6CBA8903B9517DE6ACF178FE63089BF1D056DAC4C24BED5AC7B5FAF66EF514DF",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\partials\\toast_fragment.html",
+        "size":  2999,
+        "hash":  "297695CED748F721C2938CAAB533282DB3802E2275B3DF3AC32EA580C0425765",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\profile.html",
+        "size":  137,
+        "hash":  "BC7252B6DE751CB1CF98A35162FF6A6787BC6A8F915BF03F533DBF103317C298",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\register.html",
+        "size":  138,
+        "hash":  "F2D6ABEE444593360D9AFE07421C3D42E4FC982E26D854C7000EE426A9E19AE7",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\site_settings\\consent_manage.html",
+        "size":  2538,
+        "hash":  "1E328ECF0998E2CEF51E9ACB0B1A77EAB05AC5FFAE8E91EBA49E0F42E2B0BA78",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\tags\\detail.html",
+        "size":  1916,
+        "hash":  "4A871BFD93E6CA595E3F42148408609A351D5D1E122B5F84E54A94820E82B5FB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\tags\\includes\\autocomplete_help.html",
+        "size":  201,
+        "hash":  "3A17B044986B52D54B22114A46AA8B75FB4E8755A0094977D3100F3E4ED95DB4",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\tags\\list.html",
+        "size":  1261,
+        "hash":  "8E55180735D7A9699F69D51174ADBCF6E087E26EE9DC231F5805062F927D81D8",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\dashboard.html",
+        "size":  5412,
+        "hash":  "5734CEF5C8A20E3E4FF5F8072B69D2C974AA98D339AE712CD4FD38CFB82842E7",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\devices.html",
+        "size":  2567,
+        "hash":  "2EA70085F92BCCA32E96D149F58488C939F62FF2D9BD3539C66638C09202B478",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\notifications\\details.html",
+        "size":  875,
+        "hash":  "F1E9102B547E66F42846E296FA139799AFC986FD1DA0EB68C468A8EDEABE1FFB",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\notifications\\list.html",
+        "size":  1995,
+        "hash":  "E729384DE048F58A5507A1BAFE120D7DD6AEC265330CD1DE33B3A406BDF6BD65",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\profile.html",
+        "size":  724,
+        "hash":  "F6CDC904DE3CA7DD11D17E5AC6444473759787250765D1807B1DEBBF75436A03",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\tell_us_about_you.html",
+        "size":  1724,
+        "hash":  "0C13025FDDDFDCD6B97E0FD7C6467ADF205445FB47E3962AD0D0200402579C32",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    },
+    {
+        "file":  "templates\\users\\verify_email.html",
+        "size":  727,
+        "hash":  "350F5161F566E1BB12F7D1F309789FC2CF4ED522735D7665E8CFAB9C882A730B",
+        "category":  "Frontend (.html/.css/.js/.json)"
+    }
+]

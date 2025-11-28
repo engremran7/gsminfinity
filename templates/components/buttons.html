@@ -1,0 +1,30 @@
+{# Reusable button variants. Usage:
+   {% include "components/buttons.html" with variant="primary" label="Save" icon="check" type="submit" %}
+   icon refers to symbol id in includes/icon_sprite.html (optional).
+   Additional classes can be passed via class. #}
+{% with
+  v=variant|default:"primary" 
+  lbl=label|default:"" 
+  btn_type=type|default:"button"
+  block=block|default:False
+%}
+<button
+  type="{{ btn_type }}"
+  class="
+    inline-flex items-center justify-center gap-2 font-semibold transition
+    {% if block %}w-full{% endif %}
+    {% if v == 'primary' %}px-4 py-2 rounded-md text-white bg-primary hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary{% endif %}
+    {% if v == 'secondary' %}px-4 py-2 rounded-md text-slate-800 bg-slate-100 hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400{% endif %}
+    {% if v == 'ghost' %}px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-300{% endif %}
+    {% if v == 'outline' %}px-4 py-2 rounded-md border border-slate-300 text-slate-800 hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary{% endif %}
+    {% if v == 'destructive' %}px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500{% endif %}
+    {{ class|default:"" }}
+  "
+  {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}
+>
+  {% if icon %}
+    <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-{{ icon }}"></use></svg>
+  {% endif %}
+  <span>{{ lbl }}</span>
+</button>
+{% endwith %}

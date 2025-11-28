@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 # ConsentCategory
 # ============================================================================
 
+
 class ConsentCategory(models.Model):
     """Configurable GDPR/CCPA category such as analytics, marketing, essential."""
 
@@ -56,6 +57,7 @@ class ConsentCategory(models.Model):
         # Invalidate all domains — safe
         try:
             from apps.consent.utils import invalidate_policy_cache
+
             invalidate_policy_cache(None)
         except Exception as exc:
             logger.warning("ConsentCategory.save: cache invalidation failed → %s", exc)
@@ -64,6 +66,7 @@ class ConsentCategory(models.Model):
 # ============================================================================
 # ConsentPolicy
 # ============================================================================
+
 
 class ConsentPolicy(models.Model):
     """
@@ -173,8 +176,7 @@ class ConsentPolicy(models.Model):
                 # Enforce active=1 per domain
                 with transaction.atomic():
                     ConsentPolicy.objects.select_for_update().filter(
-                        site_domain=self.site_domain,
-                        is_active=True
+                        site_domain=self.site_domain, is_active=True
                     ).exclude(pk=self.pk).update(is_active=False)
 
                     super().save(*args, **kwargs)
@@ -188,6 +190,7 @@ class ConsentPolicy(models.Model):
         # Invalidate only this domain
         try:
             from apps.consent.utils import invalidate_policy_cache
+
             invalidate_policy_cache(self.site_domain)
         except Exception as exc:
             logger.warning("ConsentPolicy.save: failed to invalidate → %s", exc)
@@ -198,6 +201,7 @@ class ConsentPolicy(models.Model):
     def get_active(cls, site_domain="default") -> Optional[Dict[str, Any]]:
         try:
             from apps.consent.utils import get_active_policy
+
             return get_active_policy(site_domain)
         except Exception:
             return None
@@ -207,6 +211,7 @@ class ConsentPolicy(models.Model):
 # ConsentRecord
 # ============================================================================
 
+
 class ConsentRecord(models.Model):
     """
     Per-user/session consent state for a *specific policy version*.
@@ -214,7 +219,8 @@ class ConsentRecord(models.Model):
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         on_delete=models.SET_NULL,
         related_name="consent_records",
     )
@@ -230,14 +236,20 @@ class ConsentRecord(models.Model):
     policy = models.ForeignKey(
         ConsentPolicy,
         to_field="version",
-        db_column="policy_version",
+        db_column="policy_version", # FK uses this column name
         on_delete=models.PROTECT,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="records",
     )
 
     # Duplicate for quick lookup
-    policy_version = models.CharField(max_length=20, blank=True)
+    # FIX: Use a distinct db_column name to avoid collision with the FK
+    policy_version = models.CharField(
+        max_length=20, 
+        blank=True,
+        db_column="policy_version_str" # <-- FIX APPLIED HERE
+    )
 
     site_domain = models.CharField(max_length=100, default="default")
 
@@ -312,7 +324,9 @@ class ConsentRecord(models.Model):
             required = cache.get("required_consent_categories")
             if required is None:
                 required = set(
-                    ConsentCategory.objects.filter(required=True).values_list("slug", flat=True)
+                    ConsentCategory.objects.filter(required=True).values_list(
+                        "slug", flat=True
+                    )
                 )
                 cache.set("required_consent_categories", required, 3600)
         except Exception:
@@ -348,12 +362,14 @@ class ConsentRecord(models.Model):
 # ConsentLog
 # ============================================================================
 
+
 class ConsentLog(models.Model):
     """Immutable audit log of user/session consent actions."""
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         on_delete=models.SET_NULL,
         related_name="consent_logs",
     )
@@ -378,4 +394,5 @@ class ConsentLog(models.Model):
 
     def __str__(self):
         ident = getattr(self.user, "email", None) or self.ip_address or "unknown"
-        return f"{ident} @ {self.timestamp:%Y-%m-%d %H:%M}"
+        version = self.policy_version or "N/A"
+        return f"{ident} · v{version}"

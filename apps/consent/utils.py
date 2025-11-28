@@ -16,12 +16,11 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Optional, Dict, Any
-
-from django.core.cache import cache
-from django.contrib.sites.shortcuts import get_current_site
+from typing import Any, Dict, Optional
 
 from apps.consent.models import ConsentPolicy
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +35,7 @@ DEFAULT_TTL_SECONDS = 300
 # Cache Key Helpers
 # ---------------------------------------------------------------------------
 
+
 def consent_cache_key(domain: str) -> str:
     """
     Canonical, collision-resistant cache key for a site's active ConsentPolicy.
@@ -48,6 +48,7 @@ def consent_cache_key(domain: str) -> str:
 # ---------------------------------------------------------------------------
 # Domain Resolution
 # ---------------------------------------------------------------------------
+
 
 def resolve_site_domain(request) -> str:
     """
@@ -72,6 +73,7 @@ def resolve_site_domain(request) -> str:
 # ---------------------------------------------------------------------------
 # Active Policy Retrieval
 # ---------------------------------------------------------------------------
+
 
 def get_active_policy(domain: str) -> Optional[Dict[str, Any]]:
     """
@@ -127,7 +129,9 @@ def get_active_policy(domain: str) -> Optional[Dict[str, Any]]:
     if not policy:
         return None
 
-    ttl = int(getattr(policy, "cache_ttl_seconds", DEFAULT_TTL_SECONDS) or DEFAULT_TTL_SECONDS)
+    ttl = int(
+        getattr(policy, "cache_ttl_seconds", DEFAULT_TTL_SECONDS) or DEFAULT_TTL_SECONDS
+    )
 
     payload: Dict[str, Any] = {
         "version": str(policy.version),
@@ -152,6 +156,7 @@ def get_active_policy(domain: str) -> Optional[Dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Cache Invalidator
 # ---------------------------------------------------------------------------
+
 
 def invalidate_policy_cache(domain: Optional[str] = None) -> None:
     """

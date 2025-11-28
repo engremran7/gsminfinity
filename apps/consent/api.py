@@ -29,10 +29,7 @@ __all__ = [
 
 try:
     # Canonical JSON API implementations
-    from .api.views import (
-        get_consent_status,
-        update_consent,
-    )
+    from .api.views import get_consent_status, update_consent
 
 except Exception as exc:
     # Boot-safe fallback:
@@ -40,4 +37,4 @@ except Exception as exc:
     # this module during ASGI/WSGI initialization or migrations.
     # Exposing "None" keeps the import path intact without silent breakage.
     get_consent_status = None  # type: ignore
-    update_consent = None      # type: ignore
+    update_consent = None  # type: ignore

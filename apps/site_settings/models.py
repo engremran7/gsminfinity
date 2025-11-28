@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any, Optional
 
-from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
-from django.db import models
 from django.contrib.sites.models import Site
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
+from django.db import models
 from django.templatetags.static import static
 from solo.models import SingletonModel
 
@@ -113,6 +113,46 @@ class SiteSettings(SingletonModel):
     enable_signup = models.BooleanField(default=True)
     enable_password_reset = models.BooleanField(default=True)
     enable_notifications = models.BooleanField(default=True)
+    enable_tenants = models.BooleanField(
+        default=False,
+        help_text="Enable public tenants listing when true.",
+    )
+    enable_blog = models.BooleanField(
+        default=True,
+        help_text="Enable public blog views.",
+    )
+    enable_blog_comments = models.BooleanField(
+        default=True,
+        help_text="Enable comments on blog posts.",
+    )
+    allow_user_blog_posts = models.BooleanField(
+        default=False,
+        help_text="When on, authenticated users (non-admin) can create blog posts.",
+    )
+    allow_user_bounty_posts = models.BooleanField(
+        default=False,
+        help_text="When on, authenticated users can create bounty posts (tagged 'bounty').",
+    )
+    # ------------------------------------------------------------------
+    # SEO / ADS Toggles (admin controlled)
+    # ------------------------------------------------------------------
+    seo_enabled = models.BooleanField(default=True)
+    auto_meta_enabled = models.BooleanField(default=False)
+    auto_schema_enabled = models.BooleanField(default=False)
+    auto_linking_enabled = models.BooleanField(default=False)
+
+    ads_enabled = models.BooleanField(default=False)
+    affiliate_enabled = models.BooleanField(default=False)
+    ad_networks_enabled = models.BooleanField(default=False)
+    ad_aggressiveness_level = models.CharField(
+        max_length=20,
+        choices=[
+            ("minimal", "Minimal"),
+            ("balanced", "Balanced"),
+            ("aggressive", "Aggressive"),
+        ],
+        default="balanced",
+    )
     maintenance_mode = models.BooleanField(default=False)
 
     force_https = models.BooleanField(
@@ -226,7 +266,7 @@ class SiteSettings(SingletonModel):
 
     @property
     def favicon_url(self) -> str:
-        return self._safe_file_url(self.favicon, "img/default-favicon.png")
+        return self._safe_file_url(self.favicon, "img/default-favicon.svg")
 
     # =================================================================
     # VALIDATION
@@ -280,9 +320,7 @@ class VerificationMetaTag(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["provider", "name_attr"], name="ver_meta_idx")
-        ]
+        indexes = [models.Index(fields=["provider", "name_attr"], name="ver_meta_idx")]
 
     def __str__(self):
         return f"{self.provider}: {self.name_attr}"
@@ -299,9 +337,7 @@ class VerificationFile(models.Model):
 
     class Meta:
         ordering = ["-uploaded_at"]
-        indexes = [
-            models.Index(fields=["provider"], name="ver_file_idx")
-        ]
+        indexes = [models.Index(fields=["provider"], name="ver_file_idx")]
 
     def __str__(self):
         name = getattr(self.file, "name", None)
@@ -315,9 +351,7 @@ class VerificationFile(models.Model):
         try:
             ext = Path(self.file.name).suffix.lower()
             if ext not in _ALLOWED_VERIFICATION_EXTENSIONS:
-                errors.setdefault("file", []).append(
-                    f"Unsupported extension: {ext}"
-                )
+                errors.setdefault("file", []).append(f"Unsupported extension: {ext}")
         except Exception:
             pass
 
@@ -353,7 +387,9 @@ class SiteSettingsMetaTagLink(models.Model):
     class Meta:
         unique_together = ("site_settings", "meta_tag")
         indexes = [
-            models.Index(fields=["site_settings", "meta_tag"], name="site_meta_link_idx")
+            models.Index(
+                fields=["site_settings", "meta_tag"], name="site_meta_link_idx"
+            )
         ]
 
 
@@ -369,7 +405,9 @@ class SiteSettingsVerificationFileLink(models.Model):
     class Meta:
         unique_together = ("site_settings", "verification_file")
         indexes = [
-            models.Index(fields=["site_settings", "verification_file"], name="site_file_link_idx")
+            models.Index(
+                fields=["site_settings", "verification_file"], name="site_file_link_idx"
+            )
         ]
 
 

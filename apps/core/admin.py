@@ -19,11 +19,11 @@ from typing import Iterable
 
 from django import forms
 from django.contrib import admin
+from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.http import HttpResponse
 from django.utils.encoding import smart_str
 from django.utils.text import capfirst
-from django.core.exceptions import ImproperlyConfigured
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ admin.site.site_header = "GSMInfinity Administration"
 admin.site.site_title = "GSM Admin"
 admin.site.index_title = "System Administration"
 
+
 # ---------------------------
 # Utility admin actions
 # ---------------------------
@@ -43,6 +44,7 @@ def export_as_json_action(description: str = "Export selected objects as JSON"):
     Usage:
         actions = [export_as_json_action("Export selected users as JSON")]
     """
+
     def action(modeladmin, request, queryset):
         model = modeladmin.model
         # Use values() to avoid serializing complex relations; admins can override for custom output
@@ -56,17 +58,21 @@ def export_as_json_action(description: str = "Export selected objects as JSON"):
             json.dumps(data, ensure_ascii=False, indent=2),
             content_type="application/json; charset=utf-8",
         )
-        resp["Content-Disposition"] = f'attachment; filename={model._meta.model_name}_export.json'
+        resp["Content-Disposition"] = (
+            f"attachment; filename={model._meta.model_name}_export.json"
+        )
         return resp
 
     action.short_description = description
     return action
+
 
 def export_as_csv_action(description: str = "Export selected objects as CSV"):
     """
     Returns an admin action that exports selected queryset to CSV.
     Basic, safe implementation — override in specific ModelAdmin for customized exports.
     """
+
     def action(modeladmin, request, queryset):
         import csv
 
@@ -77,7 +83,9 @@ def export_as_csv_action(description: str = "Export selected objects as CSV"):
             fields = None
 
         response = HttpResponse(content_type="text/csv; charset=utf-8")
-        response["Content-Disposition"] = f'attachment; filename={model._meta.model_name}_export.csv'
+        response["Content-Disposition"] = (
+            f"attachment; filename={model._meta.model_name}_export.csv"
+        )
         response.write("\ufeff")  # UTF-8 BOM for Excel
 
         writer = csv.writer(response)
@@ -112,6 +120,7 @@ class DefaultModelAdmin(admin.ModelAdmin):
     - readonly auto timestamp fields if present
     - includes JSON/CSV export actions
     """
+
     actions = [
         export_as_json_action(),
         export_as_csv_action(),
@@ -120,10 +129,23 @@ class DefaultModelAdmin(admin.ModelAdmin):
     def __init__(self, model, admin_site):
         # attempt to build light-weight list_display and search_fields to avoid heavy DB scans
         try:
-            concrete_fields = [f for f in model._meta.concrete_fields if not isinstance(f, models.ManyToManyField)]
+            concrete_fields = [
+                f
+                for f in model._meta.concrete_fields
+                if not isinstance(f, models.ManyToManyField)
+            ]
             # prefer id/email/username/date fields if present
             preferred = []
-            for name in ("email", "username", "name", "title", "id", "created_at", "created", "date_joined"):
+            for name in (
+                "email",
+                "username",
+                "name",
+                "title",
+                "id",
+                "created_at",
+                "created",
+                "date_joined",
+            ):
                 if any(f.name == name for f in concrete_fields):
                     preferred.append(name)
             # fallback to first N concrete fields
@@ -131,10 +153,18 @@ class DefaultModelAdmin(admin.ModelAdmin):
             list_display = preferred + [f for f in fallback if f not in preferred]
             self.list_display = tuple(list_display) if list_display else ("__str__",)
             # search on first few textual fields
-            text_fields = [f.name for f in concrete_fields if isinstance(f, (models.CharField, models.TextField))][:3]
+            text_fields = [
+                f.name
+                for f in concrete_fields
+                if isinstance(f, (models.CharField, models.TextField))
+            ][:3]
             self.search_fields = tuple(text_fields) if text_fields else ()
             # readonly timestamp-like fields
-            ro = [f.name for f in concrete_fields if f.name in ("created_at", "updated_at", "date_joined", "created")]
+            ro = [
+                f.name
+                for f in concrete_fields
+                if f.name in ("created_at", "updated_at", "date_joined", "created")
+            ]
             self.readonly_fields = tuple(ro)
         except Exception as exc:
             logger.debug("DefaultModelAdmin init fallback: %s", exc)
@@ -151,10 +181,13 @@ def auto_register_models(app_label: str):
     ModelAdmin defaults are conservative.
     """
     from django.apps import apps as django_apps
+
     try:
         app_config = django_apps.get_app_config(app_label)
     except LookupError as exc:
-        raise ImproperlyConfigured(f"Cannot auto-register models: unknown app_label '{app_label}'") from exc
+        raise ImproperlyConfigured(
+            f"Cannot auto-register models: unknown app_label '{app_label}'"
+        ) from exc
 
     for model in app_config.get_models():
         model_name = model._meta.model_name
@@ -166,7 +199,10 @@ def auto_register_models(app_label: str):
         except admin.sites.AlreadyRegistered:
             continue
         except Exception as exc:
-            logger.exception("Failed to auto-register %s.%s : %s", app_label, model_name, exc)
+            logger.exception(
+                "Failed to auto-register %s.%s : %s", app_label, model_name, exc
+            )
+
 
 # ---------------------------
 # If you want automatic registration for the current app, un-comment and set the app label:

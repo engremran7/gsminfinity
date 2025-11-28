@@ -1,0 +1,42 @@
+{# Card variants. Usage:
+   {% include "components/cards.html" with variant="post" title=post.title url=post_url meta=meta_text excerpt=excerpt tags=post.tags %}
+   variant: base|post|widget
+ #}
+{% if variant == "widget" %}
+  <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+    {% if title %}<div class="flex items-center justify-between mb-2">
+      <h3 class="text-sm font-semibold text-slate-800">{{ title }}</h3>
+      {% if action_url %}<a href="{{ action_url }}" class="text-xs text-primary hover:text-primary-600">View all</a>{% endif %}
+    </div>{% endif %}
+    <div class="space-y-3">{{ content|safe }}</div>
+  </div>
+{% elif variant == "post" %}
+  <article class="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 hover:-translate-y-0.5 transition transform">
+    <div class="flex items-start justify-between gap-3">
+      <div class="space-y-2 w-full">
+        {% if category %}<span class="text-[11px] text-primary font-semibold uppercase tracking-wide">{{ category }}</span>{% endif %}
+        <h2 class="text-xl font-semibold text-slate-900">
+          {% if url %}<a href="{{ url }}" class="hover:text-primary">{{ title }}</a>{% else %}{{ title }}{% endif %}
+        </h2>
+        {% if meta %}<p class="text-xs text-slate-500">{{ meta }}</p>{% endif %}
+        {% if excerpt %}<p class="text-sm text-slate-700 line-clamp-3">{{ excerpt }}</p>{% endif %}
+        {% if tags %}
+          <div class="flex flex-wrap gap-2 text-xs text-slate-600">
+            {% for tag in tags %}
+              <span class="inline-flex items-center px-2 py-1 rounded-full bg-slate-100 text-slate-700">#{{ tag }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      {% if thumbnail %}
+        <div class="w-28 h-20 rounded-lg overflow-hidden border border-slate-200">
+          <img src="{{ thumbnail }}" alt="" class="w-full h-full object-cover" />
+        </div>
+      {% endif %}
+    </div>
+  </article>
+{% else %}
+  <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+    {{ content|safe }}
+  </div>
+{% endif %}

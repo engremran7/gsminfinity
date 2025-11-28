@@ -1,0 +1,7 @@
+{% if messages %}
+<ul class="space-y-2">
+  {% for message in messages %}
+  <li class="text-sm text-slate-700">{{ message }}</li>
+  {% endfor %}
+</ul>
+{% endif %}

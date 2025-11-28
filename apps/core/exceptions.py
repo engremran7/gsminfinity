@@ -16,16 +16,8 @@ import logging
 from typing import Any, Optional
 
 from django.conf import settings
-from django.core.exceptions import (
-    PermissionDenied,
-    ValidationError,
-    ObjectDoesNotExist,
-)
-from django.http import (
-    HttpRequest,
-    HttpResponse,
-    JsonResponse,
-)
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.translation import gettext_lazy as _
 
 # -------------------------------------------------------------
@@ -35,8 +27,9 @@ AuthenticationFailed = None
 APIException = None
 
 try:
-    from rest_framework.exceptions import AuthenticationFailed as _AuthFailed
     from rest_framework.exceptions import APIException as _APIException
+    from rest_framework.exceptions import AuthenticationFailed as _AuthFailed
+
     AuthenticationFailed = _AuthFailed
     APIException = _APIException
 except ImportError:

@@ -6,8 +6,9 @@ Delegates to apps.users.auth_backends.MultiFieldAuthBackend.
 """
 
 from __future__ import annotations
-from importlib import import_module
+
 import sys
+from importlib import import_module
 
 module = import_module("apps.users.auth_backends")
 

@@ -1,0 +1,14 @@
+<nav class="space-y-2">
+  <a href="{% url 'users:dashboard' %}" class="block text-sm text-slate-700 hover:text-primary">
+    Overview
+  </a>
+  <a href="{% url 'users:profile' %}" class="block text-sm text-slate-700 hover:text-primary">
+    Profile
+  </a>
+  <a href="{% url 'users:devices' %}" class="block text-sm text-slate-700 hover:text-primary">
+    Devices
+  </a>
+  <a href="{% url 'users_notifications:list' %}" class="block text-sm text-slate-700 hover:text-primary">
+    Notifications
+  </a>
+</nav>

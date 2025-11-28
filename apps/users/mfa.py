@@ -28,6 +28,8 @@ from apps.site_settings.models import SiteSettings
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_ISSUER = "Account Portal"
+
 
 # =====================================================================
 # BASE32 HELPERS
@@ -95,9 +97,9 @@ class TOTPService:
         msg = counter.to_bytes(8, "big")
         digest = hmac.new(key, msg, hashlib.sha1).digest()
         offset = digest[-1] & 0x0F
-        part = digest[offset: offset + 4]
+        part = digest[offset : offset + 4]
         binary = int.from_bytes(part, "big") & 0x7FFFFFFF
-        return str(binary % (10 ** digits)).zfill(digits)
+        return str(binary % (10**digits)).zfill(digits)
 
     @staticmethod
     def generate_current_code(
@@ -178,19 +180,17 @@ class MFAEnforcer:
         """
         Return MFA issuer string with safe fallbacks:
             1) mfa_totp_issuer
-            2) site_name
-            3) "Site"
+            2) generic default (to avoid branding leakage)
         """
         try:
             s = SiteSettings.get_solo()
             return (
                 getattr(s, "mfa_totp_issuer", None)
-                or getattr(s, "site_name", None)
-                or "Site"
+                or DEFAULT_ISSUER
             )
         except Exception:
-            logger.warning("Failed to read MFA issuer; using 'Site'.")
-            return "Site"
+            logger.warning("Failed to read MFA issuer; using default.")
+            return DEFAULT_ISSUER
 
     @staticmethod
     def provisioning_uri(
@@ -254,7 +254,9 @@ def compare_hmac_secret(stored_hmac: str, candidate_secret: str, pepper: str) ->
         logger.warning("compare_hmac_secret() called without pepper.")
         return False
     try:
-        candidate = hmac.new(pepper.encode(), candidate_secret.encode(), hashlib.sha256).hexdigest()
+        candidate = hmac.new(
+            pepper.encode(), candidate_secret.encode(), hashlib.sha256
+        ).hexdigest()
         return hmac.compare_digest(stored_hmac, candidate)
     except Exception:
         logger.exception("compare_hmac_secret() error.")

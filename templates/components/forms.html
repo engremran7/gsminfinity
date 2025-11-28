@@ -1,0 +1,44 @@
+{# Form field wrapper. Usage examples:
+   {% include "components/forms.html" with id="id_title" label="Title" field=form.title ai_action="generate_title" ai_label="Generate Title" help="Keep it concise." %}
+   {% include "components/forms.html" with id="custom" name="custom" label="Custom" %}
+ #}
+<div class="space-y-1">
+  {% if label %}
+    <label for="{{ id }}" class="block text-sm font-semibold text-slate-800">
+      {{ label }}{% if required %}<span class="text-red-600 ml-1">*</span>{% endif %}
+    </label>
+  {% endif %}
+
+  {% if field %}
+    {{ field|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 "|add_class:extra_class }}
+  {% else %}
+    <input
+      id="{{ id }}"
+      name="{{ name }}"
+      {% if required %}required{% endif %}
+      class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 {{ extra_class }}"
+      {{ widget_class|default:"" }}
+    />
+  {% endif %}
+
+  {% if ai_action %}
+    <div class="flex justify-end">
+      <button
+        type="button"
+        class="text-xs text-primary hover:text-primary-600 inline-flex items-center gap-1"
+        data-ai-action="{{ ai_action }}"
+        data-ai-target="{{ id }}"
+      >
+        <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-wand"></use></svg>
+        {{ ai_label|default:"AI assist" }}
+      </button>
+    </div>
+  {% endif %}
+
+  {% if help %}
+    <p class="text-xs text-slate-500">{{ help }}</p>
+  {% endif %}
+  {% if error %}
+    <p class="text-xs text-red-600">{{ error }}</p>
+  {% endif %}
+</div>

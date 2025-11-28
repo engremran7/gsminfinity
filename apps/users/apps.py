@@ -14,6 +14,7 @@ Application configuration for GSMInfinity's Users module.
 from __future__ import annotations
 
 import logging
+
 from django.apps import AppConfig
 from django.utils.module_loading import autodiscover_modules
 
@@ -25,6 +26,7 @@ class UsersConfig(AppConfig):
     Loads signals and cross-app hooks exactly once per process.
     Safe during migrations, tests, shell, or async contexts.
     """
+
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.users"
     label = "users"
@@ -46,6 +48,7 @@ class UsersConfig(AppConfig):
         # ---------------------------------------------------------------
         try:
             import apps.users.signals  # noqa: F401
+
             logger.debug("UsersConfig → signals imported successfully.")
         except ImportError as exc:
             # Signal import errors should never break app startup.
@@ -61,7 +64,9 @@ class UsersConfig(AppConfig):
             logger.debug("UsersConfig → autodiscovered 'signals' modules across apps.")
         except Exception as exc:
             # Do not fail on autodiscovery — some apps may not have signals.
-            logger.debug("UsersConfig: autodiscover_modules('signals') failed → %s", exc)
+            logger.debug(
+                "UsersConfig: autodiscover_modules('signals') failed → %s", exc
+            )
 
         # ---------------------------------------------------------------
         # 3️⃣ Future-proof extension hook (keep light)

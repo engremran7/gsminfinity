@@ -12,6 +12,8 @@ import json
 import logging
 from typing import Any, Dict, Optional
 
+from apps.consent.models import ConsentPolicy, ConsentRecord
+from apps.consent.utils import consent_cache_key, get_active_policy, resolve_site_domain
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.sites.shortcuts import get_current_site
@@ -20,13 +22,10 @@ from django.db import transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.middleware.csrf import get_token
 from django.shortcuts import redirect, render
+from django.template import TemplateDoesNotExist
 from django.template.loader import render_to_string
 from django.template.response import TemplateResponse
-from django.template import TemplateDoesNotExist
 from django.views.decorators.http import require_GET, require_POST
-
-from apps.consent.models import ConsentRecord, ConsentPolicy
-from apps.consent.utils import consent_cache_key, get_active_policy, resolve_site_domain
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,10 @@ logger = logging.getLogger(__name__)
 # INTERNAL UTILITIES
 # ============================================================================
 
-def hx_response(content: str = "", status: int = 200, triggers: Optional[dict] = None) -> HttpResponse:
+
+def hx_response(
+    content: str = "", status: int = 200, triggers: Optional[dict] = None
+) -> HttpResponse:
     """HTMX-safe response helper with HX-Trigger."""
     resp = HttpResponse(content, status=status)
     if triggers:
@@ -89,7 +91,11 @@ def _ensure_session(request: HttpRequest) -> Optional[str]:
 def _domain(request: HttpRequest) -> str:
     """Unified domain resolver."""
     try:
-        return resolve_site_domain(request) or get_current_site(request).domain or request.get_host()
+        return (
+            resolve_site_domain(request)
+            or get_current_site(request).domain
+            or request.get_host()
+        )
     except Exception:
         return request.get_host()
 
@@ -108,7 +114,12 @@ def _active_policy(request: HttpRequest) -> Optional[Dict[str, Any]]:
         try:
             payload = get_active_policy(domain)
             if payload:
-                ttl = int(payload.get("cache_ttl_seconds", getattr(settings, "CONSENT_POLICY_CACHE_TTL", 300)))
+                ttl = int(
+                    payload.get(
+                        "cache_ttl_seconds",
+                        getattr(settings, "CONSENT_POLICY_CACHE_TTL", 300),
+                    )
+                )
                 cache.set(key, payload, timeout=ttl)
                 return payload
         except Exception:
@@ -130,8 +141,13 @@ def _active_policy(request: HttpRequest) -> Optional[Dict[str, Any]]:
             "manage_text": obj.manage_text or "",
             "is_active": obj.is_active,
             "site_domain": domain,
-            "cache_ttl_seconds": int(getattr(obj, "cache_ttl_seconds",
-                                             getattr(settings, "CONSENT_POLICY_CACHE_TTL", 300))),
+            "cache_ttl_seconds": int(
+                getattr(
+                    obj,
+                    "cache_ttl_seconds",
+                    getattr(settings, "CONSENT_POLICY_CACHE_TTL", 300),
+                )
+            ),
         }
         cache.set(key, payload, timeout=payload["cache_ttl_seconds"])
         return payload
@@ -145,6 +161,7 @@ def _active_policy(request: HttpRequest) -> Optional[Dict[str, Any]]:
 # BANNER
 # ============================================================================
 
+
 @require_GET
 def banner_partial(request: HttpRequest) -> HttpResponse:
     """Render banner safely with multi-template fallback."""
@@ -154,7 +171,9 @@ def banner_partial(request: HttpRequest) -> HttpResponse:
             return HttpResponse("", content_type="text/html")
 
         # If user accepted everything earlier
-        if getattr(request, "session", None) and request.session.get("consent_all_accepted"):
+        if getattr(request, "session", None) and request.session.get(
+            "consent_all_accepted"
+        ):
             return HttpResponse("", content_type="text/html")
 
         snapshot = policy.get("categories_snapshot", {}) or {}
@@ -207,6 +226,7 @@ def banner_partial(request: HttpRequest) -> HttpResponse:
 # CONSENT MANAGEMENT PAGE
 # ============================================================================
 
+
 @require_GET
 def manage_consent(request: HttpRequest) -> HttpResponse:
     try:
@@ -226,8 +246,18 @@ def manage_consent(request: HttpRequest) -> HttpResponse:
 
         if not categories:
             categories = [
-                {"name": "Functional", "slug": "functional", "required": True, "accepted": True},
-                {"name": "Analytics", "slug": "analytics", "required": False, "accepted": False},
+                {
+                    "name": "Functional",
+                    "slug": "functional",
+                    "required": True,
+                    "accepted": True,
+                },
+                {
+                    "name": "Analytics",
+                    "slug": "analytics",
+                    "required": False,
+                    "accepted": False,
+                },
             ]
 
         return render(
@@ -249,6 +279,7 @@ def manage_consent(request: HttpRequest) -> HttpResponse:
 # ============================================================================
 # STATUS ENDPOINT (HTML/JS)
 # ============================================================================
+
 
 @require_GET
 def consent_status(request: HttpRequest) -> JsonResponse:
@@ -273,7 +304,12 @@ def consent_status(request: HttpRequest) -> JsonResponse:
         # Ensure functional
         categories.setdefault(
             "functional",
-            {"name": "Functional", "required": True, "default": True, "accepted": True},
+            {
+                "name": "Functional",
+                "required": True,
+                "default": True,
+                "accepted": True,
+            },
         )
 
         domain = _domain(request)
@@ -322,6 +358,7 @@ def consent_status(request: HttpRequest) -> JsonResponse:
 # MUTATION HANDLERS
 # ============================================================================
 
+
 @require_POST
 def consent_accept(request: HttpRequest) -> HttpResponse:
     """
@@ -360,9 +397,11 @@ def consent_accept(request: HttpRequest) -> HttpResponse:
 
         else:
             accepted = {
-                slug: True
-                if slug == "functional" or snapshot.get(slug, {}).get("required")
-                else _bool(data.get(slug))
+                slug: (
+                    True
+                    if slug == "functional" or snapshot.get(slug, {}).get("required")
+                    else _bool(data.get(slug))
+                )
                 for slug in valid_slugs
             }
 
@@ -371,7 +410,11 @@ def consent_accept(request: HttpRequest) -> HttpResponse:
         sk = _ensure_session(request)
         domain = _domain(request)
 
-        defaults = {"accepted_categories": sanitized, "site_domain": domain, "session_key": sk}
+        defaults = {
+            "accepted_categories": sanitized,
+            "site_domain": domain,
+            "session_key": sk,
+        }
 
         # Save record
         with transaction.atomic():
@@ -394,18 +437,24 @@ def consent_accept(request: HttpRequest) -> HttpResponse:
         try:
             if getattr(request, "session", None):
                 non_required = [v for k, v in sanitized.items() if k != "functional"]
-                request.session["consent_all_accepted"] = all(non_required) if non_required else True
-                request.session["consent_rejected"] = not any(non_required) if non_required else False
+                request.session["consent_all_accepted"] = (
+                    all(non_required) if non_required else True
+                )
+                request.session["consent_rejected"] = (
+                    not any(non_required) if non_required else False
+                )
                 request.session.modified = True
         except Exception:
             pass
 
         msg = (
             "You have rejected all optional cookies."
-            if reject_all else
-            "You have accepted all optional cookies."
-            if accept_all else
-            "Your preferences have been saved."
+            if reject_all
+            else (
+                "You have accepted all optional cookies."
+                if accept_all
+                else "Your preferences have been saved."
+            )
         )
 
         # JSON response
@@ -422,8 +471,18 @@ def consent_accept(request: HttpRequest) -> HttpResponse:
 
         # HTMX
         if _is_htmx_or_ajax(request):
-            toast_html = render_to_string("partials/toast_fragment.html", {"message": msg})
-            return hx_response("", triggers={"removeConsentBanner": True, "showToast": {"html": toast_html}})
+            toast_html = render_to_string(
+                "partials/toast_fragment.html",
+                {"message": msg},
+                request=request,  # CSP nonce propagation
+            )
+            return hx_response(
+                "",
+                triggers={
+                    "removeConsentBanner": True,
+                    "showToast": {"html": toast_html},
+                },
+            )
 
         messages.success(request, msg)
         return redirect(data.get("next") or "/")
@@ -452,7 +511,11 @@ def consent_accept_all(request: HttpRequest) -> HttpResponse:
         sk = _ensure_session(request)
         domain = _domain(request)
 
-        defaults = {"accepted_categories": sanitized, "site_domain": domain, "session_key": sk}
+        defaults = {
+            "accepted_categories": sanitized,
+            "site_domain": domain,
+            "session_key": sk,
+        }
 
         with transaction.atomic():
             if request.user.is_authenticated:
@@ -481,8 +544,18 @@ def consent_accept_all(request: HttpRequest) -> HttpResponse:
         msg = "You have accepted all optional cookies."
 
         if _is_htmx_or_ajax(request):
-            toast_html = render_to_string("partials/toast_fragment.html", {"message": msg})
-            return hx_response("", triggers={"removeConsentBanner": True, "showToast": {"html": toast_html}})
+            toast_html = render_to_string(
+                "partials/toast_fragment.html",
+                {"message": msg},
+                request=request,  # CSP nonce propagation
+            )
+            return hx_response(
+                "",
+                triggers={
+                    "removeConsentBanner": True,
+                    "showToast": {"html": toast_html},
+                },
+            )
 
         messages.success(request, msg)
         return redirect(request.POST.get("next") or "/")
@@ -515,7 +588,11 @@ def consent_reject_all(request: HttpRequest) -> HttpResponse:
         sk = _ensure_session(request)
         domain = _domain(request)
 
-        defaults = {"accepted_categories": sanitized, "site_domain": domain, "session_key": sk}
+        defaults = {
+            "accepted_categories": sanitized,
+            "site_domain": domain,
+            "session_key": sk,
+        }
 
         with transaction.atomic():
             if request.user.is_authenticated:
@@ -544,8 +621,18 @@ def consent_reject_all(request: HttpRequest) -> HttpResponse:
         msg = "You rejected optional cookies."
 
         if _is_htmx_or_ajax(request):
-            toast_html = render_to_string("partials/toast_fragment.html", {"message": msg})
-            return hx_response("", triggers={"removeConsentBanner": True, "showToast": {"html": toast_html}})
+            toast_html = render_to_string(
+                "partials/toast_fragment.html",
+                {"message": msg},
+                request=request,  # CSP nonce propagation
+            )
+            return hx_response(
+                "",
+                triggers={
+                    "removeConsentBanner": True,
+                    "showToast": {"html": toast_html},
+                },
+            )
 
         messages.success(request, msg)
         return redirect(request.POST.get("next") or "/")

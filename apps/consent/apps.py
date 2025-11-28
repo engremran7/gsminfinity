@@ -7,6 +7,7 @@ Ensures signal registration and avoids double import duplication.
 """
 
 import logging
+
 from django.apps import AppConfig
 
 log = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ class ConsentConfig(AppConfig):
 
         try:
             import apps.consent.signals  # noqa: F401
+
             log.debug("Consent signals registered successfully.")
         except ImportError:
             log.info("No consent signals found (skipping registration).")

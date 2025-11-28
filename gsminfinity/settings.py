@@ -7,15 +7,18 @@ Airtight • Modern • CSP-Safe • Zero Silent Failures • Hardened Imports
 
 from __future__ import annotations
 
-import os
 import logging
+import os
+import sys
 from pathlib import Path
 from typing import Any
+
 from django.core.exceptions import ImproperlyConfigured
 
 # Optional .env loader (non-fatal)
 try:
     from dotenv import load_dotenv  # type: ignore
+
     load_dotenv()
 except Exception:
     pass
@@ -26,6 +29,20 @@ logger = logging.getLogger("gsminfinity")
 # ---------------------------
 # Helper utilities
 # ---------------------------
+def _configure_io_encoding() -> None:
+    """Ensure stdout/stderr can emit UTF-8 (avoid Windows console encode errors)."""
+    for stream_name in ("stdout", "stderr"):
+        stream = getattr(sys, stream_name, None)
+        if stream and hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8")
+            except Exception:
+                pass
+
+
+_configure_io_encoding()
+
+
 def env_str(value: Any, default: str = "") -> str:
     return str(value) if value is not None else default
 
@@ -53,13 +70,20 @@ def env_list(value: Any, default: list | None = None) -> list:
 # ---------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = env_str(
-    os.getenv("DJANGO_SECRET_KEY"),
-    "django-insecure-development-secret",
-)
+_DEFAULT_DEV_SECRET = "django-insecure-development-secret"
 
-DEBUG = env_bool(os.getenv("DJANGO_DEBUG", None), False)
+SECRET_KEY = env_str(os.getenv("DJANGO_SECRET_KEY"), _DEFAULT_DEV_SECRET)
+
+_settings_module = os.getenv("DJANGO_SETTINGS_MODULE", "")
+_default_debug = _settings_module.endswith("settings_dev")
+DEBUG = env_bool(os.getenv("DJANGO_DEBUG", None), _default_debug)
 ENV = "development" if DEBUG else "production"
+IS_PRODUCTION = not DEBUG
+
+if IS_PRODUCTION and (not SECRET_KEY or SECRET_KEY == _DEFAULT_DEV_SECRET):
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must be set in the environment for production; refusing to start with the development secret."
+    )
 
 
 # ---------------------------
@@ -118,6 +142,11 @@ LOCAL_APPS = [
     "apps.users",
     "apps.site_settings",
     "apps.consent",
+    "apps.blog",
+    "apps.tags",
+    "apps.comments",
+    "apps.seo",
+    "apps.ads",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + SOCIAL_PROVIDERS + LOCAL_APPS
@@ -132,6 +161,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "apps.core.middleware.ssl_toggle.SslToggleMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "apps.core.middleware.correlation.CorrelationIdMiddleware",
     "apps.core.middleware.request_meta.RequestMetaMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -139,6 +169,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "apps.consent.middleware.ConsentMiddleware",
+    "apps.users.middleware.mfa_enforce.EnforceMfaMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -167,12 +198,10 @@ DATABASES = {
         "PASSWORD": env_str(os.getenv("DB_PASSWORD")),
         "HOST": env_str(os.getenv("DB_HOST")),
         "PORT": env_str(os.getenv("DB_PORT")),
-
         # IMPORTANT:
         # async views (lazy_loader) cannot run with ATOMIC_REQUESTS=True
         # this caused your RuntimeError
         "ATOMIC_REQUESTS": False,
-
         "CONN_MAX_AGE": 60 if not DEBUG else 0,
     }
 }
@@ -190,8 +219,13 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 8},
+    },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
@@ -216,8 +250,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STATICFILES_STORAGE = (
     "django.contrib.staticfiles.storage.StaticFilesStorage"
-    if DEBUG else
-    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    if DEBUG
+    else "whitenoise.storage.CompressedManifestStaticFilesStorage"
 )
 
 MEDIA_URL = "/media/"
@@ -245,6 +279,7 @@ TEMPLATES = [
                 "apps.site_settings.context_processors.site_settings",
                 "apps.consent.context_processors.consent_context",
                 "apps.core.context_processors.location_based_providers",
+                "apps.users.context_processors.auth_status",
             ],
         },
     },
@@ -267,7 +302,7 @@ if not DEBUG:
 # Login flows
 # ---------------------------
 LOGIN_URL = "account_login"
-LOGIN_REDIRECT_URL = "/users/dashboard/"
+LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
 ACCOUNT_LOGOUT_ON_GET = True
 
@@ -330,7 +365,9 @@ ACCOUNT_FORMS = {"signup": "apps.users.forms.CustomSignupForm"}
 ACCOUNT_LOGIN_METHODS = {"username", "email"}
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
-ACCOUNT_EMAIL_VERIFICATION = env_str(os.getenv("ACCOUNT_EMAIL_VERIFICATION"), "optional")
+ACCOUNT_EMAIL_VERIFICATION = env_str(
+    os.getenv("ACCOUNT_EMAIL_VERIFICATION"), "optional"
+)
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 ACCOUNT_PREVENT_ENUMERATION = True
 ACCOUNT_SESSION_REMEMBER = True
@@ -341,37 +378,68 @@ ACCOUNT_RATE_LIMITS = {"login_failed": "5/300s", "signup": "10/3600s"}
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https" if not DEBUG else "http"
 ACCOUNT_EMAIL_SUBJECT_PREFIX = "[Notification] "
 ACCOUNT_PRESERVE_USERNAME_CASING = False
+ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = False
+
+# Referral rewards (credits) – both default to 0 (disabled) unless set via env
+REFERRAL_REWARD_REFERRER = int(os.getenv("REFERRAL_REWARD_REFERRER", "0") or "0")
+REFERRAL_REWARD_NEW_USER = int(os.getenv("REFERRAL_REWARD_NEW_USER", "0") or "0")
 
 
 # ---------------------------
 # Security
 # ---------------------------
-SECURE_SSL_REDIRECT = env_bool(os.getenv("SECURE_SSL_REDIRECT"), False)
+# We rely on SslToggleMiddleware + SiteSettings.force_https for dynamic control.
+# Default secure in production, relaxed in dev unless overridden.
+SECURE_SSL_REDIRECT = env_bool(os.getenv("SECURE_SSL_REDIRECT"), not DEBUG)
 
-SESSION_COOKIE_SECURE = env_bool(os.getenv("SESSION_COOKIE_SECURE"), False)
-CSRF_COOKIE_SECURE = env_bool(os.getenv("CSRF_COOKIE_SECURE"), False)
+SESSION_COOKIE_SECURE = env_bool(os.getenv("SESSION_COOKIE_SECURE"), IS_PRODUCTION)
+CSRF_COOKIE_SECURE = env_bool(os.getenv("CSRF_COOKIE_SECURE"), IS_PRODUCTION)
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = env_str(os.getenv("SESSION_COOKIE_SAMESITE"), "Lax")
+CSRF_COOKIE_SAMESITE = env_str(os.getenv("CSRF_COOKIE_SAMESITE"), "Lax")
+SESSION_COOKIE_AGE = int(env_str(os.getenv("SESSION_COOKIE_AGE"), "1209600"))  # 14 days default
+SESSION_SAVE_EVERY_REQUEST = env_bool(os.getenv("SESSION_SAVE_EVERY_REQUEST"), False)
 
-SECURE_HSTS_SECONDS = int(env_str(os.getenv("SECURE_HSTS_SECONDS"), "0"))
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS"), False)
-SECURE_HSTS_PRELOAD = env_bool(os.getenv("SECURE_HSTS_PRELOAD"), False)
+# If behind a reverse proxy setting X-Forwarded-Proto, honor it for is_secure()
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https") if env_bool(os.getenv("USE_XFORWARDED_PROTO"), False) else None
+)
+
+SECURE_HSTS_SECONDS = int(
+    env_str(os.getenv("SECURE_HSTS_SECONDS"), "31536000" if IS_PRODUCTION else "0")
+)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(
+    os.getenv("SECURE_HSTS_INCLUDE_SUBDOMAINS"), IS_PRODUCTION
+)
+SECURE_HSTS_PRELOAD = env_bool(os.getenv("SECURE_HSTS_PRELOAD"), IS_PRODUCTION)
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
 X_FRAME_OPTIONS = env_str(os.getenv("X_FRAME_OPTIONS"), "DENY")
-SECURE_REFERRER_POLICY = env_str(os.getenv("SECURE_REFERRER_POLICY"), "strict-origin-when-cross-origin")
+SECURE_REFERRER_POLICY = env_str(
+    os.getenv("SECURE_REFERRER_POLICY"), "strict-origin-when-cross-origin"
+)
+
+SECURITY_HSTS_VALUE = env_str(
+    os.getenv("SECURITY_HSTS_VALUE"),
+    "max-age=63072000; includeSubDomains; preload",
+)
+SECURITY_COEP_VALUE = env_str(os.getenv("SECURITY_COEP_VALUE"), "require-corp")
+SECURITY_CORP_VALUE = env_str(os.getenv("SECURITY_CORP_VALUE"), "same-origin")
 
 
 # Trusted CSRF origins
 _csrf_hosts = [h.strip() for h in ALLOWED_HOSTS if h and not h.startswith("*")]
-CSRF_TRUSTED_ORIGINS = []
+ALLOW_INSECURE_CSRF_ORIGINS = env_bool(os.getenv("ALLOW_INSECURE_CSRF_ORIGINS"), False)
+
+CSRF_TRUSTED_ORIGINS: list[str] = []
 for host in _csrf_hosts:
     CSRF_TRUSTED_ORIGINS.append(f"https://{host}")
-    CSRF_TRUSTED_ORIGINS.append(f"http://{host}")
+    if ALLOW_INSECURE_CSRF_ORIGINS and host in {"127.0.0.1", "localhost", "0.0.0.0"}:
+        CSRF_TRUSTED_ORIGINS.append(f"http://{host}")
 
 
 # ---------------------------
@@ -379,7 +447,11 @@ for host in _csrf_hosts:
 # ---------------------------
 EMAIL_BACKEND = env_str(
     os.getenv("EMAIL_BACKEND"),
-    "django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
+    (
+        "django.core.mail.backends.console.EmailBackend"
+        if DEBUG
+        else "django.core.mail.backends.smtp.EmailBackend"
+    ),
 )
 DEFAULT_FROM_EMAIL = env_str(os.getenv("DEFAULT_FROM_EMAIL"), "no-reply@local")
 EMAIL_USE_TLS = env_bool(os.getenv("EMAIL_USE_TLS"), True)
@@ -399,7 +471,12 @@ CELERY_TIMEZONE = TIME_ZONE
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        # Enable these only if the app is installed/configured:
+        # "rest_framework.authentication.TokenAuthentication",
+        # "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "EXCEPTION_HANDLER": "apps.core.exceptions.EnterpriseExceptionHandler.handle_api_exception",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",

@@ -1,0 +1,9 @@
+<tr>
+  <td class="py-1 max-w-xs truncate text-slate-700">{{ entry.url }}</td>
+  <td class="py-1">
+    <span class="px-2 py-1 rounded text-xs {{ status_class|default:'' }}">
+      {{ entry.last_status|default:"(unknown)" }}
+    </span>
+  </td>
+  <td class="py-1 text-xs text-slate-500">{{ entry.last_checked_at|default:"n/a" }}</td>
+</tr>

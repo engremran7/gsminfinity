@@ -13,12 +13,12 @@ Enterprise-grade multi-identifier authentication backend for GSMInfinity.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Any, Sequence
+from typing import Any, Optional, Sequence
 
-from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.contrib.auth.backends import ModelBackend
 from django.core.exceptions import MultipleObjectsReturned
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
@@ -66,14 +66,11 @@ class MultiFieldAuthBackend(ModelBackend):
 
         try:
             # Filter by any accepted identifier (case-insensitive)
-            qs = (
-                UserModel.objects.filter(
-                    Q(email__iexact=identifier)
-                    | Q(username__iexact=identifier)
-                    | Q(phone__iexact=identifier)
-                )
-                .distinct()
-            )
+            qs = UserModel.objects.filter(
+                Q(email__iexact=identifier)
+                | Q(username__iexact=identifier)
+                | Q(phone__iexact=identifier)
+            ).distinct()
 
             # Load at most two rows to detect duplicates cheaply
             candidates: Sequence[UserModel] = list(qs[:2])
@@ -99,18 +96,31 @@ class MultiFieldAuthBackend(ModelBackend):
             logger.warning("Duplicate users detected for identifier=%s", identifier)
             return None
         except Exception as exc:
-            logger.exception("User lookup failed for identifier=%s → %s", identifier, exc)
+            logger.exception(
+                "User lookup failed for identifier=%s → %s", identifier, exc
+            )
             return None
 
         # Verify password in timing-safe manner
         try:
-            if user and user.check_password(password) and self.user_can_authenticate(user):
-                logger.info("User %s authenticated successfully", getattr(user, "email", user.pk))
+            if (
+                user
+                and user.check_password(password)
+                and self.user_can_authenticate(user)
+            ):
+                logger.info(
+                    "User %s authenticated successfully",
+                    getattr(user, "email", user.pk),
+                )
                 return user
             else:
-                logger.debug("Invalid credentials or inactive account for %s", identifier)
+                logger.debug(
+                    "Invalid credentials or inactive account for %s", identifier
+                )
         except Exception as exc:
-            logger.exception("Password verification failed for %s → %s", identifier, exc)
+            logger.exception(
+                "Password verification failed for %s → %s", identifier, exc
+            )
 
         return None
 

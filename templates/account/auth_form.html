@@ -1,0 +1,45 @@
+{% extends "account/auth_base.html" %}
+
+{% block auth_body %}
+  {% if request.user.is_authenticated %}
+    <div class="space-y-3">
+      <div class="p-3 bg-slate-50 border border-slate-200 rounded">
+        <p class="text-sm text-slate-700">
+          You’re already signed in as <strong>{{ request.user.email|default:request.user.username }}</strong>.
+        </p>
+      </div>
+      <div class="flex items-center justify-between text-sm">
+        <a href="{% url 'users:dashboard' %}" class="text-primary">Go to dashboard</a>
+        <a href="{% url 'account_logout' %}" class="text-slate-600">Sign out</a>
+      </div>
+    </div>
+  {% else %}
+    {% if messages %}
+      <ul class="space-y-2">
+        {% for message in messages %}
+          {% if message.level|default:0 >= 30 %}
+            <li class="text-sm text-red-700">{{ message }}</li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% block auth_form %}
+    <form method="post" action="{% block auth_action %}{% endblock %}" class="space-y-4">
+      {% csrf_token %}
+      {% block auth_fields %}
+        {{ form.as_p }}
+        <p class="text-xs text-slate-500">
+          Password tip: use 8+ chars, mix letters/numbers; avoid common words.
+        </p>
+        {% if form.email %}
+          <p class="text-xs text-slate-500">We’ll send a verification email to confirm.</p>
+        {% endif %}
+      {% endblock %}
+      <button type="submit" class="bg-primary text-white px-4 py-2 rounded w-full">
+        {% block auth_submit_label %}Submit{% endblock %}
+      </button>
+    </form>
+    {% endblock %}
+    {% block auth_secondary %}{% endblock %}
+  {% endif %}
+{% endblock %}

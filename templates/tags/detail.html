@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}#{{ tag.name }} - {{ site_settings.site_name|default:"Site" }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+  <header class="space-y-2">
+    <p class="text-xs uppercase tracking-wide text-primary font-semibold">Tag</p>
+    <h1 class="text-3xl font-bold text-slate-900">#{{ tag.name }}</h1>
+    {% if tag.description %}<p class="text-sm text-slate-600 max-w-3xl">{{ tag.description }}</p>{% endif %}
+    <p class="text-xs text-slate-500">{{ page_obj.paginator.count }} posts · {{ tag.usage_count }} total uses</p>
+    <p class="text-xs text-slate-500">Use existing tags where possible to avoid fragmentation. Synonyms: {{ tag.synonyms|join:', '|default:'None' }}.</p>
+  </header>
+
+  <div class="grid gap-8 lg:grid-cols-[2fr_1fr]">
+    <section class="space-y-4">
+      {% if posts %}
+        {% for post in posts %}
+          {% url 'blog:post_detail' slug=post.slug as post_url %}
+          {% include "components/cards.html" with variant="post" title=post.title url=post_url meta="By %s · %s" % (post.author, post.published_at|date:"M j, Y"|default:"Draft") excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name %}
+        {% endfor %}
+      {% else %}
+        <div class="text-sm text-slate-500">No posts for this tag yet.</div>
+      {% endif %}
+      {% include "components/pagination.html" with page_obj=page_obj %}
+    </section>
+    <aside class="space-y-4 lg:sticky lg:top-24">
+      {% include "components/cards.html" with variant="widget" title="Trending tags" content=trending_tags_html|default:"<div class='text-sm text-slate-500'>Coming soon</div>" %}
+      {% include "components/cards.html" with variant="widget" title="Latest" content=latest_widget_html|default:"<div class='text-sm text-slate-500'>Coming soon</div>" %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

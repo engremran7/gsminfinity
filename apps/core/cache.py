@@ -18,8 +18,8 @@ import hashlib
 import logging
 from typing import Any, Callable, Optional, TypeVar
 
-from django.core.cache import cache
 from django.contrib.sites.models import Site
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ _T = TypeVar("_T")
 # =====================================================================
 # KEY UTILITIES
 # =====================================================================
+
 
 def _namespaced_key(
     key: str,
@@ -67,6 +68,7 @@ def _digest_key(base: str) -> str:
 # =====================================================================
 # DISTRIBUTED CACHE MANAGER
 # =====================================================================
+
 
 class DistributedCacheManager:
     """

@@ -1,115 +1,213 @@
 {% load static %}
-
 <!doctype html>
-<html lang="en" class="h-full bg-slate-50">
-  <head>
+<html lang="en" class="h-full">
+<head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="description" content="{% block meta_description %}{{ site_settings.tagline|default:'Latest updates and insights.' }}{% endblock %}">
+    {% block meta_canonical %}{% if request.build_absolute_uri %}<link rel="canonical" href="{{ request.build_absolute_uri }}">{% endif %}{% endblock %}
+    <meta property="og:site_name" content="{{ site_settings.site_name|default:'Site' }}">
+    <meta property="og:title" content="{% block og_title %}{{ site_settings.site_name|default:'Site' }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ site_settings.tagline|default:'Latest updates and insights.' }}{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri|default:'' }}{% endblock %}">
+    {% block og_image %}{% if site_settings.logo %}<meta property="og:image" content="{{ site_settings.logo }}">{% endif %}{% endblock %}
+    <meta name="twitter:card" content="summary_large_image">
 
-    {% block title %}
-      <title>{{ site_settings.site_name|default:'' }}</title>
-    {% endblock %}
+    {# Simplified title block for cleaner overriding in child templates #}
+    <title>{% block title %}{{ site_settings.site_name|default:'Site' }}{% endblock %}</title>
 
     {# ------------------------------------------------------------------ #}
-    {#  DYNAMIC FAVICON (Admin → fallback static)                         #}
+    {# DYNAMIC FAVICON (admin fallback to static) #}
     {# ------------------------------------------------------------------ #}
     {% if site_settings.favicon %}
-      <link rel="icon" type="image/png" href="{{ site_settings.favicon }}">
-      <link rel="apple-touch-icon" sizes="180x180" href="{{ site_settings.favicon }}">
+    <link rel="icon" type="image/png" href="{{ site_settings.favicon }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ site_settings.favicon }}" />
     {% else %}
-      <link rel="icon" type="image/png" href="{% static 'img/default-favicon.png' %}">
-      <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/default-favicon.png' %}">
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/default-favicon.svg' %}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/default-favicon.svg' %}" />
     {% endif %}
 
-    <meta name="theme-color" content="{{ site_settings.primary_color|default:'#0d6efd' }}">
+    <meta name="theme-color" content="{{ site_settings.primary_color|default:'#0d6efd' }}" />
 
     {# ------------------------------------------------------------------ #}
-    {#  FIXED STATIC CSS PATH                                             #}
+    {# FIXED STATIC CSS PATH (correct folder) #}
     {# ------------------------------------------------------------------ #}
-    <link href="{% static 'styles/main.css' %}" rel="stylesheet">
+    <link href="{% static 'css/main.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/theme-bridge.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/style.css' %}" rel="stylesheet" />
 
     {# ------------------------------------------------------------------ #}
-    {#  HTMX (CSP-safe with nonce)                                        #}
+    {# HTMX (CSP-safe with nonce) #}
     {# ------------------------------------------------------------------ #}
-    <script
-      src="https://unpkg.com/htmx.org@1.9.10"
-      crossorigin="anonymous"
-      nonce="{{ request.csp_nonce }}">
+    <script src="https://unpkg.com/htmx.org" nonce="{{ request.csp_nonce }}" defer></script>
+
+    {# ------------------------------------------------------------------ #}
+    {# SITE SETTINGS + AUTH FLAGS (JS globals) #}
+    {# ------------------------------------------------------------------ #}
+    <script nonce="{{ request.csp_nonce }}">
+        window.SITE_SETTINGS = {
+            logo: "{{ site_settings.logo|default:'' }}",
+            dark_logo: "{{ site_settings.dark_logo|default:'' }}",
+            site_name: "{{ site_settings.site_name|default:'Site' }}",
+            primary_color: "{{ site_settings.primary_color|default:'#0d6efd' }}",
+        };
+        // Auth status comes directly from the backend context processor (P0 dependency)
+        window.AUTH_IS_AUTHENTICATED = {{ auth_is_authenticated|yesno:"true,false" }};
+        window.FEATURE_FLAGS = {
+            seo_enabled: {{ site_settings.seo_enabled|yesno:"true,false" }},
+            auto_meta_enabled: {{ site_settings.auto_meta_enabled|yesno:"true,false" }},
+            auto_schema_enabled: {{ site_settings.auto_schema_enabled|yesno:"true,false" }},
+            auto_linking_enabled: {{ site_settings.auto_linking_enabled|yesno:"true,false" }},
+            ads_enabled: {{ site_settings.ads_enabled|yesno:"true,false" }},
+            affiliate_enabled: {{ site_settings.affiliate_enabled|yesno:"true,false" }},
+            ad_networks_enabled: {{ site_settings.ad_networks_enabled|yesno:"true,false" }},
+            ad_aggressiveness_level: "{{ site_settings.ad_aggressiveness_level|default:'balanced' }}",
+        };
     </script>
 
-    <script
-      src="https://unpkg.com/htmx.org/dist/ext/head-support.js"
-      nonce="{{ request.csp_nonce }}">
-    </script>
+    {% block extra_head %}{% endblock %}
+    {% block json_ld %}{% endblock %}
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900" data-ai-endpoint="{% url 'api_ai_ask' %}">
 
-    {% block head %}{% endblock %}
-  </head>
+    {% include "includes/icon_sprite.html" %}
 
-  <body class="min-h-screen flex flex-col">
+    {# ------------------------------------------------------------------ #}
+    {# CONSENT BANNER SLOT (required by loader) #}
+    {# ------------------------------------------------------------------ #}
+    <div id="consent-banner-slot"></div>
 
-    {% include "includes/site_header.html" %}
-    {% include "includes/navbar.html" %}
+    {# ------------------------------------------------------------------ #}
+    {# TOASTS CONTAINER (P1 Fix: Correct positioning and interactive area) #}
+    {# Positioned fixed top-right with z-index to handle toasts from server responses #}
+    {# ------------------------------------------------------------------ #}
+    <div id="app-toasts" class="fixed top-20 right-4 z-50 space-y-2" aria-live="polite" aria-atomic="true"></div>
 
-    <div id="consent-banner-slot">
-      {% block consent_banner %}{% endblock %}
-    </div>
+    {# ------------------------------------------------------------------ #}
+    {# NAVBAR INCLUDE #}
+    {# ------------------------------------------------------------------ #}
+    {% include "components/nav.html" %}
 
-    <main class="flex-1">
-      {% block content %}{% endblock %}
+    {# ------------------------------------------------------------------ #}
+    {# MAIN CONTENT BLOCK #}
+    {# ------------------------------------------------------------------ #}
+    <main id="main-content" class="flex-1">
+        {% block content %}{% endblock %}
     </main>
 
+    {# ------------------------------------------------------------------ #}
+    {# FOOTER INCLUDE #}
+    {# ------------------------------------------------------------------ #}
     {% include "includes/footer.html" %}
 
-    {# Toast containers -------------------------------------------------- #}
-    <div id="global-toasts" class="fixed top-3 right-3 space-y-2 z-50"></div>
+    {# ------------------------------------------------------------------ #}
+    {# THEME DESIGNER PANEL #}
+    {# ------------------------------------------------------------------ #}
+    <div
+        id="theme-drawer"
+        class="theme-drawer hidden"
+        role="dialog"
+        aria-modal="true"
+        aria-live="polite"
+        aria-labelledby="theme-drawer-title"
+    >
+        <div class="theme-drawer__header">
+            <div class="theme-drawer__title">
+                <svg class="icon" aria-hidden="true"><use href="#icon-palette"></use></svg>
+                <span id="theme-drawer-title">Theme Designer</span>
+            </div>
+            <button type="button" id="theme-close" class="btn-outline" aria-label="Close theme panel">Close</button>
+        </div>
 
-    <div id="app-toasts"
-         class="fixed top-0 right-0 p-3 z-50"
-         aria-live="polite"
-         aria-atomic="true"></div>
+        <div class="theme-presets">
+            <button class="theme-preset-btn" data-theme-preset="aurora" type="button">
+                <div>
+                    <div class="font-semibold">Aurora</div>
+                    <div class="text-sm text-slate-600">Teal + violet</div>
+                </div>
+                <div class="theme-swatches">
+                    <span class="theme-swatch" style="background:#0ea5a4"></span>
+                    <span class="theme-swatch" style="background:#6366f1"></span>
+                    <span class="theme-swatch" style="background:#0b1220"></span>
+                </div>
+            </button>
+            <button class="theme-preset-btn" data-theme-preset="midnight" type="button">
+                <div>
+                    <div class="font-semibold">Midnight</div>
+                    <div class="text-sm text-slate-600">Deep slate</div>
+                </div>
+                <div class="theme-swatches">
+                    <span class="theme-swatch" style="background:#0f172a"></span>
+                    <span class="theme-swatch" style="background:#22d3ee"></span>
+                    <span class="theme-swatch" style="background:#111827"></span>
+                </div>
+            </button>
+            <button class="theme-preset-btn" data-theme-preset="daylight" type="button">
+                <div>
+                    <div class="font-semibold">Daylight</div>
+                    <div class="text-sm text-slate-600">Warm light</div>
+                </div>
+                <div class="theme-swatches">
+                    <span class="theme-swatch" style="background:#f97316"></span>
+                    <span class="theme-swatch" style="background:#22c55e"></span>
+                    <span class="theme-swatch" style="background:#fdf7f0"></span>
+                </div>
+            </button>
+            <button class="theme-preset-btn" data-theme-preset="emerald" type="button">
+                <div>
+                    <div class="font-semibold">Emerald</div>
+                    <div class="text-sm text-slate-600">Green glass</div>
+                </div>
+                <div class="theme-swatches">
+                    <span class="theme-swatch" style="background:#22c55e"></span>
+                    <span class="theme-swatch" style="background:#0ea5e9"></span>
+                    <span class="theme-swatch" style="background:#e8fff6"></span>
+                </div>
+            </button>
+        </div>
 
-    {% block scripts %}
+        <div class="theme-field">
+            <label for="theme-primary-input">Primary</label>
+            <input type="color" id="theme-primary-input" aria-label="Primary color" />
+        </div>
+        <div class="theme-field">
+            <label for="theme-accent-input">Accent</label>
+            <input type="color" id="theme-accent-input" aria-label="Accent color" />
+        </div>
+        <div class="theme-field">
+            <label for="theme-surface-input">Surface</label>
+            <input type="color" id="theme-surface-input" aria-label="Surface color" />
+        </div>
+        <div class="theme-field">
+            <label for="theme-text-input">Text</label>
+            <input type="color" id="theme-text-input" aria-label="Text color" />
+        </div>
 
-      {# ------------------------------------------------------------------ #}
-      {#  CORE JS FILES (correct structure)                                #}
-      {# ------------------------------------------------------------------ #}
-      <script src="{% static 'js/htmx-csrf.js' %}" nonce="{{ request.csp_nonce }}"></script>
-      <script src="{% static 'js/consent.js' %}" nonce="{{ request.csp_nonce }}"></script>
-      <script src="{% static 'js/main.js' %}" nonce="{{ request.csp_nonce }}"></script>
+        <div class="theme-actions">
+            <button class="btn-outline" type="button" id="theme-reset">Reset</button>
+            <button class="btn-primary" type="button" id="theme-apply">
+                <svg class="icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>
+                Apply
+            </button>
+        </div>
+    </div>
 
-      {# ------------------------------------------------------------------ #}
-      {#  SITE_SETTINGS + CONSENT_CONFIG                                   #}
-      {# ------------------------------------------------------------------ #}
-      <script nonce="{{ request.csp_nonce }}">
-        (function () {
-          window.SITE_SETTINGS = {
-            site_name: "{{ site_settings.site_name|default:''|escapejs }}",
-            maintenance_mode: {{ site_settings.maintenance_mode|yesno:"true,false" }},
-            consent_version: "{{ consent_version|default:''|escapejs }}",
-            logo: "{{ site_settings.logo|default:''|escapejs }}",
-            dark_logo: "{{ site_settings.dark_logo|default:''|escapejs }}",
-            primary_color: "{{ site_settings.primary_color|default:'#0d6efd'|escapejs }}",
-          };
+    {% include "components/modals.html" %}
 
-          window.CONSENT_CONFIG = {
-            cookieName: "{{ consent_cookie_name|default:'consent_status' }}",
-            endpoints: {
-              banner: "{{ consent_endpoints.banner|default:'/consent/banner/' }}",
-              acceptAll: "{{ consent_endpoints.accept_all|default:'/consent/accept_all/' }}",
-              rejectAll: "{{ consent_endpoints.reject_all|default:'/consent/reject_all/' }}",
-              accept: "{{ consent_endpoints.accept|default:'/consent/accept/' }}",
-            },
-            autoLoad: {{ consent_auto_load|yesno:"true,false" }},
-          };
-        })();
-      </script>
+    {# ------------------------------------------------------------------ #}
+    {# EXTRA SCRIPTS BLOCK (P0 Fix: Client-side Auth Toggle logic) #}
+    {# ------------------------------------------------------------------ #}
+    <script src="{% static 'js/main.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    <script src="{% static 'js/ai_helpers.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    <script src="{% static 'js/htmx-csrf.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    <script src="{% static 'js/consent-banner-loader.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    <script src="{% static 'js/consent.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    {% if site_settings.ads_enabled %}
+      <script src="{% static 'js/ads.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    {% endif %}
 
-      {% if consent_auto_load %}
-        <script src="{% static 'js/consent-banner-loader.js' %}"
-                nonce="{{ request.csp_nonce }}"></script>
-      {% endif %}
-
-    {% endblock %}
-
-  </body>
+    {% block extra_scripts %}{% endblock %}
+</body>
 </html>

@@ -6,8 +6,9 @@ Prevents brute-force login/signup attempts globally.
 """
 
 import logging
-from django.http import JsonResponse
+
 from apps.users.services import rate_limit
+from django.http import JsonResponse
 
 logger = logging.getLogger(__name__)
 

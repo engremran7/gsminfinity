@@ -3,16 +3,17 @@ GSMInfinity Development Settings
 --------------------------------
 Overrides production settings for local development.
 
-✅ Always HTTP — never enforces HTTPS
-✅ DEBUG = True
-✅ Console email backend
-✅ Safe cache, session & CSRF defaults
-✅ Supports local runserver (no SSL certs required)
+- Always HTTP - never enforces HTTPS
+- DEBUG = True
+- Console email backend
+- Safe cache, session & CSRF defaults
+- Supports local runserver (no SSL certs required)
 """
 
-from .settings import *  # import all production defaults
 import os
 from pathlib import Path
+
+from .settings import *  # import all production defaults
 
 # -------------------------
 # Core environment
@@ -55,9 +56,9 @@ SSL_KEY_FILE = CERT_DIR / "localhost-key.pem"
 
 # Optional developer feedback — nothing enforces SSL
 if SSL_CERT_FILE.exists():
-    print(f"🔒 Optional local certificate found: {SSL_CERT_FILE}")
+    print(f"[DEV] Optional local certificate found: {SSL_CERT_FILE}")
 else:
-    print("🌐 Development mode running strictly over HTTP (no HTTPS enforced).")
+    print("[DEV] Development mode running strictly over HTTP (no HTTPS enforced).")
 
 # -------------------------
 # Logging (verbose for development)
@@ -104,4 +105,4 @@ if DEBUG and "django_extensions" not in INSTALLED_APPS:
 # -------------------------
 # Runtime banner
 # -------------------------
-print("⚙️  GSMInfinity Development Settings Loaded (HTTP only, DEBUG=True)")
+print("[DEV] GSMInfinity Development Settings Loaded (HTTP only, DEBUG=True)")

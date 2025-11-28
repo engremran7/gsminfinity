@@ -1,29 +1,33 @@
-{% extends "base.html" %}
-{% load static %}
-{% block title %}Tenants — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% load static %} {% block title %}Tenants — {{
+site_settings.site_name|default:"GSMInfinity" }}{% endblock %} {% block content
+%}
 <div class="container py-5">
   <h2 class="mb-4">Active Tenants</h2>
   {% if tenants %}
-    <div class="table-responsive">
-      <table class="table table-striped">
-        <thead>
-          <tr><th>Site</th><th>Domain</th><th>Status</th></tr>
-        </thead>
-        <tbody>
-          {% for tenant in tenants %}
-            <tr>
-              <td>{{ tenant.site.name }}</td>
-              <td>{{ tenant.site.domain }}</td>
-              <td>{% if tenant.is_active %}✅ Active{% else %}❌ Inactive{% endif %}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Site</th>
+          <th>Domain</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tenant in tenants %}
+        <tr>
+          <td>{{ tenant.site.name }}</td>
+          <td>{{ tenant.site.domain }}</td>
+          <td>
+            {% if tenant.is_active %}✅ Active{% else %}❌ Inactive{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% else %}
-    <p>No tenants found.</p>
+  <p>No tenants found.</p>
   {% endif %}
 </div>
 {% endblock %}

@@ -17,25 +17,29 @@ Enterprise-grade user management and authentication views for GSMInfinity.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+import re
+from typing import Any, Dict, Optional
 
+from allauth.account.forms import LoginForm, SignupForm
+from allauth.account.views import LoginView, SignupView
+from apps.users.forms import TellUsAboutYouForm
+from apps.users.models import Announcement, DeviceFingerprint, Notification
+from apps.users.services.rate_limit import allow_action
+from apps.users.services.recaptcha import verify_recaptcha
+from apps.users.utils.device import enforce_device_limit, record_device_fingerprint
+from apps.users.utils.utils import get_device_fingerprint
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.shortcuts import get_current_site
 from django.db.models import Q
-from django.shortcuts import render, redirect
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.http import HttpRequest, HttpResponse
-
-from allauth.account.views import LoginView, SignupView
-from allauth.account.forms import LoginForm, SignupForm
-
-from apps.users.models import Notification, Announcement
-from apps.users.utils.utils import get_device_fingerprint
-from apps.users.utils.device import record_device_fingerprint, enforce_device_limit
-from apps.users.services.recaptcha import verify_recaptcha
-from apps.users.services.rate_limit import allow_action
+from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_POST, require_http_methods
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +51,21 @@ def profile(request: HttpRequest) -> HttpResponse:
     """
     context: dict[str, Any] = {
         "user": request.user,
-        "notifications": Notification.objects.filter(user=request.user).order_by("-created_at")[:10],
-        "announcements": Announcement.objects.filter(is_active=True).order_by("-created_at")[:5],
+        "notifications": Notification.objects.filter(user=request.user).order_by(
+            "-created_at"
+        )[:10],
+        "announcements": Announcement.objects.filter(is_active=True).order_by(
+            "-created_at"
+        )[:5],
+        "referral_link": "",
     }
-    return render(request, "profile.html", context)
+    try:
+        if getattr(request.user, "referral_code", None):
+            base_signup = request.build_absolute_uri(reverse("account_signup"))
+            context["referral_link"] = f"{base_signup}?ref={request.user.referral_code}"
+    except Exception:
+        context["referral_link"] = ""
+    return render(request, "users/profile.html", context)
 
 
 def login_view(request: HttpRequest) -> HttpResponse:
@@ -66,6 +81,7 @@ def login_view(request: HttpRequest) -> HttpResponse:
     }
     return render(request, "login.html", context)
 
+
 # ============================================================
 # Settings resolver (lazy import to avoid circular deps)
 # ============================================================
@@ -77,7 +93,9 @@ def _get_settings(request=None) -> Dict[str, object]:
     """
     try:
         # Lazy import to avoid circular imports
-        from apps.site_settings.views import _get_settings as _ss_get_settings  # type: ignore
+        from apps.site_settings.views import (
+            _get_settings as _ss_get_settings,
+        )  # type: ignore
 
         result = _ss_get_settings(request)
         # Ensure it's a dict (backwards tolerant)
@@ -88,16 +106,25 @@ def _get_settings(request=None) -> Dict[str, object]:
             "site_name": getattr(result, "site_name", "GSMInfinity"),
             "enable_signup": getattr(result, "enable_signup", True),
             "max_login_attempts": int(getattr(result, "max_login_attempts", 5) or 5),
-            "rate_limit_window_seconds": int(getattr(result, "rate_limit_window_seconds", 300) or 300),
+            "rate_limit_window_seconds": int(
+                getattr(result, "rate_limit_window_seconds", 300) or 300
+            ),
             "recaptcha_enabled": bool(getattr(result, "recaptcha_enabled", False)),
-            "enforce_unique_device": bool(getattr(result, "enforce_unique_device", False)),
-            "max_devices_per_user": int(getattr(result, "max_devices_per_user", 3) or 3),
+            "enforce_unique_device": bool(
+                getattr(result, "enforce_unique_device", False)
+            ),
+            "max_devices_per_user": int(
+                getattr(result, "max_devices_per_user", 3) or 3
+            ),
             "require_mfa": bool(getattr(result, "require_mfa", False)),
             "enable_payments": bool(getattr(result, "enable_payments", True)),
         }
     except Exception:
         # Fallback defaults (primitive types only)
-        logger.debug("site settings resolver lazy import failed; using fallback defaults", exc_info=True)
+        logger.debug(
+            "site settings resolver lazy import failed; using fallback defaults",
+            exc_info=True,
+        )
         return {
             "site_name": "GSMInfinity",
             "enable_signup": True,
@@ -112,6 +139,12 @@ def _get_settings(request=None) -> Dict[str, object]:
             "site_description": "Default configuration",
             "meta_tags": [],
             "verification_files": [],
+            # Branding fallbacks used by base.html
+            "primary_color": "#0d6efd",
+            "secondary_color": "#6c757d",
+            "logo": None,
+            "dark_logo": None,
+            "favicon": None,
         }
 
 
@@ -126,16 +159,21 @@ class EnterpriseLoginView(LoginView):
     - Device fingerprint & limit enforcement
     - Optional MFA redirect
     """
+
     form_class = LoginForm
     template_name = "account/login.html"
 
     def form_valid(self, form):
         settings_obj = _get_settings(self.request)
         ip = (
-            self.request.META.get("HTTP_X_FORWARDED_FOR")
-            or self.request.META.get("REMOTE_ADDR")
-            or "unknown"
-        ).split(",")[0].strip()
+            (
+                self.request.META.get("HTTP_X_FORWARDED_FOR")
+                or self.request.META.get("REMOTE_ADDR")
+                or "unknown"
+            )
+            .split(",")[0]
+            .strip()
+        )
 
         # --- Rate Limiting ---
         try:
@@ -152,12 +190,16 @@ class EnterpriseLoginView(LoginView):
             logger.exception("Rate limiter failure (fail-open)")
 
         # --- reCAPTCHA ---
-        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get("recaptcha_token")
+        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get(
+            "recaptcha_token"
+        )
         if settings_obj.get("recaptcha_enabled", False) and token:
             try:
                 rc_result = verify_recaptcha(token, ip, action="login")
                 if not rc_result.get("ok"):
-                    form.add_error(None, "reCAPTCHA verification failed. Please try again.")
+                    form.add_error(
+                        None, "reCAPTCHA verification failed. Please try again."
+                    )
                     logger.info("reCAPTCHA failed for %s → %s", ip, rc_result)
                     return self.form_invalid(form)
             except Exception:
@@ -186,7 +228,10 @@ class EnterpriseLoginView(LoginView):
                 allowed = enforce_device_limit(user)
                 if not allowed:
                     form.add_error(None, "Device limit exceeded. Contact support.")
-                    logger.warning("Device limit exceeded for user=%s", getattr(user, "email", user.pk))
+                    logger.warning(
+                        "Device limit exceeded for user=%s",
+                        getattr(user, "email", user.pk),
+                    )
                     return self.form_invalid(form)
         except Exception:
             logger.exception("Device enforcement error (fail-open)")
@@ -196,21 +241,38 @@ class EnterpriseLoginView(LoginView):
             fp = get_device_fingerprint(self.request)
             if fp:
                 try:
-                    record_device_fingerprint(self.request, user, {"fingerprint_hash": fp})
+                    record_device_fingerprint(
+                        self.request, user, {"fingerprint_hash": fp}
+                    )
                 except PermissionError:
                     # Device rejected under strict mode
-                    form.add_error(None, "This device cannot be registered. Contact support.")
-                    logger.warning("Device blocked for user=%s", getattr(user, "email", user.pk))
+                    form.add_error(
+                        None, "This device cannot be registered. Contact support."
+                    )
+                    logger.warning(
+                        "Device blocked for user=%s", getattr(user, "email", user.pk)
+                    )
                     return self.form_invalid(form)
                 except Exception:
                     logger.exception("Failed to record device fingerprint")
         except Exception:
             logger.debug("Fingerprint capture failed (non-fatal)")
 
-        # --- MFA Enforcement (redirect to verification if required) ---
+        # --- MFA / Email verification enforcement (config-aware) ---
         try:
-            if settings_obj.get("require_mfa", False) and not getattr(user, "email_verified_at", None):
-                logger.info("Redirecting %s to MFA/email verification", getattr(user, "email", user.pk))
+            require_mfa = settings_obj.get("require_mfa", False)
+            email_verification_mode = getattr(
+                settings, "ACCOUNT_EMAIL_VERIFICATION", "optional"
+            )
+            if (
+                require_mfa
+                and email_verification_mode == "mandatory"
+                and not getattr(user, "email_verified_at", None)
+            ):
+                logger.info(
+                    "Redirecting %s to email verification (MFA required)",
+                    getattr(user, "email", user.pk),
+                )
                 return redirect("users:verify_email")
         except Exception:
             logger.exception("MFA check failed (non-fatal)")
@@ -223,8 +285,15 @@ class EnterpriseLoginView(LoginView):
 # ============================================================
 class EnterpriseSignupView(SignupView):
     """Tenant-aware signup with optional reCAPTCHA verification."""
+
     form_class = SignupForm
     template_name = "account/signup.html"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Pass request to form so it can prefill referral from ?ref=
+        kwargs["request"] = self.request
+        return kwargs
 
     def form_valid(self, form):
         s = _get_settings(self.request)
@@ -234,14 +303,20 @@ class EnterpriseSignupView(SignupView):
             logger.info("Signup attempt blocked by settings.")
             return self.form_invalid(form)
 
-        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get("recaptcha_token")
+        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get(
+            "recaptcha_token"
+        )
         if s.get("recaptcha_enabled", False) and token:
             try:
                 client_ip = (
-                    self.request.META.get("HTTP_X_FORWARDED_FOR")
-                    or self.request.META.get("REMOTE_ADDR")
-                    or "unknown"
-                ).split(",")[0].strip()
+                    (
+                        self.request.META.get("HTTP_X_FORWARDED_FOR")
+                        or self.request.META.get("REMOTE_ADDR")
+                        or "unknown"
+                    )
+                    .split(",")[0]
+                    .strip()
+                )
                 rc = verify_recaptcha(token, client_ip, action="signup")
                 if not rc.get("ok"):
                     form.add_error(None, "reCAPTCHA failed. Please retry.")
@@ -288,6 +363,14 @@ def verify_email_view(request):
 def dashboard_view(request):
     """Render user dashboard with recent announcements and notifications."""
     s = _get_settings(request)
+    # Gate unverified manual users if required
+    try:
+        if getattr(request.user, "manual_signup", False) and not getattr(
+            request.user, "email_verified_at", None
+        ):
+            return redirect("users:verify_email")
+    except Exception:
+        pass
     now = timezone.now()
 
     # Announcements: use 'message' (model uses message field)
@@ -301,9 +384,21 @@ def dashboard_view(request):
     notifications = (
         Notification.objects.filter(recipient=request.user)
         .select_related("recipient")
-        .only("title", "message", "created_at")
+        # Include recipient to avoid deferred+select_related conflict with .only()
+        .only("title", "message", "created_at", "recipient")
         .order_by("-created_at")[:5]
     )
+
+    # Device usage snapshot (defensive)
+    device_limit = int(s.get("max_devices_per_user", 3) or 3)
+    try:
+        device_used = (
+            DeviceFingerprint.objects.filter(user=request.user, is_active=True).count()
+        )
+    except Exception:
+        logger.debug("device count failed", exc_info=True)
+        device_used = 0
+    device_remaining = max(device_limit - device_used, 0)
 
     context = {
         "site_settings": s,
@@ -312,6 +407,9 @@ def dashboard_view(request):
         "credits": getattr(request.user, "credits", 0),
         "can_watch_ad": bool(s.get("recaptcha_enabled", False)),
         "can_pay": bool(s.get("enable_payments", True)),
+        "device_limit": device_limit,
+        "device_used": device_used,
+        "device_remaining": device_remaining,
     }
     return render(request, "users/dashboard.html", context)
 
@@ -335,8 +433,189 @@ def profile_view(request):
 
 
 # ============================================================
+# Devices view / reset
+# ============================================================
+@login_required
+def device_list_view(request):
+    """List active devices for the current user."""
+    devices = (
+        DeviceFingerprint.objects.filter(user=request.user)
+        .order_by("-last_used_at")
+        .only("id", "fingerprint_hash", "os_info", "browser_info", "last_used_at")
+    )
+    return render(
+        request,
+        "users/devices.html",
+        {"devices": devices, "site_settings": _get_settings(request)},
+    )
+
+
+@login_required
+def device_reset_view(request, pk: int):
+    """
+    Deactivate a device fingerprint.
+    Only staff/superusers may reset devices directly.
+    """
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(
+            request,
+            "Self-service resets are not available. Please use paid or ad-based reset options.",
+        )
+        return redirect("users:devices")
+
+    try:
+        device = DeviceFingerprint.objects.get(pk=pk, user=request.user)
+        device.is_active = False
+        device.save(update_fields=["is_active", "last_used_at"])
+        messages.success(request, "Device has been reset/deactivated.")
+    except DeviceFingerprint.DoesNotExist:
+        messages.error(request, "Device not found.")
+    except Exception as exc:
+        logger.exception("device_reset_view failed: %s", exc)
+        messages.error(request, "Unable to reset device right now.")
+    return redirect("users:devices")
+
+
+# ============================================================
 # Auth hub
 # ============================================================
 def auth_hub_view(request):
     """Landing page for login/signup/social auth selection."""
     return render(request, "account/hub.html")
+
+
+# ============================================================
+# Tell Us About You – OAuth / profile onboarding
+# ============================================================
+@login_required
+@require_http_methods(["GET", "POST"])
+def tell_us_about_you(request: HttpRequest):
+    """
+    Onboarding view that runs after social signup (and optionally manual signup)
+    to ensure the user has:
+      • a unique username
+      • a full name
+      • a usable password (required for social accounts)
+    """
+    user = request.user
+
+    if getattr(user, "profile_completed", False):
+        return redirect("users:dashboard")
+
+    if request.method == "POST":
+        form = TellUsAboutYouForm(request.POST, user=user, request=request)
+        if form.is_valid():
+            cleaned = form.cleaned_data
+            update_fields: list[str] = []
+
+            if user.username != cleaned["username"]:
+                user.username = cleaned["username"]
+                update_fields.append("username")
+
+            full_name = cleaned.get("full_name") or ""
+            if getattr(user, "full_name", "") != full_name:
+                user.full_name = full_name
+                update_fields.append("full_name")
+
+            password = cleaned.get("password1") or ""
+            if password:
+                user.set_password(password)
+                update_fields.append("password")
+
+            if hasattr(user, "signup_method") and not user.signup_method:
+                user.signup_method = "social"
+                update_fields.append("signup_method")
+
+            if hasattr(user, "profile_completed") and not user.profile_completed:
+                user.profile_completed = True
+                update_fields.append("profile_completed")
+
+            # Optional referral capture if not already set
+            if hasattr(user, "referred_by") and not user.referred_by:
+                ref_code = (cleaned.get("referral_code") or "").strip().upper()
+                if ref_code:
+                    try:
+                        from apps.users.models import CustomUser  # local import
+
+                        referrer = CustomUser.objects.filter(
+                            referral_code__iexact=ref_code
+                        ).first()
+                        if referrer and referrer != user:
+                            user.referred_by = referrer
+                            update_fields.append("referred_by")
+                    except Exception:
+                        logger.debug("Failed to attach referral during onboarding", exc_info=True)
+
+            if update_fields:
+                user.save(update_fields=update_fields)
+
+            if password:
+                try:
+                    update_session_auth_hash(request, user)
+                except Exception:
+                    pass
+
+            try:
+                messages.success(request, _("Your profile has been completed."))
+            except Exception:
+                pass
+
+            return redirect("users:dashboard")
+    else:
+        initial: Dict[str, Any] = {
+            "username": user.username or "",
+            "full_name": getattr(user, "full_name", "") or "",
+            "referral_code": (request.GET.get("ref") or "").strip().upper(),
+        }
+        form = TellUsAboutYouForm(user=user, request=request, initial=initial)
+
+    return render(request, "users/tell_us_about_you.html", {"form": form})
+
+
+# ============================================================
+# Resend email verification
+# ============================================================
+@login_required
+@require_POST
+def resend_verification(request: HttpRequest) -> JsonResponse:
+    from allauth.account.models import EmailAddress
+    from allauth.account.utils import send_email_confirmation
+
+    email = request.user.email
+    try:
+        email_obj = EmailAddress.objects.get(user=request.user, email=email)
+        if email_obj.verified:
+            return JsonResponse({"ok": False, "error": "already_verified"})
+        send_email_confirmation(request, request.user, email=email)
+        return JsonResponse({"ok": True})
+    except EmailAddress.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "email_not_found"})
+    except Exception as exc:
+        logger.exception("resend_verification failed: %s", exc)
+        return JsonResponse({"ok": False, "error": "server_error"}, status=500)
+
+
+# ============================================================
+# Change username
+# ============================================================
+USERNAME_RE = re.compile(r"^[a-zA-Z0-9._-]{3,32}$")
+
+
+@login_required
+@require_POST
+def change_username(request: HttpRequest) -> JsonResponse:
+    new_username = (request.POST.get("username") or "").strip()
+    if not USERNAME_RE.match(new_username):
+        return JsonResponse({"ok": False, "error": "invalid_username"}, status=400)
+
+    User = get_user_model()
+    if User.objects.filter(username__iexact=new_username).exists():
+        return JsonResponse({"ok": False, "error": "taken"}, status=409)
+
+    try:
+        request.user.username = new_username
+        request.user.save(update_fields=["username"])
+        return JsonResponse({"ok": True})
+    except Exception as exc:
+        logger.exception("change_username failed: %s", exc)
+        return JsonResponse({"ok": False, "error": "server_error"}, status=500)

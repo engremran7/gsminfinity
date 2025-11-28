@@ -1,4 +1,13 @@
-{% extends "login.html" %}
-{% load static %}
-{% block title %}Account Login — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
-{# login.html acts as wrapper here; no extra content required #}
+{% extends "account/auth_form.html" %}
+
+{% block auth_title %}Login — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block auth_heading %}Sign in{% endblock %}
+{% block auth_description %}Access your account to continue.{% endblock %}
+{% block auth_action %}{% url 'account_login' %}{% endblock %}
+{% block auth_submit_label %}Sign in{% endblock %}
+{% block auth_secondary %}
+  <div class="flex items-center justify-between mt-4 text-sm">
+    <a href="{% url 'account_reset_password' %}" class="text-primary">Forgot password?</a>
+    <a href="{% url 'account_signup' %}" class="text-slate-600">Create account</a>
+  </div>
+{% endblock %}

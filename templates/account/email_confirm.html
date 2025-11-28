@@ -1,0 +1,14 @@
+{% extends "account/auth_form.html" %}
+{% block auth_title %}Confirm email — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block auth_heading %}Confirm your email{% endblock %}
+{% block auth_description %}{% if confirmation %}Click confirm to activate {{ confirmation.email_address.email }}.{% else %}Invalid or expired link.{% endif %}{% endblock %}
+{% block auth_form %}
+  {% if confirmation %}
+    <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="space-y-4">
+      {% csrf_token %}
+      <button type="submit" class="bg-primary text-white px-4 py-2 rounded w-full">Confirm email</button>
+    </form>
+  {% else %}
+    <p class="text-sm text-slate-600">Request a new confirmation email from your profile.</p>
+  {% endif %}
+{% endblock %}

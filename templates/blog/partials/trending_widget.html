@@ -1,0 +1,15 @@
+{% if posts %}
+  <ul class="space-y-2 text-sm">
+    {% for p in posts %}
+      <li class="flex items-start gap-2">
+        <span class="mt-1 inline-block w-2 h-2 rounded-full {% if p.featured %}bg-emerald-500{% else %}bg-primary/70{% endif %}"></span>
+        <div>
+          <a href="{% url 'blog:post_detail' slug=p.slug %}" class="text-slate-800 hover:text-primary">{{ p.title }}</a>
+          <div class="text-xs text-slate-500">{{ p.published_at|date:"M j, Y"|default:"Draft" }}</div>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <div class="text-sm text-slate-500">No trending posts yet.</div>
+{% endif %}

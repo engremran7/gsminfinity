@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Account Access — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-12 text-center">
+  <div class="bg-white shadow rounded-lg p-6 space-y-4">
+    <h3 class="text-lg font-semibold text-slate-900">Welcome</h3>
+    <p class="text-sm text-slate-600">Choose how you want to continue.</p>
+    <div class="space-y-2">
+      <a href="{% url 'account_login' %}" class="block bg-primary text-white px-4 py-2 rounded">Sign in</a>
+      <a href="{% url 'account_signup' %}" class="block border border-primary text-primary px-4 py-2 rounded">Create account</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

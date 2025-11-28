@@ -15,15 +15,14 @@ Features:
 from __future__ import annotations
 
 import logging
-from typing import Optional, Dict, Any, List
 from datetime import timedelta
+from typing import Any, Dict, List, Optional
 
-from django.utils import timezone
-from django.db import transaction
-from django.core.exceptions import ValidationError
-
-from apps.users.models import DeviceFingerprint, CustomUser
 from apps.site_settings.models import SiteSettings
+from apps.users.models import CustomUser, DeviceFingerprint
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +141,9 @@ def enforce_device_limit(user: CustomUser) -> bool:
 
     # Admin bypass
     if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
-        logger.debug("Device limit bypassed for admin user: %s", getattr(user, "email", user.pk))
+        logger.debug(
+            "Device limit bypassed for admin user: %s", getattr(user, "email", user.pk)
+        )
         return True
 
     try:
@@ -150,7 +151,9 @@ def enforce_device_limit(user: CustomUser) -> bool:
         limit = int(getattr(settings_obj, "max_devices_per_user", 3))
         mode = str(getattr(settings_obj, "fingerprint_mode", "strict")).lower()
     except Exception as exc:
-        logger.warning("SiteSettings unavailable; using defaults for device limits: %s", exc)
+        logger.warning(
+            "SiteSettings unavailable; using defaults for device limits: %s", exc
+        )
         limit, mode = 3, "strict"
 
     # Lock the active device rows for this user to avoid races
@@ -164,7 +167,12 @@ def enforce_device_limit(user: CustomUser) -> bool:
         count = active_qs.count()
 
         if count < limit:
-            logger.debug("User %s within device limit (%d/%d)", getattr(user, "email", user.pk), count, limit)
+            logger.debug(
+                "User %s within device limit (%d/%d)",
+                getattr(user, "email", user.pk),
+                count,
+                limit,
+            )
             return True
 
         if mode == "lenient":
@@ -173,7 +181,10 @@ def enforce_device_limit(user: CustomUser) -> bool:
             oldest_devices = list(active_qs[:to_remove])  # evaluated within transaction
             if not oldest_devices:
                 # Unexpected, but fail-safe allow
-                logger.warning("No devices found to evict for user %s despite count exceeded", getattr(user, "email", user.pk))
+                logger.warning(
+                    "No devices found to evict for user %s despite count exceeded",
+                    getattr(user, "email", user.pk),
+                )
                 return False
             try:
                 for d in oldest_devices:
@@ -186,7 +197,11 @@ def enforce_device_limit(user: CustomUser) -> bool:
                 )
                 return True
             except Exception as exc:
-                logger.exception("Device eviction failed for %s: %s", getattr(user, "email", user.pk), exc)
+                logger.exception(
+                    "Device eviction failed for %s: %s",
+                    getattr(user, "email", user.pk),
+                    exc,
+                )
                 return False
 
         # Strict mode: block
@@ -218,17 +233,37 @@ def record_device_fingerprint(
 
     fingerprint_hash = (
         fingerprint_data.get("fingerprint_hash")
-        or (getattr(request, "POST", {}).get("device_fp") if hasattr(request, "POST") else None)
-        or (getattr(request, "COOKIES", {}).get("device_fp") if hasattr(request, "COOKIES") else None)
-        or (getattr(request, "META", {}).get("HTTP_USER_AGENT") if getattr(request, "META", None) else None)
+        or (
+            getattr(request, "POST", {}).get("device_fp")
+            if hasattr(request, "POST")
+            else None
+        )
+        or (
+            getattr(request, "COOKIES", {}).get("device_fp")
+            if hasattr(request, "COOKIES")
+            else None
+        )
+        or (
+            getattr(request, "META", {}).get("HTTP_USER_AGENT")
+            if getattr(request, "META", None)
+            else None
+        )
     )
 
     if not fingerprint_hash:
         raise ValidationError("record_device_fingerprint: missing fingerprint_hash")
 
-    os_info = fingerprint_data.get("os_info") or (getattr(request, "META", {}).get("HTTP_USER_AGENT", "")[:100] if getattr(request, "META", None) else "")
+    os_info = fingerprint_data.get("os_info") or (
+        getattr(request, "META", {}).get("HTTP_USER_AGENT", "")[:100]
+        if getattr(request, "META", None)
+        else ""
+    )
     motherboard_id = fingerprint_data.get("motherboard_id") or ""
-    browser_info = fingerprint_data.get("browser_info") or (getattr(request, "META", {}).get("HTTP_USER_AGENT", "")[:255] if getattr(request, "META", None) else "")
+    browser_info = fingerprint_data.get("browser_info") or (
+        getattr(request, "META", {}).get("HTTP_USER_AGENT", "")[:255]
+        if getattr(request, "META", None)
+        else ""
+    )
 
     # Enforce device limit (admin bypass included)
     allowed = enforce_device_limit(user)
@@ -243,8 +278,16 @@ def record_device_fingerprint(
         browser_info=browser_info,
     )
 
-    user_type = "admin" if (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)) else "user"
-    logger.debug("record_device_fingerprint: device recorded for %s (%s)", getattr(user, "email", user.pk), user_type)
+    user_type = (
+        "admin"
+        if (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False))
+        else "user"
+    )
+    logger.debug(
+        "record_device_fingerprint: device recorded for %s (%s)",
+        getattr(user, "email", user.pk),
+        user_type,
+    )
     return device
 
 
@@ -259,11 +302,17 @@ def get_admin_device_stats() -> Dict[str, Dict[str, Any]]:
     stats: Dict[str, Dict[str, Any]] = {}
     admins = CustomUser.objects.filter(is_staff=True).only("id", "email")
     for user in admins:
-        devices_qs = DeviceFingerprint.objects.filter(user=user, is_active=True).only("fingerprint_hash", "last_used_at", "os_info", "browser_info")
+        devices_qs = DeviceFingerprint.objects.filter(user=user, is_active=True).only(
+            "fingerprint_hash", "last_used_at", "os_info", "browser_info"
+        )
         stats_key = user.email or f"User#{user.pk}"
         stats[stats_key] = {
             "total_devices": devices_qs.count(),
-            "devices": list(devices_qs.values("fingerprint_hash", "last_used_at", "os_info", "browser_info")),
+            "devices": list(
+                devices_qs.values(
+                    "fingerprint_hash", "last_used_at", "os_info", "browser_info"
+                )
+            ),
         }
     return stats
 
@@ -278,12 +327,18 @@ def cleanup_old_admin_devices(days_old: int = 30) -> int:
 
     admins = CustomUser.objects.filter(is_staff=True).only("id", "email")
     for user in admins:
-        old_devices_qs = DeviceFingerprint.objects.filter(user=user, last_used_at__lt=cutoff_date)
+        old_devices_qs = DeviceFingerprint.objects.filter(
+            user=user, last_used_at__lt=cutoff_date
+        )
         count = old_devices_qs.count()
         if count:
             old_devices_qs.delete()
             deleted_total += count
-            logger.info("Cleaned %d old devices for admin %s", count, user.email or f"User#{user.pk}")
+            logger.info(
+                "Cleaned %d old devices for admin %s",
+                count,
+                user.email or f"User#{user.pk}",
+            )
 
     logger.info("Total admin devices cleaned: %d", deleted_total)
     return deleted_total

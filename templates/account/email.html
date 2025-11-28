@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Email settings — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto py-12">
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-medium mb-3">Email addresses</h3>
+    <p class="text-sm text-slate-600 mb-4">Manage and verify your email addresses.</p>
+    {% if user.emailaddress_set.all %}
+      <ul class="space-y-2">
+        {% for emailaddress in user.emailaddress_set.all %}
+          <li class="flex items-center justify-between text-sm text-slate-800">
+            <span>{{ emailaddress.email }}{% if emailaddress.primary %} (primary){% endif %}</span>
+            {% if not emailaddress.verified %}
+              <form method="post" action="{% url 'account_email' %}">
+                {% csrf_token %}
+                <input type="hidden" name="email" value="{{ emailaddress.email }}">
+                <button type="submit" name="action_send" class="text-primary">Send verification</button>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-sm text-slate-600">No email addresses on file.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

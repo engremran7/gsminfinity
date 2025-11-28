@@ -1,0 +1,9 @@
+{% extends "account/auth_base.html" %}
+{% block auth_title %}Signups closed — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block auth_heading %}Signups are currently closed{% endblock %}
+{% block auth_description %}Please check back later.{% endblock %}
+{% block auth_body %}
+<div class="text-center">
+  <a href="{% url 'account_login' %}" class="text-primary text-sm">Return to login</a>
+</div>
+{% endblock %}

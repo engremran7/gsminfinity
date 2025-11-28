@@ -17,14 +17,14 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from django.shortcuts import render, redirect
-from django.http import JsonResponse, Http404, HttpRequest, HttpResponse
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.cache import cache
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
+from django.utils.functional import SimpleLazyObject
 from django.views.decorators.cache import cache_page
 from django.views.decorators.http import require_GET
 from django.views.decorators.vary import vary_on_headers
-from django.utils.functional import SimpleLazyObject
 
 from .models import SiteSettings, TenantSiteSettings
 
@@ -34,6 +34,7 @@ log = logging.getLogger(__name__)
 # =====================================================================================
 # INTERNAL: SETTINGS SNAPSHOT SERIALIZER (stable & safe)
 # =====================================================================================
+
 
 def _settings_snapshot(obj: Any) -> Dict[str, Any]:
     """
@@ -53,6 +54,27 @@ def _settings_snapshot(obj: Any) -> Dict[str, Any]:
             "rate_limit_window_seconds": int(
                 getattr(obj, "rate_limit_window_seconds", 300)
             ),
+            "enable_tenants": bool(getattr(obj, "enable_tenants", False)),
+            "enable_blog": bool(getattr(obj, "enable_blog", True)),
+            "enable_blog_comments": bool(
+                getattr(obj, "enable_blog_comments", True)
+            ),
+            # Branding / theme keys used by base.html and JS bootstrap
+            "primary_color": getattr(obj, "primary_color", "#0d6efd"),
+            "secondary_color": getattr(obj, "secondary_color", "#6c757d"),
+            "logo": (
+                getattr(obj, "logo", None).url if getattr(obj, "logo", None) else None
+            ),
+            "dark_logo": (
+                getattr(obj, "dark_logo", None).url
+                if getattr(obj, "dark_logo", None)
+                else None
+            ),
+            "favicon": (
+                getattr(obj, "favicon", None).url
+                if getattr(obj, "favicon", None)
+                else None
+            ),
             "meta_tags": [],
             "verification_files": [],
         }
@@ -67,7 +89,10 @@ def _settings_snapshot(obj: Any) -> Dict[str, Any]:
                     payload["meta_tags"] = list(meta.values("name", "content"))
                 else:
                     payload["meta_tags"] = [
-                        {"name": getattr(m, "name", ""), "content": getattr(m, "content", "")}
+                        {
+                            "name": getattr(m, "name", ""),
+                            "content": getattr(m, "content", ""),
+                        }
                         for m in meta
                     ]
             except Exception:
@@ -110,6 +135,11 @@ def _settings_snapshot(obj: Any) -> Dict[str, Any]:
             "require_mfa": False,
             "max_login_attempts": 5,
             "rate_limit_window_seconds": 300,
+            "primary_color": "#0d6efd",
+            "secondary_color": "#6c757d",
+            "logo": None,
+            "dark_logo": None,
+            "favicon": None,
             "meta_tags": [],
             "verification_files": [],
         }
@@ -118,6 +148,7 @@ def _settings_snapshot(obj: Any) -> Dict[str, Any]:
 # =====================================================================================
 # INTERNAL: TENANT-AWARE SETTINGS RESOLVER (stable)
 # =====================================================================================
+
 
 def _get_settings(request: Optional[HttpRequest] = None) -> Dict[str, Any]:
     """
@@ -176,6 +207,7 @@ def _get_settings(request: Optional[HttpRequest] = None) -> Dict[str, Any]:
 # PUBLIC JSON API
 # =====================================================================================
 
+
 @require_GET
 @vary_on_headers("Host")
 @cache_page(60)
@@ -204,6 +236,7 @@ def settings_info(request: HttpRequest) -> JsonResponse:
         json_dumps_params={"indent": 2},
     )
 
+
 # ⭐⭐⭐ CRITICAL: URL COMPATIBILITY ALIAS ⭐⭐⭐
 # Your project references views.info → so we alias it.
 info = settings_info
@@ -212,6 +245,7 @@ info = settings_info
 # =====================================================================================
 # ADMIN DIAGNOSTIC VIEW
 # =====================================================================================
+
 
 @require_GET
 @vary_on_headers("Host")
@@ -233,6 +267,7 @@ def site_settings_view(request: HttpRequest) -> HttpResponse:
 # =====================================================================================
 # PUBLIC — POLICY PAGES
 # =====================================================================================
+
 
 @require_GET
 @vary_on_headers("Host")
@@ -271,6 +306,7 @@ def cookies_policy(request: HttpRequest) -> HttpResponse:
 # =====================================================================================
 # PUBLIC — VERIFICATION FILE SERVING
 # =====================================================================================
+
 
 @require_GET
 def verification_file(request: HttpRequest, filename: str) -> HttpResponse:

@@ -4,11 +4,7 @@ import logging
 from typing import Any, Dict
 
 from django.contrib.auth.decorators import login_required
-from django.http import (
-    JsonResponse,
-    HttpRequest,
-    HttpResponse,
-)
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
@@ -65,11 +61,14 @@ def notification_detail(request: HttpRequest, pk: int) -> HttpResponse:
 @login_required
 @require_GET
 def notification_list(request: HttpRequest) -> HttpResponse:
+    scope = (request.GET.get("scope") or "all").lower()
     qs = Notification.objects.filter(recipient=request.user).order_by("-created_at")
+    if scope == "unread":
+        qs = qs.filter(is_read=False)
     return render(
         request,
         "users/notifications/list.html",
-        {"notifications": qs},
+        {"notifications": qs, "scope": scope},
     )
 
 
