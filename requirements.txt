@@ -1,3 +1,4 @@
+            
 anyio
 asgiref
 certifi
@@ -5,11 +6,14 @@ cffi
 charset-normalizer
 click
 colorama
+crispy-bootstrap5
 cryptography
 diff-match-patch
 Django
 django-allauth
 django-countries
+django-crispy-forms
+django-extensions
 django-import-export
 django-solo
 et_xmlfile
@@ -17,11 +21,18 @@ gunicorn
 h11
 httptools
 idna
+iniconfig
+Markdown
+MarkupSafe
 openpyxl
 packaging
 pillow
+pluggy
 pycparser
+Pygments
 PyJWT
+pyOpenSSL
+pytest
 python-dotenv
 PyYAML
 requests
@@ -34,3 +45,5 @@ urllib3
 uvicorn
 watchfiles
 websockets
+Werkzeug
+whitenoise
