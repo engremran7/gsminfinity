@@ -27,6 +27,23 @@ def sanitize_html(html: str, allowed_tags: Iterable[str] | None = None, allowed_
         return re.sub(r"<[^>]+>", "", html)
     tags = allowed_tags or ["p", "br", "strong", "em", "ul", "ol", "li", "a", "code"]
     attrs = allowed_attrs or {"a": ["href", "title", "rel", "target"]}
-    return bleach.clean(html, tags=tags, attributes=attrs, strip=True)
+    cleaned = bleach.clean(html, tags=tags, attributes=attrs, strip=True, protocols=["http", "https", "mailto"])
+    # Harden links: drop javascript/data schemes that might slip through, and enforce rel on target _blank
+    def _sanitize_anchor(attrs, new=False):
+        href = attrs.get("href", "")
+        if href and not href.startswith(("http://", "https://", "mailto:")):
+            attrs.pop("href", None)
+        if attrs.get("target") == "_blank":
+            attrs["rel"] = "nofollow noopener noreferrer"
+        return attrs
+
+    return bleach.clean(
+        cleaned,
+        tags=tags,
+        attributes=attrs,
+        strip=True,
+        protocols=["http", "https", "mailto"],
+        filters=[bleach.sanitizer.AttributeFilter(_sanitize_anchor)],
+    )
 
 
