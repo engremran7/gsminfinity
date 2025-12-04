@@ -13,7 +13,7 @@
     <form method="post" action="{% url 'users:profile' %}" class="space-y-4">
       {% csrf_token %}
       <input type="hidden" name="action" value="update_full_name" />
-      <input type="text" name="full_name" value="{{ user.full_name|default_if_none:'' }}" class="w-full border rounded px-3 py-2" placeholder="Full name" />
+      <input type="text" name="full_name" value="{{ user.full_name|default_if_none:'' }}" class="w-full border rounded px-3 py-2 text-slate-900 placeholder:text-slate-500" placeholder="Full name" />
       <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Save</button>
     </form>
   </div>
@@ -23,7 +23,7 @@
     <form method="post" action="{% url 'users:change_username' %}" id="username-form" class="space-y-2">
       {% csrf_token %}
       <div class="flex items-center space-x-2">
-        <input type="text" id="username-input" name="username" value="{{ user.username|default_if_none:'' }}" class="flex-1 border rounded px-3 py-2" placeholder="New username" />
+        <input type="text" id="username-input" name="username" value="{{ user.username|default_if_none:'' }}" class="flex-1 border rounded px-3 py-2 text-slate-900 placeholder:text-slate-500" placeholder="New username" />
         <span id="username-status" class="text-sm text-slate-500"></span>
       </div>
       <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Change username</button>
