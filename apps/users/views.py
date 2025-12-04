@@ -545,12 +545,26 @@ def change_username(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"ok": False, "error": "invalid_username"}, status=400)
 
     User = get_user_model()
-    if User.objects.filter(username__iexact=new_username).exists():
+    # Allow current username
+    if new_username.lower() != (request.user.username or "").lower() and User.objects.filter(username__iexact=new_username).exists():
         return JsonResponse({"ok": False, "error": "taken"}, status=409)
 
+    # Enforce change limits: max 2 per calendar year
+    now = timezone.now()
+    user = request.user
+    if user.username_last_changed_at and user.username_last_changed_at.year == now.year:
+        if (user.username_changes_this_year or 0) >= 2:
+            return JsonResponse({"ok": False, "error": "limit_reached"}, status=429)
+
     try:
-        request.user.username = new_username
-        request.user.save(update_fields=["username"])
+        user.username = new_username
+        # Reset counters if new year
+        if not user.username_last_changed_at or user.username_last_changed_at.year != now.year:
+            user.username_changes_this_year = 1
+        else:
+            user.username_changes_this_year = (user.username_changes_this_year or 0) + 1
+        user.username_last_changed_at = now
+        user.save(update_fields=["username", "username_changes_this_year", "username_last_changed_at"])
         return JsonResponse({"ok": True})
     except Exception as exc:
         logger.exception("change_username failed: %s", exc)
@@ -569,4 +583,10 @@ def check_username(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"ok": True, "same": True})
     if User.objects.filter(username__iexact=new_username).exists():
         return JsonResponse({"ok": False, "error": "taken"}, status=409)
-    return JsonResponse({"ok": True})
+    # Pre-calculate if limit reached
+    now = timezone.now()
+    user = request.user
+    limit_reached = False
+    if user.username_last_changed_at and user.username_last_changed_at.year == now.year:
+        limit_reached = (user.username_changes_this_year or 0) >= 2
+    return JsonResponse({"ok": True, "limit_reached": limit_reached})

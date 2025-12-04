@@ -28,7 +28,7 @@
       </div>
       <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Change username</button>
     </form>
-    <p class="text-xs text-slate-500 mt-2">Usernames must be 3-32 chars, letters/numbers/._-</p>
+    <p class="text-xs text-slate-500 mt-2">Usernames must be 3-32 chars, letters/numbers/._- (max 2 changes per year).</p>
   </div>
 
   <div class="bg-white shadow rounded-lg p-6">
@@ -69,9 +69,15 @@
       });
       const data = await resp.json();
       if (data.ok) {
-        setStatus("Available", "text-green-600");
+        if (data.limit_reached) {
+          setStatus("Change limit reached (2 per year).", "text-red-600");
+        } else {
+          setStatus("Available", "text-green-600");
+        }
       } else if (data.error === "taken") {
         setStatus("Taken", "text-red-600");
+      } else if (data.error === "limit_reached") {
+        setStatus("Change limit reached (2 per year).", "text-red-600");
       } else {
         setStatus("Unavailable", "text-red-600");
       }

@@ -108,6 +108,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(
         max_length=150, unique=True, null=True, blank=True, db_index=True
     )
+    username_changes_this_year = models.PositiveIntegerField(default=0)
+    username_last_changed_at = models.DateTimeField(null=True, blank=True)
     full_name = models.CharField(max_length=150, blank=True, default="")
 
     # Profile
