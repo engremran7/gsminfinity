@@ -123,6 +123,18 @@ CACHES = {
     }
 }
 
+# ============================================================
+# Security headers (Content-Security-Policy extras)
+# ============================================================
+SECURITY_SCRIPT_SRC_EXTRA = ()
+SECURITY_STYLE_SRC_EXTRA = ()
+SECURITY_CONNECT_SRC_EXTRA = ()
+SECURITY_FRAME_SRC_EXTRA = (
+    "https://www.youtube.com/",
+    "https://www.youtube-nocookie.com/",
+    "https://player.vimeo.com/",
+)
+
 
 # ============================================================
 # Password Hashers (secure, still suitable for development)
