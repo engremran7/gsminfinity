@@ -1,17 +1,17 @@
 
 {% extends "base.html" %}
 {% load static form_tags %}
-{% block title %}New Post - {{ site_settings.site_name|default:"Site" }}{% endblock %}
+{% block title %}{% if editing %}Edit Post{% else %}New Post{% endif %} - {{ site_settings.site_name|default:"Site" }}{% endblock %}
 {% block meta_description %}Compose a new blog post with AI-assisted title and summary suggestions.{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
   <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
     <div>
-      <p class="text-xs uppercase tracking-wide text-primary font-semibold">Create</p>
+      <p class="text-xs uppercase tracking-wide text-primary font-semibold">{% if editing %}Edit{% else %}Create{% endif %}</p>
       <h1 class="text-3xl font-bold text-slate-900 inline-flex items-center gap-2">
         <svg class="icon w-5 h-5" aria-hidden="true"><use href="#icon-pencil"></use></svg>
-        New Post
+        {% if editing %}Edit Post{% else %}New Post{% endif %}
       </h1>
       <p class="text-sm text-slate-600">Use AI to jump-start your title and summary.</p>
     </div>
@@ -24,6 +24,7 @@
   <form method="post" class="space-y-5 bg-white border border-slate-200 rounded-xl p-6 shadow-sm" data-autosave-url="{% url 'blog:post_autosave' %}" data-preview-url="{% url 'blog:post_preview' %}">
     {% csrf_token %}
     <input type="hidden" name="post_id" value="{{ form.instance.id|default_if_none:'' }}">
+    {% if editing_post %}<input type="hidden" name="edit" value="{{ editing_post.slug }}">{% endif %}
 
     <div class="space-y-6">
       <div>

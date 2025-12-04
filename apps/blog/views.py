@@ -396,11 +396,19 @@ def post_create(request: HttpRequest) -> HttpResponse:
     if not allowed and not (allow_user_posts and request.user.is_authenticated):
         raise Http404()
 
+    edit_slug = request.GET.get("edit") or request.POST.get("edit")
+    instance = None
+    if edit_slug:
+        instance = get_object_or_404(Post, slug__iexact=edit_slug)
+        if not (request.user.is_staff or request.user.is_superuser or instance.author == request.user):
+            raise Http404()
+
     if request.method == "POST":
-        form = PostForm(request.POST)
+        form = PostForm(request.POST, instance=instance)
         if form.is_valid():
             post = form.save(commit=False)
-            post.author = request.user
+            if not instance:
+                post.author = request.user
             with transaction.atomic():
                 post.save()
                 form.save_m2m()
@@ -417,11 +425,11 @@ def post_create(request: HttpRequest) -> HttpResponse:
                         "status": post.status,
                     },
                 )
-            messages.success(request, "Post saved.")
+            messages.success(request, "Post updated." if instance else "Post saved.")
             return redirect("blog:post_detail", slug=post.slug)
     else:
-        form = PostForm()
-    return render(request, "blog/post_form.html", {"form": form})
+        form = PostForm(instance=instance)
+    return render(request, "blog/post_form.html", {"form": form, "editing": bool(instance), "editing_post": instance})
 
 
 def api_posts(request: HttpRequest) -> JsonResponse:
