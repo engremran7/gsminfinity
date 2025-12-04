@@ -130,6 +130,8 @@ def post_list(request: HttpRequest) -> HttpResponse:
     category_slug = request.GET.get("category", "").strip()
     author = request.GET.get("author", "").strip()
     status_filter = (request.GET.get("status") or "").strip().lower()
+    date_from = request.GET.get("from") or ""
+    date_to = request.GET.get("to") or ""
 
     if q:
         posts = posts.filter(Q(title__icontains=q) | Q(body__icontains=q) | Q(summary__icontains=q))
@@ -139,6 +141,18 @@ def post_list(request: HttpRequest) -> HttpResponse:
         posts = posts.filter(category__slug=category_slug)
     if author:
         posts = posts.filter(author__username=author)
+    if date_from:
+        try:
+            df = timezone.datetime.fromisoformat(date_from)
+            posts = posts.filter(publish_at__gte=df)
+        except Exception:
+            pass
+    if date_to:
+        try:
+            dt = timezone.datetime.fromisoformat(date_to)
+            posts = posts.filter(publish_at__lte=dt)
+        except Exception:
+            pass
 
     posts = posts.prefetch_related("tags")
 
@@ -191,6 +205,9 @@ def post_list(request: HttpRequest) -> HttpResponse:
         "active_tag": tag,
         "active_category": category_slug,
         "active_author": author,
+        "date_from": date_from,
+        "date_to": date_to,
+        "categories": Category.objects.all().order_by("name"),
     }
     return render(request, "blog/post_list.html", context)
 
@@ -305,6 +322,17 @@ def bulk_publish(request: HttpRequest) -> HttpResponse:
             post.published_at = timezone.now()
             post.save(update_fields=["status", "publish_at", "published_at", "updated_at"])
             updated += 1
+    try:
+        log_event(
+            logger,
+            "info",
+            "blog.bulk_publish",
+            actor=request.user.pk,
+            count=updated,
+            ids=",".join(ids),
+        )
+    except Exception:
+        logger.debug("bulk_publish audit log failed", exc_info=True)
     messages.success(request, f"Published {updated} posts.")
     return redirect("blog:manage_posts")
 

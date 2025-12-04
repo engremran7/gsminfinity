@@ -19,11 +19,22 @@
           <p class="text-xs text-slate-500">Ads and SEO obey global toggles; internal links and meta stay stable unless you trigger updates.</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap justify-end">
-          <form method="get" class="flex items-center gap-2">
+          <form method="get" class="flex items-center gap-2 flex-wrap">
             <label class="visually-hidden" for="search">Search</label>
             <input id="search" name="q" value="{{ q|default_if_none:'' }}" placeholder="Search posts..."
               class="w-48 sm:w-60 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" />
+            <select name="category" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm">
+              <option value="">All categories</option>
+              {% for c in categories %}
+                <option value="{{ c.slug }}" {% if active_category == c.slug %}selected{% endif %}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+            <input type="date" name="from" value="{{ date_from }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm" aria-label="From date">
+            <input type="date" name="to" value="{{ date_to }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm" aria-label="To date">
             <button type="submit" class="btn-outline text-sm px-3 py-2 rounded-md border border-slate-300">Search</button>
+            {% if q or active_category or active_tag or active_status or active_author or date_from or date_to %}
+              <a href="{% url 'blog:post_list' %}" class="text-xs text-slate-600 underline">Clear</a>
+            {% endif %}
           </form>
           <div class="flex items-center gap-2 text-xs">
             {% for st,label in ('','All'),('published','Published'),('scheduled','Scheduled'),('draft','Drafts') %}

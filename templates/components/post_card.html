@@ -23,6 +23,12 @@
       </h2>
     {% if meta %}<p class="text-xs text-slate-500">{{ meta }}</p>{% endif %}
     <div class="flex flex-wrap gap-2 text-[11px] text-slate-600">
+      <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+        {{ published_at|default:"" }}
+      </span>
+      {% if reading_time %}
+        <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{{ reading_time }} min read</span>
+      {% endif %}
       <span class="px-2 py-0.5 rounded-full {% if tags %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">
         Tags {% if tags %}ready{% else %}missing{% endif %}
       </span>
