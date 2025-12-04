@@ -208,6 +208,12 @@ def post_list(request: HttpRequest) -> HttpResponse:
         "date_from": date_from,
         "date_to": date_to,
         "categories": Category.objects.all().order_by("name"),
+        "status_filters": [
+            ("", "All"),
+            (PostStatus.PUBLISHED, "Published"),
+            (PostStatus.SCHEDULED, "Scheduled"),
+            (PostStatus.DRAFT, "Drafts"),
+        ],
     }
     return render(request, "blog/post_list.html", context)
 

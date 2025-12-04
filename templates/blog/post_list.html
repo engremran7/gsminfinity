@@ -37,7 +37,7 @@
             {% endif %}
           </form>
           <div class="flex items-center gap-2 text-xs">
-            {% for st,label in ('','All'),('published','Published'),('scheduled','Scheduled'),('draft','Drafts') %}
+            {% for st,label in status_filters %}
               {% with is_active=active_status|default:'' == st %}
                 <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if active_tag %}tag={{ active_tag|urlencode }}&{% endif %}{% if active_category %}category={{ active_category|urlencode }}&{% endif %}{% if author %}author={{ author|urlencode }}&{% endif %}{% if st %}status={{ st }}{% endif %}"
                    class="inline-flex items-center px-3 py-1.5 rounded-full border {% if is_active %}bg-primary text-white border-primary{% else %}bg-white text-slate-700 border-slate-200{% endif %}">
