@@ -14,6 +14,7 @@ from django.utils import timezone
 from django.contrib.contenttypes.models import ContentType
 
 import hashlib
+import logging
 
 from apps.core.views import _get_site_settings_snapshot
 from apps.core.app_service import AppService
@@ -28,6 +29,7 @@ from apps.core import ai_client
 from apps.blog.services import ai_editor, workflow
 from apps.core.utils.logging import log_event
 
+logger = logging.getLogger(__name__)
 
 def _sync_tag_usage(tags_qs):
     for tag in tags_qs:
