@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}AI Ops{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900">AI Operations</h1>
+    <p class="text-sm text-slate-600">Active workflows, pipeline runs, and model endpoints.</p>
+  </div>
+  <div class="grid lg:grid-cols-3 gap-4">
+    <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-2 lg:col-span-1">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-800">Workflows</h2>
+        <span class="text-xs text-slate-500">{{ workflows|length }} items</span>
+      </div>
+      <div class="space-y-2 text-sm">
+        {% for wf in workflows %}
+          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div class="font-semibold text-slate-900">{{ wf.name }}</div>
+            <div class="text-[11px] text-slate-600">Active: {{ wf.is_active|yesno:"Yes,No" }}</div>
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-500">No workflows.</p>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-2 lg:col-span-1">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-800">Endpoints</h2>
+        <span class="text-xs text-slate-500">{{ endpoints|length }} items</span>
+      </div>
+      <div class="space-y-2 text-sm">
+        {% for ep in endpoints %}
+          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div class="font-semibold text-slate-900">{{ ep.name }}</div>
+            <div class="text-[11px] text-slate-600">Kind: {{ ep.kind|default:"-" }} • Model: {{ ep.model_name|default:"-" }}</div>
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-500">No endpoints.</p>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-2 lg:col-span-1">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-800">Recent runs</h2>
+        <span class="text-xs text-slate-500">{{ runs|length }} items</span>
+      </div>
+      <div class="space-y-2 text-sm">
+        {% for r in runs %}
+          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div class="font-semibold text-slate-900">{{ r.workflow.name|default:"-" }}</div>
+            <div class="text-[11px] text-slate-600">Status: {{ r.status }} • {{ r.started_at|date:"M j, Y H:i" }}</div>
+          </div>
+        {% empty %}
+          <p class="text-sm text-slate-500">No runs.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

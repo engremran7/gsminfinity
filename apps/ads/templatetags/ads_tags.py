@@ -8,15 +8,13 @@ from django.template.loader import render_to_string
 from apps.ads.models import AdPlacement
 from apps.core.cache import cache
 from apps.core.utils import feature_flags
-from apps.site_settings.models import SiteSettings
 
 register = template.Library()
 
 
 def _ads_enabled() -> bool:
     try:
-        ss = SiteSettings.get_solo()
-        return bool(getattr(ss, "ads_enabled", False))
+        return feature_flags.ads_enabled()
     except Exception:
         return False
 
@@ -27,7 +25,7 @@ def render_ad_slot(context, slug: str, allowed_types: str = "", allowed_sizes: s
     Render an ad slot placeholder. Uses placement config when ads are enabled.
     Respects site feature flags and consent (if present on request).
     """
-    if not _ads_enabled() or not feature_flags.ads_enabled():
+    if not _ads_enabled():
         return ""
 
     request = context.get("request")

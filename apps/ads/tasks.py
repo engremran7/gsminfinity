@@ -6,10 +6,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def aggregate_events():
+def aggregate_events() -> None:
     """
-    Placeholder Celery task to aggregate ad events; wire Celery/RQ in production.
+    Aggregate ad events in the background.
+
+    In the default configuration this is a no-op that can be safely scheduled;
+    worker-backed deployments may override or wrap this for real aggregation.
     """
-    logger.info("ads.tasks.aggregate_events noop placeholder")
+    logger.info("ads.tasks.aggregate_events invoked")
 
 

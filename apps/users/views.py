@@ -283,6 +283,10 @@ class EnterpriseSignupView(SignupView):
 def verify_email_view(request):
     """Manual verification for MFA / email confirmation."""
     user = request.user
+    # If already verified, skip the page and continue to dashboard
+    if getattr(user, "email_verified_at", None):
+        return redirect("users:dashboard")
+
     if request.method == "POST":
         code = request.POST.get("code", "").strip()
         if not code:

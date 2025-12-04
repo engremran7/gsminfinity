@@ -83,12 +83,6 @@
     {# ------------------------------------------------------------------ #}
     {# CONSENT BANNER SLOT (required by loader) #}
     {# ------------------------------------------------------------------ #}
-    {% if request.path|default:''|slice:":10" == '/accounts/' %}
-    <script nonce="{{ request.csp_nonce }}">
-      // Disable auto-loading the consent banner on auth screens to avoid repeated fetches
-      window.CONSENT_CONFIG = Object.assign(window.CONSENT_CONFIG || {}, { autoLoad: false });
-    </script>
-    {% endif %}
     <div id="consent-banner-slot"></div>
 
     {# ------------------------------------------------------------------ #}

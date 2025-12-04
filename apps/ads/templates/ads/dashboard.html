@@ -13,7 +13,17 @@
     </div>
   </div>
 
-  <div class="grid md:grid-cols-2 gap-4">
+  <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <h2 class="text-sm font-semibold text-slate-800">Consent & toggles</h2>
+      <p class="text-xs text-slate-500 mb-2">Ads only fire when consent is granted.</p>
+      <dl class="grid grid-cols-2 gap-2 text-xs text-slate-700">
+        <div><dt class="font-semibold">Ads enabled</dt><dd>{{ ads_enabled|yesno:"Yes,No" }}</dd></div>
+        <div><dt class="font-semibold">Networks</dt><dd>{{ ad_networks_enabled|yesno:"On,Off" }}</dd></div>
+        <div><dt class="font-semibold">Affiliate</dt><dd>{{ affiliate_enabled|yesno:"On,Off" }}</dd></div>
+        <div><dt class="font-semibold">Aggressiveness</dt><dd>{{ ad_aggressiveness_level|default:"balanced" }}</dd></div>
+      </dl>
+    </div>
     <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
       <h2 class="text-lg font-semibold text-slate-900 mb-2">Placements</h2>
       <table class="w-full text-sm">

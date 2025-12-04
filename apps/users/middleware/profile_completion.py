@@ -66,11 +66,12 @@ class EnforceProfileCompletionMiddleware:
             from apps.site_settings.models import SiteSettings
 
             ss = SiteSettings.get_solo()
-            # Only enforce profile/MFA flow when require_mfa flag is on
-            if not getattr(ss, "require_mfa", False):
+            require_profile = getattr(ss, "require_profile_completion", False)
+            # Backward-compat: fall back to require_mfa flag if present
+            if not (require_profile or getattr(ss, "require_mfa", False)):
                 return self.get_response(request)
         except Exception:
-            pass
+            return self.get_response(request)
 
         # --- Fast exit for anonymous users ----------------------------------
         if not (user and user.is_authenticated):
@@ -82,6 +83,14 @@ class EnforceProfileCompletionMiddleware:
 
         # --- Already completed ---------------------------------------------
         if getattr(user, "profile_completed", True):
+            return self.get_response(request)
+
+        # --- Enforce only for social signups; password users are allowed ---
+        try:
+            social_qs = getattr(user, "socialaccount_set", None)
+            if not (social_qs and social_qs.exists()):
+                return self.get_response(request)
+        except Exception:
             return self.get_response(request)
 
         path = request.path

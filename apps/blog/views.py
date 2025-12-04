@@ -228,6 +228,66 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
 
 
 @login_required
+def manage_posts(request: HttpRequest) -> HttpResponse:
+    """
+    Simple manager view for drafts and scheduled posts.
+    Staff sees all; authors see their own.
+    """
+    settings_snapshot = _get_site_settings_snapshot()
+    try:
+        blog_api = AppService.get("blog")
+        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+    except Exception:
+        blog_settings = {}
+    allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
+    if not (request.user.is_staff or request.user.is_superuser or allow_user_posts):
+        raise Http404()
+
+    base_qs = Post.objects.select_related("author", "category")
+    if request.user.is_staff or request.user.is_superuser:
+        drafts = base_qs.filter(status=PostStatus.DRAFT).order_by("-updated_at", "-created_at")[:50]
+        scheduled = base_qs.filter(status=PostStatus.SCHEDULED).order_by("publish_at")[:50]
+    else:
+        drafts = base_qs.filter(author=request.user, status=PostStatus.DRAFT).order_by("-updated_at", "-created_at")[:50]
+        scheduled = base_qs.filter(author=request.user, status=PostStatus.SCHEDULED).order_by("publish_at")[:50]
+
+    return render(
+        request,
+        "blog/manage.html",
+        {
+            "drafts": drafts,
+            "scheduled": scheduled,
+            "allow_user_posts": allow_user_posts,
+        },
+    )
+
+
+@login_required
+@require_POST
+def bulk_publish(request: HttpRequest) -> HttpResponse:
+    """
+    Bulk publish selected posts (staff or owners).
+    """
+    ids = request.POST.getlist("post_id")
+    if not ids:
+        messages.info(request, "No posts selected.")
+        return redirect("blog:manage_posts")
+    qs = Post.objects.filter(pk__in=ids, status__in=[PostStatus.DRAFT, PostStatus.SCHEDULED])
+    if not (request.user.is_staff or request.user.is_superuser):
+        qs = qs.filter(author=request.user)
+    updated = 0
+    with transaction.atomic():
+        for post in qs:
+            post.status = PostStatus.PUBLISHED
+            post.publish_at = timezone.now()
+            post.published_at = timezone.now()
+            post.save(update_fields=["status", "publish_at", "published_at", "updated_at"])
+            updated += 1
+    messages.success(request, f"Published {updated} posts.")
+    return redirect("blog:manage_posts")
+
+
+@login_required
 @require_http_methods(["GET", "POST"])
 def post_create(request: HttpRequest) -> HttpResponse:
     settings_snapshot = _get_site_settings_snapshot()

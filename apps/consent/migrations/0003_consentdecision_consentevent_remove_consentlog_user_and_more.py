@@ -42,6 +42,7 @@ class Migration(migrations.Migration):
                 'ordering': ['-created_at'],
             },
         ),
+        # Drop indexes that reference fields being removed (user on ConsentRecord)
         migrations.RemoveField(
             model_name='consentlog',
             name='user',

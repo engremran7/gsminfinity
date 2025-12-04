@@ -7,7 +7,7 @@ from collections import defaultdict
 from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_GET, require_POST
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import user_passes_test
 from django.core.cache import cache
 
@@ -22,6 +22,7 @@ from apps.ads.services import ai_optimizer
 from apps.ads.services.schemas import AdRequest, AdResponse, CreativeSelection
 from apps.core.utils.ip import get_client_ip
 from apps.ads.services.targeting.engine import campaign_allowed
+from apps.site_settings.models import SiteSettings
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def _ads_settings() -> dict:
         if ads_api and hasattr(ads_api, "get_settings"):
             return ads_api.get_settings()
     except Exception:
-        pass
+        logger.exception("ads settings fetch failed")
     return {
         "ads_enabled": False,
         "affiliate_enabled": False,
@@ -88,15 +89,15 @@ def list_placements(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"items": data})
 
 
-@csrf_exempt
+@csrf_protect
 @require_POST
 def record_event(request: HttpRequest) -> JsonResponse:
     if not _ads_enabled():
         return JsonResponse({"ok": False, "error": "ads_disabled"}, status=403)
     if not _has_ads_consent(request):
         return JsonResponse({"ok": True, "skipped": "no_consent"})
-    event_type = request.POST.get("event_type") or ""
-    placement_slug = request.POST.get("placement") or ""
+    event_type = (request.POST.get("event_type") or "").strip()
+    placement_slug = (request.POST.get("placement") or "").strip()
     campaign_id = request.POST.get("campaign")
     creative_id = request.POST.get("creative")
     page_url = request.POST.get("page_url", "")
@@ -120,9 +121,11 @@ def record_event(request: HttpRequest) -> JsonResponse:
     hashed_ua = hash_ua(user_agent)
     try:
         placement = AdPlacement.objects.filter(slug=placement_slug, is_enabled=True, is_active=True, is_deleted=False).first()
+        if placement is None:
+            return JsonResponse({"ok": False, "error": "invalid_placement"}, status=400)
         campaign = Campaign.objects.filter(pk=campaign_id).first() if campaign_id else None
         creative = AdCreative.objects.filter(pk=creative_id, is_enabled=True, is_active=True).first() if creative_id else None
-        if creative and placement:
+        if creative:
             assigned = placement.assignments.filter(creative=creative, is_enabled=True, is_active=True).exists()
             if not assigned:
                 return JsonResponse({"ok": False, "error": "invalid_mapping"}, status=400)
@@ -152,6 +155,7 @@ def record_event(request: HttpRequest) -> JsonResponse:
             page_url=page_url,
         )
     except Exception:
+        logger.exception("record_event failed", extra={"placement": placement_slug, "creative": creative_id})
         return JsonResponse({"ok": False}, status=400)
     return JsonResponse({"ok": True})
 
@@ -238,14 +242,15 @@ def fill_ad(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"ok": True, "creative": payload})
 
 
+@csrf_protect
 @require_POST
 def record_click(request: HttpRequest) -> JsonResponse:
     if not _ads_enabled():
         return JsonResponse({"ok": False, "error": "ads_disabled"}, status=403)
     if not _has_ads_consent(request):
         return JsonResponse({"ok": True, "skipped": "no_consent"})
-    creative_id = request.POST.get("creative")
-    placement_slug = request.POST.get("placement") or ""
+    creative_id = (request.POST.get("creative") or "").strip()
+    placement_slug = (request.POST.get("placement") or "").strip()
     if not creative_id or not placement_slug:
         return JsonResponse({"ok": False, "error": "bad_payload"}, status=400)
     page_url = request.POST.get("page_url", "")
@@ -262,29 +267,36 @@ def record_click(request: HttpRequest) -> JsonResponse:
         cache.set(rl_key, int(count) + 1, timeout=60)
     except Exception:
         pass
-    creative = AdCreative.objects.filter(pk=creative_id, is_enabled=True, is_active=True).first() if creative_id else None
-    placement = AdPlacement.objects.filter(slug=placement_slug, is_enabled=True, is_active=True, is_deleted=False).first() if placement_slug else None
-    if creative and placement:
-        assigned = placement.assignments.filter(creative=creative, is_enabled=True, is_active=True).exists()
-        if not assigned:
-            return JsonResponse({"ok": False, "error": "invalid_mapping"}, status=400)
-    if creative and creative.campaign and not creative.campaign.is_live():
+    placement = AdPlacement.objects.filter(slug=placement_slug, is_enabled=True, is_active=True, is_deleted=False).first()
+    if placement is None:
+        return JsonResponse({"ok": False, "error": "invalid_placement"}, status=400)
+    creative = AdCreative.objects.filter(pk=creative_id, is_enabled=True, is_active=True).first()
+    if creative is None:
+        return JsonResponse({"ok": False, "error": "invalid_creative"}, status=400)
+    assigned = placement.assignments.filter(creative=creative, is_enabled=True, is_active=True).exists()
+    if not assigned:
+        return JsonResponse({"ok": False, "error": "invalid_mapping"}, status=400)
+    if creative.campaign and not creative.campaign.is_live():
         return JsonResponse({"ok": False, "error": "campaign_not_live"}, status=400)
-    tracker_record_event(
-        "click",
-        placement=placement,
-        creative=creative,
-        campaign=creative.campaign if creative else None,
-        user=request.user if request.user.is_authenticated else None,
-        request_meta={
-            "ip": hash_ip(get_client_ip(request) or ""),
-            "referrer": referrer,
-            "user_agent": hash_ua(user_agent),
-            "page_url": page_url,
-            "consent_granted": True,
-            "correlation_id": getattr(request, "correlation_id", None),
-        },
-    )
+    try:
+        tracker_record_event(
+            "click",
+            placement=placement,
+            creative=creative,
+            campaign=creative.campaign if creative else None,
+            user=request.user if request.user.is_authenticated else None,
+            request_meta={
+                "ip": hash_ip(get_client_ip(request) or ""),
+                "referrer": referrer,
+                "user_agent": hash_ua(user_agent),
+                "page_url": page_url,
+                "consent_granted": True,
+                "correlation_id": getattr(request, "correlation_id", None),
+            },
+        )
+    except Exception:
+        logger.exception("record_click failed", extra={"placement": placement_slug, "creative": creative_id})
+        return JsonResponse({"ok": False}, status=400)
     return JsonResponse({"ok": True})
 
 
@@ -354,6 +366,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     )
 
 
+@csrf_protect
 @user_passes_test(lambda u: u.is_staff or u.is_superuser or getattr(u, "has_role", lambda *r: False)("admin", "editor"))
 @require_POST
 def toggle_settings(request: HttpRequest) -> HttpResponse:
@@ -390,6 +403,13 @@ def toggle_settings(request: HttpRequest) -> HttpResponse:
         if level in ("minimal", "balanced", "aggressive"):
             ss.ad_aggressiveness_level = level
         ss.save()
+    _log(
+        request,
+        "ads.dashboard.toggle",
+        action=action,
+        placement=str(placement_id or ""),
+        campaign=str(campaign_id or ""),
+    )
     return redirect("ads:dashboard")
 
 

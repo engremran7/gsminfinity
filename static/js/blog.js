@@ -84,6 +84,7 @@ function renderCommentItem(c, depth = 0, currentUserId = null) {
       toxicity === "high"
         ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[11px]">Toxicity</span>`
         : "";
+    const reason = c.metadata?.moderation?.reason || c.metadata?.moderation?.label_reason || "";
     const status = c.status || "approved";
     const statusChip =
       status !== "approved"
@@ -97,17 +98,24 @@ function renderCommentItem(c, depth = 0, currentUserId = null) {
     const header = doc.createElement("div");
     header.className = "flex items-center justify-between text-xs text-slate-500 flex-wrap";
     const userSpan = doc.createElement("span");
-    const edited = c.edited_at ? ` • edited ${new Date(c.edited_at).toLocaleString()}` : "";
-    userSpan.textContent = `${c.user || "User"} • ${new Date(c.created_at).toLocaleString()}${edited}`;
+    const edited = c.edited_at ? ` · edited ${new Date(c.edited_at).toLocaleString()}` : "";
+    userSpan.textContent = `${c.user || "User"} · ${new Date(c.created_at).toLocaleString()}${edited}`;
     const actions = doc.createElement("span");
     actions.className = "flex items-center gap-2";
-    actions.innerHTML = `${modChip}${statusChip}${aiChip}<button class="text-slate-500 hover:text-primary text-[11px]" data-comment-upvote="${c.id}">⇧ ${c.score || 0}</button><button class="text-slate-500 hover:text-amber-600 text-[11px]" data-comment-report="${c.id}">Report</button>`;
+    actions.innerHTML = `${modChip}${statusChip}${aiChip}${reason ? `<span class="text-[11px] text-red-600">${reason}</span>` : ""}<button class="text-slate-500 hover:text-primary text-[11px]" data-comment-upvote="${c.id}">⇧ ${c.score || 0}</button><button class="text-slate-500 hover:text-amber-600 text-[11px]" data-comment-report="${c.id}">Report</button>`;
     if (c.is_owner || (currentUserId && String(currentUserId) === String(c.user_id))) {
       const editBtn = doc.createElement("button");
       editBtn.className = "text-slate-500 hover:text-primary text-[11px]";
       editBtn.setAttribute("data-comment-edit", c.id);
       editBtn.textContent = "Edit";
       actions.appendChild(editBtn);
+    }
+    if (hasHistory) {
+      const historyBtn = doc.createElement("button");
+      historyBtn.className = "text-slate-500 hover:text-primary text-[11px]";
+      historyBtn.setAttribute("data-comment-history", c.id);
+      historyBtn.textContent = "History";
+      actions.appendChild(historyBtn);
     }
     header.appendChild(userSpan);
     header.appendChild(actions);
@@ -118,6 +126,23 @@ function renderCommentItem(c, depth = 0, currentUserId = null) {
 
     el.appendChild(header);
     el.appendChild(bodyP);
+    if (hasHistory) {
+      const hist = doc.createElement("div");
+      hist.className = "hidden mt-2 rounded border border-slate-100 bg-slate-50 p-2 text-[11px] text-slate-600";
+      hist.setAttribute("data-history-panel", c.id);
+      hist.innerHTML =
+        c.metadata.history
+          .slice()
+          .reverse()
+          .map(
+            (h) =>
+              `<div class="mb-1"><span class="font-semibold">Edited:</span> ${new Date(
+                h.edited_at || h.timestamp || Date.now()
+              ).toLocaleString()}<div class="whitespace-pre-wrap text-slate-700">${(h.body || "").slice(0, 500)}</div></div>`
+          )
+          .join("") || "<div>No history.</div>";
+      el.appendChild(hist);
+    }
     if (c.children && c.children.length) {
       c.children.forEach((child) => {
         el.appendChild(renderCommentItem(child, depth + 1, currentUserId));
@@ -170,6 +195,7 @@ function renderCommentItem(c, depth = 0, currentUserId = null) {
       const body = bodyField ? bodyField.value.trim() : "";
       if (!body) {
         bodyField && bodyField.focus();
+        window.AppUI?.showToast?.("Please enter a comment.", "Info");
         return;
       }
       const formData = new FormData();
@@ -188,7 +214,8 @@ function renderCommentItem(c, depth = 0, currentUserId = null) {
         if (err.status === 403 && err.payload?.error === "consent_required") {
           window.AppUI?.showToast?.("Comments are disabled until you enable the comments category.", "Info");
         } else {
-          window.AppUI?.showToast?.("Unable to post comment", "Error");
+          const msg = err.payload?.error || "Unable to post comment";
+          window.AppUI?.showToast?.(msg, "Error");
         }
       }
     });
@@ -199,6 +226,7 @@ function renderCommentItem(c, depth = 0, currentUserId = null) {
       const upvoteBtn = ev.target.closest("[data-comment-upvote]");
       const reportBtn = ev.target.closest("[data-comment-report]");
       const editBtn = ev.target.closest("[data-comment-edit]");
+      const historyBtn = ev.target.closest("[data-comment-history]");
       if (upvoteBtn) {
         ev.preventDefault();
         const commentId = upvoteBtn.getAttribute("data-comment-upvote");
@@ -257,6 +285,13 @@ function renderCommentItem(c, depth = 0, currentUserId = null) {
       } else if (ev.target.closest("[data-comment-cancel-edit]")) {
         ev.preventDefault();
         loadComments();
+      } else if (historyBtn) {
+        ev.preventDefault();
+        const id = historyBtn.getAttribute("data-comment-history");
+        const panel = doc.querySelector(`[data-history-panel="${id}"]`);
+        if (panel) {
+          panel.classList.toggle("hidden");
+        }
       } else if (ev.target.closest("[data-comment-save]")) {
         ev.preventDefault();
         const saveBtn = ev.target.closest("[data-comment-save]");

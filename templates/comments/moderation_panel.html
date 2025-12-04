@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Comments Moderation{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900">Comments Moderation</h1>
+    <p class="text-sm text-slate-600">Review spam/unsafe flags, edit history, and approve or reject.</p>
+  </div>
+  <div id="mod-table" class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-xs text-slate-500 border-b border-slate-100">
+        <tr>
+          <th class="px-3 py-2 text-left">Comment</th>
+          <th class="px-3 py-2 text-left">User</th>
+          <th class="px-3 py-2 text-left">Status</th>
+          <th class="px-3 py-2 text-left">Reason</th>
+          <th class="px-3 py-2 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in pending_comments %}
+        <tr class="border-b border-slate-100">
+          <td class="px-3 py-2 text-slate-800">
+            <div class="text-[11px] text-slate-500">Posted {{ c.created_at|date:"M j, Y H:i" }}</div>
+            <div class="text-sm">{{ c.body|truncatechars:200 }}</div>
+            {% if c.metadata.history %}
+              <details class="mt-2 text-[11px] text-slate-600">
+                <summary class="cursor-pointer">History</summary>
+                <div class="space-y-1">
+                  {% for h in c.metadata.history|slice:":5" %}
+                    <div><span class="font-semibold">Edited:</span> {{ h.edited_at|default:"-" }} — {{ h.body|truncatechars:120 }}</div>
+                  {% endfor %}
+                </div>
+              </details>
+            {% endif %}
+          </td>
+          <td class="px-3 py-2 text-slate-700">{{ c.user.email|default:c.user.username|default:"Anonymous" }}</td>
+          <td class="px-3 py-2">
+            <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px]">{{ c.get_status_display }}</span>
+          </td>
+          <td class="px-3 py-2 text-[11px] text-red-600">
+            {{ c.metadata.moderation.reason|default:c.metadata.moderation.label|default:"-" }}
+          </td>
+          <td class="px-3 py-2 space-x-2 text-xs">
+            <form method="post" action="{% url 'comments:moderation_action' %}" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="comment_id" value="{{ c.id }}">
+              <input type="hidden" name="action" value="approve">
+              <button type="submit" class="btn-primary px-2 py-1 rounded text-white">Approve</button>
+            </form>
+            <form method="post" action="{% url 'comments:moderation_action' %}" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="comment_id" value="{{ c.id }}">
+              <input type="hidden" name="action" value="reject">
+              <button type="submit" class="btn-outline px-2 py-1 rounded">Reject</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-3 py-3 text-slate-500 text-sm">No pending comments.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

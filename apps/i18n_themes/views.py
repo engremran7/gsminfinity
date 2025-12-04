@@ -7,7 +7,6 @@ from typing import Any, Dict
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import JsonResponse, HttpResponseBadRequest
 import logging
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.i18n_themes.api import bundle, locale_for_request, register_manifest, theme_for_request

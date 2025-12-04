@@ -5,7 +5,6 @@ from typing import Dict, Any
 
 from apps.ads.models import AdPlacement, Campaign
 from apps.core.utils import feature_flags
-from apps.site_settings.models import SiteSettings
 
 
 def is_ads_enabled() -> bool:
@@ -18,7 +17,12 @@ def campaign_allowed(campaign: Campaign, context: Dict[str, Any]) -> bool:
     if not feature_flags.ads_enabled():
         return False
     # Consent-aware: block personalized campaigns when ads consent not granted
-    if context.get("consent_ads") is False and campaign.type in {"affiliate", "network", "direct"}:
+    consent_val = context.get("consent_ads")
+    consent_granted = (
+        consent_val is True
+        or (isinstance(consent_val, str) and consent_val.lower() in {"1", "true", "yes"})
+    )
+    if not consent_granted and campaign.type in {"affiliate", "network", "direct"}:
         return False
     rules = campaign.targeting_rules or {}
     page_context = context.get("page_context")

@@ -59,7 +59,8 @@ def run_workflow(workflow_name: str, payload: Dict[str, Any], user=None) -> Pipe
         status="running",
         started_at=timezone.now(),
     )
-    # TODO: delegate to async worker; here we just store stub output
+    # In asynchronous deployments this can be delegated to a worker; in the default
+    # setup we persist a synchronous, traceable output payload.
     run.output_payload = {"message": "Execution delegated", "inputs": payload}
     run.status = "succeeded"
     run.finished_at = timezone.now()

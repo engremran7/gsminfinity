@@ -37,7 +37,12 @@ def choose_creative(placement: AdPlacement, context: Optional[Dict] = None) -> O
         return None
 
     context = context or {}
-    consent_ads = bool(context.get("consent_ads"))
+    consent_val = context.get("consent_ads")
+    consent_ads = (
+        consent_val is True
+        or (isinstance(consent_val, str) and consent_val.lower() in {"1", "true", "yes"})
+        or (isinstance(consent_val, int) and consent_val == 1)
+    )
     ad_settings = None
     try:
         ad_settings = SiteSettings.get_solo()

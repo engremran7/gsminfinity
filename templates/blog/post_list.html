@@ -26,6 +26,7 @@
             <button type="submit" class="btn-outline text-sm px-3 py-2 rounded-md border border-slate-300">Search</button>
           </form>
           {% if request.user.is_staff or request.user.is_superuser or allow_user_posts %}
+            <a href="{% url 'blog:manage_posts' %}" class="btn-outline px-3 py-2 rounded-md border border-slate-300 text-sm">Manage</a>
             <a href="{% url 'blog:post_create' %}" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
               <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-plus"></use></svg>
               New Post{% if not request.user.is_staff and not request.user.is_superuser %} (community){% endif %}
@@ -38,7 +39,7 @@
         <div class="grid gap-4">
           {% for post in posts %}
             {% url 'blog:post_detail' slug=post.slug as post_url %}
-            {% include "components/post_card.html" with title=post.title url=post_url meta=post.meta_text excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name thumbnail=post.hero_image %}
+            {% include "components/post_card.html" with title=post.title url=post_url meta=post.meta_text excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name thumbnail=post.hero_image seo_ready=post.seo_title|default_if_none:post.seo_description|default_if_none:'' %}
             {% if forloop.counter0|divisibleby:3 %}
               {% render_ad_slot "list-inline" %}
             {% endif %}

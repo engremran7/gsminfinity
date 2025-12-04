@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Device events{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900">Device events</h1>
+    <p class="text-sm text-slate-600">Recent device events (admin view).</p>
+  </div>
+  <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="text-xs text-slate-500 border-b border-slate-100">
+        <tr>
+          <th class="px-3 py-2 text-left">Device</th>
+          <th class="px-3 py-2 text-left">Type</th>
+          <th class="px-3 py-2 text-left">Meta</th>
+          <th class="px-3 py-2 text-left">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ev in events %}
+        <tr class="border-b border-slate-100">
+          <td class="px-3 py-2 text-slate-800">{{ ev.device.device_id }}</td>
+          <td class="px-3 py-2 text-xs text-slate-600">{{ ev.event_type }}</td>
+          <td class="px-3 py-2 text-[11px] text-slate-600">{{ ev.metadata|default:"-" }}</td>
+          <td class="px-3 py-2 text-xs text-slate-600">{{ ev.created_at|date:"M j, Y H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-3 py-3 text-sm text-slate-500">No events.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -2,58 +2,75 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-xl mx-auto py-10">
-  <h1 class="text-2xl font-bold mb-4">Tell us about you</h1>
-  <p class="text-slate-600 mb-6">
-    We just need a few details to finish setting up your account.
-  </p>
-
-  <form method="post" class="space-y-4">
-    {% csrf_token %}
-
-    <div>
-      <label class="block font-semibold mb-1">Username</label>
-      {{ form.username }}
-      {% if form.username.errors %}
-        <p class="text-sm text-red-600 mt-1">{{ form.username.errors.0 }}</p>
-      {% endif %}
-    </div>
-
-    <div>
-      <label class="block font-semibold mb-1">Full name</label>
-      {{ form.full_name }}
-      {% if form.full_name.errors %}
-        <p class="text-sm text-red-600 mt-1">{{ form.full_name.errors.0 }}</p>
-      {% endif %}
-    </div>
-
-    <div>
-      <label class="block font-semibold mb-1">Password</label>
-      {{ form.password1 }}
-      {% if form.password1.errors %}
-        <p class="text-sm text-red-600 mt-1">{{ form.password1.errors.0 }}</p>
-      {% endif %}
-      <p class="text-xs text-slate-500 mt-1">
-        If you signed up with Google or another provider, please choose a password to use for direct login.
+<div class="max-w-3xl mx-auto py-12 px-4">
+  <div class="bg-slate-900 text-slate-100 rounded-2xl shadow-xl p-8 space-y-6">
+    <header class="space-y-2">
+      <p class="text-xs uppercase tracking-wide text-slate-400">Onboarding</p>
+      <h1 class="text-3xl font-bold">Tell us about you</h1>
+      <p class="text-sm text-slate-300">
+        Finish your profile so we can personalize your experience. If you used Google or another provider, add a password for direct login.
       </p>
-    </div>
+    </header>
 
-    <div>
-      <label class="block font-semibold mb-1">Confirm password</label>
-      {{ form.password2 }}
-      {% if form.password2.errors %}
-        <p class="text-sm text-red-600 mt-1">{{ form.password2.errors.0 }}</p>
+    <form method="post" class="space-y-5">
+      {% csrf_token %}
+
+      <label class="space-y-2 block">
+        <span class="text-sm font-semibold text-slate-100">Username</span>
+        {{ form.username.as_widget(attrs={
+          "class": "w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+          "placeholder": "Choose a username"
+        }) }}
+        {% if form.username.errors %}
+          <p class="text-sm text-red-400 mt-1">{{ form.username.errors.0 }}</p>
+        {% endif %}
+      </label>
+
+      <label class="space-y-2 block">
+        <span class="text-sm font-semibold text-slate-100">Full name</span>
+        {{ form.full_name.as_widget(attrs={
+          "class": "w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+          "placeholder": "Your name"
+        }) }}
+        {% if form.full_name.errors %}
+          <p class="text-sm text-red-400 mt-1">{{ form.full_name.errors.0 }}</p>
+        {% endif %}
+      </label>
+
+      <label class="space-y-2 block">
+        <span class="text-sm font-semibold text-slate-100">Password</span>
+        {{ form.password1.as_widget(attrs={
+          "class": "w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+          "placeholder": "Create a password",
+          "autocomplete": "new-password"
+        }) }}
+        {% if form.password1.errors %}
+          <p class="text-sm text-red-400 mt-1">{{ form.password1.errors.0 }}</p>
+        {% endif %}
+        <p class="text-xs text-slate-400">Use at least 8 characters; avoid common words.</p>
+      </label>
+
+      <label class="space-y-2 block">
+        <span class="text-sm font-semibold text-slate-100">Confirm password</span>
+        {{ form.password2.as_widget(attrs={
+          "class": "w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
+          "placeholder": "Re-enter password",
+          "autocomplete": "new-password"
+        }) }}
+        {% if form.password2.errors %}
+          <p class="text-sm text-red-400 mt-1">{{ form.password2.errors.0 }}</p>
+        {% endif %}
+      </label>
+
+      {% if form.non_field_errors %}
+        <p class="text-sm text-red-400 mt-2">{{ form.non_field_errors.0 }}</p>
       {% endif %}
-    </div>
 
-    {% if form.non_field_errors %}
-      <p class="text-sm text-red-600 mt-2">{{ form.non_field_errors.0 }}</p>
-    {% endif %}
-
-    <button type="submit" class="btn btn-primary mt-4">
-      Complete setup
-    </button>
-  </form>
+      <button type="submit" class="w-full inline-flex justify-center items-center bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg px-4 py-3 shadow-md focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 focus:ring-offset-slate-900 transition">
+        Complete setup
+      </button>
+    </form>
+  </div>
 </div>
 {% endblock %}
 

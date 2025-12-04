@@ -22,6 +22,14 @@
         {% if url %}<a href="{{ url }}" class="hover:text-primary">{{ title }}</a>{% else %}{{ title }}{% endif %}
       </h2>
     {% if meta %}<p class="text-xs text-slate-500">{{ meta }}</p>{% endif %}
+    <div class="flex flex-wrap gap-2 text-[11px] text-slate-600">
+      <span class="px-2 py-0.5 rounded-full {% if tags %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+        Tags {% if tags %}ready{% else %}missing{% endif %}
+      </span>
+      <span class="px-2 py-0.5 rounded-full bg-{{ seo_ready|yesno:'emerald-100,amber-100' }} text-{{ seo_ready|yesno:'emerald-700,amber-700' }}">
+        SEO {% if seo_ready %}set{% else %}pending{% endif %}
+      </span>
+    </div>
     {% if excerpt %}<p class="text-sm text-slate-700 line-clamp-3">{{ excerpt }}</p>{% endif %}
     {% if tags %}
       <div class="flex flex-wrap gap-2 text-xs text-slate-600" aria-label="Tags">

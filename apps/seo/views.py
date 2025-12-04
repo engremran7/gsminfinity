@@ -14,6 +14,7 @@ from django.db.models import Q, Count
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.contenttypes.models import ContentType
+from django.conf import settings
 
 from apps.blog.models import Post
 from apps.core.app_service import AppService
@@ -27,6 +28,11 @@ from apps.seo.services.crawlers.heatmap import heatmap
 from apps.core.utils.logging import log_event
 
 logger = logging.getLogger(__name__)
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, *args, **kwargs):
+        return None
 
 
 def _seo_settings() -> dict:
@@ -248,6 +254,7 @@ def inspect_url_view(request: HttpRequest) -> JsonResponse:
     if not _seo_enabled() or not _has_seo_consent(request):
         return JsonResponse({"ok": False, "error": "seo_disabled"}, status=403)
 
+    allowed_hosts = getattr(settings, "SEO_INSPECT_ALLOWLIST", ())
     raw_url = (request.GET.get("url") or "").strip()
     if not raw_url:
         return JsonResponse({"ok": False, "error": "missing_url"}, status=400)
@@ -263,16 +270,22 @@ def inspect_url_view(request: HttpRequest) -> JsonResponse:
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         return JsonResponse({"ok": False, "error": "invalid_url"}, status=400)
 
-    if _is_private_host(parsed.hostname or ""):
+    hostname = parsed.hostname or ""
+    if allowed_hosts and hostname not in allowed_hosts:
+        return JsonResponse({"ok": False, "error": "forbidden_target"}, status=400)
+
+    if _is_private_host(hostname):
         return JsonResponse({"ok": False, "error": "forbidden_target"}, status=400)
 
     try:
         req = urllib.request.Request(raw_url, method="HEAD")
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        opener = urllib.request.build_opener(_NoRedirect)
+        with opener.open(req, timeout=5) as resp:
             headers = {k: v for k, v in resp.headers.items()}
             return JsonResponse({"ok": True, "status": resp.getcode(), "headers": headers})
     except Exception as exc:
-        return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+        logger.exception("inspect_url_view failed", extra={"url": raw_url})
+        return JsonResponse({"ok": False, "error": "fetch_failed"}, status=400)
 
 
 @staff_or_editor

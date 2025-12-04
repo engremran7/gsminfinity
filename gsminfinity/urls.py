@@ -74,6 +74,8 @@ admin.site.index_title = "System Management Console"
 urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
+    # Django i18n (language switching)
+    path("i18n/setlang/", include("django.conf.urls.i18n")),
     # Authentication (allauth)
     path("accounts/", include("allauth.urls")),
     # Users module
@@ -101,6 +103,7 @@ urlpatterns = [
     path("ads/", include(("apps.ads.urls", "ads"), namespace="ads")),
     # Distribution / syndication
     path("distribution/", include(("apps.distribution.urls", "distribution"), namespace="distribution")),
+    path("devices/", include(("apps.devices.urls", "devices"), namespace="devices")),
     # Tags API
     path("tags/", include(("apps.tags.urls", "tags"), namespace="tags")),
     # Blog (public)

@@ -8,6 +8,8 @@ app_name = "blog"
 
 urlpatterns = [
     path("", views.post_list, name="post_list"),
+    path("manage/", views.manage_posts, name="manage_posts"),
+    path("manage/bulk_publish/", views.bulk_publish, name="bulk_publish"),
     path("create/", views.post_create, name="post_create"),
     path("feed/rss/", feeds.LatestRssFeed(), name="feed_rss"),
     path("feed/atom/", feeds.LatestAtomFeed(), name="feed_atom"),

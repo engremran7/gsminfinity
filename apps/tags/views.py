@@ -105,6 +105,23 @@ def tag_detail(request: HttpRequest, slug: str) -> HttpResponse:
 
 
 @login_required
+def manage_tags(request: HttpRequest) -> HttpResponse:
+    if not (request.user.is_staff or request.user.is_superuser):
+        raise Http404()
+    top_tags = Tag.objects.filter(is_active=True, is_deleted=False).order_by("-usage_count", "name")[:50]
+    curated = Tag.objects.filter(is_curated=True, is_deleted=False).order_by("name")[:50]
+    return render(
+        request,
+        "tags/manage.html",
+        {
+            "top_tags": top_tags,
+            "curated_tags": curated,
+            "tag_settings": _get_tag_settings(),
+        },
+    )
+
+
+@login_required
 @require_POST
 def merge_tags(request: HttpRequest) -> JsonResponse:
     """

@@ -359,7 +359,7 @@ def _has_comments_consent(request: HttpRequest) -> bool:
 def moderation_queue(request: HttpRequest) -> HttpResponse:
     pending = Comment.objects.filter(status=Comment.Status.PENDING, is_deleted=False).order_by("-created_at")[:50]
     recent = Comment.objects.filter(status__in=[Comment.Status.APPROVED, Comment.Status.REJECTED, Comment.Status.SPAM], is_deleted=False).order_by("-created_at")[:50]
-    return render(request, "comments/moderation.html", {"pending": pending, "recent": recent})
+    return render(request, "comments/moderation_panel.html", {"pending_comments": pending, "recent_comments": recent})
 
 
 @staff_member_required

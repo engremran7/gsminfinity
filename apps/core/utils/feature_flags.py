@@ -35,27 +35,21 @@ def seo_enabled() -> bool:
 def ads_enabled() -> bool:
     try:
         ads_api = AppService.get("ads")
-        if not ads_api:
-            return False
-        if hasattr(ads_api, "get_settings"):
+        if ads_api and hasattr(ads_api, "get_settings"):
             return bool(ads_api.get_settings().get("ads_enabled", False))
     except Exception:
         pass
-    ss = get_settings()
-    return bool(getattr(ss, "ads_enabled", False)) if ss else False
+    return False
 
 
 def affiliate_enabled() -> bool:
     try:
         ads_api = AppService.get("ads")
-        if not ads_api:
-            return False
-        if hasattr(ads_api, "get_settings"):
+        if ads_api and hasattr(ads_api, "get_settings"):
             return bool(ads_api.get_settings().get("affiliate_enabled", False))
     except Exception:
         pass
-    ss = get_settings()
-    return bool(getattr(ss, "affiliate_enabled", False)) if ss else False
+    return False
 
 
 def auto_meta_enabled() -> bool:

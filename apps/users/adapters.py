@@ -89,7 +89,8 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         return _safe_reverse("users:dashboard", default="/")
 
     def get_signup_redirect_url(self, request: HttpRequest) -> str:
-        return _safe_reverse("users:tell_us_about_you", default="/users/profile/")
+        # Regular/password signups go straight to dashboard; social flows handled separately.
+        return _safe_reverse("users:dashboard", default="/users/profile/")
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
@@ -117,6 +118,7 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             if user and getattr(user, "id", None) and getattr(
                 user, "profile_completed", False
             ):
+                sociallogin.redirect_url = _safe_reverse("users:dashboard", default="/")
                 return
             logger.debug("pre_social_login: social login requires onboarding.")
         except Exception as exc:

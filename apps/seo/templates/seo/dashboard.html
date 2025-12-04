@@ -74,36 +74,45 @@
     </div>
   </div>
 
-  <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-    <h2 class="text-lg font-semibold text-slate-900 mb-2">Meta Regeneration (stable)</h2>
-    <p class="text-sm text-slate-600 mb-3">Generate metadata only when content changes or when you explicitly request it. Lock to freeze SEO output.</p>
-    {% if recent_posts %}
-      <form method="post" action="{% url 'seo:regenerate_metadata' %}" class="space-y-3" data-seo-meta-form>
-        {% csrf_token %}
-        <input type="hidden" name="content_type" value="{{ post_content_type_id }}">
-        <label class="block text-sm font-medium text-slate-700">Post</label>
-        <select name="object_id" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm">
-          {% for post in recent_posts %}
-            <option value="{{ post.id }}">{{ post.title }}</option>
-          {% endfor %}
-        </select>
-        <label class="block text-sm font-medium text-slate-700">Focus keywords (comma separated)</label>
-        <input type="text" name="focus_keywords" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" placeholder="performance, analytics">
-        <label class="block text-sm font-medium text-slate-700">Source text</label>
-        <textarea name="text" rows="4" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" placeholder="Paste summary or body for AI to read"></textarea>
-        <label class="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="lock" value="1" class="h-4 w-4">
-          <span>Lock metadata after regeneration</span>
-        </label>
-        <div class="flex items-center gap-3 text-sm">
-          <button type="submit" class="btn-primary px-4 py-2 rounded text-white">Generate &amp; Save</button>
-          <button type="button" data-meta-action="unlock" class="btn-outline px-3 py-2 rounded">Unlock metadata</button>
-        </div>
-        <div class="text-xs text-slate-500" data-seo-meta-output></div>
-      </form>
-    {% else %}
-      <p class="text-sm text-slate-600">No posts available for regeneration yet.</p>
-    {% endif %}
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">Meta Regeneration (stable)</h2>
+      <p class="text-sm text-slate-600 mb-3">Generate metadata only when content changes or when you explicitly request it. Lock to freeze SEO output.</p>
+      {% if recent_posts %}
+        <form method="post" action="{% url 'seo:regenerate_metadata' %}" class="space-y-3" data-seo-meta-form>
+          {% csrf_token %}
+          <input type="hidden" name="content_type" value="{{ post_content_type_id }}">
+          <label class="block text-sm font-medium text-slate-700">Post</label>
+          <select name="object_id" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm">
+            {% for post in recent_posts %}
+              <option value="{{ post.id }}">{{ post.title }}</option>
+            {% endfor %}
+          </select>
+          <label class="block text-sm font-medium text-slate-700">Focus keywords (comma separated)</label>
+          <input type="text" name="focus_keywords" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" placeholder="performance, analytics">
+          <label class="block text-sm font-medium text-slate-700">Source text</label>
+          <textarea name="text" rows="4" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" placeholder="Paste summary or body for AI to read"></textarea>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="lock" value="1" class="h-4 w-4">
+            <span>Lock metadata after regeneration</span>
+          </label>
+          <div class="flex items-center gap-3 text-sm">
+            <button type="submit" class="btn-primary px-4 py-2 rounded text-white">Generate &amp; Save</button>
+            <button type="button" data-meta-action="unlock" class="btn-outline px-3 py-2 rounded">Unlock metadata</button>
+          </div>
+          <div class="text-xs text-slate-500" data-seo-meta-output></div>
+        </form>
+      {% else %}
+        <p class="text-sm text-slate-600">No posts available for regeneration yet.</p>
+      {% endif %}
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+      <h2 class="text-lg font-semibold text-slate-900">URL inspector</h2>
+      <p class="text-xs text-slate-500">Uses the hardened inspect endpoint (no redirects, allowlist enforced).</p>
+      <input type="url" id="seo-inspect-url" class="w-full border border-slate-200 rounded px-3 py-2 text-sm" placeholder="https://example.com/page" />
+      <button type="button" id="seo-inspect-btn" class="btn-primary w-full text-sm py-2 rounded">Inspect</button>
+      <pre id="seo-inspect-result" class="text-[11px] bg-slate-50 border border-slate-200 rounded p-2 text-slate-700 whitespace-pre-wrap">Awaiting input…</pre>
+    </div>
   </div>
 
   {% include "seo/components/url_inspector.html" %}
@@ -212,6 +221,33 @@
         }
       });
     }
+  })();
+
+  (function() {
+    const btn = document.getElementById("seo-inspect-btn");
+    const input = document.getElementById("seo-inspect-url");
+    const out = document.getElementById("seo-inspect-result");
+    if (!btn || !input || !out) return;
+    btn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const url = input.value.trim();
+      if (!url) {
+        out.textContent = "Enter a URL.";
+        return;
+      }
+      out.textContent = "Inspecting...";
+      try {
+        const res = await fetch(`/seo/api/inspect/?url=${encodeURIComponent(url)}`, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+        const data = await res.json();
+        if (data.ok) {
+          out.textContent = JSON.stringify({ status: data.status, headers: data.headers }, null, 2);
+        } else {
+          out.textContent = `Error: ${data.error || 'Unknown'}`;
+        }
+      } catch (err) {
+        out.textContent = "Fetch failed.";
+      }
+    });
   })();
 </script>
 {% endblock %}

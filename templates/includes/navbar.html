@@ -50,11 +50,6 @@
           <span>Dashboard</span>
         </a>
 
-        <a href="{% url 'consent:privacy_center' %}" class="text-sm inline-flex items-center gap-1">
-          <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-shield"></use></svg>
-          <span>Privacy</span>
-        </a>
-
         {% if request.user.is_authenticated %}
           <!-- Notification bell -->
           <div class="relative inline-block" id="app-notifications">
@@ -109,10 +104,6 @@
               {% endif %}
             {% endwith %}
           {% endwith %}
-          <a href="{% url 'users:profile' %}" class="text-sm text-slate-700 hover:text-slate-900 inline-flex items-center gap-1">
-            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-user"></use></svg>
-            <span>Profile</span>
-          </a>
           <a href="{% url 'account_logout' %}" class="text-sm text-slate-700 hover:text-slate-900 inline-flex items-center gap-1">
             <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-logout"></use></svg>
             <span>Logout</span>

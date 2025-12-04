@@ -91,10 +91,10 @@ CACHES = {
 }
 
 # -------------------------
-# Faster password hashing for quick test logins
+# Explicit password hasher for quick test logins (secure)
 # -------------------------
 PASSWORD_HASHERS = [
-    "django.contrib.auth.hashers.MD5PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
 
 # -------------------------

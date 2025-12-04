@@ -125,10 +125,10 @@ CACHES = {
 
 
 # ============================================================
-# Password Hashers (fast)
+# Password Hashers (secure, still suitable for development)
 # ============================================================
 PASSWORD_HASHERS = [
-    "django.contrib.auth.hashers.MD5PasswordHasher",
+    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
 
 

@@ -38,7 +38,12 @@
     }
     return false;
   }
-  const consentGranted = hasAdsConsent();
+  let consentGranted = hasAdsConsent();
+
+  function correlationId() {
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Math.random().toString(36).slice(2);
+  }
 
   async function fetchJson(url, options = {}) {
     const res = await fetch(url, {
@@ -55,21 +60,25 @@
   }
 
   async function trackEvent(eventType, slug, creativeId, meta = {}) {
+    consentGranted = hasAdsConsent();
     if (!consentGranted) return;
     try {
-      await fetchJson(`/ads/api/events/`, {
+      const res = await fetchJson(`/ads/api/events/`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
           event_type: eventType,
           placement: slug,
           creative: creativeId || "",
-          context: meta.context || "",
           page_url: window.location.href,
           referrer: document.referrer || "",
           consent_granted: "1",
+          correlation_id: correlationId(),
         }),
       });
+      if (!res.ok && res.error !== "no_consent") {
+        console.warn("Ads track error", res);
+      }
     } catch (_) {
       /* silent */
     }
@@ -141,6 +150,10 @@
       }
     });
   }
+
+  window.addEventListener("consent:updated", () => {
+    consentGranted = hasAdsConsent();
+  });
 
   if (doc.readyState === "loading") {
     doc.addEventListener("DOMContentLoaded", mountAds);

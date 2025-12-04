@@ -157,7 +157,23 @@ def banner(request: HttpRequest) -> HttpResponse:
     """
     policy = ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
     if not policy:
-        return HttpResponse("", status=204)
+        # Ensure we always have a minimal active policy so the banner can render
+        policy, _ = ConsentPolicy.objects.get_or_create(
+            version="default",
+            defaults={
+                "is_active": True,
+                "banner_text": "We use cookies to improve your browsing experience.",
+                "manage_text": "Manage your cookie preferences.",
+                "categories_snapshot": {
+                    "functional": {"required": True, "label": "Functional"},
+                    "analytics": {"required": False, "label": "Analytics"},
+                    "ads": {"required": False, "label": "Advertising"},
+                },
+            },
+        )
+        if not policy.is_active:
+            policy.is_active = True
+            policy.save(update_fields=["is_active"])
     ctx = {
         "policy": policy,
         "categories": policy.categories_snapshot or {},
