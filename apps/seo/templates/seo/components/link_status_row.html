@@ -1,8 +1,8 @@
 
 <tr>
   <td class="py-1 max-w-xs truncate text-slate-700">
-    <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer" title="{{ entry.url }}">
-      {{ entry.url }}
+    <a href="{{ entry.url|escape }}" target="_blank" rel="noopener noreferrer" title="{{ entry.url|escape }}">
+      {{ entry.url|truncatechars:80 }}
     </a>
   </td>
   <td class="py-1">
