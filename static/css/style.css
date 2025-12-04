@@ -66,6 +66,18 @@ a:hover {
   color: var(--color-text);
 }
 
+/* High-contrast form inputs for dark cards */
+.profile-input {
+  color: #0f172a !important;
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.profile-input::placeholder {
+  color: #475569 !important;
+  opacity: 1;
+}
+
 @font-face {
   font-family: "Jameel Noori Nastaleeq";
   src: url("/static/fonts/Jameel%20Noori%20Nastaleeq.ttf") format("truetype");
