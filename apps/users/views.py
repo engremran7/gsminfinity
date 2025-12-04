@@ -421,6 +421,7 @@ def profile_view(request):
             "user": user,
             "credits": getattr(user, "credits", 0),
             "site_settings": s,
+            "languages": getattr(settings, "LANGUAGES", [("en", "English")]),
         },
     )
 
