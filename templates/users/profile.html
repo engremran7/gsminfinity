@@ -3,12 +3,12 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto py-10 space-y-8">
-  <div class="bg-white shadow rounded-lg p-6">
+  <div class="card p-6">
     <h2 class="text-xl font-semibold mb-2">Profile</h2>
     <p class="text-slate-600 text-sm">Update your account details below.</p>
   </div>
 
-  <div class="bg-white shadow rounded-lg p-6">
+  <div class="card p-6">
     <h3 class="text-lg font-semibold mb-2">Full name</h3>
     <form method="post" action="{% url 'users:profile' %}" class="space-y-4">
       {% csrf_token %}
@@ -18,7 +18,7 @@
     </form>
   </div>
 
-  <div class="bg-white shadow rounded-lg p-6">
+  <div class="card p-6">
     <h3 class="text-lg font-semibold mb-2">Username</h3>
     <form method="post" action="{% url 'users:change_username' %}" id="username-form" class="space-y-2">
       {% csrf_token %}
@@ -31,7 +31,7 @@
     <p class="text-xs text-slate-500 mt-2">Usernames must be 3-32 chars, letters/numbers/._- (max 2 changes per year).</p>
   </div>
 
-  <div class="bg-white shadow rounded-lg p-6">
+  <div class="card p-6">
     <h3 class="text-lg font-semibold mb-2">Password</h3>
     <p class="text-slate-600 text-sm mb-3">Change your password using the secure flow.</p>
     <a href="{% url 'account_change_password' %}" class="bg-primary text-white px-4 py-2 rounded inline-block">Change password</a>

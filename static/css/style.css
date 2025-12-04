@@ -12,15 +12,15 @@
    --------------------------- */
 :root {
   /* Tokens resolved by i18n_themes.js (flattened as --colors-*) */
-  --color-primary: var(--colors-primary, #0ea5a4);
-  --color-primary-600: var(--colors-primary-600, #0a7f82);
+  --color-primary: var(--colors-primary, #0b6b6d); /* darker teal for contrast */
+  --color-primary-600: var(--colors-primary-600, #084f51);
   --color-secondary: var(--colors-secondary, #0f172a);
-  --color-bg: var(--colors-background, #f8fafc);
+  --color-bg: var(--colors-background, #f4f6fb);
   --color-surface: var(--colors-surface, #ffffff);
   --color-text: var(--colors-text, #0f172a);
-  --color-muted: var(--colors-muted, #334155);
-  --color-border: var(--colors-border, #e2e8f0);
-  --theme-border: var(--colors-border, #e2e8f0);
+  --color-muted: var(--colors-muted, #1f2937);
+  --color-border: var(--colors-border, #cbd5e1);
+  --theme-border: var(--colors-border, #cbd5e1);
   --theme-gradient: linear-gradient(135deg, var(--color-primary), var(--colors-accent, #6366f1));
   --theme-shadow: var(--shadows-elevation, 0 12px 32px rgba(15, 23, 42, 0.14));
   --theme-radius: var(--radii-md, 0.85rem);
@@ -54,9 +54,17 @@ a:hover {
   color: var(--color-primary-600);
 }
 
-.text-slate-400 { color: #475569 !important; }
-.text-slate-500 { color: #334155 !important; }
-.text-slate-600 { color: #1f2937 !important; }
+.text-slate-400 { color: #1f2937 !important; }
+.text-slate-500 { color: #111827 !important; }
+.text-slate-600 { color: #0f172a !important; }
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+  border-radius: var(--theme-radius);
+  color: var(--color-text);
+}
 
 @font-face {
   font-family: "Jameel Noori Nastaleeq";
