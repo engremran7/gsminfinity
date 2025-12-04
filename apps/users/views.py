@@ -401,14 +401,24 @@ def dashboard_view(request):
 # ============================================================
 @login_required
 def profile_view(request):
-    """Render the user profile overview page."""
+    """Render the user profile overview page with inline updates."""
     s = _get_settings(request)
+    user = request.user
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "update_full_name":
+            full_name = (request.POST.get("full_name") or "").strip()
+            user.full_name = full_name
+            user.save(update_fields=["full_name"])
+            messages.success(request, _("Full name updated."))
+
     return render(
         request,
         "users/profile.html",
         {
-            "user": request.user,
-            "credits": getattr(request.user, "credits", 0),
+            "user": user,
+            "credits": getattr(user, "credits", 0),
             "site_settings": s,
         },
     )

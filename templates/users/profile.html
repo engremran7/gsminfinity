@@ -1,17 +1,88 @@
-
 {% extends "base.html" %}
-{% block title %}Profile — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block title %}Profile - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  <h1 class="text-2xl font-semibold text-slate-900 mb-4">Profile</h1>
-  <div class="bg-white shadow rounded-lg p-6 space-y-3">
-    <p class="text-sm text-slate-700"><strong>Email:</strong> {{ user.email }}</p>
-    <p class="text-sm text-slate-700"><strong>Username:</strong> {{ user.username }}</p>
-    <p class="text-sm text-slate-700"><strong>Credits:</strong> {{ credits|default:"0" }}</p>
-    <a href="{% url 'account_change_password' %}" class="text-primary text-sm">Change password</a>
+<div class="max-w-3xl mx-auto py-10 space-y-8">
+  <div class="bg-white shadow rounded-lg p-6">
+    <h2 class="text-xl font-semibold mb-2">Profile</h2>
+    <p class="text-slate-600 text-sm">Update your account details below.</p>
+  </div>
+
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-semibold mb-2">Full name</h3>
+    <form method="post" action="{% url 'users:profile' %}" class="space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_full_name" />
+      <input type="text" name="full_name" value="{{ user.full_name|default_if_none:'' }}" class="w-full border rounded px-3 py-2" placeholder="Full name" />
+      <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Save</button>
+    </form>
+  </div>
+
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-semibold mb-2">Username</h3>
+    <form method="post" action="{% url 'users:change_username' %}" id="username-form" class="space-y-2">
+      {% csrf_token %}
+      <div class="flex items-center space-x-2">
+        <input type="text" id="username-input" name="username" value="{{ user.username|default_if_none:'' }}" class="flex-1 border rounded px-3 py-2" placeholder="New username" />
+        <span id="username-status" class="text-sm text-slate-500"></span>
+      </div>
+      <button type="submit" class="bg-primary text-white px-4 py-2 rounded">Change username</button>
+    </form>
+    <p class="text-xs text-slate-500 mt-2">Usernames must be 3-32 chars, letters/numbers/._-</p>
+  </div>
+
+  <div class="bg-white shadow rounded-lg p-6">
+    <h3 class="text-lg font-semibold mb-2">Password</h3>
+    <p class="text-slate-600 text-sm mb-3">Change your password using the secure flow.</p>
+    <a href="{% url 'account_change_password' %}" class="bg-primary text-white px-4 py-2 rounded inline-block">Change password</a>
   </div>
 </div>
+
+<script>
+(function() {
+  const input = document.getElementById("username-input");
+  const statusEl = document.getElementById("username-status");
+  if (!input || !statusEl) return;
+
+  let timer = null;
+  function setStatus(text, cls) {
+    statusEl.textContent = text || "";
+    statusEl.className = "text-sm " + (cls || "");
+  }
+
+  async function checkUsername(value) {
+    if (!value || value.length < 3) {
+      setStatus("Too short", "text-red-600");
+      return;
+    }
+    try {
+      const resp = await fetch("{% url 'users:change_username' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": "{{ csrf_token }}",
+        },
+        body: new URLSearchParams({ username: value }),
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        setStatus("Available", "text-green-600");
+      } else if (data.error === "taken") {
+        setStatus("Taken", "text-red-600");
+      } else {
+        setStatus("Unavailable", "text-red-600");
+      }
+    } catch (e) {
+      setStatus("Error checking", "text-red-600");
+    }
+  }
+
+  input.addEventListener("input", () => {
+    setStatus("", "");
+    clearTimeout(timer);
+    const value = input.value.trim();
+    timer = setTimeout(() => checkUsername(value), 400);
+  });
+})();
+</script>
 {% endblock %}
-
-
