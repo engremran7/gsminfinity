@@ -132,13 +132,20 @@ def post_list(request: HttpRequest) -> HttpResponse:
     category_slug = request.GET.get("category", "").strip()
     author = request.GET.get("author", "").strip()
     status_filter = (request.GET.get("status") or "").strip().lower()
+    sort = (request.GET.get("sort") or "recent").strip().lower()
     date_from = request.GET.get("from") or ""
     date_to = request.GET.get("to") or ""
 
     if q:
-        posts = posts.filter(Q(title__icontains=q) | Q(body__icontains=q) | Q(summary__icontains=q))
+        posts = posts.filter(
+            Q(title__icontains=q)
+            | Q(body__icontains=q)
+            | Q(summary__icontains=q)
+            | Q(tags__name__icontains=q)
+            | Q(category__name__icontains=q)
+        )
     if tag:
-        posts = posts.filter(tags__slug=tag)
+        posts = posts.filter(Q(tags__slug=tag) | Q(tags__name__iexact=tag))
     if category_slug:
         posts = posts.filter(category__slug=category_slug)
     if author:
@@ -156,7 +163,18 @@ def post_list(request: HttpRequest) -> HttpResponse:
         except Exception:
             pass
 
-    posts = posts.prefetch_related("tags")
+    # Sorting
+    if sort == "featured":
+        posts = posts.order_by("-featured", "-published_at")
+    elif sort == "oldest":
+        posts = posts.order_by("published_at")
+    elif sort == "title":
+        posts = posts.order_by("title")
+    else:
+        sort = "recent"
+        posts = posts.order_by("-published_at")
+
+    posts = posts.prefetch_related("tags").distinct()
 
     # Status filter (only staff/author can view non-published states)
     if status_filter in PostStatus.values:
@@ -215,6 +233,13 @@ def post_list(request: HttpRequest) -> HttpResponse:
             (PostStatus.PUBLISHED, "Published"),
             (PostStatus.SCHEDULED, "Scheduled"),
             (PostStatus.DRAFT, "Drafts"),
+        ],
+        "sort": sort,
+        "sort_options": [
+            ("recent", "Newest"),
+            ("featured", "Featured first"),
+            ("oldest", "Oldest"),
+            ("title", "Title A-Z"),
         ],
     }
     return render(request, "blog/post_list.html", context)

@@ -31,6 +31,11 @@
             </select>
             <input type="date" name="from" value="{{ date_from }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm" aria-label="From date">
             <input type="date" name="to" value="{{ date_to }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm" aria-label="To date">
+            <select name="sort" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm">
+              {% for value,label in sort_options %}
+                <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
             <button type="submit" class="btn-outline text-sm px-3 py-2 rounded-md border border-slate-300">Search</button>
             {% if q or active_category or active_tag or active_status or active_author or date_from or date_to %}
               <a href="{% url 'blog:post_list' %}" class="text-xs text-slate-600 underline">Clear</a>
@@ -70,7 +75,7 @@
         <div class="grid gap-4">
           {% for post in posts %}
             {% url 'blog:post_detail' slug=post.slug as post_url %}
-            {% include "components/post_card.html" with title=post.title url=post_url meta=post.meta_text excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name thumbnail=post.hero_image seo_ready=post.seo_title|default_if_none:post.seo_description|default_if_none:'' %}
+            {% include "components/post_card.html" with title=post.title url=post_url meta=post.meta_text excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name thumbnail=post.hero_image seo_ready=post.seo_title|default_if_none:post.seo_description|default_if_none:'' published_at=post.published_at|date:\"M j, Y\" reading_time=post.reading_time %}
             {% if forloop.counter0|divisibleby:3 %}
               {% render_ad_slot "list-inline" %}
             {% endif %}
@@ -79,6 +84,19 @@
       {% else %}
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 text-sm text-slate-600">
           No posts yet.
+        </div>
+      {% endif %}
+
+      {% if q or active_category or active_tag or active_status or active_author or date_from or date_to %}
+        <div class="flex flex-wrap gap-2 text-xs text-slate-700">
+          <span class="px-2 py-1 rounded-full bg-slate-100">Filters:</span>
+          {% if q %}<span class="px-2 py-1 rounded-full bg-slate-100">q: "{{ q }}"</span>{% endif %}
+          {% if active_category %}<span class="px-2 py-1 rounded-full bg-slate-100">Category: {{ active_category }}</span>{% endif %}
+          {% if active_tag %}<span class="px-2 py-1 rounded-full bg-slate-100">Tag: {{ active_tag }}</span>{% endif %}
+          {% if active_status %}<span class="px-2 py-1 rounded-full bg-slate-100">Status: {{ active_status }}</span>{% endif %}
+          {% if active_author %}<span class="px-2 py-1 rounded-full bg-slate-100">Author: {{ active_author }}</span>{% endif %}
+          {% if date_from %}<span class="px-2 py-1 rounded-full bg-slate-100">From: {{ date_from }}</span>{% endif %}
+          {% if date_to %}<span class="px-2 py-1 rounded-full bg-slate-100">To: {{ date_to }}</span>{% endif %}
         </div>
       {% endif %}
 
