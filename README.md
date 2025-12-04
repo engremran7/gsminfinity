@@ -1,48 +1,37 @@
 # GSMInfinity
 
-Enterprise-grade Django + frontend stack for content, ads, SEO, consent, users, devices, and optional security suite.
+Full-stack Django platform for content, ads, SEO, consent, users, devices, and an optional pluggable security suite. This README is a human-friendly map so you can onboard fast and know where the sharp edges are.
 
-## Key Features
-- **Users/MFA/Email verification**: Custom user model, TOTP, verification codes with TTL/resend/cooldown and UI countdown.
-- **Content**: Blog with drafts, scheduling, tags, feeds, comments with moderation/spam controls.
-- **Ads**: Placements, campaigns, creatives, events, affiliate links; consent-aware ad serving.
-- **SEO**: Metadata, internal links, sitemaps, URL inspector, AI helpers.
-- **Consent & privacy**: Central consent policies, hashed IP/UA helpers, consent banners, cookies policy templates.
-- **Device identity**: Optional machine UUID + fingerprint gated by consent; only attached on submit.
-- **Security suite (optional)**: `security_suite` facade + devices/bots/risk shims for pluggable security.
-- **Theming/i18n**: i18n themes app, theme switcher middleware stub.
+## What’s inside
+- **Users / MFA / Email verification** – Custom user model, TOTP, verification codes with TTL + resend + cooldown, countdown UI, allauth integration.
+- **Content** – Blog with drafts/scheduling, tags, feeds, comments (moderation + spam controls).
+- **Ads** – Placements, campaigns, creatives, events, affiliate links; respects consent.
+- **SEO** – Metadata, internal linking, sitemaps, URL inspector, AI helpers.
+- **Consent & privacy** – Central consent policies, hashed IP/UA helpers, banner/manage pages, cookies/legal templates.
+- **Device identity** – Optional machine UUID + fingerprint, now gated by consent and only attached on submit.
+- **Security suite (optional)** – `security_suite` facade + devices/bots/risk shims; pluggable.
+- **Theming/i18n** – i18n themes app, theme switcher middleware stub.
 
-## Project Layout
+## Layout (top-level)
 - `apps/` – Django apps (ads, blog, comments, consent, core, seo, site_settings, tags, users, devices, crawler_guard, ai, ai_behavior, i18n_themes, app_registry, distribution, common).
-- `security_suite/` – Optional pip-installable facade + security_devices/bots/risk shims.
-- `static/` – JS, CSS (Tailwind build), assets; consent/device identity scripts, summernote overrides.
-- `templates/` – Auth flows (allauth), ads/seo/blog/comments/users, consent/legal, components.
+- `security_suite/` – Optional installable facade + security_devices/bots/risk shims.
+- `static/` – JS, CSS (Tailwind build + sources), assets, consent/device identity scripts, summernote overrides.
+- `templates/` – Auth (allauth), ads/seo/blog/comments/users, consent/legal, shared components.
 - `_recovery/` – Audit dumps (ignored).
 
-## Prerequisites
-- Python 3.11+
-- Node 18+ (for frontend build if needed)
-- Virtualenv recommended (`.vnv/` or `.venv/`)
-
-## Setup
+## Quickstart
 ```bash
 python -m venv .vnv
-. .vnv/Scripts/activate   # Windows PowerShell: .\.vnv\Scripts\Activate.ps1
+. .vnv/Scripts/activate   # PowerShell: .\.vnv\Scripts\Activate.ps1
 pip install -r requirements.txt
-npm install  # if you need to rebuild static assets
+npm install               # if rebuilding frontend assets
 python manage.py migrate  # DB init
-python manage.py createsuperuser  # if needed
-```
-
-## Running
-```bash
+python manage.py createsuperuser
 python manage.py runserver 0.0.0.0:8000
 ```
 
-## Migrations Notes
-Recent migrations were aligned with an existing DB. If you hit “table already exists”:
-- Fake the specific migration, then run `python manage.py migrate`.
-Examples:
+## Migrations — important note
+The recovered DB already had these tables. If you see “table already exists”, fake the matching migration, then run migrate:
 ```
 python manage.py migrate ads 0005 --fake
 python manage.py migrate blog 0005 --fake
@@ -55,47 +44,42 @@ python manage.py migrate users 0004 --fake
 python manage.py migrate
 ```
 
-## Configuration (env/settings)
-- `.env` support (see `settings.py`/`settings_dev.py` for defaults)
-- Notable settings:
-  - `USERS_CONFIG`: `VERIFICATION_CODE_TTL_SECONDS`, `VERIFICATION_CODE_RESEND_COOLDOWN`, etc.
-  - `CONSENT_*`: cookie name/options, hash salt.
-  - `SECURITY_CONFIG` (optional security_suite).
-  - `DEFAULT_FROM_EMAIL` for verification emails.
+## Config you’ll likely touch
+- `.env` supported; see `settings.py`/`settings_dev.py`.
+- `USERS_CONFIG`: `VERIFICATION_CODE_TTL_SECONDS`, `VERIFICATION_CODE_RESEND_COOLDOWN`, `EMAIL_VERIFICATION_CODE_LENGTH/TYPE`.
+- `CONSENT_*`: cookie name/options, hash salt.
+- `SECURITY_CONFIG`: enable optional security_suite facets.
+- `DEFAULT_FROM_EMAIL`: for verification emails.
 
-## Email Verification Flow
-- Codes generated/stamped with `verification_code_sent_at`.
-- TTL and resend cooldown enforced; resend button + countdown in UI (`templates/users/verify_email.html`).
-- Codes sent via `send_mail` best-effort; on success, clears code/timestamp.
+## Email verification flow
+- Codes stamped (`verification_code_sent_at`), TTL + resend cooldown enforced.
+- Resend button + countdown in `templates/users/verify_email.html`.
+- Best-effort email via `send_mail`; on success clears code/timestamp.
 - Signal syncs allauth confirmed emails to `email_verified_at`.
 
-## Consent & Device Identity
-- `static/js/device_identity.js` now **requires consent** (security/fraud/analytics) before persisting UUID; attaches IDs/fingerprints only on submit.
+## Consent & device identity
+- `static/js/device_identity.js` **requires consent** (security/fraud/analytics) before persisting UUID; attaches IDs/fingerprints on submit only.
 - Consent helpers hash IP/UA and centralize cookie options.
-- Consent templates and legal pages under `templates/consent` and `templates/site_settings`.
+- Consent/manage/legal pages live under `templates/consent` and `templates/site_settings`.
 
-## Security Suite (optional)
-- `security_suite/security/services.py` facade delegates to `security_devices`, `security_bots`, `security_risk` if installed.
-- Currently shims to in-project apps; can be packaged separately.
+## Security suite (optional)
+- `security_suite/security/services.py` facade calls `security_devices`, `security_bots`, `security_risk` if present. Shims map to in-project apps; can be split into its own package.
 
-## Frontend
-- Tailwind-based styles in `static/css/main.css` (built) and `static/src_css/main.css` (source).
+## Frontend bits
+- Tailwind build: `static/css/main.css` (built) and `static/src_css/main.css` (source).
 - JS: ads, consent, device identity, i18n themes, summernote assets.
 
-## Running Tests
+## Tests
 ```bash
 python manage.py test
 ```
-(Adjust if you add pytest configuration.)
+(Add pytest if you prefer.)
 
-## Lint/Format
-- Not enforced here; add your preferred tools (black/ruff/isort/prettier/eslint) as needed.
+## Git hygiene
+- `.gitignore` excludes virtualenvs (`.vnv/`, `.venv/`), `_recovery/`, logs, node_modules, collected static, OS/editor junk.
+- `git gc --prune=now` already run; latest pushed to `origin/main`.
 
-## Git Hygiene
-- `.gitignore` excludes virtualenvs (`.vnv/`, `.venv/`), `_recovery/`, logs, node_modules, collected static, and OS/editor junk.
-- `git gc --prune=now` already run; repo pushed to `origin/main`.
-
-## Troubleshooting
-- Migration conflicts: fake the migration then re-run migrate (see above).
-- Verification emails: ensure `DEFAULT_FROM_EMAIL` and mail backend configured; resend in UI.
-- Consent/device ID: identifiers won’t persist without consent; check `Consent.getState()` in the browser.
+## Troubleshooting cheatsheet
+- Migration conflicts: fake the specific migration, then `migrate` (see above).
+- Verification email issues: set `DEFAULT_FROM_EMAIL`, configure mail backend, use resend in UI.
+- Device ID missing: consent is required; check `Consent.getState()` in the browser.
