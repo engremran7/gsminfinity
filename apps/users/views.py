@@ -32,6 +32,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.validators import RegexValidator
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
@@ -533,6 +534,9 @@ def resend_verification(request: HttpRequest) -> JsonResponse:
 USERNAME_RE = re.compile(r"^[a-zA-Z0-9._-]{3,32}$")
 
 
+USERNAME_RE = re.compile(r"^[a-zA-Z0-9._-]{3,32}$")
+
+
 @login_required
 @require_POST
 def change_username(request: HttpRequest) -> JsonResponse:
@@ -553,3 +557,16 @@ def change_username(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"ok": False, "error": "server_error"}, status=500)
 
 
+@login_required
+@require_POST
+def check_username(request: HttpRequest) -> JsonResponse:
+    new_username = (request.POST.get("username") or "").strip()
+    if not USERNAME_RE.match(new_username):
+        return JsonResponse({"ok": False, "error": "invalid"}, status=400)
+    User = get_user_model()
+    # Allow current username
+    if new_username.lower() == (request.user.username or "").lower():
+        return JsonResponse({"ok": True, "same": True})
+    if User.objects.filter(username__iexact=new_username).exists():
+        return JsonResponse({"ok": False, "error": "taken"}, status=409)
+    return JsonResponse({"ok": True})

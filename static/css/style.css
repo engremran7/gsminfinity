@@ -18,7 +18,7 @@
   --color-bg: var(--colors-background, #f8fafc);
   --color-surface: var(--colors-surface, #ffffff);
   --color-text: var(--colors-text, #0f172a);
-  --color-muted: var(--colors-muted, #475569);
+  --color-muted: var(--colors-muted, #334155);
   --color-border: var(--colors-border, #e2e8f0);
   --theme-border: var(--colors-border, #e2e8f0);
   --theme-gradient: linear-gradient(135deg, var(--color-primary), var(--colors-accent, #6366f1));
@@ -38,6 +38,25 @@
   --motion-fast: 150ms;
   --motion-medium: 240ms;
 }
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+a:hover {
+  color: var(--color-primary-600);
+}
+
+.text-slate-400 { color: #475569 !important; }
+.text-slate-500 { color: #334155 !important; }
+.text-slate-600 { color: #1f2937 !important; }
 
 @font-face {
   font-family: "Jameel Noori Nastaleeq";

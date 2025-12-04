@@ -42,9 +42,12 @@
 (function() {
   const input = document.getElementById("username-input");
   const statusEl = document.getElementById("username-status");
+  const form = document.getElementById("username-form");
   if (!input || !statusEl) return;
 
   let timer = null;
+  const csrf = "{{ csrf_token }}";
+
   function setStatus(text, cls) {
     statusEl.textContent = text || "";
     statusEl.className = "text-sm " + (cls || "");
@@ -56,11 +59,11 @@
       return;
     }
     try {
-      const resp = await fetch("{% url 'users:change_username' %}", {
+      const resp = await fetch("{% url 'users:check_username' %}", {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          "X-CSRFToken": "{{ csrf_token }}",
+          "X-CSRFToken": csrf,
         },
         body: new URLSearchParams({ username: value }),
       });
@@ -83,6 +86,33 @@
     const value = input.value.trim();
     timer = setTimeout(() => checkUsername(value), 400);
   });
+
+  if (form) {
+    form.addEventListener("submit", async (evt) => {
+      evt.preventDefault();
+      const value = input.value.trim();
+      try {
+        const resp = await fetch(form.action, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": csrf,
+          },
+          body: new URLSearchParams({ username: value }),
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          setStatus("Username updated", "text-green-600");
+        } else if (data.error === "taken") {
+          setStatus("Taken", "text-red-600");
+        } else {
+          setStatus("Unavailable", "text-red-600");
+        }
+      } catch (e) {
+        setStatus("Error updating", "text-red-600");
+      }
+    });
+  }
 })();
 </script>
 {% endblock %}
