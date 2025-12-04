@@ -1,4 +1,29 @@
+// Normalized CSRF extraction for HTMX requests.
+// Hardened for null-safety and explicit error reporting.
 
-(()=>{(function(){"use strict";if(window.__HTMX_CSRF_LOADER__)return;window.__HTMX_CSRF_LOADER__=!0;function c(e){try{if(!document.cookie)return null;let t=document.cookie.split(";");for(let n=0;n<t.length;n++){let o=t[n].trim();if(o.startsWith(e+"="))return decodeURIComponent(o.substring(e.length+1))}}catch(t){console.debug("htmx-csrf: cookie parsing failed:",t)}return null}function i(){if(window.AppUI&&"function"==typeof window.AppUI.getCsrfToken){const e=window.AppUI.getCsrfToken();if(e)return e}try{let e=document.querySelector('meta[name="csrf-token"]')||document.querySelector('meta[name="csrfmiddlewaretoken"]')||document.querySelector('meta[name="X-CSRFToken"]');return e?e.content:null}catch(e){return console.debug("htmx-csrf: meta token read error:",e),null}}async function a(e){try{if(window.DeviceIdentity&&"function"==typeof window.DeviceIdentity.getMachineUuid){const t=await window.DeviceIdentity.getMachineUuid();t&&(e["X-Device-Id"]=t)}}catch(e){console.debug("htmx-csrf: device header attach failed:",e)}}function d(e){try{if(!e||!e.detail||!e.detail.headers){console.debug("htmx-csrf: ignored malformed event");return}let t=e.detail.headers,n=c("csrftoken")||i();if(!n){console.warn("htmx-csrf WARNING: No CSRF token available (cookie & meta missing)");return}t["X-CSRFToken"]=n,t["X-Requested-With"]||(t["X-Requested-With"]="XMLHttpRequest"),a(t),e.detail.headers=t}catch(t){console.debug("htmx-csrf: CSRF attach failed:",t)}}function r(){try{if(!document.body){document.addEventListener("DOMContentLoaded",r);return}document.body.addEventListener("htmx:configRequest",d)}catch(e){console.error("htmx-csrf: listener registration failed:",e)}}r()})();})();
+function getCsrfToken() {
+  const tag =
+    document.querySelector('meta[name="csrf-token"]') ||
+    document.querySelector('meta[name="csrfmiddlewaretoken"]') ||
+    document.querySelector('meta[name="X-CSRFToken"]');
+  if (!tag) {
+    console.error("HTMX-CSRF: Missing <meta name='csrf-token'>");
+    return "";
+  }
+  return tag.getAttribute("content") || "";
+}
 
-
+if (window.htmx && typeof window.htmx.on === "function") {
+  window.htmx.on("configRequest.htmx", (event) => {
+    try {
+      const token = getCsrfToken();
+      if (token) {
+        event.detail.headers["X-CSRFToken"] = token;
+        event.detail.headers["X-Requested-With"] =
+          event.detail.headers["X-Requested-With"] || "XMLHttpRequest";
+      }
+    } catch (err) {
+      console.error("HTMX-CSRF attach failed:", err);
+    }
+  });
+}

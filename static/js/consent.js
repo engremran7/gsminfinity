@@ -1,4 +1,69 @@
+// Consent helpers and HTMX integration hooks.
+// Provides normalized storage for ads consent and removes the banner when instructed.
 
-(()=>{(function(){"use strict";function r(){try{let t=document.querySelector("#consent-banner");t&&t.remove();let e=document.getElementById("consent-banner-slot");e&&!e.hasChildNodes()&&e.remove()}catch(t){console.debug("consent.js: remove banner failed",t)}}function s(t){try{let e=t&&t.detail;if(!e)return;let o=e.html;if(!o)return;let n=document.querySelector("#global-toasts")||document.getElementById("app-toasts");if(!n)return;n.insertAdjacentHTML("afterbegin",o)}catch(e){console.debug("consent.js: showToast failed",e)}}document.addEventListener("removeConsentBanner",r),document.addEventListener("showToast",s),document.body.addEventListener("htmx:afterOnLoad",function(t){try{let e=t.detail&&t.detail.xhr;if(!e)return;let o=e.getResponseHeader("HX-Trigger");if(!o)return;let n={};try{n=JSON.parse(o)}catch(a){console.debug("consent.js: invalid/non-JSON HX-Trigger payload - ignored",a);return}n.removeConsentBanner&&r(),n.showToast&&n.showToast.html&&s({detail:n.showToast})}catch(e){console.debug("consent.js: htmx after load handler failed",e)}})})();})();
+window.gsmConsent = {
+  get() {
+    const v = localStorage.getItem("consent_ads");
+    return v === "1";
+  },
+  set(value) {
+    const normalized = value === true || value === "1" || value === 1;
+    localStorage.setItem("consent_ads", normalized ? "1" : "0");
+    return normalized;
+  },
+};
 
+function removeConsentBanner() {
+  try {
+    const banner = document.querySelector("#consent-banner");
+    if (banner) banner.remove();
+    const slot = document.getElementById("consent-banner-slot");
+    if (slot && !slot.hasChildNodes()) {
+      slot.remove();
+    }
+  } catch (err) {
+    console.debug("consent.js: remove banner failed", err);
+  }
+}
 
+function showToast(detail) {
+  try {
+    const payload = detail && detail.detail ? detail.detail : detail;
+    if (!payload) return;
+    const html = payload.html;
+    if (!html) return;
+    const container =
+      document.querySelector("#global-toasts") ||
+      document.getElementById("app-toasts");
+    if (!container) return;
+    container.insertAdjacentHTML("afterbegin", html);
+  } catch (err) {
+    console.debug("consent.js: showToast failed", err);
+  }
+}
+
+document.addEventListener("removeConsentBanner", removeConsentBanner);
+document.addEventListener("showToast", showToast);
+
+document.body.addEventListener("htmx:afterOnLoad", function (evt) {
+  try {
+    const xhr = evt.detail && evt.detail.xhr;
+    if (!xhr) return;
+    const trigger = xhr.getResponseHeader("HX-Trigger");
+    if (!trigger) return;
+    let data = {};
+    try {
+      data = JSON.parse(trigger);
+    } catch (err) {
+      console.debug(
+        "consent.js: invalid/non-JSON HX-Trigger payload - ignored",
+        err
+      );
+      return;
+    }
+    if (data.removeConsentBanner) removeConsentBanner();
+    if (data.showToast && data.showToast.html) showToast({ detail: data.showToast });
+  } catch (err) {
+    console.debug("consent.js: htmx after load handler failed", err);
+  }
+});

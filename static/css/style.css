@@ -79,6 +79,12 @@ a:hover {
   opacity: 1;
 }
 
+/* Improve accessibility — never fully remove outlines. */
+*:focus {
+  outline: 2px solid #1976d2;
+  outline-offset: 2px;
+}
+
 @font-face {
   font-family: "Jameel Noori Nastaleeq";
   src: url("/static/fonts/Jameel%20Noori%20Nastaleeq.ttf") format("truetype");

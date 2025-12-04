@@ -68,6 +68,10 @@
   font-family: var(--sn-font);
   direction: inherit;
 }
+.note-editable:focus {
+  outline: 2px solid #1976d2 !important;
+  outline-offset: 2px;
+}
 .note-placeholder {
   color: var(--sn-muted) !important;
 }

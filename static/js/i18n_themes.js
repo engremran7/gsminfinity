@@ -184,6 +184,15 @@
       });
     }
   });
+
+  // Safe language attribute setter with validation.
+  window.setTheme = function (lang) {
+    if (typeof lang !== "string" || !lang.match(/^[a-zA-Z0-9_-]+$/)) {
+      console.warn("Invalid lang code:", lang);
+      return;
+    }
+    document.documentElement.setAttribute("lang", lang);
+  };
 })();
 
 

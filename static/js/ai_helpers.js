@@ -47,6 +47,27 @@
     );
   }
 
+  // AI Workflow API wrapper with safer defaults and strict headers.
+  async function runWorkflow(name, payload = {}) {
+    if (!name) throw new Error("Missing workflow name");
+    try {
+      const res = await fetch(`/ai/run/${encodeURIComponent(name)}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-CSRFToken": getCSRF(),
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        credentials: "same-origin",
+        body: JSON.stringify(payload),
+      });
+      return await res.json();
+    } catch (err) {
+      return { ok: false, error: "network-error" };
+    }
+  }
+
   function setLoading(btn, loading) {
     if (!btn) return;
     if (loading) {
@@ -96,6 +117,7 @@
 
   window.AppUI = window.AppUI || {};
   window.AppUI.bindAiHelpers = bind;
+  window.AppUI.runWorkflow = runWorkflow;
 
   if (d.readyState === "loading") {
     d.addEventListener("DOMContentLoaded", bind);

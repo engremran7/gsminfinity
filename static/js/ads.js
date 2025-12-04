@@ -46,17 +46,28 @@
   }
 
   async function fetchJson(url, options = {}) {
-    const res = await fetch(url, {
-      credentials: "same-origin",
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-        "X-CSRFToken": csrfToken(),
-        ...(options.headers || {}),
-      },
-      ...options,
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    try {
+      const res = await fetch(url, {
+        credentials: "same-origin",
+        signal: controller.signal,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": csrfToken(),
+          ...(options.headers || {}),
+        },
+        ...options,
+      });
+      clearTimeout(timeout);
+      if (!res.ok) {
+        return { ok: false, error: `http-${res.status}` };
+      }
+      return await res.json();
+    } catch (err) {
+      clearTimeout(timeout);
+      return { ok: false, error: "network-error" };
+    }
   }
 
   async function trackEvent(eventType, slug, creativeId, meta = {}) {
@@ -101,7 +112,9 @@
     const slug = slot.getAttribute("data-ad-slot");
     if (!slug) return;
     try {
-      const data = await fetchJson(`/ads/api/fill/?placement=${encodeURIComponent(slug)}`);
+      const data = await fetchJson(
+        `/ads/api/fill/?placement=${encodeURIComponent(slug)}`
+      );
       if (!data.ok || !data.creative) return;
       const c = data.creative;
       const clickUrl = c.click_url || "#";
