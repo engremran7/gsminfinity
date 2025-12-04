@@ -1,18 +1,12 @@
 
 from __future__ import annotations
 
-import os
-import django
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from apps.ads.models import AdPlacement, AdCreative, Campaign, PlacementAssignment
 from apps.site_settings.models import SiteSettings
 from apps.ads.services.rotation.engine import choose_creative
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gsminfinity.settings")
-os.environ.setdefault("DJANGO_SECRET_KEY", "test-secret")
-django.setup()
 
 
 @override_settings(
