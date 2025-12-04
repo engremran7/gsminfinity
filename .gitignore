@@ -3,9 +3,10 @@
 #######################################
 
 # Virtual env
+.venv/
 venv/
 env/
-.venv/
+.vnv/
 
 # Python bytecode
 *.pyc
@@ -16,6 +17,7 @@ __pycache__/
 # Django local files
 *.sqlite3
 *.log
+logs/
 
 # Local settings overrides
 local_settings.py
@@ -103,3 +105,6 @@ pyrightconfig.json
 
 # Containers / deployments (optional)
 docker-data/
+
+# Local recovery dumps
+_recovery/
