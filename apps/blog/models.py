@@ -10,6 +10,7 @@ from django.urls import reverse
 from solo.models import SingletonModel
 from django.db.models.functions import Lower
 from django.db.models import QuerySet
+from apps.core.utils.sanitize import sanitize_html
 
 
 class PostStatus(models.TextChoices):
@@ -111,6 +112,14 @@ class Post(models.Model):
         return False
 
     def save(self, *args, **kwargs):
+        # Sanitize body to strip unsafe tags while allowing vetted embeds (YouTube/Vimeo)
+        self.body = sanitize_html(
+            self.body,
+            allowed_iframe_prefixes=(
+                "https://www.youtube.com/embed/",
+                "https://player.vimeo.com/",
+            ),
+        )
         if not self.slug:
             base = slugify(self.title)[:230]
             candidate = base
