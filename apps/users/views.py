@@ -292,6 +292,18 @@ def verify_email_view(request):
             user.email_verified_at = timezone.now()
             user.verification_code = ""
             user.save(update_fields=["email_verified_at", "verification_code"])
+            # Notify user (best-effort)
+            try:
+                from apps.users.services.notifications import send_notification
+
+                send_notification(
+                    recipient=user,
+                    title="Email verified",
+                    message="Your email address has been verified successfully.",
+                    level="info",
+                )
+            except Exception:
+                logger.debug("verify_email notification skipped", exc_info=True)
             messages.success(request, "Email verified successfully.")
             return redirect("users:dashboard")
 

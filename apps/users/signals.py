@@ -9,12 +9,18 @@ from __future__ import annotations
 import logging
 
 from allauth.account.signals import email_confirmed, user_signed_up
+try:
+    from allauth.account.signals import password_changed, password_set
+except Exception:  # allauth version guard
+    password_changed = None
+    password_set = None
 from allauth.account.utils import perform_login
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.utils import timezone
 
 from apps.core.utils.ip import get_client_ip
+from apps.users.services.notifications import send_notification
 from apps.users.services.notifications import send_notification
 
 logger = logging.getLogger(__name__)
@@ -106,9 +112,51 @@ def handle_email_confirmed(request, email_address, **kwargs):
                 "email_confirmed: marked verified for user=%s",
                 getattr(user, "email", user.pk),
             )
+            # Notify user
+            try:
+                send_notification(
+                    recipient=user,
+                    title="Email verified",
+                    message="Your email address has been verified successfully.",
+                    level="info",
+                )
+            except Exception:
+                logger.debug("email_confirmed notification skipped", exc_info=True)
 
     except Exception as exc:
         logger.exception("email_confirmed handler failed: %s", exc)
+
+
+if password_changed:
+
+    @receiver(password_changed)
+    def handle_password_changed(request, user, **kwargs):
+        """Notify user on password change."""
+        try:
+            send_notification(
+                recipient=user,
+                title="Password changed",
+                message="Your account password was changed. If this wasn’t you, reset your password immediately.",
+                level="warning",
+            )
+        except Exception:
+            logger.debug("password_changed notification skipped", exc_info=True)
+
+
+if password_set:
+
+    @receiver(password_set)
+    def handle_password_set(request, user, **kwargs):
+        """Notify user when a password is set (e.g., first-time set after invite)."""
+        try:
+            send_notification(
+                recipient=user,
+                title="Password set",
+                message="A password was set on your account.",
+                level="info",
+            )
+        except Exception:
+            logger.debug("password_set notification skipped", exc_info=True)
 
 
 @receiver(user_logged_in)
