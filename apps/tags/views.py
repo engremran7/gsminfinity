@@ -42,7 +42,11 @@ def search(request):
     q = request.GET.get("q", "").strip()
     qs = Tag.objects.filter(is_active=True, is_deleted=False)
     if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(normalized_name__icontains=q))
+        qs = qs.filter(
+            Q(name__icontains=q)
+            | Q(normalized_name__icontains=q)
+            | Q(synonyms_text__icontains=q)
+        )
     qs = qs.order_by("-usage_count", "name")[:20]
     items = [
         {

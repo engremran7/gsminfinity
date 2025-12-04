@@ -64,6 +64,15 @@ class Tag(TimestampedModel, SoftDeleteModel):
     def __str__(self) -> str:
         return self.name
 
+    def save(self, *args, **kwargs):
+        # Normalize name/slug for consistent lookups
+        norm = (self.name or "").strip()
+        self.name = norm
+        self.normalized_name = (self.normalized_name or norm.lower())[:64]
+        if not self.slug:
+            self.slug = slugify(self.normalized_name)[:80]
+        super().save(*args, **kwargs)
+
 
 class TagsSettings(SingletonModel):
     """
