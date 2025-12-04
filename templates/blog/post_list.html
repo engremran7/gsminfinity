@@ -75,7 +75,7 @@
         <div class="grid gap-4">
           {% for post in posts %}
             {% url 'blog:post_detail' slug=post.slug as post_url %}
-            {% include "components/post_card.html" with title=post.title url=post_url meta=post.meta_text excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name thumbnail=post.hero_image seo_ready=post.seo_title|default_if_none:post.seo_description|default_if_none:'' published_at=post.published_at|date:\"M j, Y\" reading_time=post.reading_time %}
+            {% include "components/post_card.html" with title=post.title url=post_url meta=post.meta_text excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name thumbnail=post.hero_image seo_ready=post.seo_title|default_if_none:post.seo_description|default_if_none:'' published_at=post.published_at|date:"M j, Y" reading_time=post.reading_time %}
             {% if forloop.counter0|divisibleby:3 %}
               {% render_ad_slot "list-inline" %}
             {% endif %}
