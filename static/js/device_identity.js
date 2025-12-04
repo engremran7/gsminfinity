@@ -71,7 +71,16 @@
     return null;
   }
 
-  async function getOrCreateMachineUuid() {
+  async function getOrCreateMachineUuid(consentState) {
+    // Require consent for security/fraud or analytics before persisting identifiers.
+    const allowed =
+      consentState &&
+      (consentState.fraud_prevention ||
+        consentState.account_protection ||
+        consentState.security ||
+        consentState.analytics);
+    if (!allowed) return null;
+
     let uuid = await readMachineUuid();
     if (!uuid) {
       uuid = uuidv4();
@@ -131,46 +140,47 @@
   }
 
   async function attachToForms() {
-    const uuid = await getOrCreateMachineUuid();
     document.querySelectorAll("form").forEach((form) => {
       if (!form.method || form.method.toLowerCase() !== "post") return;
-      // Always attach machine_uuid
-      if (!form.querySelector('input[name="machine_uuid"]')) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = "machine_uuid";
-        input.value = uuid;
-        form.appendChild(input);
-      }
-      // Attach enhanced fingerprint on demand
-      if (form.dataset.collectFingerprint === "true") {
-        form.addEventListener(
-          "submit",
-          async () => {
-            try {
-              const consentState = window.CONSENT_CATEGORIES || {};
+      form.addEventListener(
+        "submit",
+        async () => {
+          try {
+            const consentState =
+              (window.Consent && window.Consent.getState && window.Consent.getState()) ||
+              window.CONSENT_CATEGORIES ||
+              null;
+            const uuid = await getOrCreateMachineUuid(consentState);
+            if (uuid && !form.querySelector('input[name="machine_uuid"]')) {
+              const input = document.createElement("input");
+              input.type = "hidden";
+              input.name = "machine_uuid";
+              input.value = uuid;
+              form.appendChild(input);
+            }
+            if (form.dataset.collectFingerprint === "true") {
               const fp = await collectEnhancedFingerprint(consentState);
-              if (!form.querySelector('input[name="fingerprint_hash"]')) {
+              if (fp.fingerprint_hash && !form.querySelector('input[name="fingerprint_hash"]')) {
                 const hashInput = document.createElement("input");
                 hashInput.type = "hidden";
                 hashInput.name = "fingerprint_hash";
-                hashInput.value = fp.fingerprint_hash || "";
+                hashInput.value = fp.fingerprint_hash;
                 form.appendChild(hashInput);
               }
-              if (!form.querySelector('input[name="fingerprint_blob"]')) {
+              if (fp.fingerprint_blob && !form.querySelector('input[name="fingerprint_blob"]')) {
                 const blobInput = document.createElement("input");
                 blobInput.type = "hidden";
                 blobInput.name = "fingerprint_blob";
                 blobInput.value = JSON.stringify(fp.fingerprint_blob || {});
                 form.appendChild(blobInput);
               }
-            } catch (e) {
-              /* non-fatal */
             }
-          },
-          { once: true }
-        );
-      }
+          } catch (e) {
+            /* non-fatal */
+          }
+        },
+        { once: true }
+      );
     });
   }
 
