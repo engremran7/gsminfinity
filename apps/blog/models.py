@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from django.urls import reverse
 from solo.models import SingletonModel
+from django.db.models import QuerySet
 
 
 class PostStatus(models.TextChoices):
@@ -64,6 +65,16 @@ class Post(models.Model):
     class Meta:
         ordering = ["-published_at", "-created_at"]
 
+    @classmethod
+    def published(cls) -> QuerySet:
+        """
+        Convenience queryset for live posts (published and not in the future).
+        """
+        now_ts = timezone.now()
+        return cls.objects.filter(
+            status=PostStatus.PUBLISHED, publish_at__lte=now_ts
+        )
+
     def __str__(self) -> str:
         return self.title
 
@@ -115,6 +126,10 @@ class Post(models.Model):
         self.reading_time = max(1, round(words / 200)) if words else 1
 
         super().save(*args, **kwargs)
+
+    @property
+    def seo_ready(self) -> bool:
+        return bool(self.seo_title and self.seo_description)
 
 
 class PostDraft(models.Model):

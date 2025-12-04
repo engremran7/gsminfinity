@@ -32,7 +32,9 @@ from apps.core.utils.logging import log_event
 def _sync_tag_usage(tags_qs):
     for tag in tags_qs:
         try:
-            count = tag.posts.filter(status=PostStatus.PUBLISHED).count()
+            count = tag.posts.filter(
+                status=PostStatus.PUBLISHED, publish_at__lte=timezone.now()
+            ).count()
             if tag.usage_count != count:
                 tag.usage_count = count
                 tag.save(update_fields=["usage_count"])
@@ -113,7 +115,7 @@ def post_list(request: HttpRequest) -> HttpResponse:
     allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
 
     now_ts = timezone.now()
-    base_qs = Post.objects.select_related("author", "category")
+    base_qs = Post.objects.select_related("author", "category").prefetch_related("tags")
     published_qs = base_qs.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
 
     # If owner/staff, also show their drafts/scheduled in manager context (not to the public)
@@ -146,6 +148,11 @@ def post_list(request: HttpRequest) -> HttpResponse:
         p.meta_text = f"By {p.author} · {published}"
 
     trending_tags = Tag.objects.order_by("-usage_count")[:10]
+    for t in trending_tags:
+        t.live_post_count = t.posts.filter(
+            status=PostStatus.PUBLISHED, publish_at__lte=now_ts
+        ).count()
+
     trending_posts = list(
         Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
         .select_related("author")
@@ -186,12 +193,12 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
         raise Http404("Blog is disabled.")
     allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
 
-    post = get_object_or_404(
-        Post.objects.select_related("author", "category").prefetch_related("tags"),
-        slug=slug,
-    )
-    if not post.is_live and not (request.user.is_staff or request.user == post.author):
-        raise Http404("Post not published.")
+    base_qs = Post.objects.select_related("author", "category").prefetch_related("tags")
+    post = get_object_or_404(base_qs, slug__iexact=slug)
+    # Non-staff users must only see live posts
+    if not (request.user.is_staff or request.user == post.author):
+        if not post.is_live:
+            raise Http404("Post not published.")
     related = Post.objects.filter(
         tags__in=post.tags.all(),
         status=PostStatus.PUBLISHED,
