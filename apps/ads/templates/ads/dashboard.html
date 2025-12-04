@@ -41,8 +41,8 @@
         <tbody class="divide-y divide-slate-100">
           {% for p in placements %}
             <tr>
-              <td class="py-1">{{ p.name }} ({{ p.slug }})</td>
-              <td class="py-1 text-xs text-slate-500">{{ p.page_context }}</td>
+              <td class="py-1">{{ p.name|escape }} ({{ p.slug|escape }})</td>
+              <td class="py-1 text-xs text-slate-500">{{ p.page_context|escape }}</td>
               <td class="py-1">{{ p.is_enabled }}</td>
               <td class="py-1">{{ p.locked }}</td>
               <td class="py-1 text-xs text-slate-500">

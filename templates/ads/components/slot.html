@@ -1,10 +1,10 @@
 {# Ad slot placeholder. Expects `placement`, `fallback_slug`, `allowed_types`, `allowed_sizes`. #}
 <div
   class="ad-slot block w-full"
-  data-ad-slot="{{ placement.slug|default:fallback_slug }}"
-  data-allowed-types="{{ allowed_types|default:placement.allowed_types|default:'any' }}"
-  data-allowed-sizes="{{ allowed_sizes|default:placement.allowed_sizes|default:'auto' }}"
-  data-context="{{ placement.context|default:placement.page_context }}"
+  data-ad-slot="{{ placement.slug|default:fallback_slug|escape }}"
+  data-allowed-types="{{ allowed_types|default:placement.allowed_types|default:'any'|escape }}"
+  data-allowed-sizes="{{ allowed_sizes|default:placement.allowed_sizes|default:'auto'|escape }}"
+  data-context="{{ placement.context|default:placement.page_context|escape }}"
   data-requires-consent="ads"
 >
   <div class="w-full rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-center text-xs py-6">
