@@ -129,6 +129,7 @@ def post_list(request: HttpRequest) -> HttpResponse:
     tag = request.GET.get("tag", "").strip()
     category_slug = request.GET.get("category", "").strip()
     author = request.GET.get("author", "").strip()
+    status_filter = (request.GET.get("status") or "").strip().lower()
 
     if q:
         posts = posts.filter(Q(title__icontains=q) | Q(body__icontains=q) | Q(summary__icontains=q))
@@ -140,6 +141,16 @@ def post_list(request: HttpRequest) -> HttpResponse:
         posts = posts.filter(author__username=author)
 
     posts = posts.prefetch_related("tags")
+
+    # Status filter (only staff/author can view non-published states)
+    if status_filter in PostStatus.values:
+        if status_filter == PostStatus.PUBLISHED:
+            posts = posts.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
+        elif request.user.is_staff or request.user.is_superuser:
+            posts = posts.filter(status=status_filter)
+        elif request.user.is_authenticated:
+            posts = posts.filter(status=status_filter, author=request.user)
+        # else: ignore invalid visibility requests
     paginator = Paginator(posts, 10)
     page_obj = paginator.get_page(request.GET.get("page") or 1)
     # Precompute display strings to keep templates simple and avoid filter gymnastics.
@@ -176,6 +187,10 @@ def post_list(request: HttpRequest) -> HttpResponse:
         "trending_posts": trending_posts,
         "latest_posts": latest_posts,
         "allow_user_posts": allow_user_posts,
+        "active_status": status_filter,
+        "active_tag": tag,
+        "active_category": category_slug,
+        "active_author": author,
     }
     return render(request, "blog/post_list.html", context)
 

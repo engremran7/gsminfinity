@@ -18,13 +18,23 @@
           <p class="text-sm text-slate-600">Latest posts, product updates, and AI-powered insights.</p>
           <p class="text-xs text-slate-500">Ads and SEO obey global toggles; internal links and meta stay stable unless you trigger updates.</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 flex-wrap justify-end">
           <form method="get" class="flex items-center gap-2">
             <label class="visually-hidden" for="search">Search</label>
             <input id="search" name="q" value="{{ q|default_if_none:'' }}" placeholder="Search posts..."
               class="w-48 sm:w-60 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" />
             <button type="submit" class="btn-outline text-sm px-3 py-2 rounded-md border border-slate-300">Search</button>
           </form>
+          <div class="flex items-center gap-2 text-xs">
+            {% for st,label in ('','All'),('published','Published'),('scheduled','Scheduled'),('draft','Drafts') %}
+              {% with is_active=active_status|default:'' == st %}
+                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if active_tag %}tag={{ active_tag|urlencode }}&{% endif %}{% if active_category %}category={{ active_category|urlencode }}&{% endif %}{% if author %}author={{ author|urlencode }}&{% endif %}{% if st %}status={{ st }}{% endif %}"
+                   class="inline-flex items-center px-3 py-1.5 rounded-full border {% if is_active %}bg-primary text-white border-primary{% else %}bg-white text-slate-700 border-slate-200{% endif %}">
+                  {{ label }}
+                </a>
+              {% endwith %}
+            {% endfor %}
+          </div>
           {% if request.user.is_staff or request.user.is_superuser or allow_user_posts %}
             <a href="{% url 'blog:manage_posts' %}" class="btn-outline px-3 py-2 rounded-md border border-slate-300 text-sm">Manage</a>
             <a href="{% url 'blog:post_create' %}" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
