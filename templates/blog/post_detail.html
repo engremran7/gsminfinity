@@ -59,6 +59,18 @@
           </div>
           {% endwith %}
         </div>
+        {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser or request.user == post.author %}
+          <div class="flex items-center gap-2 text-xs">
+            <a href="{% url 'blog:post_create' %}?edit={{ post.slug }}" class="px-3 py-1.5 rounded-full border border-slate-300 bg-white hover:bg-primary/10 hover:text-primary">
+              Edit post
+            </a>
+            {% if request.user.is_staff or request.user.is_superuser %}
+              <a href="/admin/blog/post/{{ post.id }}/change/" class="px-3 py-1.5 rounded-full border border-slate-300 bg-white hover:bg-amber-50 hover:text-amber-700">
+                Admin edit
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
         <div class="flex items-center gap-2 text-xs text-slate-500">
           <a href="{% url 'blog:post_list' %}" class="hover:text-primary">Blog</a>
           <span aria-hidden="true">/</span>
