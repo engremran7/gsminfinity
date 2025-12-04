@@ -3,10 +3,12 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.db import models
+from django.core.validators import MinLengthValidator, MaxLengthValidator
 from django.utils import timezone
 from django.utils.text import slugify
 from django.urls import reverse
 from solo.models import SingletonModel
+from django.db.models.functions import Lower
 from django.db.models import QuerySet
 
 
@@ -35,14 +37,26 @@ class Category(models.Model):
 
 
 class Post(models.Model):
-    title = models.CharField(max_length=200)
+    title = models.CharField(
+        max_length=200,
+        validators=[MinLengthValidator(3), MaxLengthValidator(200)],
+        help_text="3-200 characters.",
+    )
     slug = models.SlugField(max_length=240, unique=True, blank=True)
-    summary = models.TextField(blank=True, default="")
+    summary = models.TextField(
+        blank=True,
+        default="",
+        validators=[MaxLengthValidator(1000)],
+        help_text="Short abstract shown in lists; capped to ~1000 characters.",
+    )
     seo_title = models.CharField(max_length=240, blank=True, default="")
     seo_description = models.CharField(max_length=320, blank=True, default="")
     canonical_url = models.URLField(blank=True, default="")
     hero_image = models.URLField(blank=True, default="")
-    body = models.TextField()
+    body = models.TextField(
+        validators=[MinLengthValidator(10), MaxLengthValidator(50000)],
+        help_text="HTML produced by the WYSIWYG editor; validated and sanitized upstream.",
+    )
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts"
     )
@@ -64,6 +78,11 @@ class Post(models.Model):
 
     class Meta:
         ordering = ["-published_at", "-created_at"]
+        indexes = [
+            models.Index(fields=["status", "publish_at"], name="blog_post_status_pub_idx"),
+            models.Index(fields=["author", "status"], name="blog_post_author_status_idx"),
+            models.Index(Lower("slug"), name="blog_post_slug_ci_idx"),
+        ]
 
     @classmethod
     def published(cls) -> QuerySet:
