@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Optional
+from apps.core.utils.sanitize import sanitize_html
 
 from apps.core import ai
 
@@ -18,10 +19,11 @@ def classify_comment(text: str, context: Optional[str] = None) -> ModerationResu
     """
     Lightweight AI moderation wrapper; in production add safety filters and caching.
     """
+    safe_text = sanitize_html(text or "", allowed_tags=["p", "br", "strong", "em"])
     prompt = (
         "Classify this comment for spam/toxicity/hate. Return a single label among "
         "['approved','pending','spam','abuse'] with a short rationale.\n"
-        f"Comment: {text}\nContext: {context or ''}"
+        f"Comment: {safe_text}\nContext: {context or ''}"
     )
     raw = ai.safe_generate_text(prompt, context="comment_moderation")
     label = "pending"

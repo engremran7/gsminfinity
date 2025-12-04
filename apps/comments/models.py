@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.db import models
+from django.core.validators import MinLengthValidator, MaxLengthValidator
 from solo.models import SingletonModel
 from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -34,7 +35,10 @@ class Comment(TimestampedModel, SoftDeleteModel):
         on_delete=models.CASCADE,
         related_name="comments",
     )
-    body = models.TextField()
+    body = models.TextField(
+        validators=[MinLengthValidator(3), MaxLengthValidator(5000)],
+        help_text="Plain text or sanitized HTML from editor; capped to 5k chars.",
+    )
     parent = models.ForeignKey(
         "self",
         on_delete=models.CASCADE,
