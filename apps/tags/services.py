@@ -10,6 +10,7 @@ from apps.tags.models import Tag
 from apps.core import ai
 from apps.core import ai_client
 from apps.tags.models_keyword import KeywordProvider, KeywordSuggestion
+from django.utils.text import slugify
 
 
 def _normalize(text: str) -> str:
@@ -121,5 +122,52 @@ def store_keyword_suggestions(provider: KeywordProvider, keywords: List[Dict[str
     provider.last_run_at = now
     provider.last_status = "ok"
     provider.save(update_fields=["last_run_at", "last_status"])
+
+
+def auto_tag_post(post, allow_create: bool = True, max_tags: int = 5) -> list[Tag]:
+    """
+    Heuristic auto-tagging: derive candidate tags from title/summary/body.
+    Creates AI-suggested tags if allowed and attaches them to the post.
+    """
+    text = " ".join(
+        [
+            getattr(post, "title", "") or "",
+            getattr(post, "summary", "") or "",
+            (getattr(post, "body", "") or "")[:4000],  # cap to avoid over-processing
+        ]
+    )
+    suggestions = suggest_tags_from_text(text, limit=max_tags * 2)
+    attached: list[Tag] = []
+    for s in suggestions:
+        norm = s.get("normalized") or _normalize(s.get("name", ""))
+        if not norm:
+            continue
+        existing = (
+            Tag.objects.filter(normalized_name=norm, is_deleted=False).first()
+            or Tag.objects.filter(name__iexact=s.get("name", "")).first()
+        )
+        tag_obj = existing
+        if not tag_obj and allow_create:
+            tag_obj = Tag.objects.create(
+                name=s.get("name", norm).strip()[:64],
+                normalized_name=norm[:64],
+                slug=slugify(norm)[:80],
+                ai_suggested=True,
+                is_curated=False,
+            )
+        if not tag_obj:
+            continue
+        post.tags.add(tag_obj)
+        attached.append(tag_obj)
+        if len(attached) >= max_tags:
+            break
+    # Update usage counts for attached tags
+    for t in attached:
+        try:
+            t.usage_count = t.posts.count()
+            t.save(update_fields=["usage_count"])
+        except Exception:
+            continue
+    return attached
 
 

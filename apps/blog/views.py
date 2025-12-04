@@ -21,6 +21,7 @@ from apps.core.app_service import AppService
 from .forms import PostForm
 from .models import Post, PostStatus, Category, PostDraft, PostRevision
 from apps.tags.models import Tag
+from apps.tags import services as tag_services
 from apps.seo.models import SEOModel, Metadata
 from apps.core.utils import feature_flags
 from apps.users.models import CustomUser
@@ -412,6 +413,9 @@ def post_create(request: HttpRequest) -> HttpResponse:
             with transaction.atomic():
                 post.save()
                 form.save_m2m()
+                # If no tags supplied, auto-suggest from content
+                if not post.tags.exists():
+                    tag_services.auto_tag_post(post, allow_create=True, max_tags=5)
                 _sync_tag_usage(post.tags.all())
                 _ensure_post_seo(post, request)
                 PostRevision.objects.create(
