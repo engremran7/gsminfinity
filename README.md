@@ -11,6 +11,8 @@ Full-stack Django platform for content, ads, SEO, consent, users, devices, and a
 - **Device identity** – Optional machine UUID + fingerprint, now gated by consent and only attached on submit.
 - **Security suite (optional)** – `security_suite` facade + devices/bots/risk shims; pluggable.
 - **Theming/i18n** – i18n themes app, theme switcher middleware stub.
+- **Distribution** – Email/newsletter/connectors scaffolding.
+- **App registry** – Simple registry hooks for pluggability.
 
 ## Layout (top-level)
 - `apps/` – Django apps (ads, blog, comments, consent, core, seo, site_settings, tags, users, devices, crawler_guard, ai, ai_behavior, i18n_themes, app_registry, distribution, common).
@@ -83,3 +85,22 @@ python manage.py test
 - Migration conflicts: fake the specific migration, then `migrate` (see above).
 - Verification email issues: set `DEFAULT_FROM_EMAIL`, configure mail backend, use resend in UI.
 - Device ID missing: consent is required; check `Consent.getState()` in the browser.
+
+## App-by-app snapshot (what each does)
+- **apps/users**: Custom user model, MFA (TOTP), email verification (TTL/resend), notifications, profile completion, adapters for allauth, rate limiting hooks.
+- **apps/ads**: Placements, campaigns, creatives, events, affiliate sources/links, rotation/targeting engines, analytics tracker, consent-aware serving, dashboard.
+- **apps/blog**: Posts, drafts, revisions, scheduling, AI editor hooks, feeds, tags integration, SEO helpers, trending/related widgets.
+- **apps/comments**: Generic comments (content type), threading/meta, moderation/spam flags, settings, API, admin moderation tools.
+- **apps/seo**: SEO models, metadata, internal linking engine, sitemaps, URL inspector, AI metadata/schema helpers, management commands, dashboard components.
+- **apps/consent**: Consent policies, decisions/events, middleware/context, hashing helpers (IP/UA), banners/manage views, legal copy templates.
+- **apps/site_settings**: Singleton site config (branding, toggles, legal text), context processors, admin.
+- **apps/tags**: Tag model with hierarchy, suggestions/providers, settings, management commands for keywords/duplicates.
+- **apps/devices**: Device identity models/services (backed by consent-gated frontend script), decorators for trusted devices.
+- **apps/crawler_guard**: Middleware + utilities to classify/block crawlers (stub-compatible with security suite).
+- **apps/ai / apps/ai_behavior**: AI configs/services and behavior/risk tracking (current shims; align with security_risk).
+- **apps/i18n_themes**: Theme definitions, switcher middleware stub, template tags, seed command.
+- **apps/app_registry**: Registry scaffolding for pluggable features.
+- **apps/distribution**: Connectors for email/newsletter/feeds/social; models/services/signals skeleton.
+- **apps/common**: Small helpers (hash, clamp, legacy totp wrapper).
+- **apps/core**: Framework utilities (feature flags, cache, middleware, logging, sanitize, base views), template tags, AI client/job helper, signals.
+- **security_suite/**: Optional facade (`security`) plus `security_devices`, `security_bots`, `security_risk` shims delegating to in-project apps; can be split out as a package.
