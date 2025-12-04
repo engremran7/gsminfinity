@@ -70,11 +70,31 @@ def sanitize_html(
     )
     # Drop iframes not on the allowed prefix list
     if "iframe" in tags:
-        prefixes = tuple(allowed_iframe_prefixes or ("https://www.youtube.com/embed/", "https://player.vimeo.com/"))
+        prefixes = tuple(
+            allowed_iframe_prefixes
+            or (
+                "https://www.youtube.com/embed/",
+                "https://www.youtube-nocookie.com/embed/",
+                "https://player.vimeo.com/video/",
+                "https://player.vimeo.com/",
+            )
+        )
+
         def _strip_invalid_iframes(match):
             src = match.group(1) or ""
-            return match.group(0) if src.startswith(prefixes) else ""
-        result = re.sub(r'<iframe[^>]+src="([^"]+)"[^>]*></iframe>', _strip_invalid_iframes, result, flags=re.IGNORECASE)
+            # Normalize protocol-relative URLs to https
+            if src.startswith("//"):
+                src = "https:" + src
+            # Update the match to use normalized src
+            full_tag = match.group(0).replace(match.group(1), src)
+            return full_tag if src.startswith(prefixes) else ""
+
+        result = re.sub(
+            r'<iframe[^>]+src="([^"]+)"[^>]*></iframe>',
+            _strip_invalid_iframes,
+            result,
+            flags=re.IGNORECASE,
+        )
     return result
 
 
