@@ -1,12 +1,12 @@
+
 # apps/users/models.py
 """
 apps/users/models.py
 
-GSMInfinity — authoritative, enterprise-grade user models.
+GSMInfinity - authoritative, enterprise-grade user models.
 
 Design:
-- CustomUser (email primary) with atomic referral generation
-- DeviceFingerprint for MFA / trusted devices
+- CustomUser (email primary)
 - Notification & Announcement models
 - Defensive DB operations and logging
 - Compatible with Django 5.2+ / Python 3.12
@@ -18,7 +18,6 @@ import logging
 import re
 import secrets
 import string
-import uuid
 from typing import Any, Dict, Optional
 
 from django.conf import settings
@@ -27,10 +26,11 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
-from django.core.cache import cache
-from django.db import IntegrityError, models, transaction
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.text import slugify
+from solo.models import SingletonModel
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +99,7 @@ class CustomUserManager(BaseUserManager):
 # --------------------------------------------------------------------------
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     """
-    Core authentication model with referrals, verification & tracking.
+    Core authentication model with verification & tracking.
     Email is the primary unique identifier.
     """
 
@@ -127,10 +127,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
-    # Credits & referrals
+    # Credits (referrals deprecated)
     credits = models.PositiveIntegerField(default=0)
     referral_code = models.CharField(
-        max_length=12, unique=True, blank=True, db_index=True
+        max_length=12,
+        unique=False,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Referral system disabled by default; code is optional.",
     )
     referred_by = models.ForeignKey(
         "self",
@@ -185,129 +190,31 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         if self.email:
             self.email = str(self.email).strip().lower()
         if self.phone:
-            # strip separators but keep leading plus if present
             normalized = _PHONE_NORMALIZE_RE.sub("", str(self.phone))
             self.phone = normalized
 
-    # ============================================================
-    # Referral system (atomic and bounded)
-    # ============================================================
-    @staticmethod
-    def _generate_referral_candidate() -> str:
-        """
-        Generate a referral candidate of length 12 using secure randomness.
-        """
-        base = uuid.uuid4().hex[:8].upper()
-        suffix_chars = string.ascii_uppercase + string.digits
-        suffix = "".join(secrets.choice(suffix_chars) for _ in range(4))
-        return f"{base}{suffix}"[:12]
-
-    def _attempt_assign_referral(self, candidate: str) -> bool:
-        """
-        Try atomic assignment of referral code on the DB record for this user.
-        Returns True if assignment succeeded; False otherwise.
-        """
-        try:
-            with transaction.atomic():
-                obj = CustomUser.objects.select_for_update().get(pk=self.pk)
-                if obj.referral_code:
-                    self.referral_code = obj.referral_code
-                    return True
-                if CustomUser.objects.filter(referral_code=candidate).exists():
-                    return False
-                obj.referral_code = candidate
-                obj.save(update_fields=["referral_code"])
-                self.referral_code = candidate
-                return True
-        except IntegrityError:
-            logger.debug("Referral collision for candidate=%s", candidate)
-            return False
-        except Exception as exc:
-            logger.exception("Referral assignment failed for %s → %s", candidate, exc)
-            return False
-
     def save(self, *args, **kwargs) -> None:
         """
-        Auto-generate referral_code atomically if missing.
-        Ensures at least one save occurs to obtain PK before assignment attempts.
+        Persist user with normalization. Referral codes are deprecated and no longer auto-assigned.
         """
-        # Basic normalization + username generation for new objects
         try:
             self.clean()
         except Exception:
-            # never block save because of normalization issues
             logger.debug("cleanup failed in save(); proceeding with save")
 
-        # If new instance without PK, create a minimal row to obtain PK
         if not self.pk:
             if not self.username and self.email:
                 base = self.email.split("@")[0][:120]
                 slug = slugify(base) or f"user{secrets.token_hex(3)}"
-                # avoid trivial slug collisions (best-effort)
                 if CustomUser.objects.filter(username=slug).exists():
                     slug = f"{slug[:10]}{secrets.token_hex(2)}"
                 self.username = slug
             super().save(*args, **kwargs)
 
-        # If referral_code still missing, attempt assignment
-        if not self.referral_code:
-            max_attempts = 8
-            assigned_candidate: Optional[str] = None
-            for _ in range(max_attempts):
-                cand = self._generate_referral_candidate()
-                reserve_key = f"refcode:{cand}"
-                reserved = False
-                try:
-                    reserved = cache.add(reserve_key, True, timeout=5)
-                except Exception:
-                    reserved = False
-
-                if not reserved:
-                    continue
-
-                try:
-                    if self._attempt_assign_referral(cand):
-                        assigned_candidate = cand
-                        break
-                finally:
-                    if not assigned_candidate:
-                        try:
-                            cache.delete(reserve_key)
-                        except Exception:
-                            logger.debug(
-                                "Failed to delete referral reservation key %s",
-                                reserve_key,
-                            )
-
-            if not assigned_candidate:
-                # fallback deterministic but unique-ish default
-                stamp = int(timezone.now().timestamp()) % 100000
-                suffix = secrets.randbelow(90000) + 10000
-                fallback = f"REF{stamp}{suffix}"[:12].upper()
-                try:
-                    with transaction.atomic():
-                        obj = CustomUser.objects.select_for_update().get(pk=self.pk)
-                        if not obj.referral_code:
-                            obj.referral_code = fallback
-                            obj.save(update_fields=["referral_code"])
-                            self.referral_code = fallback
-                        else:
-                            self.referral_code = obj.referral_code
-                except Exception as exc:
-                    logger.exception(
-                        "Failed to persist fallback referral code for user %s → %s",
-                        getattr(self, "pk", None),
-                        exc,
-                    )
-                    self.referral_code = fallback
-
-        # Final save to persist any other unsaved changes
         try:
             super().save(*args, **kwargs)
         except Exception as exc:
-            logger.exception(
-                "Failed to save user %s → %s", getattr(self, "email", None), exc
-            )
+            logger.exception("Failed to save user %s : %s", getattr(self, "email", None), exc)
             raise
 
     # ============================================================
@@ -343,22 +250,47 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
                 logger.exception("Email verification update failed: %s", exc)
 
     def generate_verification_code(
-        self, length: int = 6, code_type: str = "alphanumeric"
+        self, length: int | None = None, code_type: str | None = None
     ) -> str:
-        alphabet = (
-            string.digits
-            if code_type == "numeric"
-            else (string.ascii_uppercase + string.digits)
-        )
-        length = max(1, min(length, 24))
+        """
+        Generate and persist an email verification code.
+
+        Defaults to a 6-character hexadecimal code (0-9, A-F).
+        Falls back to SiteSettings for length/type when available.
+        """
+        if length is None or length <= 0:
+            try:
+                from apps.site_settings.models import SiteSettings
+
+                ss = SiteSettings.get_solo()
+                length = int(getattr(ss, "email_verification_code_length", 6) or 6)
+            except Exception:
+                length = 6
+        if code_type is None:
+            try:
+                from apps.site_settings.models import SiteSettings
+
+                ss = SiteSettings.get_solo()
+                code_type = getattr(ss, "email_verification_code_type", "hex")
+            except Exception:
+                code_type = "hex"
+
+        length = max(1, min(int(length), 24))
+
+        ctype = str(code_type).lower()
+        if ctype == "numeric":
+            alphabet = string.digits
+        elif ctype in {"hex", "hexadecimal"}:
+            alphabet = string.digits + "ABCDEF"
+        else:
+            alphabet = string.ascii_uppercase + string.digits
+
         code = "".join(secrets.choice(alphabet) for _ in range(length))
         self.verification_code = code
         try:
             self.save(update_fields=["verification_code"])
         except Exception as exc:
-            logger.exception(
-                "Verification code save failed for %s → %s", self.email, exc
-            )
+            logger.exception("Verification code save failed for %s : %s", self.email, exc)
         return code
 
     def increment_unlock(self) -> None:
@@ -377,44 +309,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
             except Exception as exc:
                 logger.exception("Credit update failed: %s", exc)
 
-
-# --------------------------------------------------------------------------
-# DeviceFingerprint
-# --------------------------------------------------------------------------
-class DeviceFingerprint(models.Model):
-    """Tracks device/browser identifiers for MFA and session trust."""
-
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="device_fingerprints",
-    )
-    fingerprint_hash = models.CharField(max_length=128)
-    os_info = models.CharField(max_length=100, blank=True)
-    motherboard_id = models.CharField(max_length=100, blank=True)
-    browser_info = models.CharField(max_length=255, blank=True)
-    registered_at = models.DateTimeField(auto_now_add=True)
-    last_used_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "fingerprint_hash"], name="unique_user_fingerprint"
-            )
-        ]
-        ordering = ["-last_used_at"]
-        verbose_name = "Device Fingerprint"
-        verbose_name_plural = "Device Fingerprints"
-        indexes = [
-            models.Index(fields=["user", "is_active"], name="device_user_active_idx")
-        ]
-
-    def __str__(self) -> str:
-        return f"{getattr(self.user, 'email', 'unknown')} · {self.fingerprint_hash[:8]}"
-
-    def fingerprint_hash_short(self) -> str:
-        return (self.fingerprint_hash or "")[:16]
 
 
 # --------------------------------------------------------------------------
@@ -566,3 +460,40 @@ class Announcement(models.Model):
 
     def to_json(self) -> Dict[str, Any]:
         return self.to_dict()
+
+
+# --------------------------------------------------------------------------
+# UsersSettings (app-local, singleton)
+# --------------------------------------------------------------------------
+class UsersSettings(SingletonModel):
+    """
+    Per-project settings for the Users app.
+
+    Kept independent so the app can be dropped into other projects
+    without relying on a monolithic SiteSettings model.
+    """
+
+    enable_signup = models.BooleanField(default=True)
+    enable_password_reset = models.BooleanField(default=True)
+    enable_notifications = models.BooleanField(default=True)
+
+    require_mfa = models.BooleanField(default=False)
+    mfa_totp_issuer = models.CharField(max_length=50, default="Site")
+
+    max_login_attempts = models.PositiveIntegerField(default=5)
+    rate_limit_window_seconds = models.PositiveIntegerField(default=300)
+
+    enable_payments = models.BooleanField(default=True)
+    required_profile_fields = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of user model fields that should trigger a profile-completion prompt.",
+    )
+
+    class Meta:
+        verbose_name = "Users Settings"
+
+    def __str__(self) -> str:
+        return "Users Settings"
+
+

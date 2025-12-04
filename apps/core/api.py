@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -45,3 +46,5 @@ class BaseAPIView(APIView):
 
     def error(self, error: str, status_code: int = status.HTTP_400_BAD_REQUEST) -> Response:
         return Response({"ok": False, "error": error}, status=status_code)
+
+

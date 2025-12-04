@@ -1,1 +1,90 @@
-{% extends "register.html" %}
+
+{% extends "account/auth_base.html" %}
+{% load socialaccount %}
+
+{% block auth_title %}Create Account - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block auth_heading %}Create your account{% endblock %}
+{% block auth_description %}Join {{ site_settings.site_name|default:"GSMInfinity" }} to access posts, comments, and dashboard tools.{% endblock %}
+
+{% block auth_body %}
+  <div class="space-y-6">
+    <div class="space-y-4 bg-slate-50 border border-slate-200 rounded p-4">
+      <h3 class="text-sm font-semibold text-slate-800">Continue with social</h3>
+      {% get_providers as socialaccount_providers %}
+      {% if socialaccount_providers %}
+        <ul class="space-y-2">
+          {% for provider in socialaccount_providers %}
+            <li>
+              <a href="{% provider_login_url provider.id process='signup' %}"
+                 class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded border border-slate-300 text-sm hover:border-primary hover:text-primary">
+                <span>Continue with {{ provider.name }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-slate-600">Social login providers are not configured.</p>
+      {% endif %}
+      <p class="text-xs text-slate-500">Email verification will occur on first sign-in.</p>
+    </div>
+
+    <div class="flex items-center gap-3 text-sm text-slate-500">
+      <div class="flex-1 h-px bg-slate-200"></div>
+      <span>or continue with email</span>
+      <div class="flex-1 h-px bg-slate-200"></div>
+    </div>
+
+    <div class="space-y-4">
+      <form method="post" action="{% url 'account_signup' %}" class="space-y-4">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="space-y-3">
+          {% if form.email %}
+            <div class="space-y-1">
+              {{ form.email.label_tag }}
+              {{ form.email }}
+              {{ form.email.errors }}
+            </div>
+          {% endif %}
+          {% if form.username %}
+            <div class="space-y-1">
+              {{ form.username.label_tag }}
+              {{ form.username }}
+              {{ form.username.errors }}
+            </div>
+          {% endif %}
+          {% if form.password1 %}
+            <div class="space-y-1">
+              {{ form.password1.label_tag }}
+              {{ form.password1 }}
+              {{ form.password1.errors }}
+            </div>
+          {% endif %}
+          {% if form.password2 %}
+            <div class="space-y-1">
+              {{ form.password2.label_tag }}
+              {{ form.password2 }}
+              {{ form.password2.errors }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded p-3 text-xs text-slate-600 space-y-1">
+          <div>Password tip: use 8+ chars, mixed case, numbers, symbols.</div>
+          <div>We’ll send a verification email after signup.</div>
+          <div class="text-slate-500">Recaptcha v2/v3 placeholder: add widget/script here when keys are available.</div>
+        </div>
+
+        <button type="submit" class="bg-primary text-white px-4 py-2 rounded w-full">
+          Sign up
+        </button>
+      </form>
+      <div class="text-sm text-slate-600 text-center">
+        Already have an account?
+        <a href="{% url 'account_login' %}" class="text-primary">Sign in</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+

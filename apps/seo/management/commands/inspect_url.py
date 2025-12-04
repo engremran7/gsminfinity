@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import urllib.request
@@ -22,3 +23,5 @@ class Command(BaseCommand):
                     self.stdout.write(f"{k}: {v}")
         except (HTTPError, URLError, Exception) as exc:
             self.stdout.write(self.style.ERROR(f"{url} failed: {exc}"))
+
+

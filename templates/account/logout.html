@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 {% block title %}Logged out — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
 {% block auth_heading %}You have been logged out{% endblock %}
@@ -7,3 +8,5 @@
   <a href="{% url 'account_login' %}" class="bg-primary text-white px-4 py-2 rounded">Sign in again</a>
 </div>
 {% endblock %}
+
+

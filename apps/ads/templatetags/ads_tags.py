@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from django import template
@@ -65,3 +66,5 @@ def get_item(d, key):
         return d.get(key)
     except Exception:
         return None
+
+

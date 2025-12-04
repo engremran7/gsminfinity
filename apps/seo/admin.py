@@ -1,4 +1,6 @@
+
 from django.contrib import admin
+from solo.admin import SingletonModelAdmin
 
 from .models import (
     SEOModel,
@@ -8,6 +10,7 @@ from .models import (
     Redirect,
     LinkableEntity,
     LinkSuggestion,
+    SEOSettings,
 )
 
 
@@ -54,3 +57,17 @@ class LinkableEntityAdmin(admin.ModelAdmin):
 class LinkSuggestionAdmin(admin.ModelAdmin):
     list_display = ("source", "target", "score", "is_applied", "locked", "is_active", "created_at")
     list_filter = ("is_applied", "locked", "is_active")
+
+
+@admin.register(SEOSettings)
+class SEOSettingsAdmin(SingletonModelAdmin):
+    list_display = ("seo_enabled", "auto_meta_enabled", "auto_schema_enabled", "auto_linking_enabled")
+    fieldsets = (
+        (None, {"fields": ("seo_enabled",)}),
+        ("Automation", {"fields": ("auto_meta_enabled", "auto_schema_enabled", "auto_linking_enabled")}),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+

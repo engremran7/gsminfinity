@@ -1,4 +1,5 @@
-﻿"""
+
+"""
 Generic Django Project Package
 ------------------------------
 
@@ -33,3 +34,4 @@ __version__ = "1.0.0"
 # Generic, reusable project metadata
 __author__ = "Application System"
 __description__ = "Core initializer for the Django application package."
+

@@ -1,14 +1,9 @@
+
 # apps/users/admin.py
 """
 apps.users.admin
-================
 Enterprise admin interfaces for user-related models in GSMInfinity.
 
-Features:
-- Robust CustomUser admin
-- Inline DeviceFingerprint management (read-only)
-- Notification + Announcement dashboards
-- Bulk admin actions
 - Export support (import_export) when installed
 - Does NOT break when import_export is absent
 - ZERO silent errors
@@ -54,7 +49,7 @@ except Exception:
 # --------------------------------------------------------------------------
 # MODELS (exactly as present in your models.py)
 # --------------------------------------------------------------------------
-from .models import Announcement, CustomUser, DeviceFingerprint, Notification
+from .models import Announcement, CustomUser, Notification, UsersSettings
 
 # ==========================================================================
 # FIXED BASE ADMIN CLASS
@@ -88,36 +83,6 @@ else:
 
 
 # ==========================================================================
-# DeviceFingerprint Inline (read-only)
-# ==========================================================================
-class DeviceFingerprintInline(admin.TabularInline):
-    """Read-only inline for a user's registered device fingerprints."""
-
-    model = DeviceFingerprint
-    extra = 0
-    can_delete = False
-    show_change_link = True
-    ordering = ("-last_used_at",)
-
-    readonly_fields = (
-        "fingerprint_hash",
-        "os_info",
-        "browser_info",
-        "motherboard_id",
-        "registered_at",
-        "last_used_at",
-        "is_active",
-    )
-    fields = readonly_fields
-
-    verbose_name = _("Registered Device")
-    verbose_name_plural = _("Registered Devices")
-
-    def has_add_permission(self, request: HttpRequest, obj=None) -> bool:
-        return False
-
-
-# ==========================================================================
 # CustomUser Admin
 # ==========================================================================
 @admin.register(CustomUser)
@@ -133,6 +98,7 @@ class CustomUserAdmin(BaseAdminClass):
         "is_superuser",
         "credits",
         "signup_method",
+        "email_verified_at",
         "date_joined",
     )
 
@@ -141,7 +107,6 @@ class CustomUserAdmin(BaseAdminClass):
         "username",
         "full_name",
         "phone",
-        "referral_code",
     )
 
     list_filter = (
@@ -149,23 +114,22 @@ class CustomUserAdmin(BaseAdminClass):
         "is_staff",
         "is_superuser",
         "signup_method",
+        "email_verified_at",
     )
 
     readonly_fields = (
-        "referral_code",
         "date_joined",
         "last_unlock",
     )
 
     ordering = ("-date_joined",)
-    inlines = [DeviceFingerprintInline]
     save_on_top = True
 
     list_select_related = ()
 
     fieldsets = (
         (_("Authentication"), {"fields": ("email", "username", "password")}),
-        (_("Personal Info"), {"fields": ("full_name", "phone", "referral_code")}),
+        (_("Personal Info"), {"fields": ("full_name", "phone")}),
         (
             _("Permissions"),
             {
@@ -185,6 +149,8 @@ class CustomUserAdmin(BaseAdminClass):
                     "credits",
                     "signup_method",
                     "last_unlock",
+                    "email_verified_at",
+                    "verification_code",
                     "date_joined",
                 )
             },
@@ -225,53 +191,21 @@ class CustomUserAdmin(BaseAdminClass):
         else:
             self.message_user(request, _("No users updated."), messages.INFO)
 
-    actions = ["mark_email_verified"]
+    @admin.action(description="Clear email verification (set to unverified)")
+    def clear_email_verification(self, request: HttpRequest, queryset: QuerySet) -> None:
+        count = queryset.update(email_verified_at=None, verification_code="")
+        try:
+            from allauth.account.models import EmailAddress
 
+            EmailAddress.objects.filter(user__in=queryset).update(verified=False)
+        except Exception:
+            logger.debug("EmailAddress unverify sync skipped or failed", exc_info=True)
+        if count:
+            self.message_user(request, _("%d user(s) marked unverified.") % count)
+        else:
+            self.message_user(request, _("No users updated."), messages.INFO)
 
-# ==========================================================================
-# DeviceFingerprint Admin
-# ==========================================================================
-@admin.register(DeviceFingerprint)
-class DeviceFingerprintAdmin(BaseAdminClass):
-    """Admin interface for device fingerprints."""
-
-    list_display = (
-        "user_display",
-        "fingerprint_hash_short",
-        "os_info",
-        "browser_info",
-        "last_used_at",
-        "is_active",
-    )
-
-    list_filter = ("is_active", "os_info", "browser_info")
-
-    search_fields = (
-        "fingerprint_hash",
-        "user__email",
-        "user__username",
-        "browser_info",
-    )
-
-    readonly_fields = ("registered_at", "last_used_at")
-    ordering = ("-last_used_at",)
-    list_select_related = ("user",)
-
-    save_on_top = True
-
-    @admin.display(description=_("User"))
-    def user_display(self, obj: DeviceFingerprint) -> str:
-        return (
-            getattr(obj.user, "email", None)
-            or getattr(obj.user, "username", None)
-            or f"User #{obj.user_id}"
-        )
-
-    @admin.display(description=_("Fingerprint"))
-    def fingerprint_hash_short(self, obj: DeviceFingerprint) -> str:
-        if not obj.fingerprint_hash:
-            return "—"
-        return f"{obj.fingerprint_hash[:16]}…"
+    actions = ["mark_email_verified", "clear_email_verification"]
 
 
 # ==========================================================================
@@ -408,3 +342,43 @@ class AnnouncementAdmin(BaseAdminClass):
 admin.site.site_header = _("GSMInfinity Administration")
 admin.site.index_title = _("Enterprise Control Panel")
 admin.site.site_title = _("GSMInfinity Admin Portal")
+
+# Users app settings (singleton)
+try:
+    from solo.admin import SingletonModelAdmin
+
+    @admin.register(UsersSettings)
+    class UsersSettingsAdmin(SingletonModelAdmin):
+        """Manage Users app configuration independently."""
+
+        fieldsets = (
+            (_("Access & Flows"), {"fields": ("enable_signup", "enable_password_reset")}),
+            (_("Notifications"), {"fields": ("enable_notifications",)}),
+            (
+                _("Security"),
+                {
+                    "fields": (
+                        "require_mfa",
+                        "mfa_totp_issuer",
+                        "max_login_attempts",
+                        "rate_limit_window_seconds",
+                    )
+                },
+            ),
+            (
+                _("reCAPTCHA"),
+                {
+                    "fields": (
+                    )
+                },
+            ),
+            (_("Profile Completion"), {"fields": ("required_profile_fields",)}),
+            (_("Payments"), {"fields": ("enable_payments",)}),
+        )
+
+        def has_add_permission(self, request):
+            return False
+except Exception:
+    logger.warning("solo not available; UsersSettings admin not registered")
+
+

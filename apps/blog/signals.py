@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -9,6 +10,8 @@ from django.contrib.contenttypes.models import ContentType
 from apps.core.utils import feature_flags
 from apps.seo.models import SEOModel, Metadata
 from apps.seo.services.internal_linking.engine import refresh_linkable_entity
+from apps.users.services.notifications import broadcast_notification, notifications_enabled
+from apps.users.models import CustomUser
 from .models import Post, PostStatus
 
 logger = logging.getLogger(__name__)
@@ -52,3 +55,21 @@ def _ensure_post_seo(post: Post) -> None:
 def post_after_save(sender, instance: Post, **kwargs):
     _sync_tag_usage(instance)
     _ensure_post_seo(instance)
+
+    # Notify users when a new post is published (only on initial create)
+    created = kwargs.get("created", False)
+    if created and instance.status == PostStatus.PUBLISHED and instance.is_live and notifications_enabled():
+        try:
+            recipients = CustomUser.objects.filter(is_active=True)
+            broadcast_notification(
+                recipients,
+                title="New blog post",
+                message=f"{instance.title} is now live.",
+                level="info",
+                url=instance.get_absolute_url(),
+                channel="web",
+            )
+        except Exception:
+            logger.debug("post_after_save notification failed for post %s", instance.pk, exc_info=True)
+
+

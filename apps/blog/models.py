@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from django.conf import settings
@@ -5,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 from django.urls import reverse
+from solo.models import SingletonModel
 
 
 class PostStatus(models.TextChoices):
@@ -140,3 +142,21 @@ class PostRevision(models.Model):
 
     def __str__(self) -> str:
         return f"Revision {self.created_at} for {self.post}"
+
+
+class BlogSettings(SingletonModel):
+    """
+    Per-app settings for the Blog module.
+    """
+
+    enable_blog = models.BooleanField(default=True)
+    enable_blog_comments = models.BooleanField(default=True)
+    allow_user_blog_posts = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Blog Settings"
+
+    def __str__(self) -> str:
+        return "Blog Settings"
+
+

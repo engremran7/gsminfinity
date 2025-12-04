@@ -1,6 +1,6 @@
+
 """
 apps.core.cache
-===============
 
 Enterprise-grade centralized cache utilities.
 
@@ -237,3 +237,4 @@ class DistributedCacheManager:
 
 # Legacy alias for compatibility
 CacheManager = DistributedCacheManager
+

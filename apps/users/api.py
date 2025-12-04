@@ -1,7 +1,14 @@
+
 from __future__ import annotations
 
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.http import JsonResponse, HttpRequest
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.views.decorators.http import require_POST
+from django.urls import reverse
 
 from .models import Notification
 
@@ -28,3 +35,29 @@ def notifications_unread_json(request: HttpRequest) -> JsonResponse:
         for n in qs
     ]
     return JsonResponse({"items": items})
+
+
+@require_POST
+def password_reset_verify(request: HttpRequest) -> JsonResponse:
+    """
+    Verify a password-reset code (token) inline and return the reset URL.
+    This allows signed-in users to paste the code without clicking the email link.
+    """
+    email = (request.POST.get("email") or "").strip().lower()
+    code = (request.POST.get("code") or "").strip()
+
+    if not email or not code:
+        return JsonResponse({"ok": False, "error": "Email and code are required."}, status=400)
+
+    user = get_user_model().objects.filter(email__iexact=email).first()
+    if not user:
+        return JsonResponse({"ok": False, "error": "No account found for that email."}, status=404)
+
+    if not default_token_generator.check_token(user, code):
+        return JsonResponse({"ok": False, "error": "Invalid or expired code."}, status=400)
+
+    uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+    reset_url = reverse("account_reset_password_from_key", args=[uidb64, code])
+    return JsonResponse({"ok": True, "redirect": reset_url})
+
+

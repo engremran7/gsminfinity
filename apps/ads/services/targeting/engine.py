@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from typing import Dict, Any
@@ -16,6 +17,9 @@ def campaign_allowed(campaign: Campaign, context: Dict[str, Any]) -> bool:
         return False
     if not feature_flags.ads_enabled():
         return False
+    # Consent-aware: block personalized campaigns when ads consent not granted
+    if context.get("consent_ads") is False and campaign.type in {"affiliate", "network", "direct"}:
+        return False
     rules = campaign.targeting_rules or {}
     page_context = context.get("page_context")
     tags = set(context.get("tags") or [])
@@ -30,3 +34,5 @@ def campaign_allowed(campaign: Campaign, context: Dict[str, Any]) -> bool:
 
 def placement_allowed(placement: AdPlacement) -> bool:
     return placement.is_enabled and placement.is_active and not placement.is_deleted
+
+

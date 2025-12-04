@@ -1,4 +1,5 @@
-{% load static %}
+
+{% load static i18n_theme_tags %}
 
 <nav class="site-nav">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,12 +27,16 @@
       </div>
 
       <div class="flex items-center space-x-4">
-        {% if site_settings.enable_tenants %}
-          <a href="{% url 'core:tenants' %}" class="text-sm inline-flex items-center gap-1">
-            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-building"></use></svg>
-            <span>Tenants</span>
-          </a>
-        {% endif %}
+        <form method="post" action="{% url 'i18n_themes:switch' %}" class="hidden md:inline-flex items-center gap-2 px-2 py-1 rounded border border-slate-200 bg-white shadow-sm">
+          {% csrf_token %}
+          <svg class="icon w-4 h-4 text-slate-500" aria-hidden="true"><use href="#icon-globe"></use></svg>
+          {% get_i18n_locales as switch_locales %}
+          <select id="lang-switch" name="locale" class="text-xs border rounded px-2 py-1 bg-white text-slate-800 border-slate-200">
+            {% for loc in switch_locales %}
+            <option value="{{ loc.code }}">{{ loc.name|default:loc.code }}</option>
+            {% endfor %}
+          </select>
+        </form>
 
         {% if site_settings.enable_blog %}
           <a href="{% url 'blog:post_list' %}" class="text-sm inline-flex items-center gap-1">
@@ -43,6 +48,11 @@
         <a href="{% url 'users:dashboard' %}" class="text-sm inline-flex items-center gap-1">
           <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-layout"></use></svg>
           <span>Dashboard</span>
+        </a>
+
+        <a href="{% url 'consent:privacy_center' %}" class="text-sm inline-flex items-center gap-1">
+          <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-shield"></use></svg>
+          <span>Privacy</span>
         </a>
 
         {% if request.user.is_authenticated %}
@@ -84,16 +94,24 @@
             </div>
           </div>
 
-          <span class="text-sm text-slate-600 hidden sm:inline">
-            Logged in as {{ request.user.email|default:request.user.username }}
-          </span>
+          {% with full=request.user.full_name|default_if_none:"" username=request.user.username|default_if_none:"" email=request.user.email|default_if_none:"" %}
+            {% with name=full|default:username %}
+              {% if not name and email and '@' in email %}
+                {% with prefix=email|cut:"@" %}
+                  <span class="text-sm text-slate-600 hidden sm:inline">
+                    Logged in as {{ prefix }}
+                  </span>
+                {% endwith %}
+              {% else %}
+                <span class="text-sm text-slate-600 hidden sm:inline">
+                  Logged in as {{ name|default:"user" }}
+                </span>
+              {% endif %}
+            {% endwith %}
+          {% endwith %}
           <a href="{% url 'users:profile' %}" class="text-sm text-slate-700 hover:text-slate-900 inline-flex items-center gap-1">
             <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-user"></use></svg>
             <span>Profile</span>
-          </a>
-          <a href="{% url 'users:devices' %}" class="text-sm text-slate-700 hover:text-slate-900 inline-flex items-center gap-1">
-            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-devices"></use></svg>
-            <span>Devices</span>
           </a>
           <a href="{% url 'account_logout' %}" class="text-sm text-slate-700 hover:text-slate-900 inline-flex items-center gap-1">
             <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-logout"></use></svg>
@@ -130,3 +148,5 @@
     </div>
   </div>
 </nav>
+
+

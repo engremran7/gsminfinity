@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from django import forms
@@ -30,3 +31,5 @@ class PostForm(forms.ModelForm):
             ),
             "seo_description": forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
         }
+
+

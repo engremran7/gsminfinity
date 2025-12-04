@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from apps.core import ai_client
@@ -12,3 +13,5 @@ def generate_schema(text: str, user) -> dict:
         return {}
     schema_text = ai_client.generate_excerpt(text, user)
     return {"@context": "https://schema.org", "@type": "Article", "description": schema_text}
+
+

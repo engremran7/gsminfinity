@@ -1,6 +1,8 @@
-from django.contrib import admin
 
-from .models import Category, Post
+from django.contrib import admin
+from solo.admin import SingletonModelAdmin
+
+from .models import BlogSettings, Category, Post
 
 
 @admin.register(Category)
@@ -19,3 +21,17 @@ class PostAdmin(admin.ModelAdmin):
     autocomplete_fields = ("author", "category", "tags")
     raw_id_fields = ("author",)
     date_hierarchy = "published_at"
+
+
+@admin.register(BlogSettings)
+class BlogSettingsAdmin(SingletonModelAdmin):
+    list_display = ("enable_blog", "enable_blog_comments", "allow_user_blog_posts")
+    fieldsets = (
+        (None, {"fields": ("enable_blog", "enable_blog_comments")}),
+        ("User posting", {"fields": ("allow_user_blog_posts",)}),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+

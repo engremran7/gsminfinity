@@ -1,0 +1,84 @@
+
+/* Summernote overrides using theme tokens (light/dark/high-contrast aware). */
+:root {
+  --sn-surface: var(--colors-surface, #0f172a);
+  --sn-text: var(--colors-text, #e2e8f0);
+  --sn-muted: var(--colors-muted, #94a3b8);
+  --sn-border: var(--colors-border, #1f2937);
+  --sn-primary: var(--colors-primary, #2563eb);
+  --sn-shadow: var(--shadows-elevation, 0 12px 32px rgba(15, 23, 42, 0.14));
+  --sn-radius: var(--radii-md, 10px);
+  --sn-font: var(--font-base, Inter, "Segoe UI", system-ui, sans-serif);
+}
+
+.note-editor.note-frame,
+.note-editor.note-airframe {
+  background-color: var(--sn-surface);
+  color: var(--sn-text);
+  border: 1px solid var(--sn-border);
+  box-shadow: var(--sn-shadow);
+  border-radius: var(--sn-radius);
+}
+
+.note-toolbar {
+  background-color: color-mix(in srgb, var(--sn-surface) 90%, #000 10%);
+  color: var(--sn-text);
+  border-color: var(--sn-border);
+  border-top-left-radius: var(--sn-radius);
+  border-top-right-radius: var(--sn-radius);
+}
+
+.note-btn {
+  background-color: color-mix(in srgb, var(--sn-surface) 80%, #000 20%);
+  color: var(--sn-text);
+  border: 1px solid var(--sn-border);
+  border-radius: calc(var(--sn-radius) - 4px);
+  transition: all 0.15s ease;
+}
+.note-btn:hover,
+.note-btn:focus,
+.note-btn:active {
+  background-color: color-mix(in srgb, var(--sn-primary) 18%, var(--sn-surface) 82%);
+  color: var(--sn-text);
+  border-color: var(--sn-primary);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--sn-primary) 35%, transparent);
+}
+
+.note-dropdown-menu {
+  background: var(--sn-surface);
+  color: var(--sn-text);
+  border: 1px solid var(--sn-border);
+  border-radius: calc(var(--sn-radius) - 2px);
+  box-shadow: var(--sn-shadow);
+}
+.note-dropdown-item {
+  color: var(--sn-text);
+}
+.note-dropdown-item:hover {
+  background: color-mix(in srgb, var(--sn-primary) 14%, var(--sn-surface) 86%);
+  color: var(--sn-text);
+}
+
+.note-editable {
+  background-color: var(--sn-surface) !important;
+  color: var(--sn-text);
+  border: 1px solid var(--sn-border);
+  border-radius: var(--sn-radius);
+  padding: 12px;
+  font-family: var(--sn-font);
+  direction: inherit;
+}
+.note-placeholder {
+  color: var(--sn-muted) !important;
+}
+.note-statusbar {
+  background: color-mix(in srgb, var(--sn-surface) 90%, #000 10%);
+  border-top: 1px solid var(--sn-border);
+  border-bottom-left-radius: var(--sn-radius);
+  border-bottom-right-radius: var(--sn-radius);
+}
+.note-resizebar {
+  background: color-mix(in srgb, var(--sn-surface) 85%, #000 15%);
+}
+
+

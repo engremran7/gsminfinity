@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from typing import List
@@ -11,3 +12,5 @@ def crawl_stub(urls: List[str]):
     """
     for url in urls:
         SitemapEntry.objects.update_or_create(url=url, defaults={"is_active": True})
+
+

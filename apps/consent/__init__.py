@@ -1,3 +1,4 @@
+
 """
 apps.consent package initializer.
 Fails fast on API import errors outside test/CI to avoid silent misconfiguration.
@@ -26,3 +27,5 @@ def __getattr__(name: str):
                 raise
             return None
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+

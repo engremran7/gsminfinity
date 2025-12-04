@@ -1,3 +1,4 @@
+
 """
 apps.core.middleware.rate_limit_bridge
 --------------------------------------
@@ -8,40 +9,58 @@ Prevents brute-force login/signup attempts globally.
 import logging
 
 from apps.users.services import rate_limit
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from apps.core.utils.ip import get_client_ip
 
 logger = logging.getLogger(__name__)
 
 
-class RateLimitMiddleware:
-    """Attach global rate limit for login/signup endpoints."""
+class RateLimitBridgeMiddleware:
+    """
+    Attach global rate limits to auth endpoints and high-risk verbs.
+    Keys combine method + IP + device + consent flag to align with device identity/consent.
+    """
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
         path = request.path.lower()
+        method = request.method.lower()
+        path_parts = [p for p in path.split("/") if p]
+        high_risk_tokens = {"login", "signup", "reset", "token", "password", "mfa"}
+        high_risk = any(part in high_risk_tokens for part in path_parts)
 
-        if "login" in path or "signup" in path:
-            client_ip = self._get_client_ip(request)
-            key = f"auth:{client_ip}:{path}"
+        if high_risk or method in {"post", "put", "patch", "delete"}:
+            client_ip = get_client_ip(request) or "unknown"
+            device = getattr(request, "device", None)
+            device_key = getattr(device, "machine_uuid", None) if device else None
+            consent_state = getattr(request, "consent_categories", None)
+            consent_flag = "consented" if consent_state else "unknown"
 
-            # 10 attempts / 5 minutes window
-            allowed = rate_limit.allow_action(key, max_attempts=10, window_seconds=300)
+            key_parts = [method, client_ip, device_key or "nodev", consent_flag, path[:64]]
+            key = "http:" + ":".join(key_parts)
+
+            allowed = True
+            try:
+                allowed = rate_limit.allow_action(key, max_attempts=10, window_seconds=300)
+            except Exception as exc:
+                logger.warning("Rate limiting failed for %s: %s", path, exc)
+                # Fail closed only for high-risk paths
+                if high_risk:
+                    allowed = False
+                else:
+                    allowed = True
+
             if not allowed:
-                logger.warning(f"Rate limit exceeded for {client_ip} at {path}")
-                return JsonResponse(
-                    {
-                        "error": "Too many attempts. Please wait a few minutes before retrying."
-                    },
-                    status=429,
-                )
+                logger.warning("Rate limit exceeded for %s at %s", client_ip, path)
+                if request.headers.get("Accept", "").startswith("application/json"):
+                    return JsonResponse(
+                        {"error": "Too many attempts. Please wait a few minutes before retrying."},
+                        status=429,
+                    )
+                return HttpResponse(status=429)
 
         return self.get_response(request)
 
-    @staticmethod
-    def _get_client_ip(request):
-        xff = request.META.get("HTTP_X_FORWARDED_FOR")
-        if xff:
-            return xff.split(",")[0].strip()
-        return request.META.get("REMOTE_ADDR", "unknown")
+

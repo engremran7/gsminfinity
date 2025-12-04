@@ -1,7 +1,7 @@
+
 # apps/core/middleware/ssl_toggle.py
 """
 apps/core/middleware/ssl_toggle
-===============================
 Dynamic HTTPS enforcement driven by SiteSettings.force_https with safe dev defaults.
 """
 
@@ -84,3 +84,5 @@ class SslToggleMiddleware:
 
         logger.debug("[SslToggle] Redirecting to HTTPS: %s", url)
         return HttpResponseRedirect(url)
+
+

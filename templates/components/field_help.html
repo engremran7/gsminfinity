@@ -1,0 +1,10 @@
+
+{# Reusable help tooltip/description block #}
+{% if help %}
+  <div class="flex items-start gap-2 text-xs text-slate-500">
+    <svg class="w-4 h-4 text-slate-400" aria-hidden="true"><use href="#icon-info"></use></svg>
+    <span>{{ help }}</span>
+  </div>
+{% endif %}
+
+

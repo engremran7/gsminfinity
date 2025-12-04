@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import urllib.request
@@ -34,3 +35,5 @@ class Command(BaseCommand):
                 entry.save(update_fields=["last_status", "last_checked_at"])
                 bad += 1
         self.stdout.write(self.style.SUCCESS(f"Checked {entries.count()} URLs. OK: {ok}, Bad: {bad}"))
+
+

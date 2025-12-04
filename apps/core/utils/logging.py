@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -30,3 +31,5 @@ def log_event(logger: logging.Logger, level: str, message: str, **extra: Any) ->
     except Exception:
         # Never let logging break app flow
         return
+
+

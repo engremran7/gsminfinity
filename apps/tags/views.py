@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from django.http import JsonResponse, Http404, HttpRequest, HttpResponse
@@ -6,12 +7,31 @@ from django.db.models import Q
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
+from difflib import SequenceMatcher
+
 
 from .models import Tag
 from apps.blog.models import Post, PostStatus
 from django.template.loader import render_to_string
 from django.utils import timezone
 from apps.core import ai_client
+from apps.core.app_service import AppService
+from . import services
+
+
+def _get_tag_settings() -> dict:
+    try:
+        tags_api = AppService.get("tags")
+        if tags_api and hasattr(tags_api, "get_settings"):
+            return tags_api.get_settings()
+    except Exception:
+        pass
+    return {
+        "allow_public_suggestions": True,
+        "enable_ai_suggestions": True,
+        "show_tag_usage": True,
+    }
 
 
 @require_GET
@@ -31,6 +51,7 @@ def search(request):
             "usage_count": t.usage_count,
             "synonyms": t.synonyms,
             "description": t.description,
+            "is_curated": t.is_curated,
         }
         for t in qs
     ]
@@ -39,7 +60,11 @@ def search(request):
 
 def tag_list(request: HttpRequest) -> HttpResponse:
     tags = Tag.objects.filter(is_active=True, is_deleted=False).order_by("-usage_count", "name")
-    return render(request, "tags/list.html", {"tags": tags})
+    return render(
+        request,
+        "tags/list.html",
+        {"tags": tags, "tag_settings": _get_tag_settings()},
+    )
 
 
 def tag_detail(request: HttpRequest, slug: str) -> HttpResponse:
@@ -74,6 +99,7 @@ def tag_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "page_obj": page_obj,
             "trending_tags_html": trending_tags_html,
             "latest_widget_html": latest_widget_html,
+            "tag_settings": _get_tag_settings(),
         },
     )
 
@@ -110,6 +136,85 @@ def tag_analytics(request: HttpRequest) -> HttpResponse:
     return JsonResponse({"items": data})
 
 
+@require_GET
+def search_duplicates(request: HttpRequest) -> JsonResponse:
+    threshold = float(request.GET.get("threshold", "0.7") or "0.7")
+    limit = int(request.GET.get("limit", "200") or "200")
+    tags = list(Tag.objects.filter(is_active=True, is_deleted=False))
+    pairs = []
+    for i, t1 in enumerate(tags):
+        for t2 in tags[i + 1 :]:
+            from difflib import SequenceMatcher
+
+            sim = max(
+                SequenceMatcher(None, t1.normalized_name, t2.normalized_name).ratio(),
+                services.jaccard(t1.normalized_name, t2.normalized_name),
+            )
+            if sim >= threshold:
+                pairs.append({"score": round(sim, 2), "a": t1.name, "b": t2.name})
+                if len(pairs) >= limit:
+                    break
+        if len(pairs) >= limit:
+            break
+    pairs.sort(key=lambda x: x["score"], reverse=True)
+    return JsonResponse({"items": pairs})
+
+
+@staff_member_required
+def duplicates_review(request: HttpRequest) -> HttpResponse:
+    threshold = 0.7
+    tags = list(Tag.objects.filter(is_active=True, is_deleted=False))
+    pairs = []
+    for i, t1 in enumerate(tags):
+        for t2 in tags[i + 1 :]:
+            sim = max(
+                SequenceMatcher(None, t1.normalized_name, t2.normalized_name).ratio(),
+                services.jaccard(t1.normalized_name, t2.normalized_name),
+            )
+            if sim >= threshold:
+                pairs.append(
+                    {"score": round(sim, 2), "a": t1.name, "a_slug": t1.slug, "b": t2.name, "b_slug": t2.slug}
+                )
+    pairs.sort(key=lambda x: x["score"], reverse=True)
+    return render(request, "tags/admin_duplicates.html", {"pairs": pairs})
+
+
+@staff_member_required
+def keyword_review(request: HttpRequest) -> HttpResponse:
+    suggestions = (
+        Tag.objects.none()
+    )
+    from .models_keyword import KeywordSuggestion
+
+    suggestions = KeywordSuggestion.objects.select_related("provider").order_by("-score", "-created_at")[:200]
+    return render(request, "tags/admin_keyword_review.html", {"suggestions": suggestions})
+
+
+@staff_member_required
+@require_POST
+def apply_keyword(request: HttpRequest) -> HttpResponse:
+    from .models_keyword import KeywordSuggestion
+
+    kw_id = request.POST.get("id")
+    kw = KeywordSuggestion.objects.filter(pk=kw_id).select_related("provider").first()
+    if not kw:
+        return JsonResponse({"ok": False, "error": "not_found"}, status=404)
+    name = kw.keyword[:64]
+    norm = services._normalize(name)
+    tag, created = Tag.objects.get_or_create(
+        normalized_name=norm,
+        defaults={
+            "name": name,
+            "slug": kw.keyword[:75],
+            "description": f"Imported from provider {kw.provider.name}",
+            "ai_suggested": True,
+        },
+    )
+    kw.delete()
+    return JsonResponse({"ok": True, "tag": tag.name, "created": created})
+
+
+@login_required
 @require_POST
 def suggest_tags(request: HttpRequest) -> JsonResponse:
     """
@@ -118,8 +223,36 @@ def suggest_tags(request: HttpRequest) -> JsonResponse:
     text = (request.POST.get("text") or "").strip()
     if not text:
         return JsonResponse({"ok": False, "error": "empty"}, status=400)
+    # Simple server-side throttle per user
+    cache_key = f"tags:suggest:{request.user.pk}"
     try:
-        suggestions = ai_client.suggest_tags(text, request.user if request.user.is_authenticated else None)
-        return JsonResponse({"ok": True, "suggestions": suggestions})
+        from django.core.cache import cache
+
+        count = cache.get(cache_key, 0)
+        if count and int(count) >= 5:
+            return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+        cache.set(cache_key, int(count) + 1, timeout=60)
+    except Exception:
+        pass
+    try:
+        suggestions = services.suggest_tags_from_text(text, limit=10)
+        # Enrich with curated flag when existing
+        names = [s["normalized"] for s in suggestions if s.get("normalized")]
+        existing = {t.normalized_name: t for t in Tag.objects.filter(normalized_name__in=names)}
+        enriched = []
+        for s in suggestions:
+            norm = s.get("normalized")
+            tag_obj = existing.get(norm)
+            enriched.append(
+                {
+                    "name": s["name"],
+                    "slug": getattr(tag_obj, "slug", ""),
+                    "exists": bool(tag_obj),
+                    "is_curated": bool(getattr(tag_obj, "is_curated", False)),
+                }
+            )
+        return JsonResponse({"ok": True, "suggestions": enriched})
     except Exception:
         return JsonResponse({"ok": False, "error": "failed"}, status=500)
+
+

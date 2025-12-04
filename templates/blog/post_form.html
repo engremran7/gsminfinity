@@ -1,4 +1,6 @@
+
 {% extends "base.html" %}
+{% load static form_tags %}
 {% block title %}New Post - {{ site_settings.site_name|default:"Site" }}{% endblock %}
 {% block meta_description %}Compose a new blog post with AI-assisted title and summary suggestions.{% endblock %}
 
@@ -26,8 +28,9 @@
     <div class="space-y-6">
       <div>
         <label class="block text-sm font-semibold text-slate-800" for="id_title">Title</label>
-        {{ form.title }}
-        <div class="mt-1 flex justify-end">
+        {{ form.title|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
+        <div class="mt-1 flex justify-between items-center">
+          <p class="text-xs text-slate-500">Keep it under 60 characters; avoid clickbait.</p>
           <button type="button" class="text-xs text-primary hover:text-primary-600 inline-flex items-center gap-1" data-ai-action="generate_title" data-ai-target="id_title">
             <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-wand"></use></svg>
             Generate title
@@ -37,8 +40,9 @@
 
       <div>
         <label class="block text-sm font-semibold text-slate-800" for="id_summary">Summary</label>
-        {{ form.summary }}
-        <div class="mt-1 flex justify-end">
+        {{ form.summary|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
+        <div class="mt-1 flex justify-between items-center">
+          <p class="text-xs text-slate-500">One to two sentences highlighting value.</p>
           <button type="button" class="text-xs text-primary hover:text-primary-600 inline-flex items-center gap-1" data-ai-action="generate_excerpt" data-ai-target="id_summary">
             <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
             Generate excerpt
@@ -48,32 +52,44 @@
 
       <div>
         <label class="block text-sm font-semibold text-slate-800" for="id_body">Body</label>
-        {{ form.body }}
-        <p class="text-xs text-slate-500 mt-1">Use clear headings and short paragraphs. Markdown supported if enabled.</p>
+        {{ form.body|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 min-h-[260px]" }}
+        <p class="text-xs text-slate-500 mt-1">Use clear headings and short paragraphs. Rich text powered by Summernote.</p>
+        <div class="flex gap-2 mt-2 flex-wrap">
+          <button type="button" class="btn-outline text-xs" data-ai-action="improve" data-ai-target="id_body">AI: Improve clarity</button>
+          <button type="button" class="btn-outline text-xs" data-ai-action="summarize" data-ai-target="id_body">AI: Summarize body</button>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label class="block text-sm font-semibold text-slate-800" for="id_category">Category</label>
-          {{ form.category }}
+          {{ form.category|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
+          <p class="text-xs text-slate-500 mt-1">Pick the closest fit; avoid misc buckets.</p>
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm font-semibold text-slate-800" for="id_tags">Tags</label>
-          {{ form.tags }}
-          <p class="text-xs text-slate-500">Add tags to improve discovery. Type to search existing tags; avoid fragmentation.</p>
+          {{ form.tags|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
+          <p class="text-xs text-slate-500">Use existing tags when possible to keep taxonomy clean. AI suggestions come from the Tags system.</p>
+          <div class="flex items-center gap-2 mb-1">
+            <button type="button" class="text-xs text-primary hover:text-primary-600 inline-flex items-center gap-1" data-ai-action="suggest_tags" data-ai-target="id_body">
+              <svg class="icon w-3 h-3" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
+              Suggest tags with AI
+            </button>
+          </div>
           {% include "tags/includes/autocomplete_help.html" %}
+          <div id="tag-suggestions" class="mt-2 flex flex-wrap gap-2 text-xs text-slate-700" aria-live="polite"></div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="space-y-2">
           <label class="block text-sm font-semibold text-slate-800" for="id_status">Status</label>
-          {{ form.status }}
+          {{ form.status|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
           <p class="text-xs text-slate-500">Draft, scheduled, or published. Published respects publish_at.</p>
         </div>
         <div class="space-y-2">
           <label class="block text-sm font-semibold text-slate-800" for="id_publish_at">Publish at</label>
-          {{ form.publish_at }}
+          {{ form.publish_at|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
           <p class="text-xs text-slate-500">Schedule posts; past times publish immediately.</p>
         </div>
       </div>
@@ -83,7 +99,7 @@
         </label>
         <div>
           <label class="block text-sm font-semibold text-slate-800" for="id_hero_image">Hero image URL</label>
-          {{ form.hero_image }}
+          {{ form.hero_image|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
           <p class="text-xs text-slate-500">Optional hero/banner image URL.</p>
         </div>
       </div>
@@ -101,17 +117,17 @@
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-800" for="id_seo_title">Meta title</label>
-          {{ form.seo_title }}
-          <p class="text-xs text-slate-500">Default falls back to post title. Aim for < 60 characters.</p>
+          {{ form.seo_title|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
+          <p class="text-xs text-slate-500">Default falls back to post title. Aim for &lt; 60 characters.</p>
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-800" for="id_seo_description">Meta description</label>
-          {{ form.seo_description }}
+          {{ form.seo_description|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
           <p class="text-xs text-slate-500">Keep under 160 characters. Avoid frequent rewrites.</p>
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-800" for="id_canonical_url">Canonical URL</label>
-          {{ form.canonical_url }}
+          {{ form.canonical_url|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" }}
           <p class="text-xs text-slate-500">Set only when needed; otherwise auto-filled on publish.</p>
         </div>
       </div>
@@ -134,5 +150,11 @@
 {% endblock %}
 
 {% block extra_scripts %}
+  {# Summernote (local assets) #}
+  <link href="{% static 'js/summernote/summernote-lite.min.css' %}" rel="stylesheet">
+  <script src="{% static 'js/summernote/jquery.min.js' %}"></script>
+  <script src="{% static 'js/summernote/summernote-lite.min.js' %}"></script>
   <script src="{% static 'js/blog.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
 {% endblock %}
+
+

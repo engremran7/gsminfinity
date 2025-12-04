@@ -1,13 +1,53 @@
+
 {% extends "account/auth_form.html" %}
 
-{% block auth_title %}Login — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block auth_title %}Login - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
 {% block auth_heading %}Sign in{% endblock %}
 {% block auth_description %}Access your account to continue.{% endblock %}
-{% block auth_action %}{% url 'account_login' %}{% endblock %}
 {% block auth_submit_label %}Sign in{% endblock %}
+{% block auth_form %}
+<form method="post" action="{% url 'account_login' %}" class="space-y-4" id="login-form">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <input type="hidden" name="fingerprint_hash" id="id_fingerprint_hash">
+  <input type="hidden" name="fingerprint_blob" id="id_fingerprint_blob">
+  <p class="text-xs text-slate-500">
+    Password tip: use 8+ chars, mix letters/numbers; avoid common words.
+  </p>
+  <button type="submit" class="bg-primary text-white px-4 py-2 rounded w-full">
+    Sign in
+  </button>
+</form>
+{% endblock %}
 {% block auth_secondary %}
   <div class="flex items-center justify-between mt-4 text-sm">
     <a href="{% url 'account_reset_password' %}" class="text-primary">Forgot password?</a>
     <a href="{% url 'account_signup' %}" class="text-slate-600">Create account</a>
   </div>
 {% endblock %}
+{% block extra_scripts %}
+  <script nonce="{{ request.csp_nonce }}">
+    document.addEventListener("DOMContentLoaded", function () {
+      const form = document.getElementById("login-form");
+      if (!form) return;
+      form.addEventListener("submit", async function () {
+        try {
+          if (window.DeviceIdentity && typeof window.DeviceIdentity.collectEnhancedFingerprint === "function") {
+            const consentState = window.CONSENT_CATEGORIES || {};
+            const fp = await window.DeviceIdentity.collectEnhancedFingerprint(consentState);
+            if (fp) {
+              const hashField = document.getElementById("id_fingerprint_hash");
+              const blobField = document.getElementById("id_fingerprint_blob");
+              if (hashField) hashField.value = fp.fingerprint_hash || "";
+              if (blobField) blobField.value = JSON.stringify(fp.fingerprint_blob || {});
+            }
+          }
+        } catch (e) {
+          // non-fatal
+        }
+      });
+    });
+  </script>
+{% endblock %}
+
+

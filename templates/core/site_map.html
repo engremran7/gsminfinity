@@ -1,0 +1,35 @@
+
+{% extends "base.html" %}
+{% block title %}Site Map{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-10 space-y-6">
+  <header class="space-y-2">
+    <p class="text-sm text-slate-500">Navigation overview</p>
+    <h1 class="text-3xl font-bold text-slate-900">Site Map</h1>
+    <p class="text-sm text-slate-600">
+      Quick links to the main areas of {{ site_name|default:"the site" }}. Links respect permissions and consent where applicable.
+    </p>
+  </header>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    {% for section in sections %}
+      <section class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <h2 class="text-lg font-semibold text-slate-900 mb-2">{{ section.title }}</h2>
+        <ul class="space-y-2 text-sm text-slate-700">
+          {% for link in section.links %}
+            <li>
+              <a href="{{ link.url }}" class="text-primary hover:text-primary-700 underline">
+                {{ link.label }}
+              </a>
+            </li>
+          {% empty %}
+            <li class="text-slate-500">No links available.</li>
+          {% endfor %}
+        </ul>
+      </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+

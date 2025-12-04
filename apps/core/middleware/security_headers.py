@@ -1,6 +1,6 @@
+
 """
 apps.core.middleware.security_headers
-====================================
 
 Enterprise-grade security header middleware.
 
@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 import secrets
-from typing import Callable
+from typing import Callable, Iterable, Sequence
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
@@ -65,14 +65,30 @@ class SecurityHeadersMiddleware:
         # Content Security Policy
         # ------------------------------------------------------------------
         # Nonce-based CSP even in DEBUG to discourage inline/eval
+        script_hosts = self._merge_sources(
+            ["'self'", f"'nonce-{nonce}'", "https://www.google.com/recaptcha/", "https://www.gstatic.com/recaptcha/"],
+            getattr(settings, "SECURITY_SCRIPT_SRC_EXTRA", ()),
+        )
+        style_hosts = self._merge_sources(
+            ["'self'", f"'nonce-{nonce}'", "https://cdn.jsdelivr.net"],
+            getattr(settings, "SECURITY_STYLE_SRC_EXTRA", ()),
+        )
+        connect_hosts = self._merge_sources(
+            ["'self'", "ws:", "wss:"],
+            getattr(settings, "SECURITY_CONNECT_SRC_EXTRA", ()),
+        )
+        frame_hosts = self._merge_sources(
+            ["'self'", "https://www.google.com/recaptcha/"],
+            getattr(settings, "SECURITY_FRAME_SRC_EXTRA", ()),
+        )
+
         csp = (
-            "default-src 'self'; "
-            f"script-src 'self' 'nonce-{nonce}' https://www.google.com/recaptcha/ "
-            f"https://www.gstatic.com/recaptcha/; "
-            f"style-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; "
+            f"default-src 'self'; "
+            f"script-src {' '.join(script_hosts)}; "
+            f"style-src {' '.join(style_hosts)}; "
             "img-src 'self' data: https:; "
-            "connect-src 'self' ws: wss:; "
-            "frame-src 'self' https://www.google.com/recaptcha/;"
+            f"connect-src {' '.join(connect_hosts)}; "
+            f"frame-src {' '.join(frame_hosts)};"
         )
 
         response.setdefault("Content-Security-Policy", csp)
@@ -87,3 +103,18 @@ class SecurityHeadersMiddleware:
                 response["Strict-Transport-Security"] = self.hsts_value
 
         return response
+
+    @staticmethod
+    def _merge_sources(base: Sequence[str], extra: Iterable[str]) -> list[str]:
+        merged = [src for src in base if src]
+        merged.extend([src for src in extra if src])
+        # Preserve order but drop duplicates
+        seen = set()
+        deduped = []
+        for src in merged:
+            if src not in seen:
+                seen.add(src)
+                deduped.append(src)
+        return deduped
+
+

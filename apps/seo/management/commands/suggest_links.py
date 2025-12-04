@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand
@@ -19,3 +20,5 @@ class Command(BaseCommand):
             suggest_links(source, entities, limit=options["limit"])
             total += 1
         self.stdout.write(self.style.SUCCESS(f"Suggestions generated for {total} entities"))
+
+

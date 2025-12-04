@@ -1,3 +1,4 @@
+
 """
 apps.consent.admin
 Enterprise-grade, hardened GDPR/CCPA admin interface.
@@ -205,49 +206,43 @@ class ConsentRecordAdmin(admin.ModelAdmin):
 
     readonly_fields = (
         "accepted_categories_pretty",
-        "accepted_at",
-        "updated_at",
+        "created_at",
     )
 
     list_display = (
         "user_display",
-        "session_key",
+        "session_id",
         "policy_display",
-        "site_domain",
-        "is_reject_all_display",
-        "accepted_summary_display",
-        "updated_at",
+        "created_at",
     )
 
     list_filter = (
         PolicyVersionFilter,
-        "site_domain",
-        "updated_at",
+        "created_at",
         RejectAllFilter,
     )
 
     search_fields = (
         "user__email",
         "user__username",
-        "session_key",
-        "policy_version",
-        "site_domain",
+        "session_id",
+        "policy__version",
     )
 
-    ordering = ("-updated_at",)
+    ordering = ("-created_at",)
     actions = ["export_to_csv"]
 
     fieldsets = (
-        ("User / Session", {"fields": ("user", "session_key", "site_domain")}),
-        ("Policy Info", {"fields": ("policy", "policy_version")}),
+        ("User / Session", {"fields": ("user", "session_id")}),
+        ("Policy Info", {"fields": ("policy",)}),
         ("Accepted Categories", {"fields": ("accepted_categories_pretty",)}),
-        ("Timestamps", {"fields": ("accepted_at", "updated_at")}),
+        ("Timestamps", {"fields": ("created_at",)}),
     )
 
     # ---------------- JSON Pretty Printer ----------------
     @admin.display(description="Accepted Categories")
     def accepted_categories_pretty(self, obj):
-        data = obj.accepted_categories or {}
+        data = getattr(obj, "categories", None) or {}
         try:
             pretty = json.dumps(data, indent=2, ensure_ascii=False)
         except Exception:
@@ -270,27 +265,18 @@ class ConsentRecordAdmin(admin.ModelAdmin):
     @admin.display(description="Policy")
     def policy_display(self, obj):
         try:
-            if obj.policy_version:
-                return obj.policy_version
             if obj.policy:
                 return obj.policy.version
         except Exception:
             pass
-        return "—"
+        return "-"
 
     @admin.display(boolean=True, description="Rejected All?")
     def is_reject_all_display(self, obj):
         try:
-            return obj.is_reject_all()
+            return bool(obj.categories.get("reject_all"))
         except Exception:
             return False
-
-    @admin.display(description="Accepted Categories Summary")
-    def accepted_summary_display(self, obj):
-        try:
-            return obj.audit_summary()
-        except Exception:
-            return "(Error)"
 
     # ---------------- CSV Export ----------------
     @admin.action(description="Export selected consent records → CSV")
@@ -303,13 +289,10 @@ class ConsentRecordAdmin(admin.ModelAdmin):
         writer.writerow(
             [
                 "User",
-                "Session Key",
+                "Session ID",
                 "Policy Version",
-                "Site Domain",
-                "Accepted Categories",
-                "Rejected All",
-                "Accepted At",
-                "Updated At",
+                "Categories",
+                "Created At",
             ]
         )
 
@@ -319,13 +302,10 @@ class ConsentRecordAdmin(admin.ModelAdmin):
             writer.writerow(
                 [
                     smart_str(rec.user.email if rec.user else "Anonymous"),
-                    smart_str(rec.session_key or ""),
-                    smart_str(rec.policy_version),
-                    smart_str(rec.site_domain),
-                    json.dumps(rec.accepted_categories or {}, ensure_ascii=False),
-                    rec.is_reject_all(),
-                    rec.accepted_at.isoformat() if rec.accepted_at else "",
-                    rec.updated_at.isoformat() if rec.updated_at else "",
+                    smart_str(rec.session_id or ""),
+                    smart_str(rec.policy.version if rec.policy else ""),
+                    json.dumps(rec.categories or {}, ensure_ascii=False),
+                    rec.created_at.isoformat() if rec.created_at else "",
                 ]
             )
 
@@ -342,31 +322,28 @@ class ConsentLogAdmin(admin.ModelAdmin):
     """
 
     readonly_fields = (
-        "user",
-        "ip_address",
-        "user_agent",
-        "policy_version",
-        "site_domain",
-        "timestamp",
+        "user_display",
+        "ip_hash",
+        "user_agent_hash",
+        "policy",
+        "created_at",
         "accepted_categories_pretty",
     )
 
     list_display = (
         "user_display",
-        "ip_address",
-        "policy_version",
-        "site_domain",
-        "timestamp",
+        "policy",
+        "created_at",
     )
 
-    list_filter = ("site_domain", "timestamp")
-    search_fields = ("user__email", "ip_address", "policy_version")
-    ordering = ("-timestamp",)
-    date_hierarchy = "timestamp"
+    list_filter = ("created_at",)
+    search_fields = ("user__email",)
+    ordering = ("-created_at",)
+    date_hierarchy = "created_at"
 
     @admin.display(description="Accepted Categories")
     def accepted_categories_pretty(self, obj):
-        data = obj.accepted_categories or {}
+        data = getattr(obj, "categories", None) or {}
         try:
             pretty = json.dumps(data, indent=2, ensure_ascii=False)
         except Exception:
@@ -384,3 +361,5 @@ class ConsentLogAdmin(admin.ModelAdmin):
         except Exception:
             pass
         return "Anonymous"
+
+

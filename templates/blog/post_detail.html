@@ -1,5 +1,6 @@
+
 {% extends "base.html" %}
-{% load seo_tags ads_tags %}
+{% load seo_tags ads_tags static %}
 {% block title %}{{ post.title }} - {{ site_settings.site_name|default:"Site" }}{% endblock %}
 {% block meta_description %}{{ post.summary|default:post.title|truncatechars:150 }}{% endblock %}
 {% block og_title %}{{ post.title }} · {{ site_settings.site_name|default:"Site" }}{% endblock %}
@@ -8,7 +9,7 @@
 {% block og_url %}{{ request.build_absolute_uri|default:'' }}{% endblock %}
 
 {% block extra_head %}
-  {{ render_seo_meta post }}
+  {% render_seo_meta post %}
 {% endblock %}
 
 {% block json_ld %}
@@ -36,7 +37,28 @@
       <div class="mb-4">
         {% render_ad_slot "post-top" %}
       </div>
-      <header class="space-y-3">
+      <header class="space-y-3 relative">
+        <div class="absolute right-0 top-0 flex items-center gap-2">
+          {% with share_url=request.build_absolute_uri %}
+          <div class="flex items-center gap-2 flex-wrap justify-end">
+            <a class="share-chip" href="https://twitter.com/intent/tweet?url={{ share_url|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener" aria-label="Share on X">
+              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-x"></use></svg>
+            </a>
+            <a class="share-chip" href="https://www.linkedin.com/sharing/share-offsite/?url={{ share_url|urlencode }}" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
+              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-linkedin"></use></svg>
+            </a>
+            <a class="share-chip" href="https://www.facebook.com/sharer/sharer.php?u={{ share_url|urlencode }}" target="_blank" rel="noopener" aria-label="Share on Facebook">
+              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-facebook"></use></svg>
+            </a>
+            <a class="share-chip" href="https://api.whatsapp.com/send?text={{ post.title|urlencode }}%20{{ share_url|urlencode }}" target="_blank" rel="noopener" aria-label="Share on WhatsApp">
+              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-whatsapp"></use></svg>
+            </a>
+            <a class="share-chip" href="https://t.me/share/url?url={{ share_url|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener" aria-label="Share on Telegram">
+              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-telegram"></use></svg>
+            </a>
+          </div>
+          {% endwith %}
+        </div>
         <div class="flex items-center gap-2 text-xs text-slate-500">
           <a href="{% url 'blog:post_list' %}" class="hover:text-primary">Blog</a>
           <span aria-hidden="true">/</span>
@@ -88,6 +110,34 @@
         <button type="button" class="btn-outline text-sm" data-ai-action="improve" data-ai-target="article-body">Improve readability</button>
         <button type="button" class="btn-outline text-sm" data-ai-action="translate" data-ai-target="article-body">Translate</button>
       </div>
+      <section aria-label="Share this post" class="mt-6 rounded-lg border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <svg class="icon w-4 h-4 text-primary" aria-hidden="true"><use href="#icon-share"></use></svg>
+            <h3 class="text-sm font-semibold text-slate-800">Share</h3>
+          </div>
+          <button type="button" class="text-xs text-slate-500 hover:text-primary" data-copy-target="share-url">Copy link</button>
+        </div>
+        {% with share_url=request.build_absolute_uri %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-sm">
+          <a class="btn-outline text-xs justify-center" href="https://twitter.com/intent/tweet?url={{ share_url|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener">X / Twitter</a>
+          <a class="btn-outline text-xs justify-center" href="https://www.linkedin.com/sharing/share-offsite/?url={{ share_url|urlencode }}" target="_blank" rel="noopener">LinkedIn</a>
+          <a class="btn-outline text-xs justify-center" href="https://www.facebook.com/sharer/sharer.php?u={{ share_url|urlencode }}" target="_blank" rel="noopener">Facebook</a>
+          <a class="btn-outline text-xs justify-center" href="https://api.whatsapp.com/send?text={{ post.title|urlencode }}%20{{ share_url|urlencode }}" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="btn-outline text-xs justify-center" href="https://t.me/share/url?url={{ share_url|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener">Telegram</a>
+          <a class="btn-outline text-xs justify-center" href="https://reddit.com/submit?url={{ share_url|urlencode }}&title={{ post.title|urlencode }}" target="_blank" rel="noopener">Reddit</a>
+          <a class="btn-outline text-xs justify-center" href="https://www.pinterest.com/pin/create/button/?url={{ share_url|urlencode }}&description={{ post.summary|truncatechars:120|urlencode }}" target="_blank" rel="noopener">Pinterest</a>
+          <a class="btn-outline text-xs justify-center" href="mailto:?subject={{ post.title|urlencode }}&body={{ share_url|urlencode }}" target="_blank" rel="noopener">Email</a>
+        </div>
+        <div class="text-xs text-slate-500">
+          <div class="flex items-center gap-2">
+            <input id="share-url" class="w-full border border-slate-200 rounded-md px-2 py-1" readonly value="{{ share_url }}">
+            <button type="button" class="btn-outline text-xs" data-copy-target="share-url">Copy</button>
+          </div>
+          <p class="mt-1">RSS: <a class="text-primary underline" href="{% url 'blog:feed_rss' %}">/feed/rss/</a> · JSON: <a class="text-primary underline" href="{% url 'blog:feed_json' %}">/feed/json/</a></p>
+        </div>
+        {% endwith %}
+      </section>
       <div class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
         Internal links and meta are updated only when content changes or when you trigger regeneration from the SEO dashboard.
       </div>
@@ -104,34 +154,50 @@
           <button type="button" class="btn-outline text-xs" data-ai-action="summarize_comments" data-ai-target="comment-thread">Summarize thread</button>
         </div>
 
-        <div class="flex items-center gap-2 mt-3">
-          <label for="comment-sort" class="text-xs text-slate-600">Sort</label>
-          <select id="comment-sort" class="text-sm border border-slate-200 rounded-md px-2 py-1">
-            <option value="new">Newest</option>
-            <option value="old">Oldest</option>
-            <option value="top">Top</option>
-          </select>
-        </div>
-        <div id="comment-thread" class="mt-4 space-y-4" data-post-slug="{{ post.slug }}">
-          <p class="text-sm text-slate-500">Loading comments...</p>
-        </div>
+        {% with consent=cookie_consent_categories %}
+          {% with functional=consent.functional comments=consent.comments %}
+            <div class="flex items-center gap-2 mt-3">
+              <label for="comment-sort" class="text-xs text-slate-600">Sort</label>
+              <select id="comment-sort" class="text-sm border border-slate-200 rounded-md px-2 py-1">
+                <option value="new">Newest</option>
+                <option value="old">Oldest</option>
+                <option value="top">Top</option>
+              </select>
+            </div>
+            <div id="comment-thread" class="mt-4 space-y-4" data-post-slug="{{ post.slug }}" data-comments-allowed="{% if functional and comments %}true{% else %}false{% endif %}" data-current-user-id="{{ request.user.id|default:"" }}">
+              <p class="text-sm text-slate-500">
+                {% if functional and comments %}
+                  Loading comments...
+                {% else %}
+                  Comments are disabled until you enable the comments category in cookie settings.
+                {% endif %}
+              </p>
+            </div>
 
-        {% if request.user.is_authenticated %}
-          <form method="post" action="{% url 'comments:add_comment_json' slug=post.slug %}" class="mt-4 space-y-2" id="comment-form" data-post-slug="{{ post.slug }}">
-            {% csrf_token %}
-            <label class="text-sm text-slate-700" for="comment-body">Add a comment</label>
-            <textarea id="comment-body" name="body" rows="3" required class="w-full border border-slate-200 rounded-md p-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"></textarea>
-            <p class="text-xs text-slate-500">Be constructive; inappropriate content may be removed.</p>
-            <button type="submit" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-send"></use></svg>
-              Post comment
-            </button>
-          </form>
-        {% else %}
-          <p class="text-sm text-slate-600 mt-3">
-            <a href="{% url 'account_login' %}" class="text-primary underline">Sign in</a> to comment.
-          </p>
-        {% endif %}
+            {% if functional and comments %}
+              {% if request.user.is_authenticated %}
+                <form method="post" action="{% url 'comments:add_comment_json' slug=post.slug %}" class="mt-4 space-y-2" id="comment-form" data-post-slug="{{ post.slug }}">
+                  {% csrf_token %}
+                  <label class="text-sm text-slate-700" for="comment-body">Add a comment</label>
+                  <textarea id="comment-body" name="body" rows="3" required class="w-full border border-slate-200 rounded-md p-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"></textarea>
+                  <p class="text-xs text-slate-500">Be constructive; inappropriate content may be removed.</p>
+                  <button type="submit" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
+                    <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-send"></use></svg>
+                    Post comment
+                  </button>
+                </form>
+              {% else %}
+                <p class="text-sm text-slate-600 mt-3">
+                  <a href="{% url 'account_login' %}" class="text-primary underline">Sign in</a> to comment.
+                </p>
+              {% endif %}
+            {% else %}
+              <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm p-3">
+                Comment features are disabled until you enable functional + comments cookies.
+              </div>
+            {% endif %}
+          {% endwith %}
+        {% endwith %}
       </section>
     </article>
 
@@ -156,12 +222,6 @@
           </div>
           {% include "components/tag_badges.html" with tags=trending_tags %}
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
-          <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-800">Bounty posts</h3>
-          </div>
-          {% include "blog/partials/bounty_widget.html" with posts=bounty_posts %}
-        </div>
       </div>
     </aside>
   </div>
@@ -169,5 +229,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{% static 'js/blog.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+  <script src="/static/js/blog.js" nonce="{{ request.csp_nonce }}" defer></script>
 {% endblock %}
+
+

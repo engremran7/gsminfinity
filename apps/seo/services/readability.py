@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -22,3 +23,5 @@ def readability_score(text: str) -> Dict[str, float]:
     except Exception as exc:
         logger.warning("readability_score failed: %s", exc)
         return {"readability": 0.0}
+
+

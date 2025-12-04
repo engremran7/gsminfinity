@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import re
@@ -77,3 +78,5 @@ class Command(BaseCommand):
                 f"Scan complete. Created: {created}, Updated: {updated}, Total: {AdPlacement.objects.count()}"
             )
         )
+
+

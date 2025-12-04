@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -8,34 +9,50 @@ from django.shortcuts import render, redirect
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import user_passes_test
+from django.core.cache import cache
 
-from apps.site_settings.models import SiteSettings
+from apps.core.app_service import AppService
 from apps.core.utils import feature_flags
 from .models import AdPlacement, AdEvent, Campaign, AdCreative, PlacementAssignment
 from apps.ads.services.rotation.engine import choose_creative
-from apps.ads.services.analytics.tracker import record_event
+from apps.ads.services.analytics.tracker import record_event as tracker_record_event
+from apps.core.utils.logging import log_event
+from apps.consent.utils import check as consent_check, hash_ip, hash_ua
+from apps.ads.services import ai_optimizer
+from apps.ads.services.schemas import AdRequest, AdResponse, CreativeSelection
+from apps.core.utils.ip import get_client_ip
+from apps.ads.services.targeting.engine import campaign_allowed
 
 logger = logging.getLogger(__name__)
 
 
+def _ads_settings() -> dict:
+    try:
+        ads_api = AppService.get("ads")
+        if ads_api and hasattr(ads_api, "get_settings"):
+            return ads_api.get_settings()
+    except Exception:
+        pass
+    return {
+        "ads_enabled": False,
+        "affiliate_enabled": False,
+        "ad_networks_enabled": False,
+        "ad_aggressiveness_level": "balanced",
+    }
+
+
 def _ads_enabled() -> bool:
-    return feature_flags.ads_enabled()
+    try:
+        settings_obj = _ads_settings()
+        return bool(settings_obj.get("ads_enabled", False))
+    except Exception:
+        return feature_flags.ads_enabled()
 
 
 def _has_ads_consent(request: HttpRequest) -> bool:
-    """
-    Honor consent categories; track events only when ads consent granted.
-    """
+    """Honor consent categories; track events only when ads consent granted."""
     try:
-        cookie_ns = getattr(request, "cookie_consent", None)
-        has_category = bool(getattr(cookie_ns, "ads", False)) if cookie_ns else False
-        has_overall = bool(getattr(request, "has_cookie_consent", False))
-        if not (has_category and has_overall):
-            return False
-        consent_flags = getattr(request, "consent_flags", None)
-        if consent_flags is not None:
-            return bool(getattr(consent_flags, "allow_ads", False))
-        return True
+        return consent_check("ads", request)
     except Exception:
         return False
 
@@ -44,6 +61,10 @@ def _log(request: HttpRequest, message: str, **extra):
     cid = getattr(request, "correlation_id", None)
     payload = {"correlation_id": cid, **extra}
     logger.info(message, extra=payload)
+    try:
+        log_event(logger, "info", message, **payload)
+    except Exception:
+        return
 
 
 @require_GET
@@ -63,6 +84,7 @@ def list_placements(request: HttpRequest) -> JsonResponse:
         }
         for p in placements
     ]
+    _log(request, "ads.list_placements", count=len(data))
     return JsonResponse({"items": data})
 
 
@@ -76,24 +98,50 @@ def record_event(request: HttpRequest) -> JsonResponse:
     event_type = request.POST.get("event_type") or ""
     placement_slug = request.POST.get("placement") or ""
     campaign_id = request.POST.get("campaign")
+    creative_id = request.POST.get("creative")
     page_url = request.POST.get("page_url", "")
     referrer = request.POST.get("referrer", "")
     user_agent = request.META.get("HTTP_USER_AGENT", "")
+    consent_granted = request.POST.get("consent_granted") in ("1", "true", "True")
     if not placement_slug or event_type not in {"impression", "click"}:
         return JsonResponse({"ok": False, "error": "bad_payload"}, status=400)
     if page_url and not page_url.startswith(("http://", "https://")):
         return JsonResponse({"ok": False, "error": "bad_payload"}, status=400)
+    # Basic abuse throttle per IP
+    rl_key = f"ads:event:{get_client_ip(request) or 'anon'}"
     try:
-        placement = AdPlacement.objects.filter(slug=placement_slug).first()
+        count = cache.get(rl_key, 0)
+        if count and int(count) >= 50:
+            return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+        cache.set(rl_key, int(count) + 1, timeout=60)
+    except Exception:
+        pass
+    hashed_ip = hash_ip(get_client_ip(request))
+    hashed_ua = hash_ua(user_agent)
+    try:
+        placement = AdPlacement.objects.filter(slug=placement_slug, is_enabled=True, is_active=True, is_deleted=False).first()
         campaign = Campaign.objects.filter(pk=campaign_id).first() if campaign_id else None
-        AdEvent.objects.create(
-            event_type=event_type or "impression",
+        creative = AdCreative.objects.filter(pk=creative_id, is_enabled=True, is_active=True).first() if creative_id else None
+        if creative and placement:
+            assigned = placement.assignments.filter(creative=creative, is_enabled=True, is_active=True).exists()
+            if not assigned:
+                return JsonResponse({"ok": False, "error": "invalid_mapping"}, status=400)
+        if campaign and not campaign_allowed(campaign, {"consent_ads": consent_granted}):
+            return JsonResponse({"ok": False, "error": "campaign_not_allowed"}, status=400)
+        tracker_record_event(
+            event_type or "impression",
             placement=placement,
+            creative=creative,
             campaign=campaign,
-            request_meta={"ip": request.META.get("REMOTE_ADDR")},
-            page_url=page_url,
-            referrer_url=referrer,
-            user_agent=user_agent,
+            user=request.user if request.user.is_authenticated else None,
+            request_meta={
+                "ip": hashed_ip,
+                "referrer": referrer,
+                "user_agent": hashed_ua,
+                "page_url": page_url,
+                "consent_granted": consent_granted,
+                "correlation_id": getattr(request, "correlation_id", None),
+            },
         )
         _log(
             request,
@@ -126,9 +174,30 @@ def fill_ad(request: HttpRequest) -> JsonResponse:
     placement = AdPlacement.objects.filter(slug=slug, is_enabled=True, is_active=True, is_deleted=False).first()
     if not placement:
         return JsonResponse({"ok": False, "error": "placement_not_found"}, status=404)
-    creative: AdCreative | None = choose_creative(placement)
+    ad_request = AdRequest(
+        placement_code=placement.code,
+        page_url=page_url,
+        referrer=request.META.get("HTTP_REFERER", ""),
+        user_id=request.user.id if request.user.is_authenticated else None,
+        session_id=request.session.session_key,
+        consent_ads=_has_ads_consent(request),
+        device=hash_ua(request.META.get("HTTP_USER_AGENT", "")),
+        context={"ip": hash_ip(get_client_ip(request) or "")},
+    )
+    tags = set((request.GET.get("tags") or "").split(",")) if request.GET.get("tags") else set()
+    context = {
+        "consent_ads": _has_ads_consent(request),
+        "page_context": placement.context or placement.page_context or request.GET.get("page_context"),
+        "tags": tags,
+    }
+    creative: AdCreative | None = choose_creative(placement, context)
     if not creative:
         return JsonResponse({"ok": False, "error": "no_creative"}, status=404)
+    ad_response = AdResponse(
+        placement_code=placement.code,
+        creatives=[CreativeSelection(creative_id=creative.id, campaign_id=getattr(creative, "campaign_id", None), weight=1)],
+        tracking={"consent": ad_request.consent_ads, "correlation_id": getattr(request, "correlation_id", "")},
+    )
     _log(
         request,
         "ads_fill",
@@ -146,19 +215,22 @@ def fill_ad(request: HttpRequest) -> JsonResponse:
         "placement": placement.slug,
         "creative": creative.id,
         "page_url": page_url,
+        "tracking": ad_response.tracking,
     }
     if _has_ads_consent(request):
-        record_event(
+        tracker_record_event(
             "impression",
             placement=placement,
             creative=creative,
             campaign=creative.campaign,
             user=request.user if request.user.is_authenticated else None,
             request_meta={
-                "ip": request.META.get("REMOTE_ADDR"),
+                "ip": hash_ip(get_client_ip(request) or ""),
                 "referrer": request.META.get("HTTP_REFERER", ""),
-                "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+                "user_agent": hash_ua(request.META.get("HTTP_USER_AGENT", "")),
                 "page_url": request.GET.get("page_url", ""),
+                "consent_granted": True,
+                "correlation_id": getattr(request, "correlation_id", None),
             },
         )
     else:
@@ -181,19 +253,36 @@ def record_click(request: HttpRequest) -> JsonResponse:
     user_agent = request.META.get("HTTP_USER_AGENT", "")
     if page_url and not page_url.startswith(("http://", "https://")):
         return JsonResponse({"ok": False, "error": "bad_payload"}, status=400)
-    creative = AdCreative.objects.filter(pk=creative_id).first() if creative_id else None
-    placement = AdPlacement.objects.filter(slug=placement_slug).first() if placement_slug else None
-    record_event(
+    # Basic abuse throttle per IP
+    rl_key = f"ads:click:{get_client_ip(request) or 'anon'}"
+    try:
+        count = cache.get(rl_key, 0)
+        if count and int(count) >= 30:
+            return JsonResponse({"ok": False, "error": "rate_limited"}, status=429)
+        cache.set(rl_key, int(count) + 1, timeout=60)
+    except Exception:
+        pass
+    creative = AdCreative.objects.filter(pk=creative_id, is_enabled=True, is_active=True).first() if creative_id else None
+    placement = AdPlacement.objects.filter(slug=placement_slug, is_enabled=True, is_active=True, is_deleted=False).first() if placement_slug else None
+    if creative and placement:
+        assigned = placement.assignments.filter(creative=creative, is_enabled=True, is_active=True).exists()
+        if not assigned:
+            return JsonResponse({"ok": False, "error": "invalid_mapping"}, status=400)
+    if creative and creative.campaign and not creative.campaign.is_live():
+        return JsonResponse({"ok": False, "error": "campaign_not_live"}, status=400)
+    tracker_record_event(
         "click",
         placement=placement,
         creative=creative,
         campaign=creative.campaign if creative else None,
         user=request.user if request.user.is_authenticated else None,
         request_meta={
-            "ip": request.META.get("REMOTE_ADDR"),
+            "ip": hash_ip(get_client_ip(request) or ""),
             "referrer": referrer,
-            "user_agent": user_agent,
+            "user_agent": hash_ua(user_agent),
             "page_url": page_url,
+            "consent_granted": True,
+            "correlation_id": getattr(request, "correlation_id", None),
         },
     )
     return JsonResponse({"ok": True})
@@ -205,7 +294,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     impressions = AdEvent.objects.filter(event_type="impression").count()
     clicks = AdEvent.objects.filter(event_type="click").count()
     ctr = (clicks / impressions * 100) if impressions else 0
-    ss = SiteSettings.get_solo()
+    ss = _ads_settings()
     placements = AdPlacement.objects.all()[:50]
     campaigns = Campaign.objects.all()[:50]
     creatives = AdCreative.objects.select_related("campaign")[:50]
@@ -265,7 +354,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     )
 
 
-@csrf_exempt
+@user_passes_test(lambda u: u.is_staff or u.is_superuser or getattr(u, "has_role", lambda *r: False)("admin", "editor"))
 @require_POST
 def toggle_settings(request: HttpRequest) -> HttpResponse:
     ss = SiteSettings.get_solo()
@@ -302,3 +391,5 @@ def toggle_settings(request: HttpRequest) -> HttpResponse:
             ss.ad_aggressiveness_level = level
         ss.save()
     return redirect("ads:dashboard")
+
+

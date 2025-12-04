@@ -1,6 +1,6 @@
+
 """
 apps.consent.context_processors
-===============================
 
 Injects consent state and metadata into all Django templates.
 
@@ -143,3 +143,4 @@ def consent_context(request: HttpRequest) -> Dict[str, Any]:
             "consent_cookie_samesite": "Lax",
             "consent_cookie_max_age": 31536000,
         }
+

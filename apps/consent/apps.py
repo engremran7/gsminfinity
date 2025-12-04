@@ -1,3 +1,4 @@
+
 # apps/consent/apps.py
 """
 Consent App Configuration
@@ -39,3 +40,4 @@ class ConsentConfig(AppConfig):
             log.info("No consent signals found (skipping registration).")
         except Exception as exc:
             log.warning(f"Error importing consent signals: {exc}")
+

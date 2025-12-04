@@ -1,3 +1,4 @@
+
 import os
 
 import django
@@ -9,3 +10,5 @@ def pytest_configure():
     os.environ.setdefault("DJANGO_SECRET_KEY", "test-secret")
     if not settings.configured:
         django.setup()
+
+

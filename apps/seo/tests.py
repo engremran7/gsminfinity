@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import os
@@ -26,3 +27,5 @@ class SeoTemplateTagTests(TestCase):
         tpl = Template("{% load seo_tags %}{% render_seo_meta obj %}")
         out = tpl.render(Context({"obj": None}))
         self.assertEqual(out.strip(), "")
+
+

@@ -1,6 +1,6 @@
+
 """
 apps.site_settings.views
-========================
 Enterprise-grade Views for GSMInfinity Site & Tenant Settings.
 
 ✓ Django 5.2+ / Python 3.12+
@@ -26,7 +26,7 @@ from django.views.decorators.cache import cache_page
 from django.views.decorators.http import require_GET
 from django.views.decorators.vary import vary_on_headers
 
-from .models import SiteSettings, TenantSiteSettings
+from .models import SiteSettings
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 
 def _settings_snapshot(obj: Any) -> Dict[str, Any]:
     """
-    Convert a SiteSettings or TenantSiteSettings instance into a pure dict.
+    Convert a SiteSettings instance into a pure dict.
     Completely defensive → never throws exceptions.
     """
     try:
@@ -54,7 +54,6 @@ def _settings_snapshot(obj: Any) -> Dict[str, Any]:
             "rate_limit_window_seconds": int(
                 getattr(obj, "rate_limit_window_seconds", 300)
             ),
-            "enable_tenants": bool(getattr(obj, "enable_tenants", False)),
             "enable_blog": bool(getattr(obj, "enable_blog", True)),
             "enable_blog_comments": bool(
                 getattr(obj, "enable_blog_comments", True)
@@ -152,7 +151,7 @@ def _settings_snapshot(obj: Any) -> Dict[str, Any]:
 
 def _get_settings(request: Optional[HttpRequest] = None) -> Dict[str, Any]:
     """
-    Return final effective settings (tenant → global).
+    Return final effective settings (global only).
     Fully defensive: never raises, always returns stable dict.
     """
 
@@ -170,27 +169,10 @@ def _get_settings(request: Optional[HttpRequest] = None) -> Dict[str, Any]:
         if cached:
             return cached
 
-        obj = None
-
-        # Tenant overrides (if available)
-        if request:
-            try:
-                site = get_current_site(request)
-                obj = (
-                    TenantSiteSettings.objects.select_related("site")
-                    .prefetch_related("meta_tags", "verification_files")
-                    .filter(site=site)
-                    .first()
-                )
-            except Exception:
-                obj = None
-
-        # Global fallback
-        if obj is None:
-            try:
-                obj = SiteSettings.get_solo()
-            except Exception:
-                obj = None
+        try:
+            obj = SiteSettings.get_solo()
+        except Exception:
+            obj = None
 
         snapshot = _settings_snapshot(obj)
         cache.set(cache_key, snapshot, timeout=300)
@@ -354,3 +336,5 @@ def verification_file(request: HttpRequest, filename: str) -> HttpResponse:
         return redirect(match["url"])
 
     raise Http404("Verification file has no storage URL")
+
+

@@ -1,3 +1,4 @@
+
 """
 apps.core.ai_client
 -------------------
@@ -320,3 +321,5 @@ def _emit_metrics(*, ok: bool, attempt: int, elapsed_ms: int) -> None:
     except Exception:
         # Metrics should never break the request flow
         return
+
+

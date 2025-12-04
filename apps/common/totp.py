@@ -1,3 +1,4 @@
+
 """
 Legacy TOTP helpers.
 
@@ -9,6 +10,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+import warnings
 from apps.users.mfa import TOTPService
 
 
@@ -19,6 +21,7 @@ def generate_totp(
     digest: str = "sha1",
     period: int = 30,
 ) -> str:
+    warnings.warn("common.totp is deprecated; use users.mfa.TOTPService", DeprecationWarning, stacklevel=2)
     return TOTPService.generate_current_code(
         secret=secret,
         period=period,
@@ -35,6 +38,7 @@ def verify_totp(
     digest: str = "sha1",
     period: int = 30,
 ) -> bool:
+    warnings.warn("common.totp is deprecated; use users.mfa.TOTPService", DeprecationWarning, stacklevel=2)
     return TOTPService.verify(
         secret=secret,
         code=token,
@@ -42,3 +46,5 @@ def verify_totp(
         period=period,
         digits=digits,
     )
+
+

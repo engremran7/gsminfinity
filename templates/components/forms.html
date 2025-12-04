@@ -1,3 +1,5 @@
+
+{% load static form_tags %}
 {# Form field wrapper. Usage examples:
    {% include "components/forms.html" with id="id_title" label="Title" field=form.title ai_action="generate_title" ai_label="Generate Title" help="Keep it concise." %}
    {% include "components/forms.html" with id="custom" name="custom" label="Custom" %}
@@ -36,9 +38,14 @@
   {% endif %}
 
   {% if help %}
-    <p class="text-xs text-slate-500">{{ help }}</p>
+    <div class="flex items-start gap-2 text-xs text-slate-500">
+      <svg class="w-4 h-4 text-slate-400" aria-hidden="true"><use href="#icon-info"></use></svg>
+      <span>{{ help }}</span>
+    </div>
   {% endif %}
   {% if error %}
     <p class="text-xs text-red-600">{{ error }}</p>
   {% endif %}
 </div>
+
+

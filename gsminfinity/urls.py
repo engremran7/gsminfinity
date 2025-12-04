@@ -1,3 +1,4 @@
+
 """
 Unified Enterprise URL Configuration for the project.
 
@@ -98,16 +99,23 @@ urlpatterns = [
     ),
     # Ads subsystem
     path("ads/", include(("apps.ads.urls", "ads"), namespace="ads")),
+    # Distribution / syndication
+    path("distribution/", include(("apps.distribution.urls", "distribution"), namespace="distribution")),
     # Tags API
     path("tags/", include(("apps.tags.urls", "tags"), namespace="tags")),
     # Blog (public)
     path("blog/", include(("apps.blog.urls", "blog"), namespace="blog")),
     # Comments API
     path("comments/", include(("apps.comments.urls", "comments"), namespace="comments")),
+    # i18n + themes micro-app
+    path("i18n/", include(("apps.i18n_themes.urls", "i18n_themes"), namespace="i18n_themes")),
+    # AI micro-app
+    path("ai/", include(("apps.ai.urls", "ai"), namespace="ai")),
+    # App registry API
+    path("apps/", include(("apps.app_registry.urls", "app_registry"), namespace="app_registry")),
     # Public root pages (core namespace + plain names for templates)
     path("", include(("apps.core.urls", "core"), namespace="core")),
     path("", lazy_view("apps.core.views.home"), name="home"),
-    path("tenants/", lazy_view("apps.core.views.tenants"), name="tenants"),
     path("privacy/", lazy_view("apps.core.views.privacy"), name="privacy"),
     path("terms/", lazy_view("apps.core.views.terms"), name="terms"),
     path("cookies/", lazy_view("apps.core.views.cookies"), name="cookies"),
@@ -153,3 +161,5 @@ handler400 = "apps.core.views.error_400_view"
 handler403 = "apps.core.views.error_403_view"
 handler404 = "apps.core.views.error_404_view"
 handler500 = "apps.core.views.error_500_view"
+
+

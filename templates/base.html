@@ -1,6 +1,8 @@
-{% load static %}
+
+{% load static ads_tags i18n i18n_theme_tags %}
+{% get_current_language as LANGUAGE_CODE %}
 <!doctype html>
-<html lang="en" class="h-full">
+<html lang="{{ request.COOKIES.lang|default:LANGUAGE_CODE|default:'en' }}" class="h-full">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -35,8 +37,8 @@
     {# FIXED STATIC CSS PATH (correct folder) #}
     {# ------------------------------------------------------------------ #}
     <link href="{% static 'css/main.css' %}" rel="stylesheet" />
-    <link href="{% static 'css/theme-bridge.css' %}" rel="stylesheet" />
     <link href="{% static 'css/style.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/summernote-overrides.css' %}" rel="stylesheet" />
 
     {# ------------------------------------------------------------------ #}
     {# HTMX (CSP-safe with nonce) #}
@@ -64,19 +66,29 @@
             affiliate_enabled: {{ site_settings.affiliate_enabled|yesno:"true,false" }},
             ad_networks_enabled: {{ site_settings.ad_networks_enabled|yesno:"true,false" }},
             ad_aggressiveness_level: "{{ site_settings.ad_aggressiveness_level|default:'balanced' }}",
+            ai_enabled: {{ app_registry.ai_enabled|default_if_none:True|yesno:"true,false" }},
+            device_identity_enabled: {{ app_registry.device_identity_enabled|default_if_none:True|yesno:"true,false" }},
+            i18n_themes_enabled: {{ app_registry.i18n_themes_enabled|default_if_none:True|yesno:"true,false" }},
+            crawler_guard_enabled: {{ app_registry.crawler_guard_enabled|default_if_none:True|yesno:"true,false" }},
         };
     </script>
 
     {% block extra_head %}{% endblock %}
     {% block json_ld %}{% endblock %}
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900" data-ai-endpoint="{% url 'api_ai_ask' %}">
+<body class="min-h-screen" data-ai-endpoint="{% url 'ai:execute' %}">
 
     {% include "includes/icon_sprite.html" %}
 
     {# ------------------------------------------------------------------ #}
     {# CONSENT BANNER SLOT (required by loader) #}
     {# ------------------------------------------------------------------ #}
+    {% if request.path|default:''|slice:":10" == '/accounts/' %}
+    <script nonce="{{ request.csp_nonce }}">
+      // Disable auto-loading the consent banner on auth screens to avoid repeated fetches
+      window.CONSENT_CONFIG = Object.assign(window.CONSENT_CONFIG || {}, { autoLoad: false });
+    </script>
+    {% endif %}
     <div id="consent-banner-slot"></div>
 
     {# ------------------------------------------------------------------ #}
@@ -91,123 +103,113 @@
     {% include "components/nav.html" %}
 
     {# ------------------------------------------------------------------ #}
-    {# MAIN CONTENT BLOCK #}
+    {# MAIN CONTENT WITH AD SIDE RAILS #}
     {# ------------------------------------------------------------------ #}
-    <main id="main-content" class="flex-1">
+    <div class="flex">
+      <aside class="hidden lg:block w-56 shrink-0 px-3 py-4 space-y-4" aria-label="Left ads">
+        {% render_ad_slot "left-rail" %}
+      </aside>
+      <main id="main-content" class="flex-1">
         {% block content %}{% endblock %}
-    </main>
+      </main>
+      <aside class="hidden lg:block w-56 shrink-0 px-3 py-4 space-y-4" aria-label="Right ads">
+        {% render_ad_slot "right-rail" %}
+      </aside>
+    </div>
 
     {# ------------------------------------------------------------------ #}
     {# FOOTER INCLUDE #}
     {# ------------------------------------------------------------------ #}
     {% include "includes/footer.html" %}
 
-    {# ------------------------------------------------------------------ #}
-    {# THEME DESIGNER PANEL #}
-    {# ------------------------------------------------------------------ #}
-    <div
-        id="theme-drawer"
-        class="theme-drawer hidden"
-        role="dialog"
-        aria-modal="true"
-        aria-live="polite"
-        aria-labelledby="theme-drawer-title"
-    >
-        <div class="theme-drawer__header">
-            <div class="theme-drawer__title">
-                <svg class="icon" aria-hidden="true"><use href="#icon-palette"></use></svg>
-                <span id="theme-drawer-title">Theme Designer</span>
-            </div>
-            <button type="button" id="theme-close" class="btn-outline" aria-label="Close theme panel">Close</button>
-        </div>
-
-        <div class="theme-presets">
-            <button class="theme-preset-btn" data-theme-preset="aurora" type="button">
-                <div>
-                    <div class="font-semibold">Aurora</div>
-                    <div class="text-sm text-slate-600">Teal + violet</div>
-                </div>
-                <div class="theme-swatches">
-                    <span class="theme-swatch" style="background:#0ea5a4"></span>
-                    <span class="theme-swatch" style="background:#6366f1"></span>
-                    <span class="theme-swatch" style="background:#0b1220"></span>
-                </div>
-            </button>
-            <button class="theme-preset-btn" data-theme-preset="midnight" type="button">
-                <div>
-                    <div class="font-semibold">Midnight</div>
-                    <div class="text-sm text-slate-600">Deep slate</div>
-                </div>
-                <div class="theme-swatches">
-                    <span class="theme-swatch" style="background:#0f172a"></span>
-                    <span class="theme-swatch" style="background:#22d3ee"></span>
-                    <span class="theme-swatch" style="background:#111827"></span>
-                </div>
-            </button>
-            <button class="theme-preset-btn" data-theme-preset="daylight" type="button">
-                <div>
-                    <div class="font-semibold">Daylight</div>
-                    <div class="text-sm text-slate-600">Warm light</div>
-                </div>
-                <div class="theme-swatches">
-                    <span class="theme-swatch" style="background:#f97316"></span>
-                    <span class="theme-swatch" style="background:#22c55e"></span>
-                    <span class="theme-swatch" style="background:#fdf7f0"></span>
-                </div>
-            </button>
-            <button class="theme-preset-btn" data-theme-preset="emerald" type="button">
-                <div>
-                    <div class="font-semibold">Emerald</div>
-                    <div class="text-sm text-slate-600">Green glass</div>
-                </div>
-                <div class="theme-swatches">
-                    <span class="theme-swatch" style="background:#22c55e"></span>
-                    <span class="theme-swatch" style="background:#0ea5e9"></span>
-                    <span class="theme-swatch" style="background:#e8fff6"></span>
-                </div>
-            </button>
-        </div>
-
-        <div class="theme-field">
-            <label for="theme-primary-input">Primary</label>
-            <input type="color" id="theme-primary-input" aria-label="Primary color" />
-        </div>
-        <div class="theme-field">
-            <label for="theme-accent-input">Accent</label>
-            <input type="color" id="theme-accent-input" aria-label="Accent color" />
-        </div>
-        <div class="theme-field">
-            <label for="theme-surface-input">Surface</label>
-            <input type="color" id="theme-surface-input" aria-label="Surface color" />
-        </div>
-        <div class="theme-field">
-            <label for="theme-text-input">Text</label>
-            <input type="color" id="theme-text-input" aria-label="Text color" />
-        </div>
-
-        <div class="theme-actions">
-            <button class="btn-outline" type="button" id="theme-reset">Reset</button>
-            <button class="btn-primary" type="button" id="theme-apply">
-                <svg class="icon" aria-hidden="true"><use href="#icon-rocket"></use></svg>
-                Apply
-            </button>
-        </div>
-    </div>
-
     {% include "components/modals.html" %}
 
     {# ------------------------------------------------------------------ #}
     {# EXTRA SCRIPTS BLOCK (P0 Fix: Client-side Auth Toggle logic) #}
     {# ------------------------------------------------------------------ #}
+    <script src="{% static 'js/i18n_themes.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/main.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    <script src="{% static 'js/device_identity.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/ai_helpers.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/htmx-csrf.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/consent-banner-loader.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/consent.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    <script nonce="{{ request.csp_nonce }}">
+      document.addEventListener("DOMContentLoaded", async function () {
+        try {
+          if (window.I18nThemes && typeof window.I18nThemes.initTheme === "function") {
+            await window.I18nThemes.initTheme("core");
+          }
+          if (window.I18nThemes && typeof window.I18nThemes.loadTranslations === "function") {
+            // prefer cookie lang, then django LANGUAGE_CODE
+            const cookieMatch = (document.cookie.match(/(?:^|; )lang=([^;]+)/) || [])[1];
+            const locale = cookieMatch ? decodeURIComponent(cookieMatch) : "{{ LANGUAGE_CODE|default:'en' }}";
+            await window.I18nThemes.loadTranslations("core", locale, ["common"]);
+          }
+        } catch (err) {
+          console.warn("i18n init failed", err);
+        }
+        try {
+          if (window.DeviceIdentity && typeof window.DeviceIdentity.init === "function") {
+            window.DeviceIdentity.init();
+          }
+        } catch (err) {
+          console.warn("device identity init failed", err);
+        }
+
+        // Keep language dropdown in sync with cookie (defaults to en)
+        try {
+          const sels = document.querySelectorAll("#lang-switch, select[name='locale']");
+          const current = (document.cookie.match(/(?:^|; )lang=([^;]+)/) || [])[1];
+          sels.forEach((sel) => {
+            if (current) {
+              sel.value = decodeURIComponent(current);
+            }
+            sel.addEventListener("change", () => sel.form && sel.form.submit());
+          });
+        } catch (err) {
+          console.warn("lang switch init failed", err);
+        }
+      });
+    </script>
     {% if site_settings.ads_enabled %}
       <script src="{% static 'js/ads.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     {% endif %}
 
     {% block extra_scripts %}{% endblock %}
+
+    {# AI assistant widget (uses existing CSS) #}
+    <div class="ai-widget" id="ai-widget-root">
+      <button id="ai-toggle" type="button" aria-expanded="false" aria-controls="ai-panel">
+        <svg class="icon w-5 h-5" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
+        <span class="visually-hidden">Open AI assistant</span>
+      </button>
+      <div id="ai-panel" class="hidden rounded-xl p-3">
+        <textarea id="ai-input" class="w-full text-sm border rounded mb-2" rows="3"
+                  placeholder="Ask AI to help with content, SEO, tags..."></textarea>
+        <button type="button"
+                class="btn-primary w-full text-sm py-2 rounded"
+                data-ai-action="assistant"
+                data-ai-target="ai-input">
+          Ask AI
+        </button>
+      </div>
+    </div>
+
+    <script nonce="{{ request.csp_nonce }}">
+      document.addEventListener("DOMContentLoaded", function () {
+        const toggle = document.getElementById("ai-toggle");
+        const panel = document.getElementById("ai-panel");
+        if (toggle && panel) {
+          toggle.addEventListener("click", () => {
+            const isOpen = !panel.classList.contains("hidden");
+            panel.classList.toggle("hidden", isOpen);
+            toggle.setAttribute("aria-expanded", (!isOpen).toString());
+          });
+        }
+      });
+    </script>
 </body>
 </html>
+
+

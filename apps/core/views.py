@@ -1,3 +1,4 @@
+
 # apps/core/views.py
 """
 Core views — Enterprise-grade, Django 5.2+ ready.
@@ -14,9 +15,11 @@ from __future__ import annotations
 
 import logging
 import sys
+import time
 from typing import Any, Dict, Iterable, List, Optional
 
 import django
+from django.conf import settings
 from django.core.cache import cache
 from django.http import (
     Http404,
@@ -28,6 +31,8 @@ from django.http import (
 from django.shortcuts import render
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template
+from django.urls import NoReverseMatch, reverse
+from django.db import connections
 from django.utils.timezone import now, timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -42,6 +47,7 @@ _SITE_SETTINGS_VERSION_KEY = "site_settings_version"
 # Valid home templates
 _HOME_TEMPLATE_PRIORITY: List[str] = ["home.html", "core/home.html"]
 MAX_QUESTION_CHARS = 4_000
+START_TIME = time.time()
 
 
 # ============================================================
@@ -116,16 +122,11 @@ def _get_site_settings_snapshot() -> Dict[str, Any]:
             "enable_signup": bool(getattr(obj, "enable_signup", True)),
             "require_mfa": bool(getattr(obj, "require_mfa", False)),
             "maintenance_mode": bool(getattr(obj, "maintenance_mode", False)),
-            # Feature toggles (admin controlled)
-            "enable_tenants": bool(getattr(obj, "enable_tenants", False)),
             "enable_blog": bool(getattr(obj, "enable_blog", True)),
             "enable_blog_comments": bool(
                 getattr(obj, "enable_blog_comments", True)
             ),
             "allow_user_blog_posts": bool(getattr(obj, "allow_user_blog_posts", False)),
-            "allow_user_bounty_posts": bool(
-                getattr(obj, "allow_user_bounty_posts", False)
-            ),
             "primary_color": getattr(obj, "primary_color", "#0d6efd"),
             "secondary_color": getattr(obj, "secondary_color", "#6c757d"),
             "logo": (
@@ -151,7 +152,6 @@ def _get_site_settings_snapshot() -> Dict[str, Any]:
             "enable_signup": True,
             "require_mfa": False,
             "maintenance_mode": False,
-            "enable_tenants": False,
             "enable_blog": False,
             "enable_blog_comments": False,
             "primary_color": "#0d6efd",
@@ -208,6 +208,17 @@ def _first_existing_template(candidates: Iterable[str]) -> Optional[str]:
     return None
 
 
+def _safe_url(name: str, **kwargs) -> Optional[str]:
+    """Best-effort reverse; returns None on failure instead of raising."""
+    try:
+        return reverse(name, kwargs=kwargs or None)
+    except NoReverseMatch:
+        return None
+    except Exception:
+        logger.debug("reverse failed for %s", name, exc_info=True)
+        return None
+
+
 # ============================================================
 # HOME PAGE
 # ============================================================
@@ -237,20 +248,12 @@ def home(request: HttpRequest) -> HttpResponse:
         except Exception:
             return []
 
-    def _d():
-        try:
-            from apps.users.models import DeviceFingerprint  # type: ignore
-
-            return DeviceFingerprint.objects.filter(is_active=True)
-        except Exception:
-            return []
-
     def _n():
         try:
             from apps.users.models import Notification  # type: ignore
 
             if request.user.is_authenticated:
-                return Notification.objects.filter(user=request.user, is_read=False)
+                return Notification.objects.filter(recipient=request.user, is_read=False)
             return Notification.objects.none()
         except Exception:
             return []
@@ -281,7 +284,6 @@ def home(request: HttpRequest) -> HttpResponse:
         "python_version": python_version,
         "now": now(),
         "total_users": _safe_count(_u),
-        "active_devices": _safe_count(_d),
         "unread_notifications": _safe_count(_n),
         "active_announcements": _safe_count(_a),
         "announcements": _safe_iter(_a, limit=5),
@@ -303,44 +305,6 @@ def home(request: HttpRequest) -> HttpResponse:
 
 
 # ============================================================
-# TENANTS
-# ============================================================
-def tenants(request: HttpRequest) -> HttpResponse:
-    # Gate tenants listing behind SiteSettings.enable_tenants
-    try:
-        from apps.site_settings.models import SiteSettings  # type: ignore
-
-        ss = SiteSettings.get_solo()
-        if not getattr(ss, "enable_tenants", False):
-            raise Http404("Tenants listing is disabled.")
-    except Http404:
-        raise
-    except Exception as exc:
-        logger.debug("SiteSettings unavailable for tenants: %s", exc)
-        raise Http404("Tenants listing is disabled.")
-
-    try:
-        from apps.site_settings.models import TenantSiteSettings  # type: ignore
-
-        qs = TenantSiteSettings.objects.select_related("site").prefetch_related(
-            "meta_tags", "verification_files"
-        )
-        tenants = list(qs.order_by("site__domain"))
-    except Exception as exc:
-        logger.debug("TenantSiteSettings unavailable: %s", exc)
-        tenants = []
-
-    return _render_safe(
-        request,
-        "core/tenants.html",
-        {
-            "site_settings": _get_site_settings_snapshot(),
-            "tenants": tenants,
-        },
-    )
-
-
-# ============================================================
 # LEGAL PAGES
 # ============================================================
 def privacy(request: HttpRequest) -> HttpResponse:
@@ -358,6 +322,124 @@ def terms(request: HttpRequest) -> HttpResponse:
 def cookies(request: HttpRequest) -> HttpResponse:
     return _render_safe(
         request, "legal/cookies.html", {"site_settings": _get_site_settings_snapshot()}
+    )
+
+
+def site_map(request: HttpRequest) -> HttpResponse:
+    """
+    Render a human-friendly site tree with key navigation links.
+    """
+    site_settings = _get_site_settings_snapshot()
+
+    sections = [
+        {
+            "title": "General",
+            "links": [
+                {"label": "Home", "url": _safe_url("core:home")},
+                {"label": "Blog", "url": _safe_url("blog:post_list")},
+                {"label": "Tags", "url": _safe_url("tags:list")},
+                {"label": "Privacy Policy", "url": _safe_url("site_settings:privacy_policy")},
+                {"label": "Terms of Service", "url": _safe_url("site_settings:terms_of_service")},
+                {"label": "Cookies Policy", "url": _safe_url("site_settings:cookies_policy")},
+                {"label": "Cookie / Consent Settings", "url": _safe_url("consent:privacy_center")},
+            ],
+        },
+        {
+            "title": "Account",
+            "links": [
+                {"label": "Dashboard", "url": _safe_url("users:dashboard")},
+                {"label": "Profile", "url": _safe_url("users:profile")},
+                {"label": "Notifications", "url": _safe_url("users:notifications")},
+                {"label": "Sign in", "url": _safe_url("users:account_login")},
+                {"label": "Sign up", "url": _safe_url("users:account_signup")},
+            ],
+        },
+        {
+            "title": "Help & Support",
+            "links": [
+                {"label": "Contact / Health", "url": _safe_url("health_check")},
+                {"label": "RSS Feed", "url": _safe_url("blog:feed_rss")},
+                {"label": "JSON Feed", "url": _safe_url("blog:feed_json")},
+            ],
+        },
+    ]
+
+    # Drop any links that failed to resolve
+    for section in sections:
+        section["links"] = [l for l in section["links"] if l.get("url")]
+
+    context = {
+        "site_settings": site_settings,
+        "site_name": site_settings.get("site_name"),
+        "sections": sections,
+    }
+    return _render_safe(request, "core/site_map.html", context)
+
+
+def health_check(request: HttpRequest) -> JsonResponse:
+    """
+    Enterprise-grade health probe with lightweight dependency checks.
+    """
+    checks = {}
+    optional = {}
+    meta = {
+        "uptime_seconds": int(time.time() - START_TIME),
+        "django_version": django.get_version(),
+        "python_version": sys.version.split()[0] if sys.version else "",
+        "debug": bool(getattr(settings, "DEBUG", False)),
+    }
+
+    # DB check (default connection)
+    try:
+        conn = connections["default"]
+        start = time.perf_counter()
+        conn.ensure_connection()
+        latency_ms = round((time.perf_counter() - start) * 1000, 2)
+        checks["db"] = {"ok": True, "latency_ms": latency_ms}
+    except Exception as exc:
+        logger.warning("Health check DB failed: %s", exc)
+        checks["db"] = {"ok": False, "error": str(exc)}
+
+    # Cache check (set/get round-trip)
+    try:
+        cache_key = "healthcheck_ping"
+        cache.set(cache_key, "pong", timeout=5)
+        ok = cache.get(cache_key) == "pong"
+        checks["cache"] = {"ok": ok}
+    except Exception as exc:
+        logger.warning("Health check cache failed: %s", exc)
+        checks["cache"] = {"ok": False, "error": str(exc)}
+
+    # Optional: Celery broker reachability (if configured)
+    broker_url = getattr(settings, "CELERY_BROKER_URL", None) or getattr(
+        settings, "BROKER_URL", None
+    )
+    if broker_url:
+        try:
+            from kombu import Connection  # type: ignore
+
+            start = time.perf_counter()
+            with Connection(broker_url, connect_timeout=1) as conn:
+                conn.ensure_connection(max_retries=1)
+            latency_ms = round((time.perf_counter() - start) * 1000, 2)
+            optional["broker"] = {"ok": True, "latency_ms": latency_ms}
+        except ModuleNotFoundError:
+            optional["broker"] = {"ok": True, "skipped": "kombu_not_installed"}
+        except Exception as exc:  # pragma: no cover - optional path
+            logger.warning("Health check broker failed: %s", exc)
+            optional["broker"] = {"ok": False, "error": str(exc)}
+
+    overall_ok = all(v.get("ok") for v in checks.values()) if checks else True
+    status = 200 if overall_ok else 503
+    return JsonResponse(
+        {
+          "ok": overall_ok,
+          "status": "healthy" if overall_ok else "degraded",
+          "checks": checks,
+          "optional": optional,
+          "meta": meta,
+        },
+        status=status,
     )
 
 
@@ -528,4 +610,6 @@ def ai_assistant_view(request: HttpRequest) -> JsonResponse:
         )
 
     return JsonResponse({"ok": True, "answer": answer}, status=200)
+
+
 

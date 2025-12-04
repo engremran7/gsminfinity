@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -19,3 +20,5 @@ def serp_analyze(meta_title: str, meta_description: str) -> Dict[str, float]:
     except Exception as exc:
         logger.warning("serp_analyze failed: %s", exc)
         return {"serp_score": 0.0}
+
+

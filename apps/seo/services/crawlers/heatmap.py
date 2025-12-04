@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -22,3 +23,5 @@ def heatmap() -> Dict[str, int]:
     except Exception as exc:
         logger.warning("heatmap generation failed: %s", exc)
         return {"total": 0, "ok": 0, "errors": 0, "unknown": 0}
+
+

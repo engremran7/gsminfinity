@@ -1,14 +1,3 @@
-"""
-apps.site_settings.admin
-========================
-Enterprise Admin Configuration for Site + Tenant Settings.
-
-✔ Django 5.2 / Python 3.12
-✔ Supports new branding fields (logo, dark_logo, favicon)
-✔ Secure, clean fieldsets (no direct M2M inside)
-✔ Through-model inlines for meta-tags & verification files
-✔ Image previews inside admin
-"""
 
 from __future__ import annotations
 
@@ -20,19 +9,11 @@ from django.utils.translation import gettext_lazy as _
 from import_export.admin import ExportMixin
 from solo.admin import SingletonModelAdmin
 
-from .models import (
-    SiteSettings,
-    TenantSiteSettings,
-    VerificationFile,
-    VerificationMetaTag,
-)
+from .models import SiteSettings, VerificationFile, VerificationMetaTag
 
 logger = logging.getLogger(__name__)
 
 
-# ------------------------------------------------------------
-#  INLINE THROUGH-MODELS
-# ------------------------------------------------------------
 class SiteSettingsMetaTagInline(admin.TabularInline):
     model = SiteSettings.meta_tags.through
     extra = 0
@@ -47,16 +28,10 @@ class SiteSettingsFileInline(admin.TabularInline):
     verbose_name_plural = _("Verification File Links")
 
 
-# ------------------------------------------------------------
-#  IMAGE PREVIEW HELPERS
-# ------------------------------------------------------------
 def _preview(obj, field_name: str, height: int = 60):
-    """Safe preview for logo, dark_logo, favicon."""
     try:
         field = getattr(obj, field_name, None)
-        if not field:
-            return "-"
-        if not getattr(field, "url", None):
+        if not field or not getattr(field, "url", None):
             return "-"
         return format_html(
             '<img src="{}" style="height:{}px; border-radius:6px;" />',
@@ -67,26 +42,12 @@ def _preview(obj, field_name: str, height: int = 60):
         return "-"
 
 
-# ------------------------------------------------------------
-#  SiteSettings Admin (Singleton)
-# ------------------------------------------------------------
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
-
     list_display = (
         "site_name",
         "maintenance_mode",
         "force_https",
-        "enable_signup",
-        "enable_tenants",
-        "enable_notifications",
-        "enable_blog",
-        "enable_blog_comments",
-        "allow_user_blog_posts",
-        "allow_user_bounty_posts",
-        "seo_enabled",
-        "ads_enabled",
-        "require_mfa",
         "recaptcha_enabled",
     )
 
@@ -100,12 +61,9 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
         "favicon_preview",
     )
 
-    # ----------------------
-    # Fieldsets
-    # ----------------------
     fieldsets = (
         (
-            "🔖 Branding & Theme",
+            "Branding & Theme",
             {
                 "fields": (
                     "site_name",
@@ -117,14 +75,14 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
                     "dark_logo_preview",
                     "favicon",
                     "favicon_preview",
-                    "theme_profile",
                     "primary_color",
                     "secondary_color",
                 ),
+                "description": "Core branding only. Runtime themes/colors come from the Themes app.",
             },
         ),
         (
-            "🌍 Locale & Internationalization",
+            "Locale & Internationalization",
             {
                 "fields": (
                     "default_language",
@@ -134,49 +92,17 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
             },
         ),
         (
-            "🤖 AI Personalization",
+            "Ops & Availability",
             {
                 "fields": (
-                    "enable_ai_personalization",
-                    "ai_theme_mode",
-                    "ai_model_version",
-                ),
-            },
-        ),
-        (
-            "Security & Features",
-            {
-                "fields": (
-                    "enable_signup",
-                    "enable_tenants",
-                    "enable_password_reset",
-                    "enable_notifications",
                     "maintenance_mode",
                     "force_https",
                 ),
+                "description": "App-specific toggles now live in each app’s settings and AppRegistry.",
             },
         ),
         (
-            "Content / SEO / Ads Toggles",
-            {
-                "fields": (
-                    "enable_blog",
-                    "enable_blog_comments",
-                    "allow_user_blog_posts",
-                    "allow_user_bounty_posts",
-                    "seo_enabled",
-                    "auto_meta_enabled",
-                    "auto_schema_enabled",
-                    "auto_linking_enabled",
-                    "ads_enabled",
-                    "affiliate_enabled",
-                    "ad_networks_enabled",
-                    "ad_aggressiveness_level",
-                ),
-            },
-        ),
-        (
-            "🧠 reCAPTCHA Configuration",
+            "reCAPTCHA Configuration",
             {
                 "fields": (
                     "recaptcha_enabled",
@@ -188,45 +114,10 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
                 ),
             },
         ),
-        (
-            "📱 Device & MFA Policies",
-            {
-                "fields": (
-                    "max_devices_per_user",
-                    "lock_duration_minutes",
-                    "fingerprint_mode",
-                    "enforce_unique_device",
-                    "require_mfa",
-                    "mfa_totp_issuer",
-                ),
-            },
-        ),
-        (
-            "📧 Email Verification",
-            {
-                "fields": (
-                    "email_verification_code_length",
-                    "email_verification_code_type",
-                ),
-            },
-        ),
-        (
-            "🛡️ Rate Limiting & Robustness",
-            {
-                "fields": (
-                    "max_login_attempts",
-                    "rate_limit_window_seconds",
-                    "cache_ttl_seconds",
-                ),
-            },
-        ),
     )
 
     inlines = [SiteSettingsMetaTagInline, SiteSettingsFileInline]
 
-    # ----------------------
-    # Preview fields
-    # ----------------------
     def logo_preview(self, obj):
         return _preview(obj, "logo")
 
@@ -240,9 +131,6 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
     dark_logo_preview.short_description = "Dark Logo Preview"
     favicon_preview.short_description = "Favicon Preview"
 
-    # ----------------------
-    # Save Logger
-    # ----------------------
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         logger.info(
@@ -252,24 +140,10 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
             obj.maintenance_mode,
         )
 
-
-# ------------------------------------------------------------
-#  TENANT SETTINGS ADMIN
-# ------------------------------------------------------------
-@admin.register(TenantSiteSettings)
-class TenantSiteSettingsAdmin(ExportMixin, admin.ModelAdmin):
-
-    list_display = ("site", "theme_profile", "primary_color", "secondary_color")
-    search_fields = ("site__domain", "theme_profile")
-    ordering = ("site",)
-    list_select_related = ("site",)
-    list_per_page = 50
-    save_on_top = True
+    def has_add_permission(self, request):
+        return False
 
 
-# ------------------------------------------------------------
-#  VERIFICATION RESOURCES
-# ------------------------------------------------------------
 @admin.register(VerificationMetaTag)
 class VerificationMetaTagAdmin(admin.ModelAdmin):
     list_display = ("provider", "name_attr", "content_attr", "created_at")
@@ -288,9 +162,8 @@ class VerificationFileAdmin(admin.ModelAdmin):
     save_on_top = True
 
 
-# ------------------------------------------------------------
-#  Admin Branding (non-project-specific)
-# ------------------------------------------------------------
 admin.site.site_header = _("Administration Portal")
 admin.site.index_title = _("Enterprise Settings")
 admin.site.site_title = _("Site Configuration")
+
+

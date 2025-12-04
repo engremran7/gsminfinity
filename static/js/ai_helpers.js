@@ -1,17 +1,30 @@
+
 // AI helper: binds buttons with data-ai-action + data-ai-target, posts to API, and injects responses.
 (function () {
   "use strict";
   const d = document;
 
   function getCSRF() {
-    const match = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
-    if (match) return decodeURIComponent(match[1]);
+    // 1) Prefer centralized CSRF resolver if globally available
+    if (window.AppUI && typeof window.AppUI.getCsrfToken === "function") {
+      return window.AppUI.getCsrfToken();
+    }
+
+    // 2) Fallback via meta tag
     const meta = d.querySelector('meta[name="csrf-token"]');
-    return meta ? meta.content : "";
+    if (meta) return meta.content;
+
+    // 3) Final fallback via cookie
+    const match = document.cookie.match(/(?:^|;)\s*csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : "";
   }
 
   async function callAi(action, payload) {
-    const endpoint = d.body?.dataset?.aiEndpoint || "/api/ai/ask";
+    const endpoint = d.body?.dataset?.aiEndpoint || "/ai/execute/";
+    const body = {
+      workflow: action || "default",
+      input: payload || {},
+    };
     const resp = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -20,10 +33,18 @@
         "X-Requested-With": "XMLHttpRequest",
       },
       credentials: "same-origin",
-      body: JSON.stringify({ action, payload }),
+      body: JSON.stringify(body),
     });
     if (!resp.ok) throw new Error("AI request failed");
-    return resp.json();
+    const data = await resp.json(); // { ok, run_id, status, output }
+    const output = data?.output || {};
+    return (
+      output.answer ||
+      output.result ||
+      output.text ||
+      output.summary ||
+      output
+    );
   }
 
   function setLoading(btn, loading) {
@@ -40,7 +61,7 @@
 
   function applyResult(target, data) {
     if (!target) return;
-    const value = data?.answer || data?.result || "";
+    const value = data || "";
     if (target.tagName === "TEXTAREA" || target.tagName === "INPUT") {
       target.value = value;
     } else {
@@ -57,7 +78,8 @@
         const action = btn.getAttribute("data-ai-action");
         const targetId = btn.getAttribute("data-ai-target");
         const target = targetId ? d.getElementById(targetId) : null;
-        const currentText = target && ("value" in target ? target.value : target.textContent) || "";
+        const currentText =
+          (target && ("value" in target ? target.value : target.textContent)) || "";
         setLoading(btn, true);
         try {
           const data = await callAi(action, { text: currentText });
@@ -81,3 +103,5 @@
     bind();
   }
 })();
+
+

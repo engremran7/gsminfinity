@@ -1,0 +1,14 @@
+[project]
+name = "security-suite"
+version = "0.1.0"
+description = "Pluggable security facade (devices, bots, risk) with optional subapps."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["Django>=4.2"]
+
+[project.optional-dependencies]
+ai = ["openai>=1.0.0"]
+
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"

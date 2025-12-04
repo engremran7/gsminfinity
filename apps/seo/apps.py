@@ -1,3 +1,4 @@
+
 from django.apps import AppConfig
 
 
@@ -10,3 +11,5 @@ class SeoConfig(AppConfig):
             import apps.seo.signals  # noqa: F401
         except Exception:
             return
+
+

@@ -1,10 +1,12 @@
+
 from __future__ import annotations
 
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from solo.models import SingletonModel
 
-from apps.core.models import TimestampedModel, SoftDeleteModel, AuditFieldsModel
+from apps.core.models import AuditFieldsModel, SoftDeleteModel, TimestampedModel
 
 
 class AdPlacement(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
@@ -198,6 +200,7 @@ class AdEvent(TimestampedModel):
     user_agent = models.TextField(blank=True, default="")
     session_id = models.CharField(max_length=128, blank=True, default="")
     site_domain = models.CharField(max_length=100, blank=True, default="")
+    consent_granted = models.BooleanField(default=False, help_text="True if user consented to ads tracking.")
 
     class Meta:
         indexes = [
@@ -207,3 +210,26 @@ class AdEvent(TimestampedModel):
 
     def __str__(self):
         return f"{self.event_type} @ {self.created_at}"
+
+
+class AdsSettings(SingletonModel):
+    """
+    Per-app settings for Ads so the app can be reused independently.
+    """
+
+    ads_enabled = models.BooleanField(default=False)
+    affiliate_enabled = models.BooleanField(default=False)
+    ad_networks_enabled = models.BooleanField(default=False)
+    ad_aggressiveness_level = models.CharField(
+        max_length=20,
+        choices=[("minimal", "Minimal"), ("balanced", "Balanced"), ("aggressive", "Aggressive")],
+        default="balanced",
+    )
+
+    class Meta:
+        verbose_name = "Ads Settings"
+
+    def __str__(self) -> str:
+        return "Ads Settings"
+
+

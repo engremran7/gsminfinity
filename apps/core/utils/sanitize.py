@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import re
@@ -27,3 +28,5 @@ def sanitize_html(html: str, allowed_tags: Iterable[str] | None = None, allowed_
     tags = allowed_tags or ["p", "br", "strong", "em", "ul", "ol", "li", "a", "code"]
     attrs = allowed_attrs or {"a": ["href", "title", "rel", "target"]}
     return bleach.clean(html, tags=tags, attributes=attrs, strip=True)
+
+

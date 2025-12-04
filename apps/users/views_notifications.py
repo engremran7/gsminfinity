@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -50,7 +51,7 @@ def notification_detail(request: HttpRequest, pk: int) -> HttpResponse:
 
     return render(
         request,
-        "users/notifications/detail.html",
+        "users/notifications/details.html",
         {"notification": notif},
     )
 
@@ -103,3 +104,5 @@ def notification_mark_all_read(request: HttpRequest) -> JsonResponse:
         read_at=timezone.now(),
     )
     return JsonResponse({"ok": True})
+
+

@@ -1,3 +1,4 @@
+
 (() => {
   "use strict";
   const doc = document;
@@ -53,18 +54,20 @@
     return res.json();
   }
 
-  async function trackImpression(slug, creativeId, meta = {}) {
+  async function trackEvent(eventType, slug, creativeId, meta = {}) {
     if (!consentGranted) return;
     try {
-      await fetchJson(`/ads/api/impression/`, {
+      await fetchJson(`/ads/api/events/`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
+          event_type: eventType,
           placement: slug,
           creative: creativeId || "",
           context: meta.context || "",
           page_url: window.location.href,
           referrer: document.referrer || "",
+          consent_granted: "1",
         }),
       });
     } catch (_) {
@@ -77,20 +80,10 @@
     clickLinks.forEach((el) => {
       el.addEventListener("click", async () => {
         if (!consentGranted) return;
-        try {
-          await fetchJson(`/ads/api/click/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({
-              placement: slug,
-              creative: creativeId || "",
-              page_url: window.location.href,
-              referrer: document.referrer || "",
-            }),
-          });
-        } catch (_) {
-          /* silent */
-        }
+        trackEvent("click", slug, creativeId || "", {
+          page_url: window.location.href,
+          referrer: document.referrer || "",
+        });
       });
     });
   }
@@ -112,7 +105,7 @@
         slot.innerHTML = `<a href="${clickUrl}" data-ad-click class="block text-sm text-primary-700 hover:text-primary-900">${c.title || "Sponsored"}</a>`;
       }
       wireClickTracking(slot, slug, c.creative || c.id || "");
-      await trackImpression(slug, c.creative || c.id || "", {
+      await trackEvent("impression", slug, c.creative || c.id || "", {
         context: slot.getAttribute("data-context") || "",
       });
     } catch (err) {
@@ -128,6 +121,12 @@
     const obs = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
+          const requiresConsent = entry.target.getAttribute("data-requires-consent") === "ads";
+          if (requiresConsent && !consentGranted) {
+            entry.target.innerHTML = '<div class="text-xs text-slate-500">Ads disabled by consent</div>';
+            obs.unobserve(entry.target);
+            return;
+          }
           hydrateSlot(entry.target);
           obs.unobserve(entry.target);
         }
@@ -149,3 +148,5 @@
     mountAds();
   }
 })();
+
+

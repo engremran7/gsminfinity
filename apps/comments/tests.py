@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -88,3 +89,5 @@ class CommentModerationTests(TestCase):
         comment.refresh_from_db()
         self.assertEqual(comment.status, Comment.Status.APPROVED)
         self.assertTrue(comment.is_approved)
+
+

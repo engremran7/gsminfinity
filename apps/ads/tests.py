@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import os
@@ -67,3 +68,5 @@ class AdsApiTests(TestCase):
         res = self.client.post(url, {"placement": placement.slug})
         self.assertEqual(res.status_code, 200)
         self.assertIn("skipped", res.json())
+
+

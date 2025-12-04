@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from django.db.models.signals import post_save
@@ -18,3 +19,5 @@ def sync_linkable_for_post(sender, instance: Post, **kwargs):
         refresh_linkable_entity(instance, title=instance.title, url=url, keywords=instance.summary or "")
     except Exception:
         return
+
+

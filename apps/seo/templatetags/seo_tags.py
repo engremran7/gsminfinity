@@ -1,4 +1,7 @@
+
 from __future__ import annotations
+
+import json
 
 from django import template
 from django.template.loader import render_to_string
@@ -60,3 +63,17 @@ def seo_redirect(path: str):
         return redirect.target if redirect else None
     except Exception:
         return None
+
+
+@register.filter(name="as_json_ld")
+def as_json_ld(payload) -> str:
+    """
+    Safely dumps a JSON-serializable payload for JSON-LD script tags.
+    Returns an empty string on failure instead of propagating exceptions.
+    """
+    try:
+        return mark_safe(json.dumps(payload or {}, separators=(",", ":")))
+    except Exception:
+        return ""
+
+

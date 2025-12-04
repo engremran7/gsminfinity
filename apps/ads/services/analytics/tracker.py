@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import logging
@@ -22,18 +23,24 @@ def record_event(
         return
 
     try:
+        meta = request_meta or {}
+        # Respect consent: do not record if explicitly denied.
+        if meta.get("consent_granted") is False:
+            return
+
         payload = {
             "event_type": event_type,
             "placement": placement,
             "creative": creative,
             "campaign": campaign,
             "user": user,
-            "request_meta": request_meta or {},
-            "page_url": (request_meta or {}).get("page_url", ""),
-            "referrer_url": (request_meta or {}).get("referrer", ""),
-            "user_agent": (request_meta or {}).get("user_agent", ""),
-            "session_id": (request_meta or {}).get("session_id", ""),
-            "site_domain": (request_meta or {}).get("site", ""),
+            "request_meta": meta,
+            "page_url": meta.get("page_url", ""),
+            "referrer_url": meta.get("referrer", ""),
+            "user_agent": meta.get("user_agent", ""),
+            "session_id": meta.get("session_id", ""),
+            "site_domain": meta.get("site", ""),
+            "consent_granted": bool(meta.get("consent_granted", False)),
         }
         AdEvent.objects.create(**payload)
         log_event(
@@ -44,6 +51,9 @@ def record_event(
             placement=getattr(placement, "slug", None),
             creative=getattr(creative, "id", None),
             campaign=getattr(campaign, "id", None),
+            correlation_id=meta.get("correlation_id"),
         )
     except Exception:
         logger.warning("record_event failed", exc_info=True)
+
+

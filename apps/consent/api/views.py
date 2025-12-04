@@ -1,6 +1,6 @@
+
 """
 apps.consent.views
-==================
 Enterprise-grade Consent API Endpoints.
 
 ✔ Django 5.2 / Python 3.12 compliant
@@ -18,8 +18,16 @@ import json
 import logging
 from typing import Any, Dict
 
-from apps.consent.models import ConsentRecord
-from apps.consent.utils import consent_cache_key, get_active_policy, resolve_site_domain
+from apps.consent.models import ConsentRecord, ConsentDecision, ConsentEvent
+from apps.consent.utils import (
+    consent_cache_key,
+    get_active_policy,
+    resolve_site_domain,
+    hash_ip,
+    hash_ua,
+    serialize_policy,
+)
+from apps.core.utils.ip import get_client_ip
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import transaction
@@ -131,16 +139,16 @@ def get_consent_status(request: HttpRequest) -> JsonResponse:
         site_domain = resolve_site_domain(request)
         _ = consent_cache_key(site_domain)
 
-        policy = get_active_policy(site_domain)
-        if not policy:
+        policy_obj = get_active_policy(site_domain)
+        if not policy_obj:
             logger.warning("No active policy for site=%s", site_domain)
             return JsonResponse(
                 {"ok": False, "error": "no_active_policy"},
                 status=404,
             )
-
-        version = str(policy.get("version", "") or "")
-        categories = policy.get("categories_snapshot") or {}
+        policy = serialize_policy(policy_obj) or {}
+        version = str(policy.get("version") or getattr(policy_obj, "version", "") or "")
+        categories = policy.get("categories_snapshot") or getattr(policy_obj, "categories_snapshot", {}) or {}
 
         return JsonResponse(
             {
@@ -189,15 +197,16 @@ def update_consent(request: HttpRequest) -> JsonResponse:
         site_domain = resolve_site_domain(request)
         _ = consent_cache_key(site_domain)
 
-        policy = get_active_policy(site_domain)
-        if not policy:
+        policy_obj = get_active_policy(site_domain)
+        if not policy_obj:
             return JsonResponse(
                 {"ok": False, "error": "no_active_policy"},
                 status=404,
             )
 
-        snapshot = policy.get("categories_snapshot") or {}
-        policy_version = str(policy.get("version", "") or "")
+        policy = serialize_policy(policy_obj) or {}
+        snapshot = policy.get("categories_snapshot") or getattr(policy_obj, "categories_snapshot", {}) or {}
+        policy_version = str(policy.get("version") or getattr(policy_obj, "version", "") or "")
 
         # 3) Sanitize categories
         sanitized = _sanitize_categories(snapshot, data)
@@ -205,11 +214,26 @@ def update_consent(request: HttpRequest) -> JsonResponse:
         # 4) Atomic DB write
         try:
             with transaction.atomic():
-                ConsentRecord.objects.update_or_create(
+                decision, _ = ConsentDecision.objects.select_for_update().get_or_create(
+                    session_id=request.session.session_key or "",
+                    policy=policy,
                     user=request.user,
-                    policy_version=policy_version,
-                    site_domain=site_domain,
-                    defaults={"accepted_categories": sanitized},
+                    defaults={"categories": sanitized},
+                )
+                decision.categories = sanitized
+                decision.set_hashes(
+                    ip=get_client_ip(request) or "",
+                    ua=request.META.get("HTTP_USER_AGENT", ""),
+                )
+                decision.save(update_fields=["categories", "ip_hash", "user_agent_hash", "user"])
+
+                ConsentEvent.objects.create(
+                    decision=decision,
+                    policy=policy,
+                    categories=sanitized,
+                    event_type="accepted",
+                    ip_hash=decision.ip_hash,
+                    user_agent_hash=decision.user_agent_hash,
                 )
         except Exception as exc:
             logger.exception("DB error updating consent → %s", exc)
@@ -249,3 +273,5 @@ def update_consent(request: HttpRequest) -> JsonResponse:
     except Exception as exc:
         logger.exception("update_consent unexpected failure → %s", exc)
         return JsonResponse({"ok": False, "error": "internal_error"}, status=500)
+
+

@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 {% block title %}#{{ tag.name }} - {{ site_settings.site_name|default:"Site" }}{% endblock %}
 {% block content %}
@@ -15,7 +16,7 @@
       {% if posts %}
         {% for post in posts %}
           {% url 'blog:post_detail' slug=post.slug as post_url %}
-          {% include "components/cards.html" with variant="post" title=post.title url=post_url meta="By %s · %s" % (post.author, post.published_at|date:"M j, Y"|default:"Draft") excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name %}
+          {% include "components/post_card.html" with title=post.title url=post_url meta="By %s · %s" % (post.author, post.published_at|date:"M j, Y"|default:"Draft") excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name thumbnail=post.hero_image %}
         {% endfor %}
       {% else %}
         <div class="text-sm text-slate-500">No posts for this tag yet.</div>
@@ -23,9 +24,21 @@
       {% include "components/pagination.html" with page_obj=page_obj %}
     </section>
     <aside class="space-y-4 lg:sticky lg:top-24">
-      {% include "components/cards.html" with variant="widget" title="Trending tags" content=trending_tags_html|default:"<div class='text-sm text-slate-500'>Coming soon</div>" %}
-      {% include "components/cards.html" with variant="widget" title="Latest" content=latest_widget_html|default:"<div class='text-sm text-slate-500'>Coming soon</div>" %}
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-semibold text-slate-800">Trending tags</h3>
+        </div>
+        <div class="space-y-3">{{ trending_tags_html|default:"<div class='text-sm text-slate-500'>Coming soon</div>"|safe }}</div>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-sm font-semibold text-slate-800">Latest</h3>
+        </div>
+        <div class="space-y-3">{{ latest_widget_html|default:"<div class='text-sm text-slate-500'>Coming soon</div>"|safe }}</div>
+      </div>
     </aside>
   </div>
 </div>
 {% endblock %}
+
+

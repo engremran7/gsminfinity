@@ -1,188 +1,126 @@
-"""
-apps.consent.utils
-==================
-
-Canonical helpers for enterprise-grade consent management.
-
-✔ Safe, unified domain normalization
-✔ Canonical cache key generation
-✔ Fully serializable active-policy payloads
-✔ ORM → cache promotion with TTL
-✔ Django 5.2 / Python 3.12 compliant
-✔ No silent failures
-"""
 
 from __future__ import annotations
 
 import hashlib
-import logging
-from typing import Any, Dict, Optional
+from typing import Optional, Tuple
 
-from apps.consent.models import ConsentPolicy
-from django.contrib.sites.shortcuts import get_current_site
-from django.core.cache import cache
-
-logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Defaults
-# ---------------------------------------------------------------------------
-
-DEFAULT_TTL_SECONDS = 300
+from django.conf import settings
 
 
-# ---------------------------------------------------------------------------
-# Cache Key Helpers
-# ---------------------------------------------------------------------------
-
-
-def consent_cache_key(domain: str) -> str:
+def check(scope: str, request) -> bool:
     """
-    Canonical, collision-resistant cache key for a site's active ConsentPolicy.
+    Central consent gate. Returns True if the given scope is permitted.
+    Scopes: "ads", "analytics", "personalization".
+    Defaults to False when consent state is missing/unknown (opt-in).
     """
-    safe = (domain or "default").strip().lower()
-    digest = hashlib.sha256(safe.encode("utf-8")).hexdigest()[:12]
-    return f"active_consent_policy_{digest}"
+    # Prefer middleware-attached categories map.
+    state = getattr(request, "consent_categories", None)
+    if not state:
+        state = getattr(request, "consent_context", None) or getattr(
+            request, "consent_state", None
+        )
+    if not state:
+        return False
+
+    scope_val: Optional[bool] = None
+    if isinstance(state, dict):
+        scope_val = state.get(f"{scope}_enabled")
+        if scope_val is None:
+            scope_val = state.get(scope)
+    else:
+        scope_val = getattr(state, f"{scope}_enabled", None)
+        if scope_val is None:
+            scope_val = getattr(state, scope, None)
+
+    if scope_val is False or scope_val is None:
+        return False
+    return True
 
 
-# ---------------------------------------------------------------------------
-# Domain Resolution
-# ---------------------------------------------------------------------------
+def get_active_policy(domain: str = ""):
+    """
+    Resolve the active ConsentPolicy model (if any).
+    Returns the model instance to avoid breaking admin/rendering; callers should
+    handle serialization as needed.
+    """
+    try:
+        from apps.consent.models import ConsentPolicy
+
+        qs = ConsentPolicy.objects.filter(is_active=True)
+        if domain:
+            qs = qs.filter(site_domain__iexact=domain)
+        return qs.order_by("-effective_from").first()
+    except Exception:
+        return None
+
+
+def serialize_policy(policy) -> dict | None:
+    if not policy:
+        return None
+    try:
+        return {
+            "version": getattr(policy, "version", None),
+            "site_domain": getattr(policy, "site_domain", ""),
+            "categories_snapshot": getattr(policy, "categories_snapshot", {}) or {},
+            "banner_text": getattr(policy, "banner_text", ""),
+            "manage_text": getattr(policy, "manage_text", ""),
+        }
+    except Exception:
+        return None
+
+
+def consent_cache_key(domain: str = "") -> str:
+    return f"consent_policy::{domain or 'default'}"
 
 
 def resolve_site_domain(request) -> str:
+    return getattr(request, "site_domain", "") or request.get_host() if hasattr(
+        request, "get_host"
+    ) else ""
+
+
+def hash_ip(ip: str) -> str:
+    salt = getattr(settings, "CONSENT_HASH_SALT", "")
+    return hashlib.sha256((salt + (ip or "")).encode("utf-8", "ignore")).hexdigest()
+
+
+def hash_ua(ua: str) -> str:
+    salt = getattr(settings, "CONSENT_HASH_SALT", "")
+    return hashlib.sha256((salt + (ua or "")).encode("utf-8", "ignore")).hexdigest()
+
+
+def consent_cookie_settings() -> Tuple[str, dict]:
     """
-    Resolve domain according to canonical order:
-
-        1) django.contrib.sites
-        2) request.get_host()
-        3) "default"
-
-    Always normalized to lowercase + stripped.
+    Returns (cookie_name, options) so views/middleware share the same policy.
     """
-    try:
-        site = get_current_site(request)
-        domain = getattr(site, "domain", None) or request.get_host() or "default"
-        domain = str(domain).strip().lower()
-        return domain or "default"
-    except Exception as exc:
-        logger.debug("resolve_site_domain fallback → %s", exc)
-        return "default"
-
-
-# ---------------------------------------------------------------------------
-# Active Policy Retrieval
-# ---------------------------------------------------------------------------
-
-
-def get_active_policy(domain: str) -> Optional[Dict[str, Any]]:
-    """
-    Retrieve active ConsentPolicy payload for a given domain.
-
-    Schema returned:
-        {
-            "version": "v1",
-            "categories_snapshot": {...},
-            "banner_text": "...",
-            "manage_text": "...",
-            "is_active": True,
-            "site_domain": "example.com",
-            "cache_ttl_seconds": 300
-        }
-
-    - Never returns ORM objects
-    - Cache is authoritative when present
-    - Safe under all backends
-    - Defensive normalization
-    """
-    domain = (domain or "default").strip().lower()
-    key = consent_cache_key(domain)
-
-    # ----- Cache Read -----
-    try:
-        cached = cache.get(key)
-        if cached is not None:
-            return cached
-    except Exception as exc:
-        logger.debug("get_active_policy: cache.get failed → %s", exc)
-
-    # ----- DB Fallback -----
-    try:
-        policy = (
-            ConsentPolicy.objects.filter(is_active=True, site_domain=domain)
-            .only(
-                "version",
-                "categories_snapshot",
-                "banner_text",
-                "manage_text",
-                "cache_ttl_seconds",
-                "is_active",
-                "site_domain",
-            )
-            .order_by("-created_at")
-            .first()
-        )
-    except Exception as exc:
-        logger.exception("get_active_policy: DB failure → %s", exc)
-        return None
-
-    if not policy:
-        return None
-
-    ttl = int(
-        getattr(policy, "cache_ttl_seconds", DEFAULT_TTL_SECONDS) or DEFAULT_TTL_SECONDS
-    )
-
-    payload: Dict[str, Any] = {
-        "version": str(policy.version),
-        "categories_snapshot": policy.categories_snapshot or {},
-        "banner_text": getattr(policy, "banner_text", "") or "",
-        "manage_text": getattr(policy, "manage_text", "") or "",
-        "is_active": bool(policy.is_active),
-        "site_domain": (policy.site_domain or domain).strip().lower(),
-        "cache_ttl_seconds": ttl,
+    name = getattr(settings, "CONSENT_COOKIE_NAME", "consent_status")
+    opts = {
+        "max_age": int(getattr(settings, "CONSENT_COOKIE_MAX_AGE", 60 * 60 * 24 * 365)),
+        "samesite": getattr(settings, "CONSENT_COOKIE_SAMESITE", "Lax"),
+        "secure": bool(getattr(settings, "CONSENT_COOKIE_SECURE", not settings.DEBUG)),
+        "httponly": False,  # UI needs read access
+        "path": "/",
     }
-
-    # ----- Cache Write -----
-    try:
-        cache.set(key, payload, timeout=ttl)
-        logger.debug("get_active_policy: cached active policy for domain=%s", domain)
-    except Exception as exc:
-        logger.debug("get_active_policy: cache.set failed → %s", exc)
-
-    return payload
-
-
-# ---------------------------------------------------------------------------
-# Cache Invalidator
-# ---------------------------------------------------------------------------
-
-
-def invalidate_policy_cache(domain: Optional[str] = None) -> None:
-    """
-    Invalidate cached active policies:
-
-        domain provided → delete only that domain
-        no domain       → wildcard purge if supported
-
-    Never raises.
-    """
-    # Per-domain invalidate
+    domain = getattr(settings, "CONSENT_COOKIE_DOMAIN", "")
     if domain:
-        key = consent_cache_key((domain or "default").strip().lower())
-        try:
-            cache.delete(key)
-            logger.debug("invalidate_policy_cache: deleted key=%s", key)
-        except Exception as exc:
-            logger.debug("invalidate_policy_cache: delete failed → %s", exc)
-        return
+        opts["domain"] = domain
+    return name, opts
 
-    # Wildcard invalidate (Redis / LocMem, etc.)
+
+def set_consent_cookie(response, value) -> None:
+    """
+    Helper to set the consent cookie using unified settings.
+    Value is JSON-encoded when passed a dict; other values stringified.
+    """
+    name, opts = consent_cookie_settings()
     try:
-        if hasattr(cache, "delete_pattern"):
-            cache.delete_pattern("active_consent_policy_*")
-            logger.debug("invalidate_policy_cache: wildcard invalidation performed")
-        else:
-            logger.debug("invalidate_policy_cache: backend lacks delete_pattern()")
-    except Exception as exc:
-        logger.debug("invalidate_policy_cache: wildcard failed → %s", exc)
+        if isinstance(value, dict):
+            import json
+
+            value = json.dumps(value)
+        response.set_cookie(name, value, **opts)
+    except Exception:
+        # Defensive: avoid breaking the response path
+        pass
+
+

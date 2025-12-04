@@ -1,6 +1,6 @@
+
 """
 apps.consent.api
-================
 
 Public, import-stable API surface for Consent JSON endpoints.
 
@@ -38,3 +38,4 @@ except Exception as exc:
     # Exposing "None" keeps the import path intact without silent breakage.
     get_consent_status = None  # type: ignore
     update_consent = None  # type: ignore
+

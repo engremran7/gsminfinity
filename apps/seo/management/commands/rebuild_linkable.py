@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand
@@ -17,3 +18,5 @@ class Command(BaseCommand):
             refresh_linkable_entity(post, title=post.title, url=url, keywords=post.summary or "")
             count += 1
         self.stdout.write(self.style.SUCCESS(f"Linkable entities refreshed: {count}"))
+
+

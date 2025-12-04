@@ -1,3 +1,4 @@
+
 """
 apps.users.services.rate_limit
 ------------------------------
@@ -14,7 +15,8 @@ Lightweight, cache-based rate limiter for authentication and signup actions.
 
 import logging
 import time
-from typing import List
+from contextlib import nullcontext
+from typing import ContextManager, List
 
 from django.core.cache import cache
 
@@ -53,48 +55,58 @@ def allow_action(
         return False
 
     now = time.time()
+    lock_timeout = min(max(window_seconds // 10, 1), 5)
 
-    try:
-        bucket: List[float] = cache.get(key, [])
-        if not isinstance(bucket, list):
-            logger.warning(
-                "Corrupted rate-limit bucket detected for %s; resetting.", key
-            )
-            bucket = []
+    with _acquire_bucket_lock(key, lock_timeout):
+        try:
+            bucket: List[float] = cache.get(key, [])
+            if not isinstance(bucket, list):
+                logger.warning(
+                    "Corrupted rate-limit bucket detected for %s; resetting.", key
+                )
+                bucket = []
 
-        # Keep only timestamps within window
-        bucket = [t for t in bucket if now - t <= window_seconds]
+            bucket = [t for t in bucket if now - t <= window_seconds]
 
-        # Exceeded?
-        if len(bucket) >= max_attempts:
-            logger.info(
-                "Rate limit exceeded: key=%s, attempts=%d/%d, window=%ds",
+            if len(bucket) >= max_attempts:
+                logger.info(
+                    "Rate limit exceeded: key=%s, attempts=%d/%d, window=%ds",
+                    key,
+                    len(bucket),
+                    max_attempts,
+                    window_seconds,
+                )
+                return False
+
+            bucket.append(now)
+            cache.set(key, bucket, timeout=window_seconds)
+
+            logger.debug(
+                "Rate limit OK: key=%s, attempts=%d/%d, window=%ds",
                 key,
                 len(bucket),
                 max_attempts,
                 window_seconds,
             )
-            return False
+            return True
 
-        # Add current attempt and persist
-        bucket.append(now)
+        except Exception as exc:
+            logger.exception("Rate limiter backend failure for %s: %s", key, exc)
+            return True
 
-        # Set cache with sliding expiration
-        cache.set(key, bucket, timeout=window_seconds)
 
-        logger.debug(
-            "Rate limit OK: key=%s, attempts=%d/%d, window=%ds",
-            key,
-            len(bucket),
-            max_attempts,
-            window_seconds,
-        )
-        return True
-
-    except Exception as exc:
-        # Fail-open to prevent blocking on cache outage
-        logger.exception("Rate limiter backend failure for %s: %s", key, exc)
-        return True
+def _acquire_bucket_lock(key: str, timeout: int) -> ContextManager[None]:
+    """
+    Acquire a per-key cache lock if supported. Fallback to a no-op context manager.
+    """
+    lock_factory = getattr(cache, "lock", None)
+    if callable(lock_factory):
+        lock_name = f"rate_limit:{key}"
+        try:
+            return cache.lock(lock_name, timeout=timeout)
+        except Exception:
+            logger.debug("Rate limiter lock unavailable for %s", key)
+    return nullcontext()
 
 
 # ============================================================
@@ -126,3 +138,5 @@ def get_attempt_count(key: str, window_seconds: int = 300) -> int:
     except Exception as exc:
         logger.warning("Failed to read attempt count for %s: %s", key, exc)
         return 0
+
+

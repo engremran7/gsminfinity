@@ -1,3 +1,4 @@
+
 # gsminfinity/settings.py
 """
 Enterprise Django Settings
@@ -78,6 +79,9 @@ _settings_module = os.getenv("DJANGO_SETTINGS_MODULE", "")
 _default_debug = _settings_module.endswith("settings_dev")
 DEBUG = env_bool(os.getenv("DJANGO_DEBUG", None), _default_debug)
 ENV = "development" if DEBUG else "production"
+
+# Proxy awareness (used by IP resolution helpers)
+TRUSTED_PROXY_COUNT = int(os.getenv("TRUSTED_PROXY_COUNT", "0"))
 IS_PRODUCTION = not DEBUG
 
 if IS_PRODUCTION and (not SECRET_KEY or SECRET_KEY == _DEFAULT_DEV_SECRET):
@@ -116,6 +120,8 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+    "django.contrib.humanize",
+    "django.contrib.syndication",
 ]
 
 THIRD_PARTY_APPS = [
@@ -140,6 +146,12 @@ SOCIAL_PROVIDERS = [
 LOCAL_APPS = [
     "apps.core",
     "apps.users",
+    "apps.devices",
+    "apps.crawler_guard",
+    "apps.ai_behavior",
+    "apps.i18n_themes",
+    "apps.ai",
+    "apps.app_registry",
     "apps.site_settings",
     "apps.consent",
     "apps.blog",
@@ -147,6 +159,7 @@ LOCAL_APPS = [
     "apps.comments",
     "apps.seo",
     "apps.ads",
+    "apps.distribution",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + SOCIAL_PROVIDERS + LOCAL_APPS
@@ -163,6 +176,9 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "apps.core.middleware.correlation.CorrelationIdMiddleware",
     "apps.core.middleware.request_meta.RequestMetaMiddleware",
+    "apps.i18n_themes.middleware.LocaleMiddleware",
+    "apps.core.middleware.rate_limit_bridge.RateLimitBridgeMiddleware",
+    "apps.crawler_guard.middleware.CrawlerGuardMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -281,6 +297,9 @@ TEMPLATES = [
                 "apps.core.context_processors.location_based_providers",
                 "apps.users.context_processors.auth_status",
             ],
+            "libraries": {
+                "form_tags": "apps.core.templatetags.form_tags",
+            },
         },
     },
 ]
@@ -337,19 +356,35 @@ else:
 # Logging
 # ---------------------------
 LOG_LEVEL = env_str(os.getenv("LOG_LEVEL"), "INFO")
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "verbose": {"format": "{levelname} {asctime} {module} {message}", "style": "{"},
+        "verbose": {"format": "{asctime} {levelname} {name} {message}", "style": "{"},
         "simple": {"format": "{levelname} {message}", "style": "{"},
     },
-    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "simple"}},
-    "root": {"handlers": ["console"], "level": LOG_LEVEL},
+    "handlers": {
+        # Console stays at INFO+ to keep runserver output readable.
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "level": "INFO",
+        },
+        # File captures full DEBUG for troubleshooting.
+        "debug_file": {
+            "class": "logging.FileHandler",
+            "filename": LOG_DIR / "debug.log",
+            "formatter": "verbose",
+            "level": "DEBUG",
+        },
+    },
+    "root": {"handlers": ["console", "debug_file"], "level": LOG_LEVEL},
     "loggers": {
-        "django": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
-        "apps": {"handlers": ["console"], "level": LOG_LEVEL, "propagate": False},
+        "django": {"handlers": ["console", "debug_file"], "level": LOG_LEVEL, "propagate": False},
+        "apps": {"handlers": ["console", "debug_file"], "level": LOG_LEVEL, "propagate": False},
     },
 }
 
@@ -360,7 +395,11 @@ LOGGING = {
 ACCOUNT_ADAPTER = "apps.users.adapters.CustomAccountAdapter"
 SOCIALACCOUNT_ADAPTER = "apps.users.adapters.CustomSocialAccountAdapter"
 
-ACCOUNT_FORMS = {"signup": "apps.users.forms.CustomSignupForm"}
+ACCOUNT_FORMS = {
+    "signup": "apps.users.forms.CustomSignupForm",
+    "change_password": "apps.users.forms.CustomChangePasswordForm",
+}
+ACCOUNT_OLD_PASSWORD_FIELD_ENABLED = True
 
 ACCOUNT_LOGIN_METHODS = {"username", "email"}
 ACCOUNT_UNIQUE_EMAIL = True
@@ -462,11 +501,46 @@ EMAIL_USE_TLS = env_bool(os.getenv("EMAIL_USE_TLS"), True)
 # ---------------------------
 CELERY_BROKER_URL = env_str(os.getenv("CELERY_BROKER_URL"), "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env_str(os.getenv("CELERY_RESULT_BACKEND"), CELERY_BROKER_URL)
+CELERY_TASK_ALWAYS_EAGER = env_bool(os.getenv("CELERY_TASK_ALWAYS_EAGER"), False)
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    "distribution_pump_due": {
+        "task": "distribution.pump_due_jobs",
+        "schedule": 60.0,
+    },
+    "distribution_retry_failed": {
+        "task": "distribution.retry_failed_jobs",
+        "schedule": 300.0,
+    },
+}
+
+# Distribution defaults
+DISTRIBUTION_CHANNELS = [
+    "twitter",
+    "linkedin",
+    "facebook",
+    "instagram",
+    "pinterest",
+    "reddit",
+    "telegram",
+    "discord",
+    "slack",
+    "mailchimp",
+    "sendgrid",
+    "devto",
+    "hashnode",
+    "medium",
+    "google_indexing",
+    "bing_indexing",
+    "rss",
+    "atom",
+    "json",
+    "websub",
+]
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
@@ -488,3 +562,5 @@ REST_FRAMEWORK = {
 # Startup banner
 # ---------------------------
 logger.info("⚙️ Settings Loaded (DEBUG=%s)", DEBUG)
+
+

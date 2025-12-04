@@ -1,6 +1,6 @@
+
 """
 apps.site_settings.urls
-========================
 Unified routing for GSMInfinity Site Settings module.
 
 ✓ Django 5.2+ Ready
@@ -61,3 +61,4 @@ urlpatterns = [
         name="cookies_policy",
     ),
 ]
+

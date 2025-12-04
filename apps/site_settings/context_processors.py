@@ -1,3 +1,4 @@
+
 """
 Enterprise-grade Site Settings Context Processor (FINAL, SYNC-ONLY)
 
@@ -19,6 +20,8 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.cache import cache
 from django.http import HttpRequest
 from django.templatetags.static import static
+
+from apps.core.app_service import AppService
 
 logger = logging.getLogger(__name__)
 
@@ -96,8 +99,6 @@ def _safe_defaults() -> Dict[str, Any]:
         "affiliate_enabled": False,
         "ad_networks_enabled": False,
         "ad_aggressiveness_level": "balanced",
-        # Feature toggles (admin controlled)
-        "enable_tenants": False,
         "enable_blog": False,
         "enable_blog_comments": False,
         "cache_ttl_seconds": DEFAULT_TTL_SECONDS,
@@ -113,12 +114,8 @@ def _serialize(obj: Any) -> Dict[str, Any]:
         return _safe_defaults()
 
     try:
-        # domain fallback logic (tenant site → instance → global)
-        site_domain = (
-            getattr(getattr(obj, "site", None), "domain", None)
-            or getattr(obj, "site_domain", None)
-            or "global"
-        )
+        # domain fallback logic
+        site_domain = getattr(obj, "site_domain", None) or "global"
 
         # META TAGS
         meta_tags = []
@@ -186,7 +183,6 @@ def _serialize(obj: Any) -> Dict[str, Any]:
             "force_https": bool(getattr(obj, "force_https", False)),
             "recaptcha_enabled": bool(getattr(obj, "recaptcha_enabled", False)),
             # Feature toggles (admin controlled)
-            "enable_tenants": bool(getattr(obj, "enable_tenants", False)),
             "enable_blog": bool(getattr(obj, "enable_blog", False)),
             "enable_blog_comments": bool(
                 getattr(obj, "enable_blog_comments", False)
@@ -213,11 +209,99 @@ def _serialize(obj: Any) -> Dict[str, Any]:
         return _safe_defaults()
 
 
+def _merge_app_settings(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Overlay per-app settings resolved via AppService onto the payload.
+    Keeps payload keys stable for templates while using decentralized settings.
+    """
+    merged = dict(payload)
+    try:
+        ads_api = AppService.get("ads")
+        if ads_api and hasattr(ads_api, "get_settings"):
+            ads = ads_api.get_settings()
+            merged.update(
+                {
+                    "ads_enabled": ads.get("ads_enabled", False),
+                    "affiliate_enabled": ads.get("affiliate_enabled", False),
+                    "ad_networks_enabled": ads.get("ad_networks_enabled", False),
+                    "ad_aggressiveness_level": ads.get("ad_aggressiveness_level", merged.get("ad_aggressiveness_level", "balanced")),
+                }
+            )
+        elif ads_api is None:
+            merged.update(
+                {
+                    "ads_enabled": False,
+                    "affiliate_enabled": False,
+                    "ad_networks_enabled": False,
+                }
+            )
+    except Exception:
+        pass
+
+    try:
+        seo_api = AppService.get("seo")
+        if seo_api and hasattr(seo_api, "get_settings"):
+            seo = seo_api.get_settings()
+            merged.update(
+                {
+                    "seo_enabled": seo.get("seo_enabled", False),
+                    "auto_meta_enabled": seo.get("auto_meta_enabled", False),
+                    "auto_schema_enabled": seo.get("auto_schema_enabled", False),
+                    "auto_linking_enabled": seo.get("auto_linking_enabled", False),
+                }
+            )
+        elif seo_api is None:
+            merged.update(
+                {
+                    "seo_enabled": False,
+                    "auto_meta_enabled": False,
+                    "auto_schema_enabled": False,
+                    "auto_linking_enabled": False,
+                }
+            )
+    except Exception:
+        pass
+
+    try:
+        blog_api = AppService.get("blog")
+        if blog_api and hasattr(blog_api, "get_settings"):
+            blog = blog_api.get_settings()
+            merged.update(
+                {
+                    "enable_blog": blog.get("enable_blog", False),
+                    "enable_blog_comments": blog.get("enable_blog_comments", False),
+                    "allow_user_blog_posts": blog.get("allow_user_blog_posts", False),
+                }
+            )
+        elif blog_api is None:
+            merged.update(
+                {
+                    "enable_blog": False,
+                    "enable_blog_comments": False,
+                    "allow_user_blog_posts": False,
+                }
+            )
+    except Exception:
+        pass
+
+    try:
+        comments_api = AppService.get("comments")
+        if comments_api and hasattr(comments_api, "get_settings"):
+            cset = comments_api.get_settings()
+            merged.update({"enable_comments": cset.get("enable_comments", False)})
+        elif comments_api is None:
+            merged.update({"enable_comments": False})
+    except Exception:
+        pass
+
+    return merged
+
+
 # ---------------------------------------------------------------------
 # ORM LOADER (100% synchronous)
 # ---------------------------------------------------------------------
 def _load_sync(site):
-    """Loads tenant → global settings in strict sync mode."""
+    """Loads global settings in strict sync mode."""
     try:
         # Lazy Import
         from apps.site_settings import models as m
@@ -226,38 +310,12 @@ def _load_sync(site):
         return None
 
     try:
-        # Tenant-level lookup (safe)
-        if site and hasattr(site, "id"):
-            try:
-                t = (
-                    m.TenantSiteSettings.objects.select_related("site")
-                    .prefetch_related("meta_tags", "verification_files")
-                    .filter(site=site)
-                    .first()
-                )
-                if t:
-                    return t
-            except Exception:
-                pass
-
-        # Global singleton
-        try:
-            # Use prefetch on global singleton for consistency
-            qs = m.SiteSettings.objects.prefetch_related("meta_tags", "verification_files")
-
-            if hasattr(m.SiteSettings, "get_solo"):
-                return m.SiteSettings.get_solo()
-            
-            # Fallback to first record on prefetched queryset
-            return qs.first()
-            
-        except Exception:
-            # Fallback for error during get_solo/first()
-            return None
-
-
+        qs = m.SiteSettings.objects.prefetch_related("meta_tags", "verification_files")
+        if hasattr(m.SiteSettings, "get_solo"):
+            return m.SiteSettings.get_solo()
+        return qs.first()
     except Exception:
-        logger.debug("_load_sync failed → None")
+        logger.debug("_load_sync failed -> None")
         return None
 
 
@@ -292,11 +350,12 @@ def site_settings(request: HttpRequest) -> Dict[str, Any]:
             cached = cache.get(cache_key)
             if isinstance(cached, dict):
                 # Inject request-specific context (auth status)
+                merged = _merge_app_settings(cached)
                 return {
-                    "site_settings": cached,
-                    "settings": cached,
-                    "meta_tags": cached.get("meta_tags", []),
-                    "verification_files": cached.get("verification_files", []),
+                    "site_settings": merged,
+                    "settings": merged,
+                    "meta_tags": merged.get("meta_tags", []),
+                    "verification_files": merged.get("verification_files", []),
                     "auth_is_authenticated": is_authenticated,  # 🔥 FIXED: Non-cached variable injected
                 }
         except Exception:
@@ -304,7 +363,7 @@ def site_settings(request: HttpRequest) -> Dict[str, Any]:
 
         # Load ORM → serialize
         raw_obj = _load_sync(site)
-        payload = _serialize(raw_obj)
+        payload = _merge_app_settings(_serialize(raw_obj))
 
         # Cache write
         try:
@@ -338,3 +397,5 @@ def site_settings(request: HttpRequest) -> Dict[str, Any]:
 # Alias (keeps backwards compatibility)
 def global_settings(request: HttpRequest) -> Dict[str, Any]:
     return site_settings(request)
+
+

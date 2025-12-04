@@ -1,6 +1,6 @@
+
 """
 apps.consent.middleware
-=======================
 
 Enterprise-grade cookie-consent middleware.
 
@@ -20,7 +20,13 @@ from types import SimpleNamespace
 from typing import Any, Dict, Optional, Set, Tuple
 
 from apps.consent.models import ConsentRecord
-from apps.consent.utils import consent_cache_key, get_active_policy, resolve_site_domain
+from apps.consent.utils import (
+    consent_cache_key,
+    consent_cookie_settings,
+    get_active_policy,
+    resolve_site_domain,
+    serialize_policy,
+)
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
@@ -44,17 +50,12 @@ class ConsentMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
-        # Avoid unsafe, brand-specific defaults — now generic
-        self.cookie_name: str = getattr(
-            settings, "CONSENT_COOKIE_NAME", "cookie_consent"
-        )
-        self.cookie_max_age: int = int(
-            getattr(settings, "CONSENT_COOKIE_MAX_AGE", 60 * 60 * 24 * 365)
-        )
-        self.cookie_samesite: str = getattr(settings, "CONSENT_COOKIE_SAMESITE", "Lax")
-        self.cookie_secure: bool = bool(
-            getattr(settings, "CONSENT_COOKIE_SECURE", not settings.DEBUG)
-        )
+        # Avoid unsafe, brand-specific defaults - now generic
+        self.cookie_name, cookie_opts = consent_cookie_settings()
+        self.cookie_max_age = int(cookie_opts.get("max_age", 60 * 60 * 24 * 365))
+        self.cookie_samesite = cookie_opts.get("samesite", "Lax")
+        self.cookie_secure = bool(cookie_opts.get("secure", not settings.DEBUG))
+        self.cookie_domain = cookie_opts.get("domain") or None
 
     # =================================================================
     #  WSGI + ASGI entrypoint
@@ -100,9 +101,11 @@ class ConsentMiddleware:
         # Load policy payload
         # -------------------------------
         try:
-            policy_payload = get_active_policy(site_domain)
+            policy_obj = get_active_policy(site_domain)
+            policy_payload = serialize_policy(policy_obj)
         except Exception as exc:
             logger.debug("ConsentMiddleware: policy load failed -> %s", exc)
+            policy_obj = None
             policy_payload = None
 
         if policy_payload:
@@ -140,7 +143,8 @@ class ConsentMiddleware:
                 categories, has_opt_in = self._apply_consent_record(
                     categories, required, consent_record
                 )
-                request.has_cookie_consent = has_opt_in
+                # Treat presence of a record as consent recorded (even if only required categories)
+                request.has_cookie_consent = True
             else:
                 # Anonymous fallback (required=True, optional=False)
                 for slug in list(categories.keys()):
@@ -186,7 +190,7 @@ class ConsentMiddleware:
         #  Response hook (cookie writer)
         # =================================================================
         try:
-            response = self.process_response(request, response)
+            response = self.process_response(request, response, policy_payload)
         except Exception:
             logger.exception("ConsentMiddleware: response hook failed")
 
@@ -293,29 +297,27 @@ class ConsentMiddleware:
     #  RESPONSE HOOK — cookie writer
     # =====================================================================
     def process_response(
-        self, request: HttpRequest, response: HttpResponse
+        self, request: HttpRequest, response: HttpResponse, policy_payload: Optional[dict]
     ) -> HttpResponse:
-        """Write cookie storing accepted categories — best effort."""
+        """Write cookie storing accepted categories - best effort."""
+        if not policy_payload:
+            return response
         try:
-            if request.has_cookie_consent:
-                try:
-                    payload = dict(request.consent_categories)
-                except Exception:
-                    payload = {"functional": True}
-
-                try:
-                    value = json.dumps(payload)
-                    response.set_cookie(
-                        self.cookie_name,
-                        value,
-                        max_age=self.cookie_max_age,
-                        samesite=self.cookie_samesite,
-                        secure=self.cookie_secure,
-                        httponly=False,  # UI needs access
-                    )
-                except Exception as exc:
-                    logger.debug("ConsentMiddleware: set_cookie failed -> %s", exc)
+            payload = dict(request.consent_categories or {"functional": True})
+            value = json.dumps(payload, separators=(",", ":"))
+            response.set_cookie(
+                self.cookie_name,
+                value,
+                max_age=self.cookie_max_age,
+                samesite=self.cookie_samesite,
+                secure=self.cookie_secure,
+                httponly=False,  # UI needs access
+                domain=self.cookie_domain,
+                path="/",
+            )
         except Exception as exc:
             logger.debug("ConsentMiddleware: process_response error -> %s", exc)
 
         return response
+
+

@@ -1,14 +1,18 @@
+
 {% extends "base.html" %}
 {% block title %}SEO Dashboard{% endblock %}
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
   <div>
     <h1 class="text-2xl font-bold text-slate-900">SEO Dashboard</h1>
-    <p class="text-sm text-slate-600">SEO enabled: {{ seo_enabled }}</p>
-    <div class="mt-3 grid sm:grid-cols-3 gap-3 text-xs">
+    <p class="text-sm text-slate-600">Stable, admin-controlled SEO. AI writes only when asked or when content changes.</p>
+    <div class="mt-3 grid sm:grid-cols-4 gap-3 text-xs">
       <div class="bg-blue-50 text-blue-800 border border-blue-100 rounded-md p-3">Regenerate meta only when content changes; lock once approved.</div>
-      <div class="bg-amber-50 text-amber-800 border border-amber-100 rounded-md p-3">Stability: auto-linking respects locks; run suggestions after new posts.</div>
-      <div class="bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-md p-3">Consent-aware: tracking/crawls respect global toggles.</div>
+      <div class="bg-amber-50 text-amber-800 border border-amber-100 rounded-md p-3">Auto-linking & schema respect locks; rerun suggestions after publishing.</div>
+      <div class="bg-emerald-50 text-emerald-800 border border-emerald-100 rounded-md p-3">Consent-aware analytics: SEO checks respect tracking choices.</div>
+      <div class="bg-slate-50 text-slate-800 border border-slate-200 rounded-md p-3">
+        Flags — Meta: {{ flags.auto_meta_enabled }} | Schema: {{ flags.auto_schema_enabled }} | Linking: {{ flags.auto_linking_enabled }}
+      </div>
     </div>
   </div>
   <div class="grid md:grid-cols-3 gap-4">
@@ -144,6 +148,7 @@
     const form = document.querySelector('[data-seo-meta-form]');
     if (!form) return;
     const output = form.querySelector('[data-seo-meta-output]');
+    const submitBtn = form.querySelector('button[type="submit"]');
     function updateStatus(msg) {
       if (output) output.textContent = msg || "";
     }
@@ -156,11 +161,21 @@
         },
         body: data,
       });
-      return res.json();
+      let payload;
+      try {
+        payload = await res.json();
+      } catch (e) {
+        return { ok: false, error: "Invalid JSON response from server." };
+      }
+      if (!res.ok && !payload.ok) {
+        return { ok: false, error: payload.error || "Server error while regenerating metadata." };
+      }
+      return payload;
     }
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
       updateStatus("Generating...");
+       if (submitBtn) submitBtn.disabled = true;
       try {
         const fd = new FormData(form);
         const res = await postForm(form.action, fd);
@@ -171,6 +186,8 @@
         }
       } catch (err) {
         updateStatus("Error generating metadata.");
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
       }
     });
     const unlockBtn = form.querySelector('[data-meta-action=\"unlock\"]');
@@ -179,8 +196,14 @@
         updateStatus("Unlocking...");
         try {
           const fd = new FormData();
-          fd.append("content_type", form.querySelector('input[name=\"content_type\"]').value);
-          fd.append("object_id", form.querySelector('select[name=\"object_id\"]').value);
+          const contentType = form.querySelector('input[name=\"content_type\"]');
+          const objectId = form.querySelector('select[name=\"object_id\"]');
+          if (!contentType || !objectId) {
+            updateStatus("Missing post selection for unlock.");
+            return;
+          }
+          fd.append("content_type", contentType.value);
+          fd.append("object_id", objectId.value);
           fd.append("action", "unlock");
           const res = await postForm("{% url 'seo:update_metadata_controls' %}", fd);
           updateStatus(res.ok ? "Unlocked." : res.error || "Unlock failed.");
@@ -192,3 +215,5 @@
   })();
 </script>
 {% endblock %}
+
+

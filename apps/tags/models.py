@@ -1,8 +1,11 @@
+
 from __future__ import annotations
 
 from django.db import models
 from django.utils.text import slugify
-from apps.core.models import TimestampedModel, SoftDeleteModel
+from solo.models import SingletonModel
+
+from apps.core.models import SoftDeleteModel, TimestampedModel
 
 
 class Tag(TimestampedModel, SoftDeleteModel):
@@ -15,23 +18,72 @@ class Tag(TimestampedModel, SoftDeleteModel):
     co_occurrence = models.JSONField(default=dict, blank=True)
     is_active = models.BooleanField(default=True)
     ai_suggested = models.BooleanField(default=False, help_text="True if suggested by AI and not yet curated.")
-    usage_count = models.PositiveIntegerField(default=0)
+    is_curated = models.BooleanField(default=False, help_text="True if reviewed/approved by staff.")
+    merge_into = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="merged_from",
+        help_text="Soft-merge: redirects this tag to another canonical tag.",
+    )
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="children",
+        help_text="Optional parent for hierarchical taxonomies.",
+    )
+    path_cache = models.CharField(max_length=255, blank=True, default="", help_text="Cached materialized path for fast tree queries.")
+    ai_score = models.FloatField(default=0.0, help_text="Confidence when AI suggested this tag.")
+    content_hash = models.CharField(max_length=64, blank=True, default="", help_text="Last content hash used for AI suggestions.")
+    last_suggested_at = models.DateTimeField(null=True, blank=True)
+    suggestions = models.JSONField(default=list, blank=True, help_text="Recent AI suggestions with scores/rationales.")
+    importance = models.IntegerField(default=0, help_text="Boost for curated/priority tags.")
+    synonyms_text = models.TextField(blank=True, default="", help_text="Editable comma-separated synonyms.")
 
     class Meta:
         ordering = ["name"]
+        indexes = [
+            models.Index(fields=["normalized_name"], name="tag_normalized_idx"),
+            models.Index(fields=["slug"], name="tag_slug_idx"),
+            models.Index(fields=["is_active", "importance", "-usage_count"], name="tag_active_importance_idx"),
+            models.Index(fields=["merge_into"], name="tag_merge_into_idx"),
+            models.Index(fields=["parent"], name="tag_parent_idx"),
+            models.Index(fields=["path_cache"], name="tag_path_idx"),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["normalized_name"],
+                name="tag_unique_normalized",
+                condition=models.Q(merge_into__isnull=True),
+            )
+        ]
 
     def __str__(self) -> str:
         return self.name
 
-    def save(self, *args, **kwargs):
-        if not self.normalized_name:
-            self.normalized_name = self.name.lower().strip()
-        if not self.slug:
-            base = slugify(self.name)[:75]
-            candidate = base
-            idx = 1
-            while Tag.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
-                candidate = f"{base}-{idx}"
-                idx += 1
-            self.slug = candidate
-        super().save(*args, **kwargs)
+
+class TagsSettings(SingletonModel):
+    """
+    Per-app settings for the Tags module so it can be reused independently.
+    """
+
+    allow_public_suggestions = models.BooleanField(
+        default=True, help_text="Allow authenticated users to suggest new tags."
+    )
+    enable_ai_suggestions = models.BooleanField(
+        default=True, help_text="Enable AI-assisted tag suggestions where available."
+    )
+    show_tag_usage = models.BooleanField(
+        default=True, help_text="Expose tag usage counts in public views."
+    )
+
+    class Meta:
+        verbose_name = "Tags Settings"
+
+    def __str__(self) -> str:
+        return "Tags Settings"
+
+

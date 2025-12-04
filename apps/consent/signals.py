@@ -1,6 +1,6 @@
+
 """
 apps.consent.signals
-====================
 
 Enterprise-grade signal handlers for consent management.
 
@@ -187,3 +187,5 @@ def clear_session_consent(sender: Any, request, user: Any, **kwargs) -> None:
 
     except Exception as exc:
         logger.debug("clear_session_consent: unexpected failure → %s", exc)
+
+

@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from typing import Optional
@@ -22,3 +23,5 @@ def resolve_link(name: str, source_name: str) -> Optional[str]:
         return None
     link = AffiliateLink.objects.filter(source=source, name=name, is_enabled=True).first()
     return link.url if link else None
+
+

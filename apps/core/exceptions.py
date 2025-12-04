@@ -1,6 +1,6 @@
+
 """
 apps.core.exceptions
-====================
 
 Enterprise-grade unified exception handling.
 
@@ -202,3 +202,4 @@ def handle_view_exception(
         status=code,
         content_type="text/plain; charset=utf-8",
     )
+

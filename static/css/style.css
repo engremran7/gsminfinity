@@ -1,3 +1,4 @@
+
 /* ==========================================================================
    Global UI tokens + base styles
    Framework-friendly (Tailwind / Bootstrap compatible)
@@ -10,26 +11,21 @@
    Theme tokens (runtime adjustable)
    --------------------------- */
 :root {
-  --theme-primary: #0ea5a4;
-  --theme-primary-600: #0a7f82;
-  --theme-accent: #6366f1;
-  --theme-surface: #f8fafc;
-  --theme-surface-2: #ffffff;
-  --theme-text: #0f172a;
-  --theme-muted: #475569;
-  --theme-border: #e2e8f0;
-  --theme-gradient: linear-gradient(135deg, #0ea5a4, #6366f1);
-  --theme-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
-  --theme-radius: 0.85rem;
-
-  /* Derived tokens used by existing styles */
-  --color-primary: var(--theme-primary);
-  --color-primary-600: var(--theme-primary-600);
-  --color-secondary: #0f172a;
-  --color-bg: var(--theme-surface);
-  --color-surface: var(--theme-surface-2);
-  --color-text: var(--theme-text);
-  --color-muted: var(--theme-muted);
+  /* Tokens resolved by i18n_themes.js (flattened as --colors-*) */
+  --color-primary: var(--colors-primary, #0ea5a4);
+  --color-primary-600: var(--colors-primary-600, #0a7f82);
+  --color-secondary: var(--colors-secondary, #0f172a);
+  --color-bg: var(--colors-background, #f8fafc);
+  --color-surface: var(--colors-surface, #ffffff);
+  --color-text: var(--colors-text, #0f172a);
+  --color-muted: var(--colors-muted, #475569);
+  --color-border: var(--colors-border, #e2e8f0);
+  --theme-border: var(--colors-border, #e2e8f0);
+  --theme-gradient: linear-gradient(135deg, var(--color-primary), var(--colors-accent, #6366f1));
+  --theme-shadow: var(--shadows-elevation, 0 12px 32px rgba(15, 23, 42, 0.14));
+  --theme-radius: var(--radii-md, 0.85rem);
+  --font-urdu-base: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
+  --font-urdu-heading: "Jameel Noori Nastaleeq", "Noto Nastaliq Urdu", serif;
 
   /* Spacing scale */
   --sp-1: 0.25rem;
@@ -41,6 +37,12 @@
   /* Motion */
   --motion-fast: 150ms;
   --motion-medium: 240ms;
+}
+
+@font-face {
+  font-family: "Jameel Noori Nastaleeq";
+  src: url("/static/fonts/Jameel%20Noori%20Nastaleeq.ttf") format("truetype");
+  font-display: swap;
 }
 
 /* Auth cards and forms */
@@ -158,18 +160,6 @@ a.text-primary {
 }
 
 /* Theme drawer and FAB */
-.theme-fab {
-  z-index: 80;
-}
-.theme-drawer {
-  z-index: 75;
-  box-shadow: var(--theme-shadow);
-  background: var(--color-surface);
-}
-.theme-drawer__title {
-  color: var(--color-text);
-}
-
 /* AI widget */
 .ai-widget {
   position: fixed;
@@ -426,9 +416,18 @@ h2 {
 .ai-widget {
   position: fixed;
   right: var(--sp-4);
+  left: auto;
   bottom: var(--sp-4);
-  z-index: 1200;
+  z-index: 1000;
   font-size: 0.95rem;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.lang-switcher {
+  left: 1rem;
+  right: auto;
+  z-index: 2000;
 }
 
 .ai-widget #ai-toggle {
@@ -500,157 +499,6 @@ button {
   }
 }
 
-/* ---------------------------
-   Theme manager (floating panel)
-   --------------------------- */
-.theme-fab {
-  position: fixed;
-  right: var(--sp-4);
-  bottom: calc(var(--sp-4) + 52px);
-  width: 50px;
-  height: 50px;
-  border-radius: 14px;
-  background: var(--theme-gradient);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 16px 35px rgba(99, 102, 241, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  cursor: pointer;
-  transition:
-    transform var(--motion-fast) ease,
-    box-shadow var(--motion-fast) ease;
-  z-index: 1400;
-}
-
-.theme-fab:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 36px rgba(99, 102, 241, 0.38);
-}
-
-.theme-drawer {
-  position: fixed;
-  right: var(--sp-4);
-  bottom: calc(var(--sp-4) + 110px);
-  width: 320px;
-  max-width: 92vw;
-  background: var(--color-surface);
-  border: 1px solid var(--theme-border);
-  border-radius: var(--theme-radius);
-  box-shadow: var(--theme-shadow);
-  padding: var(--sp-4);
-  z-index: 1400;
-}
-
-.theme-drawer__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--sp-3);
-}
-
-.theme-drawer__title {
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.theme-presets {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-2);
-  margin-bottom: var(--sp-3);
-}
-
-.theme-preset-btn {
-  border: 1px solid var(--theme-border);
-  border-radius: var(--theme-radius);
-  padding: var(--sp-3);
-  background: var(--color-surface);
-  text-align: left;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--sp-2);
-  cursor: pointer;
-  transition:
-    border var(--motion-fast) ease,
-    transform var(--motion-fast) ease;
-}
-
-.theme-preset-btn:hover {
-  border-color: var(--color-primary);
-  transform: translateY(-1px);
-}
-
-.theme-preset-btn.is-active {
-  border-color: var(--color-primary);
-  box-shadow: 0 12px 32px rgba(14, 165, 164, 0.15);
-}
-
-.theme-swatches {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.theme-swatch {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.theme-field {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  padding: var(--sp-2) 0;
-}
-
-.theme-field label {
-  font-size: 0.9rem;
-  color: var(--color-muted);
-}
-
-.theme-field input[type="color"],
-.theme-field input[type="text"] {
-  width: 120px;
-  height: 38px;
-  border: 1px solid var(--theme-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  padding: 0 0.5rem;
-  cursor: pointer;
-}
-
-.theme-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  margin-top: var(--sp-3);
-}
-
-.theme-actions .btn-outline {
-  flex: 1;
-  text-align: center;
-}
-
-.theme-actions .btn-primary {
-  flex: 1;
-  justify-content: center;
-}
-
-.icon {
-  width: 18px;
-  height: 18px;
-  display: inline-block;
-  vertical-align: middle;
-  fill: currentColor;
-}
 
 /* ---------------------------
    Motion reduction
@@ -705,3 +553,14 @@ button {
     border: 1px solid #eee;
   }
 }
+
+/* Utility icon styling */
+.icon {
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  vertical-align: middle;
+  fill: currentColor;
+}
+
+

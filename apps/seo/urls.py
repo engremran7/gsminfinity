@@ -1,3 +1,4 @@
+
 from django.urls import path
 from . import views
 
@@ -12,3 +13,5 @@ urlpatterns = [
     path("redirects/manage/", views.manage_redirect, name="manage_redirect"),
     path("dashboard/", views.dashboard, name="dashboard"),
 ]
+
+

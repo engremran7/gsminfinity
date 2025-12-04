@@ -1,3 +1,4 @@
+
 """
 admin.py
 --------
@@ -19,6 +20,72 @@ from typing import Iterable
 
 from django import forms
 from django.contrib import admin
+from solo.admin import SingletonModelAdmin
+
+from apps.core.models import AppRegistry
+
+# App registry admin
+@admin.register(AppRegistry)
+class AppRegistryAdmin(SingletonModelAdmin):
+    list_display = (
+        "seo_enabled",
+        "ads_enabled",
+        "tags_enabled",
+        "blog_enabled",
+        "comments_enabled",
+        "distribution_enabled",
+        "users_enabled",
+        "device_identity_enabled",
+        "crawler_guard_enabled",
+        "ai_behavior_enabled",
+        "i18n_themes_enabled",
+        "ai_enabled",
+    )
+    fieldsets = (
+        (
+            "Content & Engagement",
+            {
+                "fields": (
+                    "blog_enabled",
+                    "comments_enabled",
+                    "tags_enabled",
+                )
+            },
+        ),
+        (
+            "Growth & Monetization",
+            {
+                "fields": (
+                    "seo_enabled",
+                    "ads_enabled",
+                    "distribution_enabled",
+                )
+            },
+        ),
+        (
+            "Security & AI",
+            {
+                "fields": (
+                    "device_identity_enabled",
+                    "crawler_guard_enabled",
+                    "ai_behavior_enabled",
+                    "ai_enabled",
+                )
+            },
+        ),
+        (
+            "Core Platform",
+            {
+                "fields": (
+                    "users_enabled",
+                    "i18n_themes_enabled",
+                )
+            },
+        ),
+    )
+
+    def has_add_permission(self, request):
+        return False
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.http import HttpResponse
@@ -209,3 +276,5 @@ def auto_register_models(app_label: str):
 # e.g. for apps.core use app_label = "apps.core"
 # ---------------------------
 # auto_register_models("apps.core")
+
+

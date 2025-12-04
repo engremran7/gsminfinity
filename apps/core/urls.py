@@ -1,7 +1,7 @@
+
 # apps/core/urls.py
 """
 GSMInfinity — Core URL Configuration (Enterprise-Grade)
-========================================================
 Features:
 - Full Django 5.2+ compliance (no deprecated APIs)
 - Lazy view loading with import_string (prevents circular imports)
@@ -51,11 +51,6 @@ urlpatterns = [
     #  Public Home / Landing
     # ---------------------------------------------------------------
     path("", view("home"), name="home"),
-    # ---------------------------------------------------------------
-    #  Tenants (Multi-Site Overview)
-    # ---------------------------------------------------------------
-    path("tenants/", view("tenants"), name="tenants"),
-    # ---------------------------------------------------------------
     #  Legal / Policy Page Aliases
     # ---------------------------------------------------------------
     # These aliases ensure existing templates referencing {% url 'privacy' %}
@@ -64,6 +59,8 @@ urlpatterns = [
     path("privacy/", view("apps.site_settings.views.privacy_policy"), name="privacy"),
     path("terms/", view("apps.site_settings.views.terms_of_service"), name="terms"),
     path("cookies/", view("apps.site_settings.views.cookies_policy"), name="cookies"),
+    # Site map (human-friendly tree)
+    path("site-map/", view("site_map"), name="site_map"),
 ]
 
 
@@ -75,3 +72,5 @@ urlpatterns = [
 # - For cross-app aliasing, dotted import paths are used safely.
 # - No recursion, no deprecated include() nesting, 100% Django 5.2+ ready.
 # ----------------------------------------------------------------------
+
+

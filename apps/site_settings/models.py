@@ -1,3 +1,4 @@
+
 """
 Enterprise-grade Site & Tenant Settings
 
@@ -16,7 +17,6 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
@@ -46,7 +46,7 @@ class SiteSettings(SingletonModel):
     """
 
     # ------------------------------------------------------------------
-    # Branding – MUST remain generic (no “GSM” or “Infinity”!)
+    # Branding - MUST remain generic (no "GSM" or "Infinity"!)
     # ------------------------------------------------------------------
     site_name = models.CharField(max_length=100, default="Site")
     site_header = models.CharField(max_length=100, default="Admin")
@@ -72,96 +72,41 @@ class SiteSettings(SingletonModel):
     )
 
     # ------------------------------------------------------------------
-    # Theme
+    # Theme (kept minimal; runtime tokens come from i18n_themes)
     # ------------------------------------------------------------------
-    theme_profile = models.CharField(max_length=50, blank=True, null=True)
-
     primary_color = models.CharField(
         max_length=7,
         blank=True,
         null=True,
         validators=[_HEX_COLOR_VALIDATOR],
+        help_text="Deprecated: colors now come from the Themes app; kept for legacy templates.",
     )
     secondary_color = models.CharField(
         max_length=7,
         blank=True,
         null=True,
         validators=[_HEX_COLOR_VALIDATOR],
+        help_text="Deprecated: colors now come from the Themes app; kept for legacy templates.",
     )
 
     # ------------------------------------------------------------------
-    # Localization
+    # Localization (global defaults; detailed profiles live in i18n_themes)
     # ------------------------------------------------------------------
     default_language = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=50, default="UTC")
     enable_localization = models.BooleanField(default=False)
 
     # ------------------------------------------------------------------
-    # AI Personalization
+    # Core Ops
     # ------------------------------------------------------------------
-    enable_ai_personalization = models.BooleanField(default=False)
-    ai_theme_mode = models.CharField(
-        max_length=20,
-        choices=[("light", "Light"), ("dark", "Dark"), ("auto", "Auto")],
-        default="auto",
-    )
-    ai_model_version = models.CharField(max_length=20, blank=True, null=True)
-
-    # ------------------------------------------------------------------
-    # Security & Features
-    # ------------------------------------------------------------------
-    enable_signup = models.BooleanField(default=True)
-    enable_password_reset = models.BooleanField(default=True)
-    enable_notifications = models.BooleanField(default=True)
-    enable_tenants = models.BooleanField(
-        default=False,
-        help_text="Enable public tenants listing when true.",
-    )
-    enable_blog = models.BooleanField(
-        default=True,
-        help_text="Enable public blog views.",
-    )
-    enable_blog_comments = models.BooleanField(
-        default=True,
-        help_text="Enable comments on blog posts.",
-    )
-    allow_user_blog_posts = models.BooleanField(
-        default=False,
-        help_text="When on, authenticated users (non-admin) can create blog posts.",
-    )
-    allow_user_bounty_posts = models.BooleanField(
-        default=False,
-        help_text="When on, authenticated users can create bounty posts (tagged 'bounty').",
-    )
-    # ------------------------------------------------------------------
-    # SEO / ADS Toggles (admin controlled)
-    # ------------------------------------------------------------------
-    seo_enabled = models.BooleanField(default=True)
-    auto_meta_enabled = models.BooleanField(default=False)
-    auto_schema_enabled = models.BooleanField(default=False)
-    auto_linking_enabled = models.BooleanField(default=False)
-
-    ads_enabled = models.BooleanField(default=False)
-    affiliate_enabled = models.BooleanField(default=False)
-    ad_networks_enabled = models.BooleanField(default=False)
-    ad_aggressiveness_level = models.CharField(
-        max_length=20,
-        choices=[
-            ("minimal", "Minimal"),
-            ("balanced", "Balanced"),
-            ("aggressive", "Aggressive"),
-        ],
-        default="balanced",
-    )
     maintenance_mode = models.BooleanField(default=False)
-
     force_https = models.BooleanField(
         default=False,
         help_text="Enable only if TLS is enforced by reverse proxy",
     )
 
     # ------------------------------------------------------------------
-    # reCAPTCHA
+    # reCAPTCHA (global; per-app may override)
     # ------------------------------------------------------------------
     recaptcha_enabled = models.BooleanField(default=False)
     recaptcha_mode = models.CharField(
@@ -411,33 +356,5 @@ class SiteSettingsVerificationFileLink(models.Model):
         ]
 
 
-# =====================================================================
-# TENANT SETTINGS
-# =====================================================================
-class TenantSiteSettings(models.Model):
-    site = models.OneToOneField(
-        Site, on_delete=models.CASCADE, related_name="tenant_settings"
-    )
 
-    theme_profile = models.CharField(max_length=50, blank=True, null=True)
-    primary_color = models.CharField(
-        max_length=7, blank=True, null=True, validators=[_HEX_COLOR_VALIDATOR]
-    )
-    secondary_color = models.CharField(
-        max_length=7, blank=True, null=True, validators=[_HEX_COLOR_VALIDATOR]
-    )
 
-    meta_tags = models.ManyToManyField(VerificationMetaTag, blank=True)
-    verification_files = models.ManyToManyField(VerificationFile, blank=True)
-
-    class Meta:
-        verbose_name = "Tenant Site Settings"
-
-    def __str__(self):
-        return f"Tenant settings for {getattr(self.site, 'domain', 'unknown')}"
-
-    def get_colors(self) -> dict[str, str]:
-        return {
-            "primary": self.primary_color or "#0d6efd",
-            "secondary": self.secondary_color or "#6c757d",
-        }

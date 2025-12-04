@@ -1,3 +1,4 @@
+
 """
 GSMInfinity Development Settings
 --------------------------------
@@ -106,3 +107,5 @@ if DEBUG and "django_extensions" not in INSTALLED_APPS:
 # Runtime banner
 # -------------------------
 print("[DEV] GSMInfinity Development Settings Loaded (HTTP only, DEBUG=True)")
+
+

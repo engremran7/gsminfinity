@@ -1,3 +1,4 @@
+
 """
 Enterprise-grade Account & Social Adapters for GSMInfinity.
 Integrates OAuth onboarding, trusted social email verification, and safe redirects.
@@ -121,3 +122,5 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         except Exception as exc:
             logger.exception("pre_social_login fatal error: %s", exc)
             return
+
+

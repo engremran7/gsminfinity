@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand
@@ -33,3 +34,5 @@ class Command(BaseCommand):
             )
             total += 1
         self.stdout.write(self.style.SUCCESS(f"Sitemap build complete. Entries: {total}"))
+
+

@@ -1,6 +1,6 @@
+
 """
 apps.users.tokens
-=================
 Enterprise-safe token utilities for GSMInfinity.
 
 ✅ Highlights
@@ -80,3 +80,4 @@ def is_token_expired(created_at: timezone.datetime, hours: int = 24) -> bool:
         return True
     expiry_time = created_at + timedelta(hours=hours)
     return timezone.now() >= expiry_time
+

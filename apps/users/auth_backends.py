@@ -1,3 +1,4 @@
+
 # apps/users/auth_backends.py
 """
 Enterprise-grade multi-identifier authentication backend for GSMInfinity.
@@ -140,3 +141,4 @@ class MultiFieldAuthBackend(ModelBackend):
         except Exception as exc:
             logger.exception("get_user failed for id=%s → %s", user_id, exc)
             return None
+

@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -5,6 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from solo.models import SingletonModel
 
 from apps.core.models import AuditFieldsModel, SoftDeleteModel, TimestampedModel
 
@@ -124,3 +126,22 @@ class LinkSuggestion(TimestampedModel):
 
     class Meta:
         unique_together = ("source", "target")
+
+
+class SEOSettings(SingletonModel):
+    """
+    Per-app settings for SEO so the app can be reused independently.
+    """
+
+    seo_enabled = models.BooleanField(default=True)
+    auto_meta_enabled = models.BooleanField(default=False)
+    auto_schema_enabled = models.BooleanField(default=False)
+    auto_linking_enabled = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "SEO Settings"
+
+    def __str__(self) -> str:
+        return "SEO Settings"
+
+

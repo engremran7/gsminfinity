@@ -1,3 +1,4 @@
+
 """
 Lightweight user context processors.
 """
@@ -17,3 +18,5 @@ def auth_status(request):
 # Backward compatibility for any legacy usage
 def user_context(request):
     return {"is_authenticated": request.user.is_authenticated}
+
+

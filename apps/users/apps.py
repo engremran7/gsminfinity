@@ -1,6 +1,6 @@
+
 """
 apps.users.apps
-================
 Application configuration for GSMInfinity's Users module.
 
 ✅ Responsibilities:
@@ -72,10 +72,11 @@ class UsersConfig(AppConfig):
         # 3️⃣ Future-proof extension hook (keep light)
         # ---------------------------------------------------------------
         # Example future tasks:
-        #   - Warm up cache for active devices
         #   - Schedule initial audit tasks
         #   - Load feature-flag toggles
         #
         # Must remain non-blocking and ORM-safe.
         logger.debug("UsersConfig.ready() completed successfully.")
         return
+
+

@@ -1,3 +1,4 @@
+
 """
 apps.core.context_processors
 ----------------------------
@@ -18,6 +19,8 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.http import HttpRequest
+from apps.core.models import AppRegistry
+from apps.core.utils.ip import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +53,11 @@ def site_settings_context(request: HttpRequest) -> Dict[str, Any]:
         pass # s remains None
 
     # 2. Extract values or use defensive defaults
+    try:
+        reg = AppRegistry.get_solo()
+    except Exception:
+        reg = None
+
     return {
         "site_theme": {
             "primary_color": getattr(s, "primary_color", "#0d6efd"),
@@ -62,6 +70,7 @@ def site_settings_context(request: HttpRequest) -> Dict[str, Any]:
             "recaptcha_site_key": getattr(s, "recaptcha_public_key", "") or "",
             "show_consent_banner": bool(getattr(s, "enable_notifications", False)),
         },
+        "app_registry": reg,
     }
 
 
@@ -276,28 +285,12 @@ def _detect_region_via_language(request: HttpRequest) -> Optional[str]:
 # =====================================================================
 def _get_client_ip(request: HttpRequest) -> str:
     """
-    Hardened IP extraction logic, respecting proxy headers and settings.
+    Wrapper around apps.core.utils.ip.get_client_ip for templates.
+    Never raises and falls back to loopback on failure.
     """
     try:
-        # NOTE: SECURE_PROXY_SSL_HEADER is often used to determine if the request is secure
-        # but the common practice for getting the client IP is via X-Forwarded-For or X-Real-IP.
-        
-        # 1. Check standard proxy header X-Forwarded-For (most common for load balancers)
-        # Trust only the *first* IP in the list (the actual client).
-        fwd = request.META.get("HTTP_X_FORWARDED_FOR")
-        if fwd:
-            return fwd.split(",")[0].strip()
-        
-        # 2. Check for Real IP header (e.g., Nginx, Cloudflare)
-        real_ip = request.META.get("HTTP_X_REAL_IP")
-        if real_ip:
-            return real_ip.strip()
-
-        # 3. Fallback to Django's native address
-        return request.META.get("REMOTE_ADDR", "127.0.0.1") or "127.0.0.1"
-    
+        return get_client_ip(request) or "127.0.0.1"
     except Exception:
-        # Never fail on IP extraction
         return "127.0.0.1"
 
 
@@ -315,3 +308,5 @@ def core_context(request: HttpRequest) -> Dict[str, Any]:
         "SITE_ID": getattr(settings, "SITE_ID", 1), 
         "TIME_ZONE": getattr(settings, "TIME_ZONE", "UTC"),
     }
+
+

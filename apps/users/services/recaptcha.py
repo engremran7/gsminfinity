@@ -1,6 +1,6 @@
+
 """
 apps.users.services.recaptcha
-=============================
 
 Enterprise-Grade Google reCAPTCHA Verification Service
 
@@ -215,3 +215,4 @@ def verify_recaptcha(
         logger.debug("reCAPTCHA: cache.set failed for %s → %s", cache_key, exc)
 
     return result
+

@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from typing import List, Iterable, Optional
@@ -90,3 +91,5 @@ def suggest_links(source: LinkableEntity, candidates: List[LinkableEntity], limi
             defaults={"score": score, "is_applied": False, "locked": False},
         )
         added += 1
+
+

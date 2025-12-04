@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 from typing import Iterable
@@ -114,3 +115,5 @@ class EnforceProfileCompletionMiddleware:
 
         # --- Finally: enforce redirect -------------------------------------
         return redirect(self.PROFILE_URL_NAME)
+
+

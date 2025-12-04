@@ -1,6 +1,6 @@
+
 """
 apps.users.signals
-==================
 Centralized user-related signal handlers for GSMInfinity.
 """
 
@@ -10,54 +10,14 @@ import logging
 
 from allauth.account.signals import email_confirmed, user_signed_up
 from allauth.account.utils import perform_login
-from apps.users.utils.device import enforce_device_limit, register_fingerprint
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.utils import timezone
 
+from apps.core.utils.ip import get_client_ip
+from apps.users.services.notifications import send_notification
+
 logger = logging.getLogger(__name__)
-
-
-@receiver(user_logged_in)
-def handle_user_logged_in(sender, request, user, **kwargs):
-    if not user or not request:
-        logger.debug("handle_user_logged_in: missing user or request context.")
-        return
-
-    try:
-        fp_hash = (
-            request.META.get("DEVICE_FP")
-            or request.COOKIES.get("device_fp")
-            or request.META.get("HTTP_USER_AGENT", "unknown")
-        )[:255]
-
-        fingerprint_data = {
-            "fingerprint_hash": fp_hash,
-            "os_info": (request.META.get("OS_INFO") or "").strip()[:100],
-            "browser_info": (request.META.get("HTTP_USER_AGENT") or "").strip()[:255],
-            "motherboard_id": (request.META.get("MOTHERBOARD_ID") or "").strip()[:100],
-        }
-
-        if not enforce_device_limit(user):
-            logger.warning(
-                "Device registration blocked - user %s exceeded device limit.",
-                getattr(user, "email", user.pk),
-            )
-            return
-
-        register_fingerprint(user=user, **fingerprint_data)
-        logger.info(
-            "Device fingerprint updated for user %s [%s]",
-            getattr(user, "email", user.pk),
-            fingerprint_data["fingerprint_hash"][:16],
-        )
-
-    except Exception as exc:
-        logger.exception(
-            "Error registering fingerprint for user %s: %s",
-            getattr(user, "email", user.pk),
-            exc,
-        )
 
 
 @receiver(user_signed_up)
@@ -117,28 +77,6 @@ def handle_user_signed_up(request, user, **kwargs):
             exc,
         )
 
-    # Register device fingerprint at signup if available
-    try:
-        fp_hash = (
-            (request.POST.get("device_fp") if request else None)
-            or (request.COOKIES.get("device_fp") if request else None)
-            or (request.META.get("DEVICE_FP") if request else None)
-            or (request.META.get("HTTP_USER_AGENT") if request else None)
-            or "unknown"
-        )[:255]
-
-        fingerprint_data = {
-            "fingerprint_hash": fp_hash,
-            "os_info": (request.META.get("OS_INFO") if request else "" or "").strip()[:100],
-            "browser_info": (request.META.get("HTTP_USER_AGENT") if request else "" or "").strip()[:255],
-            "motherboard_id": (request.META.get("MOTHERBOARD_ID") if request else "" or "").strip()[:100],
-        }
-
-        if enforce_device_limit(user):
-            register_fingerprint(user=user, **fingerprint_data)
-    except Exception as exc:
-        logger.debug("Signup fingerprint registration failed: %s", exc, exc_info=True)
-
 
 @receiver(email_confirmed)
 def handle_email_confirmed(request, email_address, **kwargs):
@@ -169,20 +107,30 @@ def handle_email_confirmed(request, email_address, **kwargs):
                 getattr(user, "email", user.pk),
             )
 
-        # Optional referral reward logic
-        try:
-            from django.conf import settings
-
-            referrer_bonus = int(getattr(settings, "REFERRAL_REWARD_REFERRER", 0) or 0)
-            new_user_bonus = int(getattr(settings, "REFERRAL_REWARD_NEW_USER", 0) or 0)
-
-            if referrer_bonus > 0 and getattr(user, "referred_by", None):
-                referrer = user.referred_by
-                if hasattr(referrer, "add_credits"):
-                    referrer.add_credits(referrer_bonus)
-            if new_user_bonus > 0 and hasattr(user, "add_credits"):
-                user.add_credits(new_user_bonus)
-        except Exception as exc:
-            logger.debug("Referral reward processing failed: %s", exc, exc_info=True)
     except Exception as exc:
         logger.exception("email_confirmed handler failed: %s", exc)
+
+
+@receiver(user_logged_in)
+def handle_user_logged_in(sender, request, user, **kwargs):
+    """
+    Create a notification on successful login (includes IP + device id if available).
+    """
+    try:
+        ip = get_client_ip(request) if request else ""
+        device = getattr(request, "device", None)
+        device_id = getattr(device, "machine_uuid", None)
+        msg_parts = [f"Login from {ip or 'unknown IP'}"]
+        if device_id:
+            msg_parts.append(f"device {device_id}")
+        send_notification(
+            user,
+            "Login successful",
+            "; ".join(msg_parts),
+            level="info",
+            channel="web",
+        )
+    except Exception as exc:
+        logger.debug("handle_user_logged_in notification skipped: %s", exc, exc_info=True)
+
+

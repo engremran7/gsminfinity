@@ -1,3 +1,4 @@
+
 """
 GSMInfinity - Custom Allauth Signup & Onboarding Forms
 ------------------------------------------------------
@@ -18,6 +19,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
+from allauth.account.forms import ChangePasswordForm
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -28,6 +30,9 @@ class CustomSignupForm(forms.Form):
     Enterprise-grade wrapper around django-allauth's signup system.
     Lazy-loads allauth internals only when required to avoid circular imports.
     """
+
+    # Compatibility with newer allauth flows that check this flag
+    by_passkey: bool = False
 
     email = forms.EmailField(
         max_length=255,
@@ -77,30 +82,9 @@ class CustomSignupForm(forms.Form):
         ),
     )
 
-    referral_code = forms.CharField(
-        max_length=12,
-        required=False,
-        label=_("Referral code (optional)"),
-        widget=forms.TextInput(
-            attrs={
-                "autocomplete": "off",
-                "placeholder": _("Referral code"),
-                "class": "form-control",
-            }
-        ),
-    )
-
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
-        # Prefill referral from ?ref=CODE if present
-        try:
-            if self.request and self.request.GET.get("ref"):
-                code = (self.request.GET.get("ref") or "").strip().upper()[:12]
-                if code:
-                    self.initial.setdefault("referral_code", code)
-        except Exception:
-            pass
 
     @property
     def base_form_class(self):
@@ -140,22 +124,6 @@ class CustomSignupForm(forms.Form):
             raise ValidationError(_("Passwords do not match."))
         return cleaned
 
-    def clean_referral_code(self) -> str:
-        code = (self.cleaned_data.get("referral_code") or "").strip().upper()
-        if not code:
-            return ""
-        try:
-            from apps.users.models import CustomUser  # local import
-
-            exists = CustomUser.objects.filter(referral_code__iexact=code).exists()
-            if not exists:
-                raise ValidationError(_("Invalid referral code."))
-        except ValidationError:
-            raise
-        except Exception as exc:
-            logger.debug("Referral code lookup failed: %s", exc)
-        return code
-
     def signup(self, request, user):
         """
         Called automatically by allauth after successful form validation.
@@ -182,22 +150,15 @@ class CustomSignupForm(forms.Form):
         if hasattr(user, "signup_method"):
             user.signup_method = "manual"
 
-        # Attach referral if provided
-        ref_code = (self.cleaned_data.get("referral_code") or "").strip().upper()
-        if ref_code and hasattr(user, "referred_by"):
-            from apps.users.models import CustomUser  # local import
-
-            referrer = CustomUser.objects.filter(referral_code__iexact=ref_code).first()
-            if referrer and referrer != user:
-                user.referred_by = referrer
-
         user.save()
         logger.info("New user created via signup: %s", user.email)
         return user
 
     def save(self, request):
         user = User()
-        return self.signup(request, user)
+        # Some allauth flows unpack save() (user, extra); return a tuple for compatibility.
+        created = self.signup(request, user)
+        return created, None
 
     def try_save(self, request):
         return self.save(request)
@@ -258,19 +219,6 @@ class TellUsAboutYouForm(forms.Form):
         ),
     )
 
-    referral_code = forms.CharField(
-        max_length=12,
-        required=False,
-        label=_("Referral code (optional)"),
-        widget=forms.TextInput(
-            attrs={
-                "autocomplete": "off",
-                "placeholder": _("Referral code"),
-                "class": "form-control",
-            }
-        ),
-    )
-
     def __init__(self, *args, user=None, request=None, **kwargs):
         self.user = user
         self.request = request
@@ -309,23 +257,44 @@ class TellUsAboutYouForm(forms.Form):
 
         return cleaned
 
-    def clean_referral_code(self):
-        code = (self.cleaned_data.get("referral_code") or "").strip().upper()
-        if not code:
-            return ""
-        try:
-            from apps.users.models import CustomUser  # local import
-
-            exists = CustomUser.objects.filter(referral_code__iexact=code).exists()
-            if not exists:
-                raise ValidationError(_("Invalid referral code."))
-        except ValidationError:
-            raise
-        except Exception as exc:
-            logger.debug("Referral lookup failed in onboarding: %s", exc)
-        return code
-
 
 # ----------------------------------------------------------------------
 # Legacy Social onboarding form (kept for compatibility)
 # ----------------------------------------------------------------------
+
+
+class CustomChangePasswordForm(ChangePasswordForm):
+    """
+    Require current password when changing it.
+    If the account has no usable password, force user to go through password reset.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "oldpassword" in self.fields:
+            self.fields["oldpassword"].required = True
+
+    def clean_oldpassword(self):
+        if not self.user:
+            raise ValidationError(_("User is required."))
+        if not self.user.has_usable_password():
+            raise ValidationError(
+                _("No existing password found. Use 'Forgot password' to set one.")
+            )
+        oldpassword = (self.cleaned_data.get("oldpassword") or "").strip()
+        if not oldpassword:
+            raise ValidationError(_("Enter your current password."))
+        if not self.user.check_password(oldpassword):
+            raise ValidationError(_("The current password you entered is incorrect."))
+        return oldpassword
+
+    def clean(self):
+        cleaned = super().clean()
+        # Double-check old password in case upstream validation is bypassed.
+        if self.user and self.user.has_usable_password():
+            oldpassword = (self.cleaned_data.get("oldpassword") or "").strip()
+            if not oldpassword or not self.user.check_password(oldpassword):
+                raise ValidationError(_("The current password you entered is incorrect."))
+        return cleaned
+
+

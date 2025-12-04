@@ -1,6 +1,6 @@
+
 """
 apps.users.mfa
-==============
 
 Enterprise-grade Multi-Factor Authentication (MFA) utilities.
 
@@ -264,3 +264,5 @@ def compare_hmac_secret(stored_hmac: str, candidate_secret: str, pepper: str) ->
 
 
 __all__ = ["TOTPService", "MFAEnforcer", "hmac_store_secret", "compare_hmac_secret"]
+
+

@@ -1,3 +1,4 @@
+
 import logging
 import uuid
 from typing import Callable
@@ -26,3 +27,5 @@ class CorrelationIdMiddleware:
         response = self.get_response(request)
         response[self.header_name] = correlation_id
         return response
+
+

@@ -1,40 +1,92 @@
+
 from __future__ import annotations
 
 import logging
+import socket
+import ipaddress
+import hashlib
+import urllib.request
+from urllib.parse import urlparse
+from urllib.error import HTTPError, URLError
 from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.shortcuts import render, redirect
 from django.db.models import Q, Count
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.contenttypes.models import ContentType
-from django.views.decorators.csrf import csrf_exempt
-import hashlib
-import urllib.request
-from urllib.error import HTTPError, URLError
 
 from apps.blog.models import Post
+from apps.core.app_service import AppService
 from apps.core.utils import feature_flags
+from apps.consent.utils import check as consent_check
 from .models import SEOModel, Metadata, SitemapEntry, Redirect, LinkableEntity, LinkSuggestion
 from apps.seo.services.ai.metadata import generate_metadata
 from apps.seo.services.scoring.serp import serp_analyze
 from apps.seo.services.readability import readability_score
 from apps.seo.services.crawlers.heatmap import heatmap
+from apps.core.utils.logging import log_event
 
 logger = logging.getLogger(__name__)
 
 
+def _seo_settings() -> dict:
+    try:
+        seo_api = AppService.get("seo")
+        if seo_api and hasattr(seo_api, "get_settings"):
+            return seo_api.get_settings()
+    except Exception:
+        pass
+    return {}
+
+
 def _seo_enabled() -> bool:
-    return feature_flags.seo_enabled()
+    try:
+        return bool(_seo_settings().get("seo_enabled", True))
+    except Exception:
+        return feature_flags.seo_enabled()
+
+
+def _seo_auto_meta_enabled() -> bool:
+    try:
+        return bool(_seo_settings().get("auto_meta_enabled", False))
+    except Exception:
+        return False
 
 
 def _has_seo_consent(request: HttpRequest) -> bool:
-    consent = getattr(request, "consent_categories", {}) or {}
-    if consent and not consent.get("functional", True):
-        return False
-    # If analytics category exists, require it for SEO inspection endpoints
-    if "analytics" in consent and not consent.get("analytics", False):
-        return False
-    return True
+    return consent_check("analytics", request)
+
+
+def _is_private_host(hostname: str) -> bool:
+    if not hostname:
+        return True
+    try:
+        infos = socket.getaddrinfo(hostname, None)
+    except Exception:
+        return True
+
+    for fam, _, _, _, sockaddr in infos:
+        ip = sockaddr[0]
+        try:
+            ip_obj = ipaddress.ip_address(ip)
+        except ValueError:
+            continue
+        if (
+            ip_obj.is_private
+            or ip_obj.is_loopback
+            or ip_obj.is_link_local
+            or ip_obj.is_reserved
+            or ip_obj.is_multicast
+        ):
+            return True
+    return False
+
+
+staff_or_editor = user_passes_test(
+    lambda u: u.is_staff
+    or u.is_superuser
+    or getattr(u, "has_role", lambda *r: False)("admin", "editor")
+)
 
 
 @require_GET
@@ -55,16 +107,16 @@ def metadata_view(request: HttpRequest) -> JsonResponse:
     m = seo_obj.metadata
     return JsonResponse(
         {
-            "title": m.title,
-            "description": m.description,
-            "keywords": m.keywords,
+            "title": m.meta_title,
+            "description": m.meta_description,
+            "keywords": m.focus_keywords,
             "canonical_url": m.canonical_url,
-            "og_image": m.og_image,
+            "og_image": m.social_image,
         }
     )
 
 
-@csrf_exempt
+@staff_or_editor
 @require_POST
 def regenerate_metadata(request: HttpRequest) -> JsonResponse:
     """
@@ -100,7 +152,15 @@ def regenerate_metadata(request: HttpRequest) -> JsonResponse:
         seo_obj.ai_generated = True
         seo_obj.locked = lock or seo_obj.locked
         seo_obj.save(update_fields=["ai_generated", "locked", "updated_at"])
-        logger.info("SEO metadata regenerated", extra={"object_id": obj_id, "content_type": ct_id, "locked": seo_obj.locked})
+        log_event(
+            logger,
+            "info",
+            "seo.metadata.regenerated",
+            object_id=obj_id,
+            content_type=ct_id,
+            locked=seo_obj.locked,
+            ai_generated=True,
+        )
         return JsonResponse(
             {
                 "ok": True,
@@ -115,7 +175,7 @@ def regenerate_metadata(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"ok": False, "error": str(exc)}, status=400)
 
 
-@csrf_exempt
+@staff_or_editor
 @require_POST
 def update_metadata_controls(request: HttpRequest) -> JsonResponse:
     """
@@ -141,13 +201,21 @@ def update_metadata_controls(request: HttpRequest) -> JsonResponse:
             meta.focus_keywords = [kw.strip() for kw in focus_keywords_raw.split(",") if kw.strip()]
             meta.save(update_fields=["focus_keywords", "updated_at"])
         seo_obj.save(update_fields=["locked", "updated_at"])
+        log_event(
+            logger,
+            "info",
+            "seo.metadata.controls",
+            action=action,
+            locked=seo_obj.locked,
+            object_id=obj_id,
+        )
         return JsonResponse({"ok": True, "locked": seo_obj.locked, "focus_keywords": meta.focus_keywords})
     except Exception as exc:
         logger.error("update_metadata_controls failed", exc_info=True)
         return JsonResponse({"ok": False, "error": str(exc)}, status=400)
 
 
-@csrf_exempt
+@staff_or_editor
 @require_POST
 def apply_link_suggestion(request: HttpRequest) -> JsonResponse:
     if not _seo_enabled() or not _has_seo_consent(request):
@@ -162,6 +230,14 @@ def apply_link_suggestion(request: HttpRequest) -> JsonResponse:
         sug.is_applied = apply_flag
         sug.locked = lock or sug.locked
         sug.save()
+        log_event(
+            logger,
+            "info",
+            "seo.link_suggestion.applied",
+            suggestion_id=suggestion_id,
+            locked=sug.locked,
+            applied=sug.is_applied,
+        )
         return JsonResponse({"ok": True})
     except LinkSuggestion.DoesNotExist:
         return JsonResponse({"ok": False, "error": "not_found"}, status=404)
@@ -171,19 +247,35 @@ def apply_link_suggestion(request: HttpRequest) -> JsonResponse:
 def inspect_url_view(request: HttpRequest) -> JsonResponse:
     if not _seo_enabled() or not _has_seo_consent(request):
         return JsonResponse({"ok": False, "error": "seo_disabled"}, status=403)
-    url = request.GET.get("url", "")
-    if not url:
+
+    raw_url = (request.GET.get("url") or "").strip()
+    if not raw_url:
         return JsonResponse({"ok": False, "error": "missing_url"}, status=400)
+
+    if not raw_url.startswith(("http://", "https://")):
+        raw_url = "https://" + raw_url
+
     try:
-        req = urllib.request.Request(url, method="HEAD")
+        parsed = urlparse(raw_url)
+    except Exception:
+        return JsonResponse({"ok": False, "error": "invalid_url"}, status=400)
+
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return JsonResponse({"ok": False, "error": "invalid_url"}, status=400)
+
+    if _is_private_host(parsed.hostname or ""):
+        return JsonResponse({"ok": False, "error": "forbidden_target"}, status=400)
+
+    try:
+        req = urllib.request.Request(raw_url, method="HEAD")
         with urllib.request.urlopen(req, timeout=5) as resp:
             headers = {k: v for k, v in resp.headers.items()}
             return JsonResponse({"ok": True, "status": resp.getcode(), "headers": headers})
-    except (HTTPError, URLError, Exception) as exc:
+    except Exception as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=400)
 
 
-@csrf_exempt
+@staff_or_editor
 @require_POST
 def manage_redirect(request: HttpRequest) -> HttpResponse:
     if not _seo_enabled() or not _has_seo_consent(request):
@@ -211,6 +303,7 @@ def manage_redirect(request: HttpRequest) -> HttpResponse:
                 else:
                     redirect_obj.is_permanent = not redirect_obj.is_permanent
                     redirect_obj.save(update_fields=["is_permanent"])
+        log_event(logger, "info", "seo.redirect.updated", action=action, source=source, target=target)
     except Exception as exc:
         logger.error("manage_redirect failed", exc_info=True)
     return redirect("seo:dashboard")
@@ -236,6 +329,12 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     )
     serp_stats = serp_analyze(" ".join(recent_posts.values_list("seo_title", flat=True)[:1]), " ".join(recent_posts.values_list("seo_description", flat=True)[:1]))
     heatmap_stats = heatmap()
+    flags = {
+        "seo_enabled": _seo_enabled(),
+        "auto_meta_enabled": _seo_auto_meta_enabled(),
+        "auto_schema_enabled": bool(_seo_settings().get("auto_schema_enabled", False)),
+        "auto_linking_enabled": bool(_seo_settings().get("auto_linking_enabled", False)),
+    }
     return render(
         request,
         "seo/dashboard.html",
@@ -255,5 +354,11 @@ def dashboard(request: HttpRequest) -> HttpResponse:
             "duplicate_titles": duplicate_titles,
             "serp_stats": serp_stats,
             "heatmap": heatmap_stats,
+            "flags": flags,
         },
     )
+
+
+
+
+

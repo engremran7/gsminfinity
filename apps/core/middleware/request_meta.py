@@ -1,3 +1,4 @@
+
 """
 apps.core.middleware.request_meta
 ---------------------------------
@@ -17,6 +18,7 @@ from typing import Callable
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.http import HttpRequest, HttpResponse
+from apps.core.utils.ip import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +52,8 @@ class RequestMetaMiddleware:
             request.site_domain = request.get_host()
             request.site_name = request.site_domain
 
-        # Determine client IP (handles X-Forwarded-For safely)
-        xff = request.META.get("HTTP_X_FORWARDED_FOR")
-        if xff:
-            request.client_ip = xff.split(",")[0].strip()
-        else:
-            request.client_ip = request.META.get("REMOTE_ADDR", "")
+        # Determine client IP via centralized helper
+        request.client_ip = get_client_ip(request)
 
         # Capture user agent
         request.user_agent = request.META.get("HTTP_USER_AGENT", "")
@@ -70,3 +68,5 @@ class RequestMetaMiddleware:
             request.client_ip,
             (request.user_agent or "unknown")[:64],
         )
+
+
