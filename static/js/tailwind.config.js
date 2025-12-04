@@ -6,12 +6,19 @@ const root = toPosix(path.resolve(__dirname, "..", ".."));
 module.exports = {
   content: [
     `${root}/templates/**/*.{html,txt}`,
+    `${root}/apps/**/*.html`,
     `${root}/apps/**/*.py`,
     `${root}/static/src_css/**/*.css`,
     `${root}/static/css/**/*.css`,
+    `${root}/static/js/**/*.js`,
   ],
   ignore: ["**/node_modules/**"],
-  safelist: [],
+  safelist: [
+    // prevent purge of dynamic consent and ad-related classes
+    "needs-consent",
+    "ad-slot",
+    "ad-loading",
+  ],
   theme: {
     extend: {
       colors: {

@@ -241,6 +241,15 @@
     }
   }
 
+  // DOM readiness flag with safety guarantees.
+  document.addEventListener("DOMContentLoaded", () => {
+    try {
+      window.__ready = true;
+    } catch (e) {
+      console.error("Failed setting __ready flag", e);
+    }
+  });
+
   if (doc.readyState === "loading") {
     doc.addEventListener("DOMContentLoaded", init);
   } else {

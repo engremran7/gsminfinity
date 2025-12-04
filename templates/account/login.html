@@ -28,6 +28,10 @@
 {% block extra_scripts %}
   <script nonce="{{ request.csp_nonce }}">
     document.addEventListener("DOMContentLoaded", function () {
+      const pwd = document.querySelector('input[type="password"][name="password"]');
+      if (pwd) {
+        pwd.setAttribute("autocomplete", "current-password");
+      }
       const form = document.getElementById("login-form");
       if (!form) return;
       form.addEventListener("submit", async function () {
