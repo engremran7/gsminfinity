@@ -28,6 +28,10 @@ def render_ad_slot(context, slug: str, allowed_types: str = "", allowed_sizes: s
     if not _ads_enabled():
         return ""
 
+    if not slug:
+        # Invalid invocation – avoid hitting the database or cache.
+        return ""
+
     request = context.get("request")
     consent_flags = getattr(request, "consent_flags", None)
     if consent_flags is not None:
@@ -37,7 +41,8 @@ def render_ad_slot(context, slug: str, allowed_types: str = "", allowed_sizes: s
         except Exception:
             pass
 
-    cache_key = f"ads_slot_{slug}"
+    key_suffix = f"{allowed_types or '*'}|{allowed_sizes or '*'}"
+    cache_key = f"ads_slot_{slug}:{key_suffix}"
     cached = cache.get(cache_key)
     if cached:
         return cached
@@ -51,7 +56,7 @@ def render_ad_slot(context, slug: str, allowed_types: str = "", allowed_sizes: s
             "allowed_types": allowed_types or getattr(placement, "allowed_types", ""),
             "allowed_sizes": allowed_sizes or getattr(placement, "allowed_sizes", ""),
         },
-        request=context.get("request"),
+        request=request,
     )
     safe_html = mark_safe(html)
     cache.set(cache_key, safe_html, 120)
