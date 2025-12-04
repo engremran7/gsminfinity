@@ -55,6 +55,9 @@
           </div>
           {% if request.user.is_staff or request.user.is_superuser or allow_user_posts %}
             <a href="{% url 'blog:manage_posts' %}" class="btn-outline px-3 py-2 rounded-md border border-slate-300 text-sm">Manage</a>
+            {% if request.user.is_staff or request.user.is_superuser %}
+              <a href="/admin/blog/category/add/" class="btn-outline px-3 py-2 rounded-md border border-slate-300 text-sm">Add category</a>
+            {% endif %}
             <a href="{% url 'blog:post_create' %}" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
               <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-plus"></use></svg>
               New Post{% if not request.user.is_staff and not request.user.is_superuser %} (community){% endif %}
