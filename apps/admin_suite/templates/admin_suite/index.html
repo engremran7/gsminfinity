@@ -1,0 +1,105 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-900">Admin Suite</h1>
+    <p class="text-sm text-slate-600">Unified staff console replacing the legacy Django admin.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Devices</div>
+      <div class="text-xl font-semibold text-slate-900">
+        {{ security_status.devices_enabled|yesno:"Enabled,Disabled" }}
+      </div>
+      <div class="text-xs text-slate-500 mt-1">Delegates to device identity services; best-effort shims applied.</div>
+      <div class="mt-3">
+        <a href="{% url 'admin_suite:admin_suite_security_devices' %}" class="text-sm text-primary hover:underline">Manage devices</a>
+      </div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Crawler Guard</div>
+      <div class="text-xl font-semibold text-slate-900">
+        {{ security_status.bots_enabled|yesno:"Enabled,Disabled" }}
+      </div>
+      <div class="text-xs text-slate-500 mt-1">Bot detection backed by crawler_guard adapter.</div>
+      <div class="mt-3">
+        <a href="{% url 'admin_suite:admin_suite_security_crawlers' %}" class="text-sm text-primary hover:underline">Review rules</a>
+      </div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Risk Engine</div>
+      <div class="text-xl font-semibold text-slate-900">
+        {{ security_status.risk_enabled|yesno:"Enabled,Disabled" }}
+      </div>
+      <div class="text-xs text-slate-500 mt-1">Policy: {{ security_status.login_policy|default:"mfa_if_high" }}</div>
+      <div class="mt-3">
+        <a href="{% url 'admin_suite:admin_suite_security_risk' %}" class="text-sm text-primary hover:underline">View insights</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-800">Consent & privacy</h2>
+        <span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">Monitoring</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Policies, decisions, and banner health.</p>
+      <div class="mt-3 flex gap-2">
+        <a href="{% url 'admin_suite:admin_suite_consent' %}" class="text-sm text-primary hover:underline">View consent</a>
+        <a href="{% url 'pages:page' slug='privacy' %}" class="text-sm text-slate-500 hover:underline">Privacy policy</a>
+        </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-800">Content & SEO</h2>
+        <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700">In sync</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Posts, comments, redirects, sitemap.</p>
+      <div class="mt-3 flex gap-2">
+        <a href="{% url 'admin_suite:admin_suite_content' %}" class="text-sm text-primary hover:underline">View content</a>
+        <a href="{% url 'admin_suite:admin_suite_seo' %}" class="text-sm text-slate-500 hover:underline">SEO</a>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-800">Ads & marketing</h2>
+        <span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">Consent-aware</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Placements, creatives, redirects.</p>
+      <div class="mt-3 flex gap-2">
+        <a href="{% url 'admin_suite:admin_suite_marketing' %}" class="text-sm text-primary hover:underline">Marketing</a>
+        <a href="{% url 'admin_suite:admin_suite_ads' %}" class="text-sm text-slate-500 hover:underline">Ads</a>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-800">Distribution</h2>
+        <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700">Monitoring</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Social accounts, plans, jobs, logs.</p>
+      <div class="mt-3 flex gap-2">
+        <a href="{% url 'admin_suite:admin_suite_distribution' %}" class="text-sm text-primary hover:underline">View distribution</a>
+      </div>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-800">Settings</h2>
+        <span class="text-xs px-2 py-1 rounded-full bg-slate-100 text-slate-700">Brand & flags</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Site branding, signup, maintenance, HTTPS.</p>
+      <div class="mt-3 flex gap-2">
+        <a href="{% url 'admin_suite:admin_suite_settings' %}" class="text-sm text-primary hover:underline">View settings</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

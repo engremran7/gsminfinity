@@ -1,0 +1,156 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Consent{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Policies</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.policies_total }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Active policies</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.policies_active }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Decisions (24h)</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.decisions_24h }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b">
+        <h2 class="text-lg font-semibold text-slate-900">Policies</h2>
+        <form method="post" class="mt-3 space-y-2 text-sm">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create_policy">
+          <div class="flex gap-2">
+            <input name="version" class="border rounded px-2 py-1 w-1/2" placeholder="Version" required>
+            <input name="site_domain" class="border rounded px-2 py-1 w-1/2" placeholder="Domain" required>
+          </div>
+          <div class="flex gap-2">
+            <input name="banner_text" class="border rounded px-2 py-1 w-1/2" placeholder="Banner text">
+            <input name="manage_text" class="border rounded px-2 py-1 w-1/2" placeholder="Manage text">
+          </div>
+          <div class="flex gap-2">
+            <input name="cache_ttl_seconds" class="border rounded px-2 py-1 w-1/2" placeholder="Cache TTL (s)" value="600">
+            <input name="effective_from" class="border rounded px-2 py-1 w-1/2" placeholder="Effective (optional)">
+          </div>
+          <textarea name="text" class="border rounded px-2 py-1 w-full" rows="3" placeholder="Policy text (optional)"></textarea>
+          <label class="flex items-center gap-2 text-xs text-slate-600">
+            <input type="checkbox" name="is_active" value="1"> Active
+          </label>
+          <button type="submit" class="px-3 py-1 rounded bg-primary text-white text-sm">Create policy</button>
+        </form>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">Version</th>
+              <th class="px-4 py-2">Domain</th>
+              <th class="px-4 py-2">Active</th>
+              <th class="px-4 py-2">Effective</th>
+              <th class="px-4 py-2">Edit</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for p in policies %}
+            <tr>
+              <td class="px-4 py-2">{{ p.version }}</td>
+              <td class="px-4 py-2">{{ p.site_domain|default:"-" }}</td>
+              <td class="px-4 py-2">{{ p.is_active|yesno:"Yes,No" }}</td>
+              <td class="px-4 py-2">{{ p.effective_from }}</td>
+              <td class="px-4 py-2">
+                <form method="post" class="space-y-1 text-xs">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="update_policy">
+                  <input type="hidden" name="policy_id" value="{{ p.id }}">
+                  <input name="site_domain" value="{{ p.site_domain }}" class="border rounded px-2 py-1 w-full" placeholder="Domain">
+                  <input name="banner_text" value="{{ p.banner_text }}" class="border rounded px-2 py-1 w-full" placeholder="Banner text">
+                  <input name="manage_text" value="{{ p.manage_text }}" class="border rounded px-2 py-1 w-full" placeholder="Manage text">
+                  <input name="cache_ttl_seconds" value="{{ p.cache_ttl_seconds }}" class="border rounded px-2 py-1 w-full" placeholder="Cache TTL">
+                  <textarea name="text" class="border rounded px-2 py-1 w-full" rows="2" placeholder="Policy text">{{ p.text }}</textarea>
+                  <label class="flex items-center gap-2 text-slate-600">
+                    <input type="checkbox" name="is_active" value="1" {% if p.is_active %}checked{% endif %}> Active
+                  </label>
+                  <button type="submit" class="text-primary hover:underline">Save</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-3 text-slate-500">No policies found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b">
+        <h2 class="text-lg font-semibold text-slate-900">Recent decisions</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">User</th>
+              <th class="px-4 py-2">Session</th>
+              <th class="px-4 py-2">Policy</th>
+              <th class="px-4 py-2">At</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for d in decisions %}
+            <tr>
+              <td class="px-4 py-2">{{ d.user__email|default:"Anonymous" }}</td>
+              <td class="px-4 py-2">{{ d.session_id|default:"-" }}</td>
+              <td class="px-4 py-2">{{ d.policy__version|default:"-" }}</td>
+              <td class="px-4 py-2">{{ d.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-3 text-slate-500">No decisions.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b">
+        <h2 class="text-lg font-semibold text-slate-900">Recent events</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">Type</th>
+              <th class="px-4 py-2">Policy</th>
+              <th class="px-4 py-2">At</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for e in events %}
+            <tr>
+              <td class="px-4 py-2">{{ e.event_type }}</td>
+              <td class="px-4 py-2">{{ e.policy__version|default:"-" }}</td>
+              <td class="px-4 py-2">{{ e.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="px-4 py-3 text-slate-500">No events.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

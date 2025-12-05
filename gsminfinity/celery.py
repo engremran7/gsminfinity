@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from datetime import timedelta
+import logging
 
 from celery import Celery
 
@@ -45,8 +46,6 @@ def health_ping():
     return {"ok": True}
 
 
-@app.task(bind=True)
-def debug_task(self):
-    print(f"Request: {self.request!r}")
+# debug_task removed to avoid shipping dev/demo tasks in production
 
 

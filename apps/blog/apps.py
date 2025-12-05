@@ -10,4 +10,14 @@ class BlogConfig(AppConfig):
     def ready(self):
         from . import signals  # noqa: F401
 
+        # Register blog sitemap with the central registry (soft-fail to keep app modular)
+        try:
+            from apps.pages.sitemap_registry import register_sitemap
+            from .sitemaps import PublishedBlogPostsSitemap
+
+            register_sitemap("blog", PublishedBlogPostsSitemap)
+        except Exception:
+            # If pages app or registry isn't ready, skip silently to avoid import-time failures.
+            return
+
 

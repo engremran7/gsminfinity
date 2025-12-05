@@ -72,8 +72,16 @@ admin.site.index_title = "System Management Console"
 # URL Patterns
 # =====================================================================
 urlpatterns = [
-    # Admin
-    path("admin/", admin.site.urls),
+    # Admin Suite (custom) becomes primary at /admin; keep Django admin at /django-admin/
+    path("admin/", include(("apps.admin_suite.urls", "admin_suite"), namespace="admin_suite")),
+    path("admin-suite/", RedirectView.as_view(url="/admin/", permanent=True)),
+    # Legacy Django-admin blog paths redirect to Admin Suite blog manager
+    path("admin/blog/", RedirectView.as_view(url="/admin/blog/", permanent=False)),
+    path(
+        "admin/blog/post/<int:pk>/change/",
+        RedirectView.as_view(url="/admin/blog/?post_id=%(pk)s", permanent=False),
+    ),
+    path("django-admin/", admin.site.urls),
     # Django i18n (language switching)
     path("i18n/setlang/", include("django.conf.urls.i18n")),
     # Authentication (allauth)
@@ -110,18 +118,18 @@ urlpatterns = [
     path("blog/", include(("apps.blog.urls", "blog"), namespace="blog")),
     # Comments API
     path("comments/", include(("apps.comments.urls", "comments"), namespace="comments")),
+    # Security suite status
+    path("security/", include(("apps.security_suite.urls", "security_suite"), namespace="security_suite")),
     # i18n + themes micro-app
     path("i18n/", include(("apps.i18n_themes.urls", "i18n_themes"), namespace="i18n_themes")),
     # AI micro-app
     path("ai/", include(("apps.ai.urls", "ai"), namespace="ai")),
     # App registry API
     path("apps/", include(("apps.app_registry.urls", "app_registry"), namespace="app_registry")),
-    # Public root pages (core namespace + plain names for templates)
-    path("", include(("apps.core.urls", "core"), namespace="core")),
-    path("", lazy_view("apps.core.views.home"), name="home"),
-    path("privacy/", lazy_view("apps.core.views.privacy"), name="privacy"),
-    path("terms/", lazy_view("apps.core.views.terms"), name="terms"),
-    path("cookies/", lazy_view("apps.core.views.cookies"), name="cookies"),
+    # Legacy core namespace (site_map redirects, etc.)
+    path("core/", include(("apps.core.urls", "core"), namespace="core")),
+    # Public root pages now served by pages app (catch-all)
+    path("", include(("apps.pages.urls", "pages"), namespace="pages")),
     # Health check (well-known)
     path(
         ".well-known/health",

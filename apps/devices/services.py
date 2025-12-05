@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import uuid
 from typing import Any, Dict, Optional, Tuple
 
@@ -13,6 +14,9 @@ from apps.consent.utils import check as consent_check
 from apps.core.app_service import AppService
 from apps.core.utils.ip import get_client_ip
 from apps.devices.models import AppPolicy, Device, DeviceConfig, DeviceEvent
+from apps.devices.models_quota import UserDeviceQuota
+
+logger = logging.getLogger(__name__)
 
 Policy = Dict[str, Any]
 Identity = Dict[str, Any]
@@ -102,7 +106,9 @@ def resolve_identity(
     fingerprint_blob = None
     if fingerprint_blob_raw:
         try:
-            fingerprint_blob = json.loads(fingerprint_blob_raw)
+            if len(fingerprint_blob_raw.encode("utf-8")) <= 16384:
+                candidate = json.loads(fingerprint_blob_raw)
+                fingerprint_blob = candidate if isinstance(candidate, dict) else None
         except Exception:
             fingerprint_blob = None
 
@@ -172,6 +178,8 @@ def resolve_or_create_device(
         # Enforce monthly/yearly quotas before creating
         monthly_quota = policy.get("monthly_quota")
         yearly_quota = policy.get("yearly_quota")
+        override = UserDeviceQuota.objects.filter(user=user).first()
+
         if monthly_quota:
             month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
             month_count = Device.objects.filter(user=user, first_seen_at__gte=month_start).count()
@@ -182,8 +190,57 @@ def resolve_or_create_device(
             year_count = Device.objects.filter(user=user, first_seen_at__gte=year_start).count()
             if year_count >= int(yearly_quota):
                 return None, False, {"reason": "yearly_device_quota", "policy": policy}
-        # Enforce max devices
-        max_devices = int(policy.get("max_devices") or 5)
+
+        # Enforce user-specific rolling window quota if configured
+        if override:
+            window_map = {"3m": 90, "6m": 180, "12m": 365}
+            days = window_map.get(override.window, 180)
+            window_start = max(override.last_reset_at, now - timezone.timedelta(days=days))
+            registrations = Device.objects.filter(user=user, first_seen_at__gte=window_start).count()
+            limit = override.max_devices if override.max_devices is not None else policy.get("max_devices") or 5
+            if registrations >= int(limit):
+                _emit_security_event(
+                    "device_quota_exceeded",
+                    user=user,
+                    device=None,
+                    ip=ident.get("ip"),
+                    metadata={"window_days": days, "limit": limit},
+                )
+                return None, False, {"reason": "user_window_quota", "policy": policy, "window_days": days}
+
+        # Enforce global rolling quota when enabled in SecurityConfig (only if no per-user override)
+        if not override:
+            try:
+                from apps.security_suite.api import get_device_quota_policy
+
+                quota_policy = get_device_quota_policy()
+            except Exception:
+                quota_policy = {"enforcement_enabled": False}
+            if quota_policy.get("enforcement_enabled"):
+                window_days = int(quota_policy.get("window_days", 365))
+                quota_record, _ = UserDeviceQuota.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        "window": quota_policy.get("default_window", "12m"),
+                        "max_devices": None,
+                        "last_reset_at": now,
+                    },
+                )
+                window_start = max(quota_record.last_reset_at, now - timezone.timedelta(days=window_days))
+                registrations = Device.objects.filter(user=user, first_seen_at__gte=window_start).count()
+                limit = quota_policy.get("default_limit", policy.get("max_devices") or 5)
+                if registrations >= int(limit):
+                    _emit_security_event(
+                        "device_quota_exceeded",
+                        user=user,
+                        device=None,
+                        ip=ident.get("ip"),
+                        metadata={"window_days": window_days, "limit": limit},
+                    )
+                    return None, False, {"reason": "device_quota_exceeded", "policy": policy, "window_days": window_days}
+
+        # Enforce max devices (global + per-user override)
+        max_devices = int((override.max_devices if override and override.max_devices is not None else policy.get("max_devices") or 5))
         current_count = Device.objects.filter(user=user).count()
         if current_count >= max_devices:
             if policy.get("device_locking_mode") == "strict":
@@ -275,8 +332,20 @@ def _log_event(device: Optional[Device], user, event_type: str, success: bool, r
     }
     try:
         evt = DeviceEvent.objects.create(**payload)
-    except Exception:
+    except Exception as exc:  # pragma: no cover - defensive path
+        logger.warning(
+            "Failed to persist DeviceEvent; continuing without event",
+            exc_info=True,
+            extra={"device_id": getattr(device, "id", None), "event_type": event_type},
+        )
         return
+    _emit_security_event(
+        f"device_{event_type}",
+        user=payload.get("user"),
+        device=device,
+        ip=payload.get("ip"),
+        metadata={"success": success, "reason": reason, "policy": ctx.get("policy_snapshot", {})},
+    )
 
     # Notify user when a new device registers successfully
     try:
@@ -312,3 +381,10 @@ def _log_event(device: Optional[Device], user, event_type: str, success: bool, r
         pass
 
 
+def _emit_security_event(event_type: str, user=None, device=None, ip: str | None = None, metadata: dict | None = None):
+    try:
+        from apps.security_events.api import emit_security_event
+
+        emit_security_event(event_type, user=user, device=device, ip=ip, metadata=metadata)
+    except Exception:
+        return

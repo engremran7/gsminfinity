@@ -15,6 +15,8 @@ class ConsentPolicy(models.Model):
     cache_ttl_seconds = models.IntegerField(default=86400)
     text = models.TextField(blank=True, default="")
     categories_snapshot = models.JSONField(default=dict, blank=True)
+    public_slug = models.SlugField(max_length=100, blank=True, default="", help_text="Slug for public page hosting (e.g., 'privacy').")
+    public_url = models.URLField(blank=True, default="", help_text="Override URL if hosted externally.")
     effective_from = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -24,6 +26,18 @@ class ConsentPolicy(models.Model):
 
     def __str__(self) -> str:
         return f"Policy {self.version} ({'active' if self.is_active else 'inactive'})"
+
+    @classmethod
+    def get_active(cls, domain: str = "") -> "ConsentPolicy | None":
+        """
+        Return the currently active consent policy for the given domain (or any
+        domain when omitted). Mirrors logic in utils.get_active_policy but keeps
+        a model-level convenience used by context processors/templates.
+        """
+        qs = cls.objects.filter(is_active=True)
+        if domain:
+            qs = qs.filter(site_domain__iexact=domain)
+        return qs.order_by("-effective_from").first()
 
 
 class ConsentDecision(models.Model):

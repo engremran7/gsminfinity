@@ -1,0 +1,81 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Comments{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div>
+    <h1 class="text-2xl font-semibold text-slate-900">Comments</h1>
+    <p class="text-sm text-slate-600">Moderate pending comments; approve, reject, or mark spam.</p>
+    <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded mt-2 inline-block">Tip: rejecting keeps history; spam helps train filters.</div>
+  </div>
+
+  {% if message %}
+  <div class="mb-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Pending comments</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">User</th>
+            <th class="px-4 py-2">Post</th>
+            <th class="px-4 py-2">Excerpt</th>
+            <th class="px-4 py-2">Created</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for c in pending_comments %}
+          <tr>
+            <td class="px-4 py-2">{{ c.user_id|default:"-" }}</td>
+            <td class="px-4 py-2">{{ c.post_id|default:"-" }}</td>
+            <td class="px-4 py-2">{{ c.body|truncatechars:80 }}</td>
+            <td class="px-4 py-2">{{ c.created_at }}</td>
+            <td class="px-4 py-2">
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="comment_id" value="{{ c.id }}">
+                <input type="hidden" name="action" value="approve">
+                <button class="text-primary hover:underline text-xs" type="submit" title="Publish this comment">Approve</button>
+              </form>
+              <form method="post" class="inline ml-2">
+                {% csrf_token %}
+                <input type="hidden" name="comment_id" value="{{ c.id }}">
+                <input type="hidden" name="action" value="reject">
+                <button class="text-amber-600 hover:underline text-xs" type="submit" title="Reject but keep record">Reject</button>
+              </form>
+              <form method="post" class="inline ml-2">
+                {% csrf_token %}
+                <input type="hidden" name="comment_id" value="{{ c.id }}">
+                <input type="hidden" name="action" value="spam">
+                <button class="text-red-600 hover:underline text-xs" type="submit" title="Mark as spam to train filters">Spam</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-4 py-3 text-slate-500">No pending comments.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-4 py-3 border-t flex items-center justify-between text-sm text-slate-600">
+      <div>Page {{ page }} / Page size {{ page_size }}</div>
+      <div class="space-x-2">
+        {% if page > 1 %}
+        <a href="?page={{ page|add:"-1" }}&page_size={{ page_size }}" class="text-primary hover:underline" title="Previous page">Prev</a>
+        {% endif %}
+        {% if pending_comments|length >= page_size %}
+        <a href="?page={{ page|add:"1" }}&page_size={{ page_size }}" class="text-primary hover:underline" title="Next page">Next</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

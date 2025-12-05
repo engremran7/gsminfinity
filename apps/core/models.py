@@ -120,3 +120,4 @@ class AppRegistry(SingletonModel):
         return "App Registry"
 
 
+

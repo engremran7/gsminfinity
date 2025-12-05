@@ -1,0 +1,93 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Settings{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  {% if message %}
+    <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">{{ message }}</div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="border rounded-lg bg-white shadow-sm p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold text-slate-900">Site settings</h2>
+        <a href="{% url 'admin_suite:admin_suite_settings_edit' %}" title="Edit branding, signup, maintenance" class="text-xs text-primary hover:underline">Edit</a>
+      </div>
+      <dl class="text-sm text-slate-700 space-y-2">
+        <div class="flex justify-between"><dt>Site name</dt><dd>{{ site_snapshot.site_name|default:"-" }}</dd></div>
+        <div class="flex justify-between"><dt>Header</dt><dd>{{ site_snapshot.site_header|default:"-" }}</dd></div>
+        <div class="flex justify-between"><dt>Primary color</dt><dd>{{ site_snapshot.primary_color|default:"-" }}</dd></div>
+        <div class="flex justify-between"><dt>Secondary color</dt><dd>{{ site_snapshot.secondary_color|default:"-" }}</dd></div>
+        <div class="flex justify-between"><dt>Enable signup</dt><dd>{{ site_snapshot.enable_signup|yesno:"Yes,No" }}</dd></div>
+        <div class="flex justify-between"><dt>Maintenance mode</dt><dd title="Serve maintenance page when enabled">{{ site_snapshot.maintenance_mode|yesno:"On,Off" }}</dd></div>
+        <div class="flex justify-between"><dt>Force HTTPS</dt><dd title="Redirect HTTP to HTTPS when enabled">{{ site_snapshot.force_https|yesno:"Yes,No" }}</dd></div>
+        <div class="flex justify-between"><dt>Cache TTL</dt><dd title="Seconds static pages may be cached">{{ site_snapshot.cache_ttl_seconds|default:"-" }}s</dd></div>
+      </dl>
+    </div>
+
+    <div class="border rounded-lg bg-white shadow-sm p-4">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2">Feature flags</h2>
+      <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded inline-block mb-3">Tip: toggles affect app registry in real time.</div>
+      <div class="text-sm text-slate-700 space-y-2">
+        <form method="post" class="flex items-center justify-between gap-2" title="Enable/disable Ads module">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="ads_enabled">
+          <span>Ads</span>
+          <button type="submit" class="px-3 py-1 text-xs rounded border {% if security_status.ads_enabled %}bg-emerald-50 border-emerald-200 text-emerald-700{% else %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
+            {% if security_status.ads_enabled %}Disable{% else %}Enable{% endif %}
+          </button>
+        </form>
+        <form method="post" class="flex items-center justify-between gap-2" title="Enable/disable SEO module">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="seo_enabled">
+          <span>SEO</span>
+          <button type="submit" class="px-3 py-1 text-xs rounded border {% if security_status.seo_enabled %}bg-emerald-50 border-emerald-200 text-emerald-700{% else %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
+            {% if security_status.seo_enabled %}Disable{% else %}Enable{% endif %}
+          </button>
+        </form>
+        <form method="post" class="flex items-center justify-between gap-2" title="Enable/disable Comments module">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="comments_enabled">
+          <span>Comments</span>
+          <button type="submit" class="px-3 py-1 text-xs rounded border {% if security_status.comments_enabled %}bg-emerald-50 border-emerald-200 text-emerald-700{% else %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
+            {% if security_status.comments_enabled %}Disable{% else %}Enable{% endif %}
+          </button>
+        </form>
+        <form method="post" class="flex items-center justify-between gap-2" title="Enable/disable Distribution module">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="distribution_enabled">
+          <span>Distribution</span>
+          <button type="submit" class="px-3 py-1 text-xs rounded border {% if security_status.distribution_enabled %}bg-emerald-50 border-emerald-200 text-emerald-700{% else %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
+            {% if security_status.distribution_enabled %}Disable{% else %}Enable{% endif %}
+          </button>
+        </form>
+        <form method="post" class="flex items-center justify-between gap-2" title="Enable/disable Device Identity module">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="device_identity_enabled">
+          <span>Device Identity</span>
+          <button type="submit" class="px-3 py-1 text-xs rounded border {% if security_status.device_identity_enabled %}bg-emerald-50 border-emerald-200 text-emerald-700{% else %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
+            {% if security_status.device_identity_enabled %}Disable{% else %}Enable{% endif %}
+          </button>
+        </form>
+        <form method="post" class="flex items-center justify-between gap-2" title="Enable/disable Crawler Guard module">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="crawler_guard_enabled">
+          <span>Crawler Guard</span>
+          <button type="submit" class="px-3 py-1 text-xs rounded border {% if security_status.crawler_guard_enabled %}bg-emerald-50 border-emerald-200 text-emerald-700{% else %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
+            {% if security_status.crawler_guard_enabled %}Disable{% else %}Enable{% endif %}
+          </button>
+        </form>
+        <form method="post" class="flex items-center justify-between gap-2" title="Enable/disable AI Behavior module">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="ai_behavior_enabled">
+          <span>AI Behavior</span>
+          <button type="submit" class="px-3 py-1 text-xs rounded border {% if security_status.ai_behavior_enabled %}bg-emerald-50 border-emerald-200 text-emerald-700{% else %}bg-slate-50 border-slate-200 text-slate-600{% endif %}">
+            {% if security_status.ai_behavior_enabled %}Disable{% else %}Enable{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

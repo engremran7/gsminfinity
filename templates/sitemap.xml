@@ -1,0 +1,13 @@
+{% load l10n %}<?xml version="1.0" encoding="UTF-8"?>
+{% if xsl_url %}<?xml-stylesheet type="text/xsl" href="{{ xsl_url }}"?>{% endif %}
+{# The sitemap view passes `urlset` with URL objects containing location, lastmod, changefreq, priority #}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{% for url in urlset %}
+  <url>
+    <loc>{{ url.location|escape }}</loc>
+    {% if url.lastmod %}<lastmod>{{ url.lastmod|date:"c" }}</lastmod>{% endif %}
+    {% if url.changefreq %}<changefreq>{{ url.changefreq }}</changefreq>{% endif %}
+    {% if url.priority %}<priority>{{ url.priority|floatformat:"-3"|unlocalize }}</priority>{% endif %}
+  </url>
+{% endfor %}
+</urlset>

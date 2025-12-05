@@ -1,0 +1,117 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Admin Suite{% endblock %}</title>
+  <link href="{% static 'css/main.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/style.css' %}" rel="stylesheet" />
+  <style>
+    /* Admin Suite surface defaults for consistent light theme */
+    body.admin-suite {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .admin-suite a {
+      color: #0f172a;
+    }
+    .admin-suite main input,
+    .admin-suite main select,
+    .admin-suite main textarea {
+      background: #ffffff;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+    .admin-suite main input::placeholder,
+    .admin-suite main textarea::placeholder {
+      color: #94a3b8;
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-slate-50 admin-suite text-slate-900">
+  {% include "admin_suite/partials/header.html" %}
+  {% include "admin_suite/partials/command_palette.html" %}
+  <div class="max-w-7xl mx-auto px-4 py-6 flex gap-6 text-slate-900">
+    {% include "admin_suite/partials/nav.html" %}
+    <main class="flex-1 text-slate-900">
+      {% block breadcrumb %}{% include "admin_suite/partials/breadcrumb.html" %}{% endblock %}
+      {% include "admin_suite/partials/quick_actions.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% include "admin_suite/partials/footer.html" %}
+  <script src="{% static 'js/main.js' %}" defer></script>
+  <script nonce="{{ request.csp_nonce }}">
+    (function() {
+      const overlay = document.getElementById("admin-cmd");
+      const input = document.getElementById("admin-cmd-input");
+      const results = document.getElementById("admin-cmd-results");
+      const toggle = document.getElementById("admin-cmd-toggle");
+      const closeBtn = document.getElementById("admin-cmd-close");
+      if (!overlay || !input || !results || !toggle || !closeBtn) return;
+
+      function openPalette() {
+        overlay.classList.remove("hidden");
+        input.value = "";
+        results.innerHTML = '<div class="px-4 py-3 text-sm text-slate-500">Type to search admin pages…</div>';
+        setTimeout(() => input.focus(), 50);
+      }
+      function closePalette() {
+        overlay.classList.add("hidden");
+      }
+      function fetchResults(query) {
+        const url = new URL("{% url 'admin_suite:admin_suite_command_search' %}", window.location.origin);
+        if (query) url.searchParams.set("q", query);
+        fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+          .then((r) => r.json())
+          .then((data) => {
+            const items = data.results || [];
+            if (!items.length) {
+              results.innerHTML = '<div class="px-4 py-3 text-sm text-slate-500">No matches.</div>';
+              return;
+            }
+            results.innerHTML = items
+              .map(
+                (item) => `
+                  <button class="w-full text-left px-4 py-3 hover:bg-slate-50 focus:bg-slate-50 text-sm" data-url="${item.url}">
+                    <div class="font-semibold text-slate-900">${item.label}</div>
+                    <div class="text-xs text-slate-500">${item.tags}</div>
+                  </button>
+                `
+              )
+              .join("");
+            results.querySelectorAll("button").forEach((btn) => {
+              btn.addEventListener("click", () => {
+                window.location.href = btn.dataset.url;
+              });
+            });
+          })
+          .catch(() => {
+            results.innerHTML = '<div class="px-4 py-3 text-sm text-red-600">Search unavailable.</div>';
+          });
+      }
+
+      toggle.addEventListener("click", openPalette);
+      closeBtn.addEventListener("click", closePalette);
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) closePalette();
+      });
+      document.addEventListener("keydown", (e) => {
+        const mod = e.metaKey || e.ctrlKey;
+        if (mod && e.key.toLowerCase() === "k") {
+          e.preventDefault();
+          openPalette();
+        } else if (e.key === "Escape") {
+          closePalette();
+        }
+      });
+      input.addEventListener("input", (e) => {
+        fetchResults(e.target.value);
+      });
+    })();
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,7 +1,7 @@
 
 # apps/core/views.py
 """
-Core views — Enterprise-grade, Django 5.2+ ready.
+Core views â€” Enterprise-grade, Django 5.2+ ready.
 
 Hardened to:
  - never return async/coroutine objects
@@ -38,6 +38,8 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 
+from apps.core.cache import DistributedCacheManager
+
 logger = logging.getLogger(__name__)
 
 # Snapshot cache keys
@@ -48,7 +50,6 @@ _SITE_SETTINGS_VERSION_KEY = "site_settings_version"
 _HOME_TEMPLATE_PRIORITY: List[str] = ["home.html", "core/home.html"]
 MAX_QUESTION_CHARS = 4_000
 START_TIME = time.time()
-
 
 # ============================================================
 # INTERNAL UTILITIES
@@ -307,24 +308,6 @@ def home(request: HttpRequest) -> HttpResponse:
 # ============================================================
 # LEGAL PAGES
 # ============================================================
-def privacy(request: HttpRequest) -> HttpResponse:
-    return _render_safe(
-        request, "legal/privacy.html", {"site_settings": _get_site_settings_snapshot()}
-    )
-
-
-def terms(request: HttpRequest) -> HttpResponse:
-    return _render_safe(
-        request, "legal/terms.html", {"site_settings": _get_site_settings_snapshot()}
-    )
-
-
-def cookies(request: HttpRequest) -> HttpResponse:
-    return _render_safe(
-        request, "legal/cookies.html", {"site_settings": _get_site_settings_snapshot()}
-    )
-
-
 def site_map(request: HttpRequest) -> HttpResponse:
     """
     Render a human-friendly site tree with key navigation links.
@@ -338,9 +321,9 @@ def site_map(request: HttpRequest) -> HttpResponse:
                 {"label": "Home", "url": _safe_url("core:home")},
                 {"label": "Blog", "url": _safe_url("blog:post_list")},
                 {"label": "Tags", "url": _safe_url("tags:list")},
-                {"label": "Privacy Policy", "url": _safe_url("site_settings:privacy_policy")},
-                {"label": "Terms of Service", "url": _safe_url("site_settings:terms_of_service")},
-                {"label": "Cookies Policy", "url": _safe_url("site_settings:cookies_policy")},
+                {"label": "Privacy Policy", "url": _safe_url("pages:page", kwargs={"slug": "privacy"})},
+                {"label": "Terms of Service", "url": _safe_url("pages:page", kwargs={"slug": "terms"})},
+                {"label": "Cookies Policy", "url": _safe_url("pages:page", kwargs={"slug": "cookies"})},
                 {"label": "Cookie / Consent Settings", "url": _safe_url("consent:privacy_center")},
             ],
         },
@@ -610,6 +593,3 @@ def ai_assistant_view(request: HttpRequest) -> JsonResponse:
         )
 
     return JsonResponse({"ok": True, "answer": answer}, status=200)
-
-
-

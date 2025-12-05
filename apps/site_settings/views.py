@@ -17,6 +17,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.cache import cache
 from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
@@ -232,8 +233,9 @@ info = settings_info
 @require_GET
 @vary_on_headers("Host")
 @cache_page(300)
+@staff_member_required
 def site_settings_view(request: HttpRequest) -> HttpResponse:
-    """Visible to staff/admin only — shows full active settings."""
+    """Visible to staff/admin only - shows full active settings."""
     s = SimpleLazyObject(lambda: _get_settings(request))
     return render(
         request,
@@ -247,46 +249,7 @@ def site_settings_view(request: HttpRequest) -> HttpResponse:
 
 
 # =====================================================================================
-# PUBLIC — POLICY PAGES
-# =====================================================================================
-
-
-@require_GET
-@vary_on_headers("Host")
-@cache_page(600)
-def privacy_policy(request: HttpRequest) -> HttpResponse:
-    return render(
-        request,
-        "site_settings/privacy.html",
-        {"site_settings": _get_settings(request)},
-    )
-
-
-@require_GET
-@vary_on_headers("Host")
-@cache_page(600)
-def terms_of_service(request: HttpRequest) -> HttpResponse:
-    return render(
-        request,
-        "site_settings/terms.html",
-        {"site_settings": _get_settings(request)},
-    )
-
-
-@require_GET
-@vary_on_headers("Host")
-@cache_page(600)
-def cookies_policy(request: HttpRequest) -> HttpResponse:
-    """Cookies policy view — commonly used from consent app."""
-    return render(
-        request,
-        "site_settings/cookies.html",
-        {"site_settings": _get_settings(request)},
-    )
-
-
-# =====================================================================================
-# PUBLIC — VERIFICATION FILE SERVING
+# PUBLIC - VERIFICATION FILE SERVING
 # =====================================================================================
 
 
@@ -336,5 +299,40 @@ def verification_file(request: HttpRequest, filename: str) -> HttpResponse:
         return redirect(match["url"])
 
     raise Http404("Verification file has no storage URL")
+
+
+# =====================================================================================
+# LEGACY LEGAL REDIRECTS -> PAGES
+# =====================================================================================
+
+
+@require_GET
+def legacy_privacy_redirect(request: HttpRequest):
+    try:
+        from django.urls import reverse
+
+        return redirect(reverse("pages:page", kwargs={"slug": "privacy"}))
+    except Exception:
+        raise Http404()
+
+
+@require_GET
+def legacy_terms_redirect(request: HttpRequest):
+    try:
+        from django.urls import reverse
+
+        return redirect(reverse("pages:page", kwargs={"slug": "terms"}))
+    except Exception:
+        raise Http404()
+
+
+@require_GET
+def legacy_cookies_redirect(request: HttpRequest):
+    try:
+        from django.urls import reverse
+
+        return redirect(reverse("pages:page", kwargs={"slug": "cookies"}))
+    except Exception:
+        raise Http404()
 
 

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.seo_title|default:page.title }}{% endblock %}
+
+{% block content %}
+<section class="bg-white text-slate-900 py-4 sm:py-5">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 space-y-3">
+    <p class="text-xs uppercase tracking-wide text-slate-500">Page</p>
+    <h1 class="text-3xl font-bold leading-tight text-slate-900">{{ page.title }}</h1>
+    <article class="prose prose-slate max-w-none text-slate-800">
+      {{ page.content|safe }}
+    </article>
+  </div>
+  <div class="w-full h-px bg-slate-200 mt-4"></div>
+</section>
+{% endblock %}

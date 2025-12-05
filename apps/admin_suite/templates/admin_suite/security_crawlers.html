@@ -1,0 +1,106 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Security - Crawler Guard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Crawler Guard</h1>
+      <p class="text-sm text-slate-600">Rules, throttling, and recent crawler events.</p>
+    </div>
+    <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Tip: keep RPM reasonable to avoid false positives.</div>
+  </div>
+
+  {% if message %}
+  <div class="mb-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden lg:col-span-2">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Rules</h2>
+        <form method="post" class="flex items-center gap-2" title="Create a new crawler rule with path pattern and RPM budget">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <input type="text" name="name" placeholder="Name" class="border rounded px-2 py-1 text-sm" required>
+          <input type="text" name="path_pattern" placeholder="/api/*" class="border rounded px-2 py-1 text-sm" required>
+          <input type="number" name="requests_per_minute" value="60" class="border rounded px-2 py-1 text-sm w-20">
+          <button type="submit" class="px-3 py-1 rounded bg-primary text-white text-sm">Add</button>
+        </form>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">Name</th>
+              <th class="px-4 py-2">Pattern</th>
+              <th class="px-4 py-2">RPM</th>
+              <th class="px-4 py-2">Action</th>
+              <th class="px-4 py-2">Priority</th>
+              <th class="px-4 py-2">Enabled</th>
+              <th class="px-4 py-2">Toggle</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for r in rules %}
+            <tr>
+              <td class="px-4 py-2">{{ r.name }}</td>
+              <td class="px-4 py-2">{{ r.path_pattern }}</td>
+              <td class="px-4 py-2">{{ r.requests_per_minute }}</td>
+              <td class="px-4 py-2">{{ r.action }}</td>
+              <td class="px-4 py-2">{{ r.priority }}</td>
+              <td class="px-4 py-2">{{ r.is_enabled|yesno:"Yes,No" }}</td>
+              <td class="px-4 py-2">
+                <form method="post" class="inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="rule_id" value="{{ r.id }}">
+                  <input type="hidden" name="action" value="{% if r.is_enabled %}disable{% else %}enable{% endif %}">
+                  <button type="submit" title="Toggle rule enablement" class="text-sm text-primary">
+                    {% if r.is_enabled %}Disable{% else %}Enable{% endif %}
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="px-4 py-3 text-slate-500">No rules.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b">
+        <h2 class="text-lg font-semibold text-slate-900">Recent events</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">IP</th>
+              <th class="px-4 py-2">Action</th>
+              <th class="px-4 py-2">Path</th>
+              <th class="px-4 py-2">At</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for e in events %}
+            <tr>
+              <td class="px-4 py-2">{{ e.ip }}</td>
+              <td class="px-4 py-2">{{ e.action_taken }}</td>
+              <td class="px-4 py-2">{{ e.path }}</td>
+              <td class="px-4 py-2">{{ e.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-3 text-slate-500">No events.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

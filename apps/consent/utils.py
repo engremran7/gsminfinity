@@ -2,9 +2,15 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from typing import Optional, Tuple
 
 from django.conf import settings
+
+CONSENT_SALT = os.environ.get("CONSENT_HASH_SALT", getattr(settings, "CONSENT_HASH_SALT", "gsm-default-salt")).encode(
+    "utf-8",
+    "ignore",
+)
 
 
 def check(scope: str, request) -> bool:
@@ -64,9 +70,39 @@ def serialize_policy(policy) -> dict | None:
             "categories_snapshot": getattr(policy, "categories_snapshot", {}) or {},
             "banner_text": getattr(policy, "banner_text", ""),
             "manage_text": getattr(policy, "manage_text", ""),
+            "public_slug": getattr(policy, "public_slug", ""),
+            "public_url": getattr(policy, "public_url", ""),
         }
     except Exception:
         return None
+
+
+def resolve_policy_url(policy, default_slug: str = "privacy") -> str:
+    """
+    Resolve the public URL for a policy:
+    1) explicit policy.public_url if set
+    2) pages app route using public_slug or default_slug if available
+    3) fallback to consent privacy center
+    """
+    if not policy:
+        return ""
+    if getattr(policy, "public_url", ""):
+        return policy.public_url
+    slug = getattr(policy, "public_slug", "") or default_slug
+    # Try pages app
+    try:
+        from django.urls import reverse
+
+        return reverse("pages:page", kwargs={"slug": slug})
+    except Exception:
+        pass
+    # Fallback to consent privacy center
+    try:
+        from django.urls import reverse
+
+        return reverse("consent:privacy_center")
+    except Exception:
+        return ""
 
 
 def consent_cache_key(domain: str = "") -> str:
@@ -80,13 +116,13 @@ def resolve_site_domain(request) -> str:
 
 
 def hash_ip(ip: str) -> str:
-    salt = getattr(settings, "CONSENT_HASH_SALT", "")
-    return hashlib.sha256((salt + (ip or "")).encode("utf-8", "ignore")).hexdigest()
+    payload = CONSENT_SALT + (ip or "").encode("utf-8", "ignore")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def hash_ua(ua: str) -> str:
-    salt = getattr(settings, "CONSENT_HASH_SALT", "")
-    return hashlib.sha256((salt + (ua or "")).encode("utf-8", "ignore")).hexdigest()
+    payload = CONSENT_SALT + (ua or "").encode("utf-8", "ignore")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def consent_cookie_settings() -> Tuple[str, dict]:

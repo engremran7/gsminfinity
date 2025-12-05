@@ -1,0 +1,1038 @@
+﻿[
+    {
+        "file":  ".vscode\\settings.json",
+        "size":  90,
+        "hash":  "080B238B4876377AEAD54CF01AD35D24B27BDB562DE5B16218A790F444FBE75C",
+        "category":  "frontend",
+        "line_count":  7
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\ads.html",
+        "size":  10803,
+        "hash":  "7FE1C644A7A9249C779BE0B80623620A1E8BABFC85D9A5864CE3A949D245831F",
+        "category":  "frontend",
+        "line_count":  202
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\base.html",
+        "size":  4520,
+        "hash":  "83F9AF4B6F04EB3ABF1A6001D304280387D44265C7D68A0142D6CB59AC2B9D35",
+        "category":  "frontend",
+        "line_count":  118
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\blog.html",
+        "size":  10459,
+        "hash":  "D0EAFE33536FB3FC408F8289179DDCDC5C4D11B76066DF6E1D499468F01E76DA",
+        "category":  "frontend",
+        "line_count":  209
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\comments.html",
+        "size":  3706,
+        "hash":  "CD2EFABF0936A1B3845D1EF73DDC920453BAF1A577D2D6FE47733CF260777D41",
+        "category":  "frontend",
+        "line_count":  82
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\consent.html",
+        "size":  7575,
+        "hash":  "F961FE320955E46D7659E932D15713A3B83C669F83B7DADBF8DDFEA411B0EEDF",
+        "category":  "frontend",
+        "line_count":  157
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\content.html",
+        "size":  5421,
+        "hash":  "E0D1F0BCA584A39CFAC2FF767C4DFD70DD272DBA547947C80663BB64E76822F6",
+        "category":  "frontend",
+        "line_count":  115
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\distribution.html",
+        "size":  14122,
+        "hash":  "04C3804797953E792673D865E3C41543C74F4FB30BF3CDBEC43DE85A0D6551E7",
+        "category":  "frontend",
+        "line_count":  282
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\index.html",
+        "size":  5549,
+        "hash":  "442A1E9CBF0EE7E932D9B43F8AEC854BE99078EA13E1AB0323DB6F3409ED2591",
+        "category":  "frontend",
+        "line_count":  106
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\marketing.html",
+        "size":  4204,
+        "hash":  "C2019AEDFAC5B2AEDA787042F71061269372DF45A5A3A224DFFF33CF57718B10",
+        "category":  "frontend",
+        "line_count":  98
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\pages.html",
+        "size":  9157,
+        "hash":  "4E078C8451B3663072E9B042814CBAFCE30E484D1C509C87D3617776C631616C",
+        "category":  "frontend",
+        "line_count":  182
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\partials\\breadcrumb.html",
+        "size":  635,
+        "hash":  "CEDAAC82CD0D4FDC5A0D25B32FE7CEE31F984E03B36ECAEBC8B37F3272210F6C",
+        "category":  "frontend",
+        "line_count":  20
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\partials\\command_palette.html",
+        "size":  962,
+        "hash":  "4B3A23D9DA7CFF7E2B07E834C3AA52BC0AA0637F2EE74311806BACDB4E367AD3",
+        "category":  "frontend",
+        "line_count":  19
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\partials\\footer.html",
+        "size":  331,
+        "hash":  "AA18FF604F1074466B4CADEB5DA7D6D8AFDECB23CFADFD7D1E899B0A7CD32630",
+        "category":  "frontend",
+        "line_count":  7
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\partials\\header.html",
+        "size":  1460,
+        "hash":  "761433E504904393F0C6302DBDB773F42B2C2C8098DD73E44E12CA8E78EE43B5",
+        "category":  "frontend",
+        "line_count":  34
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\partials\\nav.html",
+        "size":  3367,
+        "hash":  "0E7A17D0B5116ACB84C0DBBB4C6F92DB45942BE382E7031519D21DFD14C3FAD4",
+        "category":  "frontend",
+        "line_count":  23
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\partials\\quick_actions.html",
+        "size":  983,
+        "hash":  "01F7FC3E06EA8F1E8B2088FAF7B851D747C10F25597D126937EED7268672F6AE",
+        "category":  "frontend",
+        "line_count":  9
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\registry.html",
+        "size":  1130,
+        "hash":  "58A1C2714B89B1BEE48876D83D865F0654DEF6B00674AEFD7DEDA72727BE4955",
+        "category":  "frontend",
+        "line_count":  34
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\security.html",
+        "size":  27478,
+        "hash":  "28B5C400335B1F258C88CE15501FA649875B0F481CD5A076BE0820272ABA7DBD",
+        "category":  "frontend",
+        "line_count":  495
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\security_crawlers.html",
+        "size":  4805,
+        "hash":  "A055039D1CF0BEF01C55A2FA414A352D5857166CF70F05DDBDB11C1735632F86",
+        "category":  "frontend",
+        "line_count":  107
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\security_devices.html",
+        "size":  4237,
+        "hash":  "F75C63285BAFAD47172F3DF6D83927CE5AAF5C66957C64B1624C83A69F97C7D3",
+        "category":  "frontend",
+        "line_count":  92
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\security_risk.html",
+        "size":  2923,
+        "hash":  "3B557C4E1FA9D670BBDF0C84534FFFA2BC3CDF4CD351B0B54D96A93589A388CC",
+        "category":  "frontend",
+        "line_count":  69
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\seo.html",
+        "size":  12199,
+        "hash":  "6B446568C85C372DD4C37BAF7C7E1C45F7A58766F95F9EE63A63581C6F998666",
+        "category":  "frontend",
+        "line_count":  224
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\settings.html",
+        "size":  6552,
+        "hash":  "176C86807510632ABC3CF69CE8B91329E10462D1C52BBDA708515031A9B96739",
+        "category":  "frontend",
+        "line_count":  94
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\settings_edit.html",
+        "size":  1084,
+        "hash":  "39412F42234BE489CA93325DA96416892D00F597759C37C77A99C146986D479A",
+        "category":  "frontend",
+        "line_count":  34
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\tags.html",
+        "size":  4830,
+        "hash":  "03EB54DD3930A8E6480A0DCED6EA11A6EEFA7E9A5A8A4C000DE355836DAEE4CB",
+        "category":  "frontend",
+        "line_count":  109
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\user_detail.html",
+        "size":  12628,
+        "hash":  "C6E0C5F7D2724FEAC4BC76B0A6FB0B887830B36BD2F0E61F0CB6DD4355CDDDE2",
+        "category":  "frontend",
+        "line_count":  258
+    },
+    {
+        "file":  "apps\\admin_suite\\templates\\admin_suite\\users.html",
+        "size":  6725,
+        "hash":  "171C4335DE1886B6253D79EB152F77EE942051679D2E78B6C127AB1D94338A70",
+        "category":  "frontend",
+        "line_count":  131
+    },
+    {
+        "file":  "apps\\ads\\templates\\ads\\dashboard.html",
+        "size":  15497,
+        "hash":  "9C5B399CB804AD554035CD7C96B4B90DEBCDBE674165E5ED24904FE8BC862944",
+        "category":  "frontend",
+        "line_count":  295
+    },
+    {
+        "file":  "apps\\pages\\templates\\pages\\home.html",
+        "size":  32,
+        "hash":  "F4C96852FA2C69C60400A13E78C2B0A32C512B8A211973297CE14FCCCE25D45F",
+        "category":  "frontend",
+        "line_count":  2
+    },
+    {
+        "file":  "apps\\pages\\templates\\pages\\page.html",
+        "size":  586,
+        "hash":  "C08807C54ACA2EB4E09F59B8EE5AAD59C14426F52766086282EDAC771B6728C8",
+        "category":  "frontend",
+        "line_count":  17
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\link_status_row.html",
+        "size":  499,
+        "hash":  "633D59341F5EDE453D8C1E0086650AC674C8A2C3AF97EF3A3DAAEFEB6572CE51",
+        "category":  "frontend",
+        "line_count":  17
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\meta.html",
+        "size":  1448,
+        "hash":  "8B4DC9E3F09D62DE8F40ECB4DDB45C8F846A3431D82A9C0F73F985BC38476654",
+        "category":  "frontend",
+        "line_count":  35
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\redirects.html",
+        "size":  3224,
+        "hash":  "C0017FABA757176A1265320122110318998E3F8B098B448F5B3B2082482216DB",
+        "category":  "frontend",
+        "line_count":  74
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\components\\url_inspector.html",
+        "size":  586,
+        "hash":  "A755B595756635D5774EEEAB5D80AFF6EAC9534A80E7B687F52F493A4E0016C1",
+        "category":  "frontend",
+        "line_count":  12
+    },
+    {
+        "file":  "apps\\seo\\templates\\seo\\dashboard.html",
+        "size":  12879,
+        "hash":  "C3C31D4DC4A9279AE6921A01FF52CC23611971CC92ABBB0D12E608D9E102F8C9",
+        "category":  "frontend",
+        "line_count":  256
+    },
+    {
+        "file":  "OPS.md",
+        "size":  4204,
+        "hash":  "7A142A7ECB12B4B829E4D639EEF585CE527CFFA6A1E8A7D6D02D2064C5D4002F",
+        "category":  "frontend",
+        "line_count":  161
+    },
+    {
+        "file":  "README.md",
+        "size":  6790,
+        "hash":  "69BD583BFD1B3E8E01923CFEE5FB05F8DC45069B233D65FC6424AA80A0F02523",
+        "category":  "frontend",
+        "line_count":  107
+    },
+    {
+        "file":  "static\\css\\main.css",
+        "size":  63582,
+        "hash":  "F44D8F6B0C4A8D23E99018CF9684BA429358C818B169C400D6990AA82A056028",
+        "category":  "frontend",
+        "line_count":  4
+    },
+    {
+        "file":  "static\\css\\style.css",
+        "size":  13625,
+        "hash":  "994C5F02EC65656CAD7ACEFC8459F515801531CECC13B95F99E1BEAB3B045CD5",
+        "category":  "frontend",
+        "line_count":  613
+    },
+    {
+        "file":  "static\\css\\summernote-overrides.css",
+        "size":  2641,
+        "hash":  "67D4F2E805E7FF32BEE62F71D4F2355E57E026A20DE17D0FD68B55CA8D7E7BCC",
+        "category":  "frontend",
+        "line_count":  89
+    },
+    {
+        "file":  "static\\js\\ads.js",
+        "size":  5437,
+        "hash":  "D180A8329A038399FCB49FA8EDD9FF9E41C7591C0B687FB722E74E63D7031A97",
+        "category":  "frontend",
+        "line_count":  179
+    },
+    {
+        "file":  "static\\js\\ai_helpers.js",
+        "size":  3970,
+        "hash":  "1D182994C70844F732E6C0CFF9E5355899AAB754E1763A1ACBD4640D73DA5A97",
+        "category":  "frontend",
+        "line_count":  130
+    },
+    {
+        "file":  "static\\js\\blog.js",
+        "size":  26604,
+        "hash":  "5C311C548DD26AA2ECE83DC7CF984618FD7427453FF4513A192B931C69779A58",
+        "category":  "frontend",
+        "line_count":  689
+    },
+    {
+        "file":  "static\\js\\consent.js",
+        "size":  2052,
+        "hash":  "C0A38D1AC653D035271C8071CD097F219323DCB462CCB2AF7586069CEAA4AB3D",
+        "category":  "frontend",
+        "line_count":  70
+    },
+    {
+        "file":  "static\\js\\consent-banner-loader.js",
+        "size":  8811,
+        "hash":  "E7F59E3CD10B5AA686244496F88EF3BC03C619C906E459F6C54082014F922C94",
+        "category":  "frontend",
+        "line_count":  22
+    },
+    {
+        "file":  "static\\js\\device_identity.js",
+        "size":  6916,
+        "hash":  "C6C7FCC926B8AAF13268FF35CB1EE1E703C630773197A88358F782CCDC50B0EE",
+        "category":  "frontend",
+        "line_count":  200
+    },
+    {
+        "file":  "static\\js\\htmx-csrf.js",
+        "size":  921,
+        "hash":  "BE2F45EE0FC172BAB87FE288E7DC05E1224C59ACE4B7A5CB7AF6659FE07E9D19",
+        "category":  "frontend",
+        "line_count":  30
+    },
+    {
+        "file":  "static\\js\\i18n_themes.js",
+        "size":  6342,
+        "hash":  "0A0344F6DE2F8CE47F74356A53AC38673B8921DA5B9B4AD619F91CCEF02F685C",
+        "category":  "frontend",
+        "line_count":  199
+    },
+    {
+        "file":  "static\\js\\main.js",
+        "size":  8707,
+        "hash":  "28E866D616AF975EDA51B090A2600E0A87164BEA73E834F23A1AD7B4A79FE577",
+        "category":  "frontend",
+        "line_count":  263
+    },
+    {
+        "file":  "static\\js\\postcss.config.js",
+        "size":  282,
+        "hash":  "350EFC7A6EF36A976C97E187A170E9968A8316805D52DBCEE6655C44D17C7152",
+        "category":  "frontend",
+        "line_count":  16
+    },
+    {
+        "file":  "static\\js\\summernote\\jquery.min.js",
+        "size":  87541,
+        "hash":  "0503D15451DC5083D079A950507E93BA9BBB40D256692C95A4D8433477C99A9E",
+        "category":  "frontend",
+        "line_count":  6
+    },
+    {
+        "file":  "static\\js\\summernote\\summernote-lite.min.css",
+        "size":  30601,
+        "hash":  "55F5B98136977EB8786FB533B95CC37B02165B6BC6712C1AD7534E6EF422C522",
+        "category":  "frontend",
+        "line_count":  4
+    },
+    {
+        "file":  "static\\js\\summernote\\summernote-lite.min.js",
+        "size":  164915,
+        "hash":  "DECE4E0AD1951BE32BA017910E81A3662FF5F69836A2830E57342C587C3FBC2A",
+        "category":  "frontend",
+        "line_count":  5
+    },
+    {
+        "file":  "static\\js\\tailwind.config.js",
+        "size":  1702,
+        "hash":  "1C4D7795D186428D68D6F681D0C143BB6CFC74E690CA0BFB06A452C63113AFF7",
+        "category":  "frontend",
+        "line_count":  68
+    },
+    {
+        "file":  "static\\src_css\\main.css",
+        "size":  1281,
+        "hash":  "D688D2EE4A1C24A75DC8E761C5C866E7CC2C03F007FE3ECFB13BE487B96A0881",
+        "category":  "frontend",
+        "line_count":  40
+    },
+    {
+        "file":  "templates\\403.html",
+        "size":  584,
+        "hash":  "549BA08D406D35509A8EAC490F14EB9FA2D9A83E5677DEB6982767D3E3B4B260",
+        "category":  "frontend",
+        "line_count":  20
+    },
+    {
+        "file":  "templates\\404.html",
+        "size":  593,
+        "hash":  "E7AFD21A6E62AA1319D8D77945F9B731CD8ACD89DDF5D00C87862F0795011072",
+        "category":  "frontend",
+        "line_count":  20
+    },
+    {
+        "file":  "templates\\500.html",
+        "size":  606,
+        "hash":  "713354AC801A84ADEFC022F2D253DDD4C986345F388C425F4E0B331A2FE11410",
+        "category":  "frontend",
+        "line_count":  20
+    },
+    {
+        "file":  "templates\\account\\account_inactive.html",
+        "size":  330,
+        "hash":  "F0080F4C2C3487497E24538417E429EE7DACDA33E1DF2B9313EE7F05865A3C11",
+        "category":  "frontend",
+        "line_count":  8
+    },
+    {
+        "file":  "templates\\account\\auth_base.html",
+        "size":  542,
+        "hash":  "DD5DFB2C41B25D728F4891FEE1212BCFD61BC93112C8E0CB77C3D826D5E5E092",
+        "category":  "frontend",
+        "line_count":  16
+    },
+    {
+        "file":  "templates\\account\\auth_form.html",
+        "size":  1736,
+        "hash":  "3A009A9885BF4D328FAA663843C64F0D0DAE7C2C1B3753DDDC8C2685E651831C",
+        "category":  "frontend",
+        "line_count":  49
+    },
+    {
+        "file":  "templates\\account\\email.html",
+        "size":  1291,
+        "hash":  "6D7AAEE5C2CDC94C703747291C55CB798D7C4D589E2B91092CE70EA740B28294",
+        "category":  "frontend",
+        "line_count":  32
+    },
+    {
+        "file":  "templates\\account\\email\\password_reset_key_message.html",
+        "size":  483,
+        "hash":  "0D17CCBE73CF4644401DF6212B33DEEA9748699FB30F199F43554F35528C6CA4",
+        "category":  "frontend",
+        "line_count":  15
+    },
+    {
+        "file":  "templates\\account\\email_confirm.html",
+        "size":  822,
+        "hash":  "FCD762E7831D17EA4BB2D7F886181A559A86E9092791105EB19767B6DD5C966C",
+        "category":  "frontend",
+        "line_count":  18
+    },
+    {
+        "file":  "templates\\account\\hub.html",
+        "size":  724,
+        "hash":  "3143DA6B9E8011FE4298636BB089215411F1B9199E82D75A250A6C7D14410064",
+        "category":  "frontend",
+        "line_count":  19
+    },
+    {
+        "file":  "templates\\account\\login.html",
+        "size":  2383,
+        "hash":  "BA7A45F2A154DD1B53E4E17A9772384A016A70A7F1453B387C56F89416D5F1BA",
+        "category":  "frontend",
+        "line_count":  58
+    },
+    {
+        "file":  "templates\\account\\logout.html",
+        "size":  491,
+        "hash":  "D0D5E5302D2C24DC2F02B216275E18F5EFCD0D9CC3881742457615FAC6B55D61",
+        "category":  "frontend",
+        "line_count":  13
+    },
+    {
+        "file":  "templates\\account\\password_change.html",
+        "size":  2906,
+        "hash":  "2E65408E14D193BC5F8D7AC58CD2F39EAA496E7AD881AABF98023C295FCC2587",
+        "category":  "frontend",
+        "line_count":  70
+    },
+    {
+        "file":  "templates\\account\\password_change_done.html",
+        "size":  295,
+        "hash":  "E4322DC2E6F12D219E11E72ADC9C84698C3E6549408F8F0C262E00F241877235",
+        "category":  "frontend",
+        "line_count":  8
+    },
+    {
+        "file":  "templates\\account\\password_reset.html",
+        "size":  4311,
+        "hash":  "6A238EE6888E1F4345EBEAF330BF67E8F2B5D067D1CFA34CB5D82ACD323CA1DA",
+        "category":  "frontend",
+        "line_count":  116
+    },
+    {
+        "file":  "templates\\account\\password_reset_done.html",
+        "size":  447,
+        "hash":  "C6F9EACAC46BBB62340FCCE17BE07BB085B33808B6E68B38B647D953A721A408",
+        "category":  "frontend",
+        "line_count":  14
+    },
+    {
+        "file":  "templates\\account\\password_reset_from_key.html",
+        "size":  2092,
+        "hash":  "4131384EA532AFA7DDF0AF793D7781036F419930EE7F934AEA004E594C7B3913",
+        "category":  "frontend",
+        "line_count":  54
+    },
+    {
+        "file":  "templates\\account\\password_reset_from_key_done.html",
+        "size":  299,
+        "hash":  "D72ACCE3FFC168557BD9E307910CFC652791A12DA030A8277096CADFA7644898",
+        "category":  "frontend",
+        "line_count":  8
+    },
+    {
+        "file":  "templates\\account\\password_set.html",
+        "size":  416,
+        "hash":  "9FEBD6DE91BDB850752E421A567C9EA089CFF0D3B79D21C32244C8EF736B863E",
+        "category":  "frontend",
+        "line_count":  10
+    },
+    {
+        "file":  "templates\\account\\password_set_done.html",
+        "size":  291,
+        "hash":  "246AB237A0194B2BFB8082E49335FC80D7AB31E608D80E019C9047E7F5C7FF3C",
+        "category":  "frontend",
+        "line_count":  8
+    },
+    {
+        "file":  "templates\\account\\signup.html",
+        "size":  3570,
+        "hash":  "0AB7952E785746D9193871A2E1ED666474CF55B8C3D73E78637BB53ADD4E87F9",
+        "category":  "frontend",
+        "line_count":  91
+    },
+    {
+        "file":  "templates\\account\\signup_closed.html",
+        "size":  452,
+        "hash":  "984A6D97DD692C3FA88FC5A190C923566C794F5C08FF06A840824BF71FC567FD",
+        "category":  "frontend",
+        "line_count":  13
+    },
+    {
+        "file":  "templates\\account\\verification_sent.html",
+        "size":  442,
+        "hash":  "7D20CB6CF1942878B1F4E2CD9098150A13E336253B657960EA8EFE8D26289E03",
+        "category":  "frontend",
+        "line_count":  14
+    },
+    {
+        "file":  "templates\\ads\\components\\slot.html",
+        "size":  1192,
+        "hash":  "03D9D28726BB3FF7FDBF15544C1062A49D6CE98677E4ADB555E8AE6534B93EFA",
+        "category":  "frontend",
+        "line_count":  21
+    },
+    {
+        "file":  "templates\\ai\\ops_dashboard.html",
+        "size":  2847,
+        "hash":  "D39A7387D2312684CBDE6B527F4157A7767970E42A8524F735D0A6A71C03957E",
+        "category":  "frontend",
+        "line_count":  61
+    },
+    {
+        "file":  "templates\\base.html",
+        "size":  11005,
+        "hash":  "E7A151A35AF6E0E43ACB73AEEFE15A4B9A5C3BE2B11DACADF42BE14A2ADFD268",
+        "category":  "frontend",
+        "line_count":  206
+    },
+    {
+        "file":  "templates\\blog\\manage.html",
+        "size":  7904,
+        "hash":  "9FF0D69D7A4EA3205A692316DCF4ED56F181FD3E0B9526E76F8F04EE80AACA70",
+        "category":  "frontend",
+        "line_count":  147
+    },
+    {
+        "file":  "templates\\blog\\partials\\latest_widget.html",
+        "size":  597,
+        "hash":  "934A7B573D5C6CA672DD9219F7811F35F2591012B36324C25A7AA6901716A125",
+        "category":  "frontend",
+        "line_count":  19
+    },
+    {
+        "file":  "templates\\blog\\partials\\related_widget.html",
+        "size":  470,
+        "hash":  "86019031F83190E78B542D73611954BF9BFD677B3678115E6237422C4D9D7B45",
+        "category":  "frontend",
+        "line_count":  18
+    },
+    {
+        "file":  "templates\\blog\\partials\\trending_widget.html",
+        "size":  653,
+        "hash":  "DFD75F2AA01C7BA0341AA4F64A9F4019EF410771DFB53D4D9CA4C92BDF8E7F59",
+        "category":  "frontend",
+        "line_count":  19
+    },
+    {
+        "file":  "templates\\blog\\post_detail.html",
+        "size":  14692,
+        "hash":  "CE2986D67990E3A39579F64C05366B30B594DDDB231ED431C8435D548FC849E5",
+        "category":  "frontend",
+        "line_count":  248
+    },
+    {
+        "file":  "templates\\blog\\post_form.html",
+        "size":  10474,
+        "hash":  "E5395EDDF3F6B6C772D925D16D71A9892B16AABED2D1D08C165D8B55C21F0E00",
+        "category":  "frontend",
+        "line_count":  162
+    },
+    {
+        "file":  "templates\\blog\\post_list.html",
+        "size":  10642,
+        "hash":  "C7B95E83C58E742890EBE6D5F0837016AD1F5FCBB9DDA6547CEFF4F9D208FF3E",
+        "category":  "frontend",
+        "line_count":  173
+    },
+    {
+        "file":  "templates\\comments\\moderation.html",
+        "size":  3861,
+        "hash":  "68A6AEBF5EE10E8671D5E6F87530C730B8E458B926E88EB87ABEA89AF8B36655",
+        "category":  "frontend",
+        "line_count":  79
+    },
+    {
+        "file":  "templates\\comments\\moderation_panel.html",
+        "size":  3235,
+        "hash":  "9792A8FF69CB635CB6EE41E9E13D3ABAEF1C990F6EC4EBA12E92A9260D5323C5",
+        "category":  "frontend",
+        "line_count":  67
+    },
+    {
+        "file":  "templates\\components\\buttons.html",
+        "size":  1922,
+        "hash":  "A2CFDFC3304B91904BA2F384BA32706D8B0E98CF3BE741F89ACD493136FCC578",
+        "category":  "frontend",
+        "line_count":  34
+    },
+    {
+        "file":  "templates\\components\\field_help.html",
+        "size":  279,
+        "hash":  "8382F1942C316E05DC2DE39CA44CF685FE004042AE189F2206080AB6D7BE375B",
+        "category":  "frontend",
+        "line_count":  11
+    },
+    {
+        "file":  "templates\\components\\forms.html",
+        "size":  1914,
+        "hash":  "45772BF09B5754957CC07FABB3DB20BA5D40029D2CE3DEE82780AD42E249814E",
+        "category":  "frontend",
+        "line_count":  52
+    },
+    {
+        "file":  "templates\\components\\modals.html",
+        "size":  1362,
+        "hash":  "852AB77B15FB53C78B98754C92AE8B298B1E9DF4A08B2FF134FBA303FD8A590D",
+        "category":  "frontend",
+        "line_count":  32
+    },
+    {
+        "file":  "templates\\components\\nav.html",
+        "size":  197,
+        "hash":  "1EC5DD13E11CED6C001C651AD855C365A81008DC7D7272C40DB6F10FCE9BD8D3",
+        "category":  "frontend",
+        "line_count":  8
+    },
+    {
+        "file":  "templates\\components\\pagination.html",
+        "size":  885,
+        "hash":  "908DD491EACD0FF9961FDD43A77C92F78F3257DA07C5F845DEE63B2C0F604AE7",
+        "category":  "frontend",
+        "line_count":  26
+    },
+    {
+        "file":  "templates\\components\\post_card.html",
+        "size":  3358,
+        "hash":  "50EE73CFD760293F9E5DF9AA177B696254249C1F90AC950F9BCAC4412C8717E7",
+        "category":  "frontend",
+        "line_count":  57
+    },
+    {
+        "file":  "templates\\components\\tag_badges.html",
+        "size":  882,
+        "hash":  "3C5F8E3B0039DB8FFB030887A83C3828B52404A51FE3C93CC0CF658C019CBFCE",
+        "category":  "frontend",
+        "line_count":  26
+    },
+    {
+        "file":  "templates\\consent\\includes\\banner.html",
+        "size":  3468,
+        "hash":  "6F5EA20A0D2DEF84BFAC90CCFC8C501885E90D84B5B4BAF77E57E461CC4D4F3C",
+        "category":  "frontend",
+        "line_count":  117
+    },
+    {
+        "file":  "templates\\consent\\manage.html",
+        "size":  1544,
+        "hash":  "A92A402F384ED4FC381020CC82B686AC381DC3266DB044A189AA11C3E5430378",
+        "category":  "frontend",
+        "line_count":  53
+    },
+    {
+        "file":  "templates\\consent\\privacy_center.html",
+        "size":  2870,
+        "hash":  "24FC071276B7A9957FB2EDFACD8619D4664E47790065D7BD5452B2C8A0B1B7E7",
+        "category":  "frontend",
+        "line_count":  74
+    },
+    {
+        "file":  "templates\\core\\site_map.html",
+        "size":  1234,
+        "hash":  "DA3B715F85E80A243108046C3ED8AFA4B9600D0C90BDBA89CBF9F871BAED73AA",
+        "category":  "frontend",
+        "line_count":  36
+    },
+    {
+        "file":  "templates\\devices\\events.html",
+        "size":  1415,
+        "hash":  "F488A7D912E8F73426B2DB0F715FE47561369C910311459E57EE2337CAC7EBE0",
+        "category":  "frontend",
+        "line_count":  35
+    },
+    {
+        "file":  "templates\\devices\\my_devices.html",
+        "size":  1290,
+        "hash":  "D2B42F0170D067189158687D817A25042ADF31C406E93F08063EDE771879FEAE",
+        "category":  "frontend",
+        "line_count":  33
+    },
+    {
+        "file":  "templates\\distribution\\dashboard.html",
+        "size":  4780,
+        "hash":  "EC77391F141670238810EDF3AE4433CA8E5BD3B1685221F405C844BC480B6F9D",
+        "category":  "frontend",
+        "line_count":  104
+    },
+    {
+        "file":  "templates\\errors\\403.html",
+        "size":  364,
+        "hash":  "5A3D995BA70362C2B8121F8E3AE9817508E3B9C135DCA4BF388B851571021412",
+        "category":  "frontend",
+        "line_count":  11
+    },
+    {
+        "file":  "templates\\errors\\404.html",
+        "size":  365,
+        "hash":  "B19E2AA662C3973FCD44A6835950CE70FC4AC518E18BC1C536DE0AF34E5C3A80",
+        "category":  "frontend",
+        "line_count":  11
+    },
+    {
+        "file":  "templates\\errors\\500.html",
+        "size":  384,
+        "hash":  "0D47F4B30B94602D7FB79B27E6B02A84C6F96C3F8FFF5675BF518E0B01C0719D",
+        "category":  "frontend",
+        "line_count":  11
+    },
+    {
+        "file":  "templates\\home.html",
+        "size":  2799,
+        "hash":  "5EF0BD38DC78E6E6C1139A40C7632859250AD0AD6F1755C7EECA3F2D404AA585",
+        "category":  "frontend",
+        "line_count":  78
+    },
+    {
+        "file":  "templates\\includes\\cards\\chart-card.html",
+        "size":  611,
+        "hash":  "463F423B030150D6C0C6289B2D1B728D3C97ACD54837137D2A8AE936A826E7F6",
+        "category":  "frontend",
+        "line_count":  25
+    },
+    {
+        "file":  "templates\\includes\\cards\\icon-card.html",
+        "size":  395,
+        "hash":  "AE48E75DA152149EDD1333D1C4820B81A352F296436EFBE5750D4EDEB299F40C",
+        "category":  "frontend",
+        "line_count":  15
+    },
+    {
+        "file":  "templates\\includes\\cards\\list-card.html",
+        "size":  524,
+        "hash":  "879BAA55887EE6F85D836617CCACF4769B57C65C4CDC52A873CAF857812BC1CF",
+        "category":  "frontend",
+        "line_count":  19
+    },
+    {
+        "file":  "templates\\includes\\cards\\status-card.html",
+        "size":  354,
+        "hash":  "1AF410BD73B9B38F40E6EDEFB53E60408C4012F82618D67FBF50CD8889CFD0CC",
+        "category":  "frontend",
+        "line_count":  14
+    },
+    {
+        "file":  "templates\\includes\\dashboard_cards.html",
+        "size":  692,
+        "hash":  "DD40F58F613E5F43AD03F8D790654480C3D37CE4103D95A974DE5DC65D035082",
+        "category":  "frontend",
+        "line_count":  18
+    },
+    {
+        "file":  "templates\\includes\\dashboard_sidebar.html",
+        "size":  410,
+        "hash":  "B63361F992EAC272D82C163185750285508F831B57C758EF1ADCFE9F8612F7F5",
+        "category":  "frontend",
+        "line_count":  15
+    },
+    {
+        "file":  "templates\\includes\\footer.html",
+        "size":  1574,
+        "hash":  "DF0B9E1372433D8DC5AAB299FB791F06B643A1FED0E83BEDD0E3125B0631B9F6",
+        "category":  "frontend",
+        "line_count":  31
+    },
+    {
+        "file":  "templates\\includes\\icon_sprite.html",
+        "size":  5932,
+        "hash":  "1EBB42A7542F3030D290190B2EDEFDFAD1A215C39C0D5102856299BE047DD4C1",
+        "category":  "frontend",
+        "line_count":  57
+    },
+    {
+        "file":  "templates\\includes\\messages.html",
+        "size":  175,
+        "hash":  "2E75DB90D863170DB2EE862432258AE693429DEBB37FF53F9E660FE32547BC7C",
+        "category":  "frontend",
+        "line_count":  11
+    },
+    {
+        "file":  "templates\\includes\\navbar.html",
+        "size":  5915,
+        "hash":  "2C615BF30160C7FA85265568968ECDD6C645055BF75B52B8A41534C8569747BA",
+        "category":  "frontend",
+        "line_count":  144
+    },
+    {
+        "file":  "templates\\includes\\notifications.html",
+        "size":  588,
+        "hash":  "0333436E09B041D348D8FF5D4105CC33641BA72DCF6C283B0B2B60801AED7973",
+        "category":  "frontend",
+        "line_count":  25
+    },
+    {
+        "file":  "templates\\includes\\site_header.html",
+        "size":  894,
+        "hash":  "A09B706614196E0E334DBA9D3715EEA12337932F035FB669394A25942739B502",
+        "category":  "frontend",
+        "line_count":  29
+    },
+    {
+        "file":  "templates\\legal\\cookies.html",
+        "size":  393,
+        "hash":  "A53BF7B985D332AA38B414EB5CC3992B2AA3ECAB3CA6FEEF4EFB88881966304F",
+        "category":  "frontend",
+        "line_count":  14
+    },
+    {
+        "file":  "templates\\legal\\privacy.html",
+        "size":  383,
+        "hash":  "8C4FE9175F7AED2E7FE0BFACE0FE266E4E632991CB54B660D52EB7985D2F4749",
+        "category":  "frontend",
+        "line_count":  14
+    },
+    {
+        "file":  "templates\\legal\\terms.html",
+        "size":  395,
+        "hash":  "D20A187C54120AC28DCC26C9AAF2DC8A4A691A10C03463C802665AF808EC0BD5",
+        "category":  "frontend",
+        "line_count":  14
+    },
+    {
+        "file":  "templates\\login.html",
+        "size":  143,
+        "hash":  "304B7705723D7666FC8B94210CC8B60B989E820876F2CD452C39B51A0DD9C2DC",
+        "category":  "frontend",
+        "line_count":  4
+    },
+    {
+        "file":  "templates\\partials\\favicon_link.html",
+        "size":  643,
+        "hash":  "4780EA99D85051879DE41D8B655EB84D129591761D86D2CF6773FDA4EA3584F1",
+        "category":  "frontend",
+        "line_count":  16
+    },
+    {
+        "file":  "templates\\partials\\notification_list.html",
+        "size":  1697,
+        "hash":  "A9665B01DA9AB868E97EE7B90FAA871EA0404024FFBD301D14446B3E7A76DCC9",
+        "category":  "frontend",
+        "line_count":  58
+    },
+    {
+        "file":  "templates\\partials\\site_branding.html",
+        "size":  1176,
+        "hash":  "1736FE9D13F15AB7448239B0D12E12EE7C85CD3CCEE59FBE8C33032D17A70AB1",
+        "category":  "frontend",
+        "line_count":  33
+    },
+    {
+        "file":  "templates\\partials\\toast_fragment.html",
+        "size":  3005,
+        "hash":  "79DB83FD5FE5E9C185027E58726982602C5250FB118F649AA9F1277DB6737739",
+        "category":  "frontend",
+        "line_count":  88
+    },
+    {
+        "file":  "templates\\profile.html",
+        "size":  143,
+        "hash":  "13CD35A6027E17C3DDF57CD54ABFF20E686EFF04D79EBF43FBB02C31EE2CDC3D",
+        "category":  "frontend",
+        "line_count":  4
+    },
+    {
+        "file":  "templates\\site_settings\\consent_manage.html",
+        "size":  2544,
+        "hash":  "404845C6B73AFBBD3126E636C6519E71A2E73CF2CD070CCB5CF6AB3D442DCA81",
+        "category":  "frontend",
+        "line_count":  89
+    },
+    {
+        "file":  "templates\\site_settings\\cookies.html",
+        "size":  346,
+        "hash":  "7BE7D886FC7FFA73AD8A4B72AE14F8E93CA67C4122CFBC12BD7FB2D6879647DE",
+        "category":  "frontend",
+        "line_count":  12
+    },
+    {
+        "file":  "templates\\site_settings\\detail.html",
+        "size":  717,
+        "hash":  "8852163998A0D80A36E36EFDE75F70EB1C22F6935B9A2526EEE0F3D0290A7CD4",
+        "category":  "frontend",
+        "line_count":  17
+    },
+    {
+        "file":  "templates\\site_settings\\privacy.html",
+        "size":  336,
+        "hash":  "60736EE5931DEF6A47313F1AD8546BCC8C48EFFC640DDA57E8C5B89AFEFC81DE",
+        "category":  "frontend",
+        "line_count":  12
+    },
+    {
+        "file":  "templates\\site_settings\\terms.html",
+        "size":  324,
+        "hash":  "8E2C64EEC5F9DAB93B428B5A0BEB17EC922F3723A32DEBF9BF7DD005E0B273EA",
+        "category":  "frontend",
+        "line_count":  12
+    },
+    {
+        "file":  "templates\\tags\\admin_duplicates.html",
+        "size":  1990,
+        "hash":  "F886EC8BE3A3825852D5B34F7120D0392EDF23078ADE3D4ACDA0D74B004053CE",
+        "category":  "frontend",
+        "line_count":  46
+    },
+    {
+        "file":  "templates\\tags\\admin_keyword_review.html",
+        "size":  2129,
+        "hash":  "04C0C6463A1ABDC05A3E36845A7D8E41E4022C21219E87E25493D8F34324D1FE",
+        "category":  "frontend",
+        "line_count":  47
+    },
+    {
+        "file":  "templates\\tags\\detail.html",
+        "size":  2372,
+        "hash":  "E8AF7E7FB6AAF9F04F0607177D8EB3B9B9D9FCEC11017C9AAD33B670003B9B20",
+        "category":  "frontend",
+        "line_count":  45
+    },
+    {
+        "file":  "templates\\tags\\includes\\autocomplete_help.html",
+        "size":  210,
+        "hash":  "68825774239AA9F94D9389E7F6AFE0B24FF457C9A6CA6977141D1E98B469DBBA",
+        "category":  "frontend",
+        "line_count":  7
+    },
+    {
+        "file":  "templates\\tags\\list.html",
+        "size":  1293,
+        "hash":  "04DD8C98858F1D380F88A9485AF5C7357204BB8AB89CF25C0F9D074E033DCB08",
+        "category":  "frontend",
+        "line_count":  30
+    },
+    {
+        "file":  "templates\\tags\\manage.html",
+        "size":  8895,
+        "hash":  "9CEF148F1D08504C3D4FC202D641B11E343DF95665079FAAA7BAB9A69EA755A2",
+        "category":  "frontend",
+        "line_count":  182
+    },
+    {
+        "file":  "templates\\users\\dashboard.html",
+        "size":  6474,
+        "hash":  "8E3F684A62F0A4673E70E0DAC95A8180D02A03177DADE3AD335EEF2112F589C2",
+        "category":  "frontend",
+        "line_count":  125
+    },
+    {
+        "file":  "templates\\users\\notifications\\details.html",
+        "size":  881,
+        "hash":  "CEE8B3CFCD1761A8432837C2C8A73CBD171BB123C10D4FFAA2D43168A09FC5A2",
+        "category":  "frontend",
+        "line_count":  31
+    },
+    {
+        "file":  "templates\\users\\notifications\\list.html",
+        "size":  2044,
+        "hash":  "17A387A42AC48FF3D3DFF05BCA853B9DF16B0FEDE005F6F6D8E0CA18ABAE3DF4",
+        "category":  "frontend",
+        "line_count":  47
+    },
+    {
+        "file":  "templates\\users\\profile.html",
+        "size":  4546,
+        "hash":  "906948C696420B8923D575FDB11F130957A7A6555E3700C57637BAEBAB6E0503",
+        "category":  "frontend",
+        "line_count":  126
+    },
+    {
+        "file":  "templates\\users\\tell_us_about_you.html",
+        "size":  3470,
+        "hash":  "F01B763363DBDEE6F45D09D412664290B3D187DB4B358CA670C46663EB5E7744",
+        "category":  "frontend",
+        "line_count":  78
+    },
+    {
+        "file":  "templates\\users\\verify_email.html",
+        "size":  749,
+        "hash":  "AB512C09C23FC6B218D8187110B25E3FF4AD18EE6A10993D57029B26FD7C8635",
+        "category":  "frontend",
+        "line_count":  20
+    }
+]

@@ -1,0 +1,91 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Security - Devices{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Devices</h1>
+      <p class="text-sm text-slate-600">Manage trust/block states and review device activity.</p>
+    </div>
+    <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Tip: reset quota to reopen a user’s device window.</div>
+  </div>
+
+  {% if message %}
+  <div class="mb-4 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Devices</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">UUID</th>
+            <th class="px-4 py-2">User</th>
+            <th class="px-4 py-2">Trusted</th>
+            <th class="px-4 py-2">Blocked</th>
+            <th class="px-4 py-2">Risk</th>
+            <th class="px-4 py-2">Last seen</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for d in devices %}
+          <tr>
+            <td class="px-4 py-2">{{ d.machine_uuid }}</td>
+            <td class="px-4 py-2">{{ d.user_id }}</td>
+            <td class="px-4 py-2">{{ d.is_trusted|yesno:"Yes,No" }}</td>
+            <td class="px-4 py-2">{{ d.is_blocked|yesno:"Yes,No" }}</td>
+            <td class="px-4 py-2">{{ d.risk_score }}</td>
+            <td class="px-4 py-2">{{ d.last_seen_at }}</td>
+            <td class="px-4 py-2 space-x-2">
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="device_id" value="{{ d.id }}">
+                <input type="hidden" name="action" value="{% if d.is_blocked %}unblock{% else %}block{% endif %}">
+                <button type="submit" title="Toggle blocked state for this device" class="text-sm {% if d.is_blocked %}text-emerald-700{% else %}text-red-600{% endif %}">
+                  {% if d.is_blocked %}Unblock{% else %}Block{% endif %}
+                </button>
+              </form>
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="device_id" value="{{ d.id }}">
+                <input type="hidden" name="action" value="{% if d.is_trusted %}untrust{% else %}trust{% endif %}">
+                <button type="submit" title="Mark device as trusted/untrusted" class="text-sm text-primary">
+                  {% if d.is_trusted %}Untrust{% else %}Trust{% endif %}
+                </button>
+              </form>
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ d.user_id }}">
+                <input type="hidden" name="action" value="reset_quota">
+                <button type="submit" title="Reset this user’s rolling device window" class="text-sm text-slate-600 hover:text-slate-800">Reset quota</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="px-4 py-3 text-slate-500">No devices.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-4 py-3 border-t flex items-center justify-between text-sm text-slate-600">
+      <div>Page {{ page }} / Page size {{ page_size }}</div>
+      <div class="space-x-2">
+        {% if page > 1 %}
+        <a href="?page={{ page|add:"-1" }}&page_size={{ page_size }}" class="text-primary hover:underline">Prev</a>
+        {% endif %}
+        {% if devices|length >= page_size %}
+        <a href="?page={{ page|add:"1" }}&page_size={{ page_size }}" class="text-primary hover:underline">Next</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

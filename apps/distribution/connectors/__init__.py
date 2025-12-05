@@ -52,7 +52,7 @@ class LoggingConnector(StubConnector):
     """
 
     def send(self, job: ShareJob) -> ConnectorResult:
-        logger.info("LoggingConnector %s payload=%s", job.channel, job.payload)
+        logger.debug("LoggingConnector %s payload=%s", job.channel, job.payload)
         return ConnectorResult(ok=True, message="Logged", external_id="log")
 
 

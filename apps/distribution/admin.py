@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from django.contrib import admin
+from django.core.exceptions import ImproperlyConfigured
 from django import forms
 from django.db import models
 
@@ -80,15 +81,16 @@ class SyndicationPartnerAdmin(admin.ModelAdmin):
 
 try:
     from solo.admin import SingletonModelAdmin
+except ImportError as exc:
+    raise ImproperlyConfigured("django-solo is required for DistributionSettings admin") from exc
 
-    @admin.register(DistributionSettings)
-    class DistributionSettingsAdmin(SingletonModelAdmin):
-        list_display = ("distribution_enabled",)
-        fieldsets = ((None, {"fields": ("distribution_enabled",)}),)
 
-        def has_add_permission(self, request):
-            return False
-except Exception:
-    pass
+@admin.register(DistributionSettings)
+class DistributionSettingsAdmin(SingletonModelAdmin):
+    list_display = ("distribution_enabled",)
+    fieldsets = ((None, {"fields": ("distribution_enabled",)}),)
+
+    def has_add_permission(self, request):
+        return False
 
 

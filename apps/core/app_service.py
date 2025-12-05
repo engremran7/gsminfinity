@@ -54,7 +54,12 @@ class AppService:
             except ModuleNotFoundError:
                 continue
             except Exception as exc:
-                logger.exception("Failed loading app api %s: %s", mod_path, exc)
+                # Log and fail-safe to avoid crashing callers when optional apps misbehave.
+                logger.error(
+                    "AppService failed",
+                    extra={"path": mod_path, "func": "__all__", "error": str(exc)},
+                    exc_info=True,
+                )
                 return None
         return None
 

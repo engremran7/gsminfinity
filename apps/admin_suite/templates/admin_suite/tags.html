@@ -1,0 +1,108 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Tags{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Tags</h1>
+      <p class="text-sm text-slate-600">Tag usage and curation status.</p>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <form method="get" class="flex items-center gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search name or slug" class="border rounded px-3 py-2 text-sm w-64">
+    <button type="submit" class="px-3 py-2 text-sm rounded bg-primary text-white">Search</button>
+    {% if q %}
+      <a href="{% url 'admin_suite:admin_suite_tags' %}" class="text-sm text-primary hover:underline">Clear</a>
+    {% endif %}
+  </form>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Total</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.total }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Curated</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.curated }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Deleted</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.deleted }}</div>
+    </div>
+  </div>
+
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-900">Tags</h2>
+      <form method="post" class="flex items-center gap-2 text-sm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <input type="text" name="name" placeholder="New tag name" class="border rounded px-2 py-1" required>
+        <button type="submit" class="px-3 py-1 rounded bg-primary text-white">Add</button>
+      </form>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Slug</th>
+            <th class="px-4 py-2">Usage</th>
+            <th class="px-4 py-2">Curated</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for t in tags %}
+          <tr>
+            <td class="px-4 py-2">{{ t.name }}</td>
+            <td class="px-4 py-2">{{ t.slug }}</td>
+            <td class="px-4 py-2">{{ t.usage_count }}</td>
+            <td class="px-4 py-2">{{ t.is_curated|yesno:"Yes,No" }}</td>
+            <td class="px-4 py-2">
+              <div class="flex items-center gap-2 text-xs">
+                <form method="post" class="flex items-center gap-2">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="update">
+                  <input type="hidden" name="tag_id" value="{{ t.id }}">
+                  <input type="text" name="name" value="{{ t.name }}" class="border rounded px-2 py-1" required>
+                  <button type="submit" class="text-primary hover:underline">Save</button>
+                </form>
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="tag_id" value="{{ t.id }}">
+                  <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-4 py-3 text-slate-500">No tags.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-4 py-3 border-t flex items-center justify-between text-sm text-slate-600">
+      <div>Page {{ page }} / Page size {{ page_size }}</div>
+      <div class="space-x-2">
+        {% if page > 1 %}
+        <a href="?page={{ page|add:"-1" }}&page_size={{ page_size }}{% if q %}&q={{ q }}{% endif %}" class="text-primary hover:underline" title="Previous page">Prev</a>
+        {% endif %}
+        {% if tags|length >= page_size %}
+        <a href="?page={{ page|add:"1" }}&page_size={{ page_size }}{% if q %}&q={{ q }}{% endif %}" class="text-primary hover:underline" title="Next page">Next</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

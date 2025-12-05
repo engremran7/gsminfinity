@@ -1,0 +1,97 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Marketing{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Marketing</h1>
+      <p class="text-sm text-slate-600">Ads and SEO snapshots (read-only).</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Placements</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.placements }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Creatives</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.creatives }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Impressions (24h)</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.impressions_24h }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Clicks (24h)</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.clicks_24h }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Ads</h2>
+        <a href="{% url 'admin_suite:admin_suite_ads' %}" class="text-xs text-primary hover:underline">View ads</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">Name</th>
+              <th class="px-4 py-2">Slug</th>
+              <th class="px-4 py-2">Page</th>
+              <th class="px-4 py-2">Updated</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for p in placements %}
+            <tr>
+              <td class="px-4 py-2">{{ p.name }}</td>
+              <td class="px-4 py-2">{{ p.slug }}</td>
+              <td class="px-4 py-2">{{ p.page_context }}</td>
+              <td class="px-4 py-2">{{ p.updated_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-3 text-slate-500">No placements.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">SEO</h2>
+        <span class="text-xs text-slate-500">Redirects: {{ stats.redirects }} · Sitemap URLs: {{ stats.sitemap_urls }}</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">Source</th>
+              <th class="px-4 py-2">Target</th>
+              <th class="px-4 py-2">Permanent</th>
+              <th class="px-4 py-2">Updated</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for r in redirects %}
+            <tr>
+              <td class="px-4 py-2">{{ r.source }}</td>
+              <td class="px-4 py-2">{{ r.target }}</td>
+              <td class="px-4 py-2">{{ r.is_permanent|yesno:"Yes,No" }}</td>
+              <td class="px-4 py-2">{{ r.updated_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-3 text-slate-500">No redirects.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

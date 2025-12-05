@@ -1,0 +1,201 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Ads{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Ads</h1>
+      <p class="text-sm text-slate-600">Placements, creatives, and 24h activity.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="#placements" title="Jump to placements" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Placements</a>
+      <a href="#creatives" title="Jump to creatives" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Creatives</a>
+      <a href="{% url 'admin_suite:admin_suite_marketing' %}" title="Return to marketing overview" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Marketing overview</a>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <form method="get" class="flex items-center gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search placements/creatives" class="border rounded px-3 py-2 text-sm w-64">
+    <button type="submit" class="px-3 py-2 text-sm rounded bg-primary text-white">Search</button>
+    {% if q %}
+      <a href="{% url 'admin_suite:admin_suite_ads' %}" class="text-sm text-primary hover:underline">Clear</a>
+    {% endif %}
+  </form>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Placements</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.placements }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Creatives</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.creatives }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Impressions (24h)</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.impressions_24h }}</div>
+      {% if stats.impressions_24h %}
+      <div class="text-xs text-slate-500 mt-1">Per creative: ~{% widthratio stats.impressions_24h stats.creatives|default:1 1 %}</div>
+      {% endif %}
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Clicks (24h)</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.clicks_24h }}</div>
+      {% if stats.impressions_24h %}
+        {% widthratio stats.clicks_24h stats.impressions_24h 100 as ctr_pct %}
+        <div class="text-xs text-slate-500 mt-1">CTR: {{ ctr_pct }}%</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div id="placements" class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Placements</h2>
+        <form method="post" class="flex items-center gap-2 text-xs">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save_placement">
+          <input type="text" name="name" placeholder="Name" class="border rounded px-2 py-1" required>
+          <input type="text" name="slug" placeholder="slug" class="border rounded px-2 py-1" required>
+          <input type="text" name="page_context" placeholder="page context" class="border rounded px-2 py-1">
+          <label class="flex items-center gap-1 text-slate-600">
+            <input type="checkbox" name="is_active" value="1" checked> Active
+          </label>
+          <button type="submit" class="px-2 py-1 rounded bg-primary text-white">Add</button>
+        </form>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">Name</th>
+              <th class="px-4 py-2">Slug</th>
+              <th class="px-4 py-2">Page</th>
+              <th class="px-4 py-2">Active</th>
+              <th class="px-4 py-2">Updated</th>
+              <th class="px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for p in placements %}
+            <tr>
+              <td class="px-4 py-2">{{ p.name }}</td>
+              <td class="px-4 py-2">{{ p.slug }}</td>
+              <td class="px-4 py-2">{{ p.page_context }}</td>
+              <td class="px-4 py-2">{{ p.is_active|yesno:"Yes,No" }}</td>
+              <td class="px-4 py-2">{{ p.updated_at }}</td>
+              <td class="px-4 py-2">
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="{% if p.is_active %}disable_placement{% else %}enable_placement{% endif %}">
+                  <input type="hidden" name="placement_id" value="{{ p.id }}">
+                  <button type="submit" title="Toggle placement active state" class="text-xs text-primary hover:underline">
+                    {% if p.is_active %}Disable{% else %}Enable{% endif %}
+                  </button>
+                </form>
+                <form method="post" class="mt-2 space-y-1 text-xs">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="save_placement">
+                  <input type="hidden" name="placement_id" value="{{ p.id }}">
+                  <input type="text" name="name" value="{{ p.name }}" class="border rounded px-2 py-1 w-full" placeholder="Name">
+                  <input type="text" name="slug" value="{{ p.slug }}" class="border rounded px-2 py-1 w-full" placeholder="Slug">
+                  <input type="text" name="page_context" value="{{ p.page_context }}" class="border rounded px-2 py-1 w-full" placeholder="Page context">
+                  <label class="flex items-center gap-1 text-slate-600">
+                    <input type="checkbox" name="is_active" value="1" {% if p.is_active %}checked{% endif %}> Active
+                  </label>
+                  <button type="submit" class="text-slate-600 hover:underline">Save</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="px-4 py-3 text-slate-500">No placements.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="creatives" class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Creatives</h2>
+        <form method="post" class="flex items-center gap-2 text-xs">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save_creative">
+          <input type="text" name="name" placeholder="Name" class="border rounded px-2 py-1" required>
+          <input type="text" name="creative_type" placeholder="type" class="border rounded px-2 py-1">
+          <label class="flex items-center gap-1 text-slate-600">
+            <input type="checkbox" name="is_active" value="1" checked> Active
+          </label>
+          <button type="submit" class="px-2 py-1 rounded bg-primary text-white">Add</button>
+        </form>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">Name</th>
+              <th class="px-4 py-2">Type</th>
+              <th class="px-4 py-2">Active</th>
+              <th class="px-4 py-2">Updated</th>
+              <th class="px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for c in creatives %}
+            <tr>
+              <td class="px-4 py-2">{{ c.name }}</td>
+              <td class="px-4 py-2">{{ c.creative_type }}</td>
+              <td class="px-4 py-2">{{ c.is_active|yesno:"Yes,No" }}</td>
+              <td class="px-4 py-2">{{ c.updated_at }}</td>
+              <td class="px-4 py-2">
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="{% if c.is_active %}disable_creative{% else %}enable_creative{% endif %}">
+                  <input type="hidden" name="creative_id" value="{{ c.id }}">
+                  <button type="submit" title="Toggle creative active state" class="text-xs text-primary hover:underline">
+                    {% if c.is_active %}Disable{% else %}Enable{% endif %}
+                  </button>
+                </form>
+                <form method="post" class="mt-2 space-y-1 text-xs">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="save_creative">
+                  <input type="hidden" name="creative_id" value="{{ c.id }}">
+                  <input type="text" name="name" value="{{ c.name }}" class="border rounded px-2 py-1 w-full" placeholder="Name">
+                  <input type="text" name="creative_type" value="{{ c.creative_type }}" class="border rounded px-2 py-1 w-full" placeholder="Type">
+                  <label class="flex items-center gap-1 text-slate-600">
+                    <input type="checkbox" name="is_active" value="1" {% if c.is_active %}checked{% endif %}> Active
+                  </label>
+                  <button type="submit" class="text-slate-600 hover:underline">Save</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-4 py-3 text-slate-500">No creatives.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="px-4 py-3 border-t flex items-center justify-between text-sm text-slate-600">
+    <div>Page {{ page }} / Page size {{ page_size }}</div>
+    <div class="space-x-2">
+      {% if page > 1 %}
+      <a href="?page={{ page|add:"-1" }}&page_size={{ page_size }}{% if q %}&q={{ q }}{% endif %}" class="text-primary hover:underline" title="Previous page">Prev</a>
+      {% endif %}
+      {% if placements|length >= page_size or creatives|length >= page_size %}
+      <a href="?page={{ page|add:"1" }}&page_size={{ page_size }}{% if q %}&q={{ q }}{% endif %}" class="text-primary hover:underline" title="Next page">Next</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

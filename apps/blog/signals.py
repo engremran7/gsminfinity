@@ -5,10 +5,9 @@ import logging
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.contenttypes.models import ContentType
 
 from apps.core.utils import feature_flags
-from apps.seo.models import SEOModel, Metadata
+from apps.seo.auto import apply_post_seo
 from apps.seo.services.internal_linking.engine import refresh_linkable_entity
 from apps.users.services.notifications import broadcast_notification, notifications_enabled
 from apps.users.models import CustomUser
@@ -33,14 +32,7 @@ def _ensure_post_seo(post: Post) -> None:
     if not feature_flags.seo_enabled():
         return
     try:
-        ct = ContentType.objects.get_for_model(Post)
-        seo_obj, _ = SEOModel.objects.get_or_create(content_type=ct, object_id=post.pk)
-        meta, _ = Metadata.objects.get_or_create(seo=seo_obj)
-        if not meta.meta_title:
-            meta.meta_title = post.seo_title or post.title
-        if not meta.meta_description:
-            meta.meta_description = post.seo_description or post.summary[:320]
-        meta.save()
+        apply_post_seo(post)
         refresh_linkable_entity(
             post,
             title=post.title,
@@ -48,7 +40,7 @@ def _ensure_post_seo(post: Post) -> None:
             keywords=",".join(post.tags.values_list("name", flat=True)),
         )
     except Exception:
-        logger.debug("SEO sync failed for post %s", post.pk)
+        logger.debug("SEO sync failed for post %s", post.pk, exc_info=True)
 
 
 @receiver(post_save, sender=Post)

@@ -6,9 +6,9 @@ Public API surface for the SEO app.
 Resolved dynamically via AppService to avoid hard imports.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
-from apps.seo.models import SEOSettings
+from apps.seo.models import Redirect, SEOSettings
 
 
 def get_settings() -> Dict[str, Any]:
@@ -29,6 +29,14 @@ def get_settings() -> Dict[str, Any]:
         }
 
 
-__all__ = ["get_settings"]
+def get_redirects() -> List[Dict]:
+    qs = Redirect.objects.all().only("source", "target", "is_active")
+    return [
+        {"from_url": r.source, "to_url": r.target, "is_active": r.is_active}
+        for r in qs
+    ]
+
+
+__all__ = ["get_settings", "get_redirects"]
 
 

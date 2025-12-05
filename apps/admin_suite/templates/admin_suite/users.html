@@ -1,0 +1,130 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Users{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Users</h1>
+      <p class="text-sm text-slate-600">Staff overview, activity, and quick drill-down.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="?q={{ q|urlencode }}&provider={{ provider_filter }}&export=csv" title="Export current filter as CSV" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white text-primary hover:bg-slate-50">Export CSV</a>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <form method="get" class="flex items-center gap-2 flex-wrap">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search email or ID" class="border rounded px-3 py-2 text-sm w-64" aria-label="Search users">
+    <select name="provider" class="border rounded px-3 py-2 text-sm" aria-label="Filter by auth source">
+      <option value="all" {% if provider_filter == "all" %}selected{% endif %}>All providers</option>
+      <option value="local" {% if provider_filter == "local" %}selected{% endif %}>Local only</option>
+      <option value="social" {% if provider_filter == "social" %}selected{% endif %}>Social (allauth)</option>
+    </select>
+    <button type="submit" class="px-3 py-2 text-sm rounded bg-primary text-white">Search</button>
+    {% if q or provider_filter != "all" %}
+      <a href="{% url 'admin_suite:admin_suite_users' %}" class="text-sm text-primary hover:underline">Clear</a>
+    {% endif %}
+  </form>
+
+  <div class="border rounded-lg bg-white shadow-sm p-4">
+    <h2 class="text-lg font-semibold text-slate-900 mb-3">Create user</h2>
+    <form method="post" class="flex flex-wrap items-center gap-2 text-sm">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_user">
+      <input type="email" name="email" placeholder="email@example.com" class="border rounded px-3 py-2 w-64" required>
+      <input type="password" name="password" placeholder="Password (min 6 chars)" class="border rounded px-3 py-2 w-56" required>
+      <label class="inline-flex items-center gap-1 text-slate-700">
+        <input type="checkbox" name="is_staff" class="rounded border-slate-300"> Staff
+      </label>
+      <button type="submit" class="px-3 py-2 rounded bg-primary text-white">Add user</button>
+      <span class="text-xs text-slate-500">Creates a local account; social users come via allauth.</span>
+    </form>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Total users</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.total_users }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Staff</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.staff_users }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Active</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.active_users }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Local</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.local_users }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Social</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.social_users }}</div>
+    </div>
+  </div>
+
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-900">Users</h2>
+      <span class="text-xs text-slate-500" title="Current page and count on this page">Page {{ page }} / {{ users_page|length }} shown</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Auth source</th>
+            <th class="px-4 py-2">Staff</th>
+            <th class="px-4 py-2">Active</th>
+            <th class="px-4 py-2">Joined</th>
+            <th class="px-4 py-2">Last login</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for u in users_page %}
+          <tr>
+            <td class="px-4 py-2">
+              <a href="{% url 'admin_suite:admin_suite_user_detail' u.id %}" title="View user detail" class="text-primary hover:underline">{{ u.email }}</a>
+            </td>
+            <td class="px-4 py-2">
+              {% if u.providers and u.providers|length %}
+                <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs font-semibold">Social</span>
+                <span class="text-xs text-slate-500 ml-1">{{ u.providers|join:", " }}</span>
+              {% else %}
+                <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-2 py-0.5 text-xs font-semibold">Local</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">
+              {% if u.is_staff %}
+                <span class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-semibold">Staff</span>
+              {% else %}
+                <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-xs">User</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">
+              {% if u.is_active %}
+                <span class="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-xs font-semibold">Active</span>
+              {% else %}
+                <span class="inline-flex items-center rounded-full bg-rose-50 text-rose-700 px-2 py-0.5 text-xs font-semibold">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">{{ u.date_joined }}</td>
+            <td class="px-4 py-2">{{ u.last_login|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-4 py-3 text-slate-500">No users.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

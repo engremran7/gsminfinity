@@ -91,30 +91,26 @@
     {# ------------------------------------------------------------------ #}
     <div id="app-toasts" class="fixed top-20 right-4 z-50 space-y-2" aria-live="polite" aria-atomic="true"></div>
 
-    {# ------------------------------------------------------------------ #}
-    {# NAVBAR INCLUDE #}
-    {# ------------------------------------------------------------------ #}
-    {% include "components/nav.html" %}
+    <div class="flex flex-col min-h-screen">
+      {# NAVBAR INCLUDE #}
+      {% include "components/nav.html" %}
 
-    {# ------------------------------------------------------------------ #}
-    {# MAIN CONTENT WITH AD SIDE RAILS #}
-    {# ------------------------------------------------------------------ #}
-    <div class="flex">
-      <aside class="hidden lg:block w-56 shrink-0 px-3 py-4 space-y-4" aria-label="Left ads">
-        {% render_ad_slot "left-rail" %}
-      </aside>
-      <main id="main-content" class="flex-1">
-        {% block content %}{% endblock %}
-      </main>
-      <aside class="hidden lg:block w-56 shrink-0 px-3 py-4 space-y-4" aria-label="Right ads">
-        {% render_ad_slot "right-rail" %}
-      </aside>
+      {# MAIN CONTENT WITH AD SIDE RAILS #}
+      <div class="flex flex-1 bg-slate-50 text-slate-900">
+        <aside class="hidden lg:block w-56 shrink-0 px-3 py-4 space-y-4" aria-label="Left ads">
+          {% render_ad_slot "left-rail" %}
+        </aside>
+        <main id="main-content" class="flex-1">
+          {% block content %}{% endblock %}
+        </main>
+        <aside class="hidden lg:block w-56 shrink-0 px-3 py-4 space-y-4" aria-label="Right ads">
+          {% render_ad_slot "right-rail" %}
+        </aside>
+      </div>
+
+      {# FOOTER INCLUDE #}
+      {% include "includes/footer.html" %}
     </div>
-
-    {# ------------------------------------------------------------------ #}
-    {# FOOTER INCLUDE #}
-    {# ------------------------------------------------------------------ #}
-    {% include "includes/footer.html" %}
 
     {% include "components/modals.html" %}
 

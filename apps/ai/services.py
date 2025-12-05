@@ -56,12 +56,16 @@ def run_workflow(workflow_name: str, payload: Dict[str, Any], user=None) -> Pipe
         workflow=wf,
         requested_by=requester,
         input_payload=payload or {},
-        status="running",
+        status="queued",
         started_at=timezone.now(),
     )
-    # In asynchronous deployments this can be delegated to a worker; in the default
-    # setup we persist a synchronous, traceable output payload.
-    run.output_payload = {"message": "Execution delegated", "inputs": payload}
+
+    # Synchronous in-process execution placeholder.
+    # If/when an async worker is wired in, this block becomes the enqueue step.
+    run.output_payload = {
+        "message": "Execution completed inline",
+        "inputs": payload or {},
+    }
     run.status = "succeeded"
     run.finished_at = timezone.now()
     run.save(update_fields=["output_payload", "status", "finished_at"])

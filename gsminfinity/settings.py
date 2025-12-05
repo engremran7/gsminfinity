@@ -82,6 +82,8 @@ ENV = "development" if DEBUG else "production"
 
 # Proxy awareness (used by IP resolution helpers)
 TRUSTED_PROXY_COUNT = int(os.getenv("TRUSTED_PROXY_COUNT", "0"))
+# Admin suite is opt-in; enable explicitly via env
+ADMIN_SUITE_ENABLED = env_bool(os.getenv("ADMIN_SUITE_ENABLED"), False)
 IS_PRODUCTION = not DEBUG
 
 if IS_PRODUCTION and (not SECRET_KEY or SECRET_KEY == _DEFAULT_DEV_SECRET):
@@ -122,6 +124,7 @@ DJANGO_APPS = [
     "django.contrib.sites",
     "django.contrib.humanize",
     "django.contrib.syndication",
+    "django.contrib.sitemaps",
 ]
 
 THIRD_PARTY_APPS = [
@@ -133,7 +136,6 @@ THIRD_PARTY_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
-    "django_extensions",
 ]
 
 SOCIAL_PROVIDERS = [
@@ -145,6 +147,7 @@ SOCIAL_PROVIDERS = [
 
 LOCAL_APPS = [
     "apps.core",
+    "apps.admin_suite",
     "apps.users",
     "apps.devices",
     "apps.crawler_guard",
@@ -160,6 +163,9 @@ LOCAL_APPS = [
     "apps.seo",
     "apps.ads",
     "apps.distribution",
+    "apps.security_suite",
+    "apps.security_events",
+    "apps.pages",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + SOCIAL_PROVIDERS + LOCAL_APPS
@@ -379,6 +385,7 @@ LOGGING = {
             "filename": LOG_DIR / "debug.log",
             "formatter": "verbose",
             "level": "DEBUG",
+            "encoding": "utf-8",
         },
     },
     "root": {"handlers": ["console", "debug_file"], "level": LOG_LEVEL},
@@ -433,6 +440,7 @@ SECURE_SSL_REDIRECT = env_bool(os.getenv("SECURE_SSL_REDIRECT"), not DEBUG)
 
 SESSION_COOKIE_SECURE = env_bool(os.getenv("SESSION_COOKIE_SECURE"), IS_PRODUCTION)
 CSRF_COOKIE_SECURE = env_bool(os.getenv("CSRF_COOKIE_SECURE"), IS_PRODUCTION)
+CSRF_COOKIE_DOMAIN = env_str(os.getenv("CSRF_COOKIE_DOMAIN"), None)
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
@@ -479,6 +487,14 @@ for host in _csrf_hosts:
     CSRF_TRUSTED_ORIGINS.append(f"https://{host}")
     if ALLOW_INSECURE_CSRF_ORIGINS and host in {"127.0.0.1", "localhost", "0.0.0.0"}:
         CSRF_TRUSTED_ORIGINS.append(f"http://{host}")
+
+# Ensure local dev hosts are trusted for CSRF in DEBUG even if env vars are absent.
+if DEBUG:
+    for host in ("127.0.0.1", "localhost"):
+        if f"http://{host}" not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(f"http://{host}")
+        if f"https://{host}" not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(f"https://{host}")
 
 
 # ---------------------------

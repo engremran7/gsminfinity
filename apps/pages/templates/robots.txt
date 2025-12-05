@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Sitemap: {{ request.scheme }}://{{ request.get_host }}{% url 'pages:sitemap' %}
+
+# Disallow sensitive endpoints
+Disallow: /admin/
+Disallow: /django-admin/
+Disallow: /users/dashboard/
+Disallow: /accounts/password/

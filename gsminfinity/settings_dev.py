@@ -13,6 +13,7 @@ Overrides production `settings.py` for safe local development.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from .settings import *  # import production defaults
@@ -76,10 +77,11 @@ ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True
 
 
 # ============================================================
-# Local SSL Certificate (optional)
+# Local SSL Certificate (optional, cross-platform)
 # ============================================================
-# Only used if you intentionally run dev server with TLS
-CERT_DIR = Path("C:/certs")
+# Only used if you intentionally run dev server with TLS.
+# Override via env if you want a custom location.
+CERT_DIR = Path(os.environ.get("GSM_DEV_CERT_DIR", Path.home() / ".gsm_certs"))
 SSL_CERT_FILE = CERT_DIR / "localhost.pem"
 SSL_KEY_FILE = CERT_DIR / "localhost-key.pem"
 

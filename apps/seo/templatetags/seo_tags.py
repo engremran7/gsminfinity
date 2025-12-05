@@ -21,7 +21,7 @@ def _seo_enabled() -> bool:
     try:
         ss = SiteSettings.get_solo()
         return bool(getattr(ss, "seo_enabled", False))
-    except Exception:
+    except (SiteSettings.DoesNotExist, Exception):
         return False
 
 

@@ -1,0 +1,114 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Content{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Content</h1>
+      <p class="text-sm text-slate-600">Posts, comments, and moderation status.</p>
+      <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded inline-block mt-2">Tip: drafts are hidden from sitemap and feeds until published.</div>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:admin_suite_comments' %}" title="Go to comment moderation" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Moderate comments</a>
+      <a href="#" title="Create new post (coming soon)" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white text-slate-400 cursor-not-allowed">New post (soon)</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Posts</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.posts_total }}</div>
+      {% if stats.posts_total %}
+      {% widthratio stats.posts_published stats.posts_total 100 as pub_pct %}
+      <div class="text-xs text-slate-500 mt-1" title="Published vs total">Published: {{ pub_pct }}%</div>
+      {% endif %}
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Published</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.posts_published }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Drafts</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.posts_draft }}</div>
+      {% if stats.posts_total %}
+      {% widthratio stats.posts_draft stats.posts_total 100 as draft_pct %}
+      <div class="text-xs text-slate-500 mt-1" title="Draft share of all posts">Draft share: {{ draft_pct }}%</div>
+      {% endif %}
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Pending comments</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.comments_pending }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Spam</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.comments_spam }}</div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Recent published posts</h2>
+        <a href="{% url 'admin_suite:admin_suite_content' %}" title="Refresh list" class="text-xs text-primary hover:underline">Refresh</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">Title</th>
+              <th class="px-4 py-2">Slug</th>
+              <th class="px-4 py-2">Published</th>
+              <th class="px-4 py-2">Author</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for p in posts %}
+            <tr>
+              <td class="px-4 py-2">{{ p.title }}</td>
+              <td class="px-4 py-2">{{ p.slug }}</td>
+              <td class="px-4 py-2">{{ p.published_at }}</td>
+              <td class="px-4 py-2">{{ p.author_id }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-3 text-slate-500">No posts.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Pending comments</h2>
+        <a href="{% url 'admin_suite:admin_suite_comments' %}" title="Open comment moderation" class="text-xs text-primary hover:underline">Moderate</a>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">ID</th>
+              <th class="px-4 py-2">User</th>
+              <th class="px-4 py-2">Post</th>
+              <th class="px-4 py-2">At</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for c in comments %}
+            <tr>
+              <td class="px-4 py-2">{{ c.id }}</td>
+              <td class="px-4 py-2">{{ c.user_id }}</td>
+              <td class="px-4 py-2">{{ c.post_id }}</td>
+              <td class="px-4 py-2">{{ c.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-3 text-slate-500">No pending comments.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

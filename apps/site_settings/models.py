@@ -19,7 +19,7 @@ from typing import Any, Optional
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
-from django.db import models
+from django.db import models, transaction
 from django.templatetags.static import static
 from solo.models import SingletonModel
 
@@ -104,6 +104,10 @@ class SiteSettings(SingletonModel):
         default=False,
         help_text="Enable only if TLS is enforced by reverse proxy",
     )
+    pages_enabled = models.BooleanField(default=True, help_text="Enable dynamic pages app for public pages.")
+    sitemap_enabled = models.BooleanField(default=True, help_text="Expose sitemap.xml for published pages.")
+    sitemap_index_enabled = models.BooleanField(default=True, help_text="Expose sitemap_index.xml for published pages.")
+    sitemap_page_size = models.PositiveIntegerField(default=2000, help_text="Max URLs per sitemap chunk.")
 
     # ------------------------------------------------------------------
     # reCAPTCHA (global; per-app may override)
@@ -180,6 +184,16 @@ class SiteSettings(SingletonModel):
 
     def __str__(self) -> str:
         return self.site_name or "Site Settings"
+
+    @classmethod
+    def get_solo(cls):
+        """
+        Singleton accessor with locking to prevent duplicate creation in multi-worker
+        startup scenarios.
+        """
+        with transaction.atomic():
+            obj, _ = cls.objects.select_for_update().get_or_create(pk=1)
+        return obj
 
     # =================================================================
     # SAFE FILE URL HELPERS (always static fallback)

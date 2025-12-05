@@ -1,0 +1,494 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Security{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Security Suite</h1>
+      <p class="text-sm text-slate-600">Devices, Crawler Guard, and AI Behavior/Risk in one view.</p>
+      <p class="text-xs text-slate-500">Enable device identity, crawler guard, and AI behavior in AppRegistry/Security settings for full coverage.</p>
+      <div class="mt-2 text-xs text-slate-50 bg-slate-900 border border-slate-800 rounded p-3 space-y-1">
+        <div><span class="font-semibold">Quick guidance:</span></div>
+        <div>- Turn <span class="font-semibold">Device identity + Device quota</span> on for per-user device caps; leave quota off for permissive environments.</div>
+        <div>- Turn <span class="font-semibold">Crawler Guard</span> on for public APIs; start with <span class="font-semibold">throttle</span> before <span class="font-semibold">block/challenge</span>.</div>
+        <div>- Turn <span class="font-semibold">Login risk</span> on to feed risk scoring; pair with <span class="font-semibold">MFA if High</span> to avoid lockouts.</div>
+        <div>- Use <span class="font-semibold">Strict</span> tier only if you accept more false positives (new devices + high risk may be blocked).</div>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <a href="#devices" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50" title="Jump to devices">Devices</a>
+      <a href="#crawlers" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50" title="Jump to crawler guard">Crawler Guard</a>
+      <a href="#risk" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50" title="Jump to risk insights">Risk Insights</a>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+  {% if disabled_labels %}
+  <div class="text-sm text-amber-800 bg-amber-50 border border-amber-100 px-3 py-2 rounded">
+    Disabled modules: {{ disabled_labels|join:", " }}. Enable them below to activate full security coverage.
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="border rounded-lg p-3 bg-white shadow-sm">
+      <div class="flex items-center justify-between text-sm font-semibold text-slate-900">
+        <span>Device identity</span>
+        <form method="post" class="flex items-center gap-2 text-xs">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="toggle_flag">
+          <input type="hidden" name="flag" value="device_identity_enabled">
+          <span class="px-2 py-1 rounded-full border {% if registry_flags.device_identity_enabled %}bg-emerald-100 text-emerald-900 border-emerald-200{% else %}bg-amber-100 text-amber-900 border-amber-200{% endif %}">
+            {{ registry_flags.device_identity_enabled|yesno:"Enabled,Disabled" }}
+          </span>
+          <button type="submit" class="px-2 py-1 rounded border border-slate-900 bg-slate-900 text-white hover:bg-slate-800">Toggle</button>
+        </form>
+      </div>
+    </div>
+    <div class="border rounded-lg p-3 bg-white shadow-sm">
+      <div class="flex items-center justify-between text-sm font-semibold text-slate-900">
+        <span>Crawler guard</span>
+        <form method="post" class="flex items-center gap-2 text-xs">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="toggle_flag">
+          <input type="hidden" name="flag" value="crawler_guard_enabled">
+          <span class="px-2 py-1 rounded-full border {% if registry_flags.crawler_guard_enabled %}bg-emerald-100 text-emerald-900 border-emerald-200{% else %}bg-amber-100 text-amber-900 border-amber-200{% endif %}">
+            {{ registry_flags.crawler_guard_enabled|yesno:"Enabled,Disabled" }}
+          </span>
+          <button type="submit" class="px-2 py-1 rounded border border-slate-900 bg-slate-900 text-white hover:bg-slate-800">Toggle</button>
+        </form>
+      </div>
+    </div>
+    <div class="border rounded-lg p-3 bg-white shadow-sm">
+      <div class="flex items-center justify-between text-sm font-semibold text-slate-900">
+        <span>AI behavior / risk</span>
+        <form method="post" class="flex items-center gap-2 text-xs">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="toggle_flag">
+          <input type="hidden" name="flag" value="ai_behavior_enabled">
+          <span class="px-2 py-1 rounded-full border {% if registry_flags.ai_behavior_enabled %}bg-emerald-100 text-emerald-900 border-emerald-200{% else %}bg-amber-100 text-amber-900 border-amber-200{% endif %}">
+            {{ registry_flags.ai_behavior_enabled|yesno:"Enabled,Disabled" }}
+          </span>
+          <button type="submit" class="px-2 py-1 rounded border border-slate-900 bg-slate-900 text-white hover:bg-slate-800">Toggle</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="border rounded-lg p-4 bg-white shadow-sm">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900">Security Config (DB-backed)</h2>
+        <p class="text-xs text-slate-500">Toggles and defaults pulled from SecurityConfig singleton.</p>
+        <div class="mt-2 text-[11px] text-slate-600 space-y-1">
+          <div>Device identity requires both AppRegistry.device_identity_enabled and SecurityConfig.devices_enabled.</div>
+          <div>Crawler Guard enforces only when AppRegistry.crawler_guard_enabled is on; default action lives here.</div>
+          <div>Risk/MFA: turn on login risk here, then set MFA policy to “MFA if High” to avoid blocking by default.</div>
+          <div>Device quota: enable to enforce rolling caps when no per-user override exists.</div>
+        </div>
+      </div>
+      <span class="text-xs text-slate-50 bg-slate-900 px-2 py-1 rounded">Applies across modules</span>
+    </div>
+    <form method="post" class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_security_config">
+
+      <label class="flex items-center gap-2 border rounded p-3">
+        <input type="checkbox" name="devices_enabled" value="1" {% if security_config.devices_enabled %}checked{% endif %}>
+        <div>
+          <div class="font-semibold text-slate-900">Devices enabled</div>
+          <div class="text-xs text-slate-500">Gate device identity enforcement.</div>
+        </div>
+      </label>
+      <label class="flex items-center gap-2 border rounded p-3">
+        <input type="checkbox" name="device_quota_enforcement_enabled" value="1" {% if security_config.device_quota_enforcement_enabled %}checked{% endif %}>
+        <div>
+          <div class="font-semibold text-slate-900">Device quota enforcement</div>
+          <div class="text-xs text-slate-500">Use rolling window defaults when no per-user override.</div>
+        </div>
+      </label>
+      <label class="flex items-center gap-2 border rounded p-3">
+        <input type="checkbox" name="crawler_guard_enabled" value="1" {% if security_config.crawler_guard_enabled %}checked{% endif %}>
+        <div>
+          <div class="font-semibold text-slate-900">Crawler guard enabled</div>
+          <div class="text-xs text-slate-500">Controls bot defense defaults.</div>
+        </div>
+      </label>
+      <label class="flex items-center gap-2 border rounded p-3">
+        <input type="checkbox" name="login_risk_enabled" value="1" {% if security_config.login_risk_enabled %}checked{% endif %}>
+        <div>
+          <div class="font-semibold text-slate-900">Login risk enabled</div>
+          <div class="text-xs text-slate-500">Allows risk engine to score logins.</div>
+        </div>
+      </label>
+      <label class="flex items-center gap-2 border rounded p-3">
+        <input type="checkbox" name="mfa_enabled" value="1" {% if security_config.mfa_enabled %}checked{% endif %}>
+        <div>
+          <div class="font-semibold text-slate-900">MFA enabled</div>
+          <div class="text-xs text-slate-500">Turns on MFA enforcement hooks.</div>
+        </div>
+      </label>
+
+      <div class="border rounded p-3 space-y-2">
+        <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Device quota defaults</div>
+        <div class="text-[11px] text-slate-500">Use when you want automatic rolling limits without setting per-user overrides.</div>
+        <label class="flex items-center gap-2">
+          <span class="text-xs text-slate-600 w-32">Default limit</span>
+          <input type="number" name="default_device_limit" min="1" value="{{ security_config.default_device_limit }}" class="border rounded px-2 py-1 w-24">
+        </label>
+        <label class="flex items-center gap-2">
+          <span class="text-xs text-slate-600 w-32">Default window</span>
+          <select name="default_device_window" class="border border-slate-300 rounded px-2 py-1 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+            {% for val,label in device_window_choices %}
+            <option value="{{ val }}" {% if security_config.default_device_window == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+      </div>
+
+      <div class="border rounded p-3 space-y-2">
+        <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Policies</div>
+        <div class="text-[11px] text-slate-500">Basic = permissive; Standard = balanced; Strict = aggressive step-up/blocking.</div>
+        <label class="flex items-center gap-2">
+          <span class="text-xs text-slate-600 w-32">Security tier</span>
+          <select name="security_tier" class="border border-slate-300 rounded px-2 py-1 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+            {% for val,label in security_tier_choices %}
+            <option value="{{ val }}" {% if security_config.security_tier == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="flex items-center gap-2">
+          <span class="text-xs text-slate-600 w-32">MFA policy</span>
+          <select name="mfa_policy" class="border border-slate-300 rounded px-2 py-1 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+            {% for val,label in mfa_policy_choices %}
+            <option value="{{ val }}" {% if security_config.mfa_policy == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <span class="text-[11px] text-slate-500">Tip: pair “MFA if High” with login risk enabled.</span>
+        </label>
+        <label class="flex items-center gap-2">
+          <span class="text-xs text-slate-600 w-32">Login risk</span>
+          <select name="login_risk_policy" class="border border-slate-300 rounded px-2 py-1 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+            {% for val,label in login_risk_policy_choices %}
+            <option value="{{ val }}" {% if security_config.login_risk_policy == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          <span class="text-[11px] text-slate-500">“Block if High” can lock users out; start with “MFA if High”.</span>
+        </label>
+      </div>
+
+      <div class="border rounded p-3 space-y-2">
+        <div class="text-xs uppercase tracking-wide text-slate-500 font-semibold">Crawler defaults</div>
+        <div class="text-[11px] text-slate-500">Start with “throttle” to observe, then move to “block” or “challenge”.</div>
+        <label class="flex items-center gap-2">
+          <span class="text-xs text-slate-600 w-32">Default action</span>
+          <select name="crawler_default_action" class="border border-slate-300 rounded px-2 py-1 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+            {% for val,label in crawler_action_choices %}
+            <option value="{{ val }}" {% if security_config.crawler_default_action == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <div class="text-[11px] text-slate-500">Use AppRegistry + middleware to fully activate.</div>
+      </div>
+
+      <div class="md:col-span-3 flex justify-end">
+        <button type="submit" class="px-4 py-2 rounded bg-primary text-white text-sm">Save security config</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="border rounded-lg p-4 bg-white shadow-sm">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900">Security engines</h2>
+        <p class="text-xs text-slate-500">Snapshot across devices, crawler guard, and AI risk.</p>
+      </div>
+      <div class="flex gap-2 text-xs">
+        <span class="px-2 py-1 rounded-full border border-slate-200 bg-slate-50">Devices</span>
+        <span class="px-2 py-1 rounded-full border border-slate-200 bg-slate-50">Crawler Guard</span>
+        <span class="px-2 py-1 rounded-full border border-slate-200 bg-slate-50">AI Risk</span>
+      </div>
+    </div>
+    <div class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3 text-sm text-slate-700">
+      <div class="rounded border border-slate-100 p-3 bg-slate-50">
+        <div class="text-xs text-slate-500">Devices</div>
+        <div class="font-semibold">{{ stats.devices_total }}</div>
+        <div class="text-[11px] text-slate-500">Device identity must be enabled.</div>
+      </div>
+      <div class="rounded border border-slate-100 p-3 bg-slate-50">
+        <div class="text-xs text-slate-500">Blocked</div>
+        <div class="font-semibold">
+          {{ stats.devices_blocked }}
+          {% if stats.devices_total %}
+            {% widthratio stats.devices_blocked stats.devices_total 100 as blk_pct %}
+            <span class="text-xs text-slate-500">({{ blk_pct }}%)</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="rounded border border-slate-100 p-3 bg-slate-50">
+        <div class="text-xs text-slate-500">Crawler events (24h)</div>
+        <div class="font-semibold">{{ stats.crawler_events_24h }}</div>
+        <div class="text-[11px] text-slate-500">Crawler guard enforcement is controlled by AppRegistry.</div>
+      </div>
+      <div class="rounded border border-slate-100 p-3 bg-slate-50">
+        <div class="text-xs text-slate-500">Open risk insights</div>
+        <div class="font-semibold">{{ stats.risk_insights_open }}</div>
+        <div class="text-[11px] text-slate-500">AI behavior/risk module must be enabled.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="devices" class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Devices</h2>
+          <p class="text-xs text-slate-500">Block/unblock, trust toggles, and quota resets.</p>
+        </div>
+        <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Reset quota reopens a user’s rolling window.</div>
+      </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">UUID</th>
+            <th class="px-4 py-2">User</th>
+            <th class="px-4 py-2">Trusted</th>
+            <th class="px-4 py-2">Blocked</th>
+            <th class="px-4 py-2">Risk</th>
+            <th class="px-4 py-2">Last seen</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for d in devices %}
+          <tr>
+            <td class="px-4 py-2">{{ d.machine_uuid }}</td>
+            <td class="px-4 py-2">{{ d.user_id }}</td>
+            <td class="px-4 py-2">{{ d.is_trusted|yesno:"Yes,No" }}</td>
+            <td class="px-4 py-2">{{ d.is_blocked|yesno:"Yes,No" }}</td>
+            <td class="px-4 py-2">{{ d.risk_score }}</td>
+            <td class="px-4 py-2">{{ d.last_seen_at }}</td>
+            <td class="px-4 py-2 space-x-2">
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="device_id" value="{{ d.id }}">
+                <input type="hidden" name="action" value="{% if d.is_blocked %}unblock{% else %}block{% endif %}">
+                <button type="submit" title="Toggle blocked state" class="text-sm {% if d.is_blocked %}text-emerald-700{% else %}text-red-600{% endif %}">
+                  {% if d.is_blocked %}Unblock{% else %}Block{% endif %}
+                </button>
+              </form>
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="device_id" value="{{ d.id }}">
+                <input type="hidden" name="action" value="{% if d.is_trusted %}untrust{% else %}trust{% endif %}">
+                <button type="submit" title="Toggle trusted state" class="text-sm text-primary">
+                  {% if d.is_trusted %}Untrust{% else %}Trust{% endif %}
+                </button>
+              </form>
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ d.user_id }}">
+                <input type="hidden" name="action" value="reset_quota">
+                <button type="submit" title="Reset this user’s device quota window" class="text-sm text-slate-600 hover:text-slate-800">Reset quota</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="px-4 py-3 text-slate-500">No devices.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="px-4 py-3 border-t flex items-center justify-between text-sm text-slate-600">
+      <div>Page {{ page }} / Page size {{ page_size }}</div>
+      <div class="space-x-2">
+        {% if page > 1 %}
+        <a href="?page={{ page|add:"-1" }}&page_size={{ page_size }}" class="text-primary hover:underline" title="Previous page">Prev</a>
+        {% endif %}
+        {% if devices|length >= page_size %}
+        <a href="?page={{ page|add:"1" }}&page_size={{ page_size }}" class="text-primary hover:underline" title="Next page">Next</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div id="crawlers" class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900">Crawler Guard</h2>
+        <p class="text-xs text-slate-500">Rules, throttling, and recent crawler events.</p>
+      </div>
+      <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Keep RPM reasonable to avoid false positives.</div>
+    </div>
+    <div class="px-4 py-3 border-b">
+      <form method="post" class="flex items-center gap-2 text-sm" title="Create a new crawler rule">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <input type="text" name="name" placeholder="Name" class="border border-slate-300 rounded px-2 py-1 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary" required>
+        <input type="text" name="path_pattern" placeholder="/api/*" class="border border-slate-300 rounded px-2 py-1 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary" required>
+        <input type="number" name="requests_per_minute" value="60" class="border border-slate-300 rounded px-2 py-1 w-24 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary">
+        <button type="submit" class="px-3 py-1 rounded bg-primary text-white text-sm hover:bg-primary/90">Add</button>
+      </form>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Pattern</th>
+            <th class="px-4 py-2">RPM</th>
+            <th class="px-4 py-2">Action</th>
+            <th class="px-4 py-2">Priority</th>
+            <th class="px-4 py-2">Enabled</th>
+            <th class="px-4 py-2">Toggle</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for r in rules %}
+          <tr>
+            <td class="px-4 py-2">{{ r.name }}</td>
+            <td class="px-4 py-2">{{ r.path_pattern }}</td>
+            <td class="px-4 py-2">{{ r.requests_per_minute }}</td>
+            <td class="px-4 py-2">{{ r.action }}</td>
+            <td class="px-4 py-2">{{ r.priority }}</td>
+            <td class="px-4 py-2">{{ r.is_enabled|yesno:"Yes,No" }}</td>
+            <td class="px-4 py-2">
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="rule_id" value="{{ r.id }}">
+                <input type="hidden" name="action" value="{% if r.is_enabled %}disable{% else %}enable{% endif %}">
+                <button type="submit" title="Toggle rule enablement" class="text-sm text-primary">
+                  {% if r.is_enabled %}Disable{% else %}Enable{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="px-4 py-3 text-slate-500">No rules.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="border-t px-4 py-3">
+      <h3 class="text-sm font-semibold text-slate-900 mb-2">Recent crawler events</h3>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">IP</th>
+              <th class="px-4 py-2">Action</th>
+              <th class="px-4 py-2">Path</th>
+              <th class="px-4 py-2">At</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for e in crawler_events %}
+            <tr>
+              <td class="px-4 py-2">{{ e.ip }}</td>
+              <td class="px-4 py-2">{{ e.action_taken }}</td>
+              <td class="px-4 py-2">{{ e.path }}</td>
+              <td class="px-4 py-2">{{ e.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-3 text-slate-500">No events.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="risk" class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">Risk Insights</h2>
+          <p class="text-xs text-slate-500">AI behavior insights and status workflow.</p>
+        </div>
+        <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Resolve/reject to keep the queue actionable.</div>
+      </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Severity</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">User</th>
+            <th class="px-4 py-2">Device</th>
+            <th class="px-4 py-2">IP</th>
+            <th class="px-4 py-2">Created</th>
+            <th class="px-4 py-2">Update</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for i in risk_insights %}
+          <tr>
+            <td class="px-4 py-2 capitalize">{{ i.severity }}</td>
+            <td class="px-4 py-2 capitalize">{{ i.status }}</td>
+            <td class="px-4 py-2">{{ i.related_user_id|default:"-" }}</td>
+            <td class="px-4 py-2">{{ i.device_identifier|default:"-" }}</td>
+            <td class="px-4 py-2">{{ i.related_ip|default:"-" }}</td>
+            <td class="px-4 py-2">{{ i.created_at }}</td>
+            <td class="px-4 py-2">
+              <form method="post" class="flex gap-2 items-center">
+                {% csrf_token %}
+                <input type="hidden" name="insight_id" value="{{ i.id }}">
+                <select name="status" class="border border-slate-300 rounded px-2 py-1 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary" title="Set status">
+                  {% for val in risk_statuses %}
+                  <option value="{{ val }}" {% if i.status == val %}selected{% endif %}>{{ val|capfirst }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="text-sm text-primary" title="Apply status change">Update</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="px-4 py-3 text-slate-500">No insights.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="security-events" class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-900">Security Events</h2>
+        <p class="text-xs text-slate-500">Unified feed from devices, quotas, crawlers, MFA/risk.</p>
+      </div>
+      <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">Latest 20 events</div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Type</th>
+            <th class="px-4 py-2">User</th>
+            <th class="px-4 py-2">Device</th>
+            <th class="px-4 py-2">IP</th>
+            <th class="px-4 py-2">At</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for e in security_events %}
+          <tr>
+            <td class="px-4 py-2">{{ e.type }}</td>
+            <td class="px-4 py-2">{{ e.user_id|default:"-" }}</td>
+            <td class="px-4 py-2">{{ e.device_id|default:"-" }}</td>
+            <td class="px-4 py-2">{{ e.ip|default:"-" }}</td>
+            <td class="px-4 py-2">{{ e.created_at }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-4 py-3 text-slate-500">No events.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

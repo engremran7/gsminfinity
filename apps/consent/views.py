@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 
 from apps.consent.models import ConsentPolicy, ConsentDecision, ConsentEvent
-from apps.consent.utils import hash_ip, hash_ua, set_consent_cookie
+from apps.consent.utils import hash_ip, hash_ua, resolve_policy_url, set_consent_cookie
 from apps.core.utils.ip import get_client_ip
 
 
@@ -27,7 +27,11 @@ def privacy_center(request):
     return render(
         request,
         "consent/privacy_center.html",
-        {"policy": active_policy, "decisions": decisions[:20]},
+        {
+            "policy": active_policy,
+            "decisions": decisions[:20],
+            "policy_url": resolve_policy_url(active_policy, default_slug="privacy"),
+        },
     )
 
 

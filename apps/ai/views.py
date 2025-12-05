@@ -27,7 +27,7 @@ def execute_view(request):
     try:
         payload = json.loads(request.body or "{}")
     except json.JSONDecodeError:
-        return JsonResponse({"ok": False, "error": "invalid_json"}, status=400)
+        return JsonResponse({"ok": False, "error": "invalid-json"}, status=400)
     if not isinstance(payload, dict):
         return JsonResponse({"ok": False, "error": "bad_payload"}, status=400)
     # Backwards compatibility: accept {action,payload} as well
@@ -35,7 +35,11 @@ def execute_view(request):
     inputs = payload.get("input") or payload.get("payload") or {}
     if not isinstance(inputs, dict):
         return JsonResponse({"ok": False, "error": "bad_payload"}, status=400)
-    run = api.execute(workflow, inputs, request.user if hasattr(request, "user") else None)
+    run = api.execute(
+        workflow,
+        inputs,
+        request.user if hasattr(request, "user") and request.user.is_authenticated else None,
+    )
     return JsonResponse({"ok": True, "run_id": run.id, "status": run.status, "output": run.output_payload})
 
 

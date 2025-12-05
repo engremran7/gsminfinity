@@ -108,3 +108,7 @@ docker-data/
 
 # Local recovery dumps
 _recovery/
+
+# Local tooling / audits
+tools/
+audit_*.txt
