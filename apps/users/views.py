@@ -26,6 +26,7 @@ from apps.users.models import Announcement, Notification
 from apps.users.services.rate_limit import allow_action
 from apps.users.services.recaptcha import verify_recaptcha
 from apps.core.app_service import AppService
+from apps.devices.services import make_device_token, load_device_token, mark_device_trusted
 from apps.core.utils.ip import get_client_ip
 from django.conf import settings
 from django.contrib import messages
@@ -40,6 +41,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST, require_http_methods
+from django.views.decorators.csrf import csrf_protect
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,86 @@ def profile(request: HttpRequest) -> HttpResponse:
         )[:5],
     }
     return render(request, "users/profile.html", context)
+
+
+@login_required
+@csrf_protect
+def devices_view(request: HttpRequest) -> HttpResponse:
+    """
+    List and manage the current user's devices (trust/untrust/delete).
+    """
+    devices = []
+    message = ""
+    error = ""
+    pending_device = None
+    try:
+        from apps.devices.models import Device
+    except Exception:
+        Device = None
+
+    if Device is None:
+        error = "Device management is unavailable."
+    else:
+        if request.method == "POST":
+            action = request.POST.get("action") or ""
+            device_id = request.POST.get("device_id") or ""
+            try:
+                device = Device.objects.filter(user=request.user, id=device_id).first()
+                if not device:
+                    error = "Device not found."
+                else:
+                    if action == "trust":
+                        device.is_trusted = True
+                        device.save(update_fields=["is_trusted"])
+                        message = "Device trusted."
+                    elif action == "untrust":
+                        device.is_trusted = False
+                        device.save(update_fields=["is_trusted"])
+                        message = "Device untrusted."
+                    elif action == "delete":
+                        device.delete()
+                        message = "Device removed."
+            except Exception as exc:
+                error = f"Action failed: {exc}"
+
+        try:
+            devices = list(
+                Device.objects.filter(user=request.user)
+                .order_by("-last_seen_at")
+                .values(
+                    "id",
+                    "machine_uuid",
+                    "display_name",
+                    "browser_family",
+                    "os_family",
+                    "is_trusted",
+                    "is_blocked",
+                    "risk_score",
+                    "last_seen_at",
+                    "first_seen_at",
+                )
+            )
+        except Exception as exc:
+            error = f"Could not load devices: {exc}"
+
+        # Surface any pending device approval token so the user can complete registration/trust
+        try:
+            token = request.session.get("pending_device_token")
+            reason = request.session.get("pending_device_reason", "")
+            if token:
+                pending_device = {
+                    "token": token,
+                    "reason": reason,
+                    "approval_url": reverse("users:approve_device") + f"?t={token}",
+                }
+        except Exception:
+            pending_device = None
+
+    return render(
+        request,
+        "users/devices.html",
+        {"devices": devices, "message": message, "error": error, "pending_device": pending_device},
+    )
 
 
 def login_view(request: HttpRequest) -> HttpResponse:
@@ -151,6 +233,7 @@ class EnterpriseLoginView(LoginView):
     def form_valid(self, form):
         settings_obj = _get_settings(self.request)
         ip = get_client_ip(self.request) or "unknown"
+        enforcement_ctx = None
 
         # --- Rate Limiting ---
         try:
@@ -191,9 +274,59 @@ class EnterpriseLoginView(LoginView):
             if devices_api and hasattr(devices_api, "enforce_device_policy_for_login"):
                 allowed, ctx = devices_api.enforce_device_policy_for_login(self.request, self.request.user)
                 if not allowed:
-                    form.add_error(None, "This device is not allowed to sign in. Contact support.")
+                    reason = (ctx or {}).get("reason") if isinstance(ctx, dict) else ""
+                    device_obj = (ctx or {}).get("device")
+                    approval_token = None
+                    try:
+                        if device_obj:
+                            approval_token = make_device_token(self.request.user.id, device_obj.id, reason or "untrusted_new_device")
+                            self.request.session["pending_device_token"] = approval_token
+                            self.request.session["pending_device_reason"] = reason
+                    except Exception:
+                        approval_token = None
+                    if reason == "blocked_device":
+                        msg = "This device is blocked. Contact support to unblock."
+                    elif reason == "untrusted_new_device":
+                        msg = "New device detected and not trusted. Approve it from a trusted session to continue."
+                    elif reason == "mfa_required":
+                        msg = "New device requires MFA. Complete multi-factor authentication to continue."
+                    elif reason == "mfa_required_risk":
+                        msg = "This device was flagged as high risk. Complete MFA to continue or trust it from a known device."
+                    elif reason == "monthly_device_quota":
+                        msg = "Monthly device limit reached. Remove an old device or wait until next month."
+                    elif reason == "yearly_device_quota":
+                        msg = "Yearly device limit reached. Remove an old device or wait until next year."
+                    elif reason == "user_window_quota":
+                        msg = "Device enrollment window exceeded. Remove an old device or contact support."
+                    elif reason == "device_quota_exceeded" or reason == "limit_reached":
+                        msg = "Maximum devices reached. Remove an old device before signing in from a new one."
+                    else:
+                        msg = "This device is not allowed to sign in. Contact support."
+                    if approval_token and reason in {"untrusted_new_device", "mfa_required", "mfa_required_risk"}:
+                        messages.error(self.request, msg)
+                        return redirect("users:device_approval_needed")
+                    if reason in {"device_quota_exceeded", "limit_reached", "user_window_quota", "monthly_device_quota", "yearly_device_quota"}:
+                        messages.error(self.request, msg)
+                        return redirect("users:device_eviction")
+                    form.add_error(None, msg)
                     return self.form_invalid(form)
-                setattr(self.request, "device", (ctx or {}).get("device"))
+                enforcement_ctx = ctx or {}
+                setattr(self.request, "device", enforcement_ctx.get("device"))
+            else:
+                # Fallback: register device even if AppService is disabled
+                try:
+                    from apps.devices.services import resolve_or_create_device
+
+                    device, is_new, ctx = resolve_or_create_device(self.request, self.request.user, service_name="login")
+                    enforcement_ctx = ctx or {}
+                    setattr(self.request, "device", device)
+                    if is_new:
+                        messages.info(
+                            self.request,
+                            "New device detected. Trust it from your account to avoid future prompts.",
+                        )
+                except Exception:
+                    logger.debug("Device registration fallback skipped", exc_info=True)
         except Exception:
             logger.debug("Device policy enforcement skipped", exc_info=True)
 
@@ -224,6 +357,30 @@ class EnterpriseLoginView(LoginView):
                 return redirect("users:verify_email")
         except Exception:
             logger.exception("MFA check failed (non-fatal)")
+
+        # --- Friendly prompt to trust new devices ---
+        try:
+            if enforcement_ctx:
+                device = enforcement_ctx.get("device")
+                is_new = bool(enforcement_ctx.get("is_new"))
+                if device and (is_new or not getattr(device, "is_trusted", False)):
+                    # Generate an approval token even when strict mode is off, so the user can trust immediately.
+                    try:
+                        approval_token = make_device_token(
+                            self.request.user.id,
+                            getattr(device, "id", None),
+                            "new_device",
+                        )
+                        self.request.session["pending_device_token"] = approval_token
+                        self.request.session["pending_device_reason"] = "new_device"
+                    except Exception:
+                        pass
+                    messages.info(
+                        self.request,
+                        "New device detected. Trust it from your account to avoid future prompts.",
+                    )
+        except Exception:
+            logger.debug("Trust reminder skipped", exc_info=True)
 
         return response
 
@@ -318,10 +475,141 @@ def verify_email_view(request):
     return render(request, "users/verify_email.html")
 
 
+@login_required
+@require_http_methods(["GET"])
+def verify_email_status(request: HttpRequest) -> JsonResponse:
+    """
+    Lightweight status endpoint so the client can auto-redirect once
+    verification is completed elsewhere (e.g., staff/admin update).
+    """
+    verified = bool(getattr(request.user, "email_verified_at", None))
+    return JsonResponse(
+        {
+            "verified": verified,
+            "redirect": reverse("users:dashboard") if verified else None,
+        }
+    )
+
+
+# ============================================================
+# Device approval / eviction helpers
+# ============================================================
+def _get_pending_device_token(request) -> Optional[str]:
+    return request.session.get("pending_device_token")
+
+
+def device_approval_needed(request: HttpRequest) -> HttpResponse:
+    token = _get_pending_device_token(request)
+    reason = request.session.get("pending_device_reason", "")
+    approval_url = reverse("users:approve_device")
+    if token:
+        approval_url = f"{approval_url}?t={token}"
+    return render(
+        request,
+        "users/device_approval_needed.html",
+        {"token": token, "reason": reason, "approval_url": approval_url},
+    )
+
+
+@login_required
+def approve_device(request: HttpRequest) -> HttpResponse:
+    token = request.GET.get("t") or _get_pending_device_token(request)
+    if not token:
+        messages.error(request, "No approval token found.")
+        return redirect("users:dashboard")
+    data = load_device_token(token)
+    if not data:
+        messages.error(request, "Approval link is invalid or expired.")
+        return redirect("users:dashboard")
+    if str(request.user.id) != str(data.get("u")):
+        messages.error(request, "This approval link belongs to another account.")
+        return redirect("users:dashboard")
+    device_id = data.get("d")
+    try:
+        ok = mark_device_trusted(device_id, request.user.id)
+        if not ok:
+            messages.error(request, "Device not found.")
+            return redirect("users:dashboard")
+        messages.success(request, "Device approved and trusted. You can sign in from it now.")
+        request.session.pop("pending_device_token", None)
+        request.session.pop("pending_device_reason", None)
+    except Exception:
+        messages.error(request, "Could not approve device. Try again.")
+    return redirect("users:devices")
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def device_eviction(request: HttpRequest) -> HttpResponse:
+    """
+    Allow users to evict old devices when quota is hit.
+    """
+    message = ""
+    error = ""
+    devices = []
+    try:
+        from apps.devices.models import Device
+
+        if request.method == "POST":
+            device_id = request.POST.get("device_id")
+            if device_id:
+                removed = Device.objects.filter(user=request.user, id=device_id).delete()[0]
+                if removed:
+                    message = "Device removed. You can now retry from your new device."
+                else:
+                    error = "Device not found."
+        devices = list(
+            Device.objects.filter(user=request.user)
+            .order_by("last_seen_at")
+            .values("id", "display_name", "machine_uuid", "last_seen_at", "is_trusted", "is_blocked")
+        )
+    except Exception as exc:
+        error = f"Could not load devices: {exc}"
+
+    return render(
+        request,
+        "users/device_eviction.html",
+        {"devices": devices, "message": message, "error": error},
+    )
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def device_mfa_challenge(request: HttpRequest) -> HttpResponse:
+    """
+    Placeholder MFA challenge: accept any non-empty code for demo;
+    replace with real MFA verification as needed.
+    """
+    token = request.GET.get("t") or _get_pending_device_token(request)
+    if not token:
+        messages.error(request, "No MFA challenge pending.")
+        return redirect("users:dashboard")
+    data = load_device_token(token)
+    if not data or str(request.user.id) != str(data.get("u")):
+        messages.error(request, "This challenge link is invalid or expired.")
+        return redirect("users:dashboard")
+    if request.method == "POST":
+        code = (request.POST.get("code") or "").strip()
+        if not code:
+            messages.error(request, "Enter the code to continue.")
+        else:
+            # TODO: integrate real MFA validation
+            if mark_device_trusted(data.get("d"), request.user.id):
+                messages.success(request, "MFA passed. Device trusted.")
+                request.session.pop("pending_device_token", None)
+                request.session.pop("pending_device_reason", None)
+                return redirect("users:dashboard")
+            messages.error(request, "Could not trust device. Try again.")
+    return render(
+        request,
+        "users/device_mfa_challenge.html",
+    )
+
+
 # ============================================================
 # Dashboard view
 # ============================================================
-@login_required
+@login_required(login_url="account_login")
 def dashboard_view(request):
     """Render user dashboard with recent announcements and notifications."""
     s = _get_settings(request)
@@ -350,6 +638,23 @@ def dashboard_view(request):
         .only("title", "message", "created_at", "recipient")
         .order_by("-created_at")[:5]
     )
+
+    # Resolve current device (best effort) for trust reminder
+    current_device = None
+    try:
+        from apps.devices.services import resolve_identity
+        from apps.devices.models import Device
+
+        ident = resolve_identity(request, user=request.user, service_name="login")
+        candidate_id = ident.get("machine_uuid") or ident.get("server_fallback_fp")
+        if candidate_id:
+            current_device = (
+                Device.objects.filter(user=request.user, machine_uuid=candidate_id)
+                .values("id", "is_trusted", "is_blocked", "display_name", "last_seen_at")
+                .first()
+            )
+    except Exception:
+        current_device = None
 
     def _display_name(u):
         try:
@@ -397,6 +702,7 @@ def dashboard_view(request):
         "credits": getattr(request.user, "credits", 0),
         "can_watch_ad": bool(s.get("recaptcha_enabled", False)),
         "can_pay": bool(s.get("enable_payments", True)),
+        "current_device": current_device,
     }
     return render(request, "users/dashboard.html", context)
 

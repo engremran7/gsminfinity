@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Devices - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div class="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-4 mb-6 flex items-start gap-3">
+    <svg class="h-5 w-5 mt-0.5 text-slate-500" aria-hidden="true"><use href="#icon-info"></use></svg>
+    <div class="text-sm">
+      <p class="font-semibold">Device registration consent</p>
+      <p class="mt-1">We register devices to protect your downloads and account. You can manage consent in Privacy &amp; Data.</p>
+      <a href="{% url 'consent:privacy_center' %}" class="text-primary hover:underline">Go to Privacy &amp; Data</a>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Your devices</h1>
+      <p class="text-sm text-slate-600 mt-1">
+        Review devices that have signed in to your account. Trust familiar ones, block or remove anything you do not recognize.
+      </p>
+    </div>
+    <a href="{% url 'users:dashboard' %}" class="text-sm text-primary hover:underline">Back to dashboard</a>
+  </div>
+
+  {% if error %}
+  <div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-4 mb-4">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  {% if pending_device %}
+  <div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-4 mb-4">
+    <div class="flex items-start gap-3">
+      <svg class="h-5 w-5 mt-0.5 text-amber-600" aria-hidden="true"><use href="#icon-alert"></use></svg>
+      <div class="text-sm">
+        <p class="font-semibold">New device requires approval</p>
+        <p class="mt-1">
+          {% if pending_device.reason == "untrusted_new_device" %}
+            A new device was detected and must be trusted to continue.
+          {% elif pending_device.reason == "mfa_required" or pending_device.reason == "mfa_required_risk" %}
+            This device needs MFA before it can be trusted.
+          {% else %}
+            Complete approval to finish signing in from this device.
+          {% endif %}
+        </p>
+        <div class="mt-3 flex items-center gap-2">
+          <a href="{{ pending_device.approval_url }}" class="px-3 py-2 rounded bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700">
+            Approve this device
+          </a>
+          <a href="{% url 'users:device_eviction' %}" class="text-xs text-slate-700 hover:underline">Manage devices instead</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if message %}
+  <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-4 mb-4">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  {% if devices %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% for device in devices %}
+      <div class="bg-white shadow rounded-lg p-4 flex flex-col gap-3">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-sm font-semibold text-slate-900">
+              {{ device.display_name|default:"Device" }}
+            </p>
+            <p class="text-xs text-slate-500 break-all">
+              ID: {{ device.machine_uuid|default:"unknown" }}
+            </p>
+          </div>
+          {% if device.is_blocked %}
+            <span class="text-xs px-2 py-1 rounded bg-rose-100 text-rose-700">Blocked</span>
+          {% elif device.is_trusted %}
+            <span class="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">Trusted</span>
+          {% else %}
+            <span class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-700">Normal</span>
+          {% endif %}
+        </div>
+        <div class="text-xs text-slate-600 space-y-1">
+          <p>Browser: {{ device.browser_family|default:"-" }} · OS: {{ device.os_family|default:"-" }}</p>
+          <p>First seen: {{ device.first_seen_at|default:"-" }}</p>
+          <p>Last seen: {{ device.last_seen_at|default:"-" }}</p>
+          <p>Risk score: {{ device.risk_score|default:"0" }}/100</p>
+        </div>
+        <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="device_id" value="{{ device.id }}">
+            {% if device.is_trusted %}
+              <input type="hidden" name="action" value="untrust">
+              <button type="submit" class="text-xs px-3 py-2 rounded border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100">
+                Mark untrusted
+              </button>
+            {% else %}
+              <input type="hidden" name="action" value="trust">
+              <button type="submit" class="text-xs px-3 py-2 rounded border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100">
+                Trust device
+              </button>
+            {% endif %}
+          </form>
+          {% if not device.is_trusted %}
+            <form method="post" class="inline" onsubmit="return confirm('Remove this device? It will need to sign in again.');">
+              {% csrf_token %}
+              <input type="hidden" name="device_id" value="{{ device.id }}">
+              <input type="hidden" name="action" value="delete">
+              <button type="submit" class="text-xs px-3 py-2 rounded border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100">
+                Remove
+              </button>
+            </form>
+          {% else %}
+            <span class="text-xs text-slate-500">Trusted devices can’t be removed here. Untrust first to remove.</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-white shadow rounded-lg p-6">
+      <p class="text-sm text-slate-700">No devices registered yet.</p>
+      <p class="text-xs text-slate-500 mt-1">
+        Sign in from a device to register it automatically. New devices may require approval depending on your security settings.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

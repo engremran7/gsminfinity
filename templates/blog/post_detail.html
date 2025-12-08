@@ -10,10 +10,14 @@
 
 {% block extra_head %}
   {% render_seo_meta post %}
+  <link rel="canonical" href="{{ canonical_url|default:request.build_absolute_uri }}">
+  {% if post.noindex %}
+    <meta name="robots" content="noindex,nofollow">
+  {% endif %}
 {% endblock %}
 
 {% block json_ld %}
-<script type="application/ld+json">
+<script type="application/ld+json" nonce="{{ request.csp_nonce }}">
 {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
@@ -38,24 +42,17 @@
         {% render_ad_slot "post-top" %}
       </div>
       <header class="space-y-3 relative">
-        <div class="absolute right-0 top-0 flex items-center gap-2">
+       <div class="absolute right-0 top-0 flex items-center gap-2">
           {% with share_url=request.build_absolute_uri %}
           <div class="flex items-center gap-2 flex-wrap justify-end">
-            <a class="share-chip" href="https://twitter.com/intent/tweet?url={{ share_url|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener" aria-label="Share on X">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-x"></use></svg>
-            </a>
-            <a class="share-chip" href="https://www.linkedin.com/sharing/share-offsite/?url={{ share_url|urlencode }}" target="_blank" rel="noopener" aria-label="Share on LinkedIn">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-linkedin"></use></svg>
-            </a>
-            <a class="share-chip" href="https://www.facebook.com/sharer/sharer.php?u={{ share_url|urlencode }}" target="_blank" rel="noopener" aria-label="Share on Facebook">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-facebook"></use></svg>
-            </a>
-            <a class="share-chip" href="https://api.whatsapp.com/send?text={{ post.title|urlencode }}%20{{ share_url|urlencode }}" target="_blank" rel="noopener" aria-label="Share on WhatsApp">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-whatsapp"></use></svg>
-            </a>
-            <a class="share-chip" href="https://t.me/share/url?url={{ share_url|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener" aria-label="Share on Telegram">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-telegram"></use></svg>
-            </a>
+            <button
+              type="button"
+              class="share-chip js-copy-link"
+              data-share-url="{{ share_url }}"
+              aria-label="Copy link"
+            >
+              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-link"></use></svg>
+            </button>
           </div>
           {% endwith %}
         </div>
@@ -89,7 +86,9 @@
           {% if post.category %}
             <div class="inline-flex items-center gap-2">
               <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-folder"></use></svg>
-              <span>{{ post.category.name }}</span>
+              <span>
+                {% if post.category.parent %}{{ post.category.parent.name }} / {% endif %}{{ post.category.name }}
+              </span>
             </div>
           {% endif %}
           {% if post.published_at %}
@@ -102,7 +101,19 @@
         {% if post.tags.all %}
           {% include "components/tag_badges.html" with tags=post.tags.all %}
         {% endif %}
+        {% if current_locale %}
+          <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-slate-100 text-slate-600">
+            {{ current_locale|upper }} version
+          </span>
+        {% endif %}
       </header>
+
+      {% if post.is_ai_generated %}
+        <div class="inline-flex items-center gap-2 text-xs px-3 py-1 rounded bg-amber-50 border border-amber-200 text-amber-800">
+          <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
+          AI-generated
+        </div>
+      {% endif %}
 
       {% if post.summary %}
         <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 text-slate-700">
@@ -132,14 +143,20 @@
         </div>
         {% with share_url=request.build_absolute_uri %}
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-sm">
-          <a class="btn-outline text-xs justify-center" href="https://twitter.com/intent/tweet?url={{ share_url|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener">X / Twitter</a>
-          <a class="btn-outline text-xs justify-center" href="https://www.linkedin.com/sharing/share-offsite/?url={{ share_url|urlencode }}" target="_blank" rel="noopener">LinkedIn</a>
-          <a class="btn-outline text-xs justify-center" href="https://www.facebook.com/sharer/sharer.php?u={{ share_url|urlencode }}" target="_blank" rel="noopener">Facebook</a>
-          <a class="btn-outline text-xs justify-center" href="https://api.whatsapp.com/send?text={{ post.title|urlencode }}%20{{ share_url|urlencode }}" target="_blank" rel="noopener">WhatsApp</a>
-          <a class="btn-outline text-xs justify-center" href="https://t.me/share/url?url={{ share_url|urlencode }}&text={{ post.title|urlencode }}" target="_blank" rel="noopener">Telegram</a>
-          <a class="btn-outline text-xs justify-center" href="https://reddit.com/submit?url={{ share_url|urlencode }}&title={{ post.title|urlencode }}" target="_blank" rel="noopener">Reddit</a>
-          <a class="btn-outline text-xs justify-center" href="https://www.pinterest.com/pin/create/button/?url={{ share_url|urlencode }}&description={{ post.summary|truncatechars:120|urlencode }}" target="_blank" rel="noopener">Pinterest</a>
-          <a class="btn-outline text-xs justify-center" href="mailto:?subject={{ post.title|urlencode }}&body={{ share_url|urlencode }}" target="_blank" rel="noopener">Email</a>
+          <button
+            type="button"
+            class="btn-outline text-xs justify-center js-copy-link"
+            data-share-url="{{ share_url }}"
+          >
+            Copy link
+          </button>
+          <button
+            type="button"
+            class="btn-outline text-xs justify-center js-copy-link"
+            data-share-url="{{ share_url }}"
+          >
+            Copy link (alt)
+          </button>
         </div>
         <div class="text-xs text-slate-500">
           <div class="flex items-center gap-2">
@@ -166,50 +183,61 @@
           <button type="button" class="btn-outline text-xs" data-ai-action="summarize_comments" data-ai-target="comment-thread">Summarize thread</button>
         </div>
 
-        {% with consent=cookie_consent_categories %}
-          {% with functional=consent.functional comments=consent.comments %}
-            <div class="flex items-center gap-2 mt-3">
-              <label for="comment-sort" class="text-xs text-slate-600">Sort</label>
-              <select id="comment-sort" class="text-sm border border-slate-200 rounded-md px-2 py-1">
-                <option value="new">Newest</option>
-                <option value="old">Oldest</option>
-                <option value="top">Top</option>
-              </select>
-            </div>
-            <div id="comment-thread" class="mt-4 space-y-4" data-post-slug="{{ post.slug }}" data-comments-allowed="{% if functional and comments %}true{% else %}false{% endif %}" data-current-user-id="{{ request.user.id|default:"" }}">
-              <p class="text-sm text-slate-500">
-                {% if functional and comments %}
-                  Loading comments...
-                {% else %}
-                  Comments are disabled until you enable the comments category in cookie settings.
-                {% endif %}
-              </p>
-            </div>
-
-            {% if functional and comments %}
-              {% if request.user.is_authenticated %}
-                <form method="post" action="{% url 'comments:add_comment_json' slug=post.slug %}" class="mt-4 space-y-2" id="comment-form" data-post-slug="{{ post.slug }}">
-                  {% csrf_token %}
-                  <label class="text-sm text-slate-700" for="comment-body">Add a comment</label>
-                  <textarea id="comment-body" name="body" rows="3" required class="w-full border border-slate-200 rounded-md p-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"></textarea>
-                  <p class="text-xs text-slate-500">Be constructive; inappropriate content may be removed.</p>
-                  <button type="submit" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
-                    <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-send"></use></svg>
-                    Post comment
-                  </button>
-                </form>
-              {% else %}
-                <p class="text-sm text-slate-600 mt-3">
-                  <a href="{% url 'account_login' %}" class="text-primary underline">Sign in</a> to comment.
-                </p>
-              {% endif %}
-            {% else %}
-              <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm p-3">
-                Comment features are disabled until you enable functional + comments cookies.
+        {% if post.allow_comments %}
+          {% with consent=cookie_consent_categories %}
+            {% with functional=consent.functional comments=consent.comments %}
+              <div class="flex items-center gap-2 mt-3">
+                <label for="comment-sort" class="text-xs text-slate-600">Sort</label>
+                <select id="comment-sort" class="text-sm border border-slate-200 rounded-md px-2 py-1">
+                  <option value="new">Newest</option>
+                  <option value="old">Oldest</option>
+                  <option value="top">Top</option>
+                </select>
               </div>
-            {% endif %}
+              <div id="comment-thread" class="mt-4 space-y-4" data-post-slug="{{ post.slug }}" data-comments-allowed="{% if functional and comments %}true{% else %}false{% endif %}" data-current-user-id="{{ request.user.id|default:"" }}">
+                <p class="text-sm text-slate-500">
+                  {% if functional and comments %}
+                    Loading comments...
+                  {% else %}
+                    Comments are disabled until you enable the comments category in cookie settings.
+                  {% endif %}
+                </p>
+              </div>
+
+              {% if functional and comments %}
+                {% if request.user.is_authenticated %}
+                  <form method="post" action="{% url 'comments:add_comment_json' slug=post.slug %}" class="mt-4 space-y-2" id="comment-form" data-post-slug="{{ post.slug }}">
+                    {% csrf_token %}
+                    <input type="text" name="hp" class="hidden" tabindex="-1" autocomplete="off">
+                    {% if recaptcha_enabled and recaptcha_site_key %}
+                      <input type="hidden" name="recaptcha_token" id="recaptcha_token">
+                      <div id="recaptcha-widget" class="mt-2"></div>
+                    {% endif %}
+                    <label class="text-sm text-slate-700" for="comment-body">Add a comment</label>
+                    <textarea id="comment-body" name="body" rows="3" required class="w-full border border-slate-200 rounded-md p-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"></textarea>
+                    <p class="text-xs text-slate-500">Be constructive; inappropriate content may be removed.</p>
+                    <button type="submit" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
+                      <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-send"></use></svg>
+                      Post comment
+                    </button>
+                  </form>
+                {% else %}
+                  <p class="text-sm text-slate-600 mt-3">
+                    <a href="{% url 'account_login' %}" class="text-primary underline">Sign in</a> to comment.
+                  </p>
+                {% endif %}
+              {% else %}
+                <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm p-3">
+                  Comment features are disabled until you enable functional + comments cookies.
+                </div>
+              {% endif %}
+            {% endwith %}
           {% endwith %}
-        {% endwith %}
+        {% else %}
+          <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-sm p-3">
+            Comments are disabled for this post.
+          </div>
+        {% endif %}
       </section>
     </article>
 
@@ -234,6 +262,12 @@
           </div>
           {% include "components/tag_badges.html" with tags=trending_tags %}
         </div>
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-sm font-semibold text-slate-800">Tag cloud</h3>
+          </div>
+          {% include "components/tag_cloud.html" with tags=tag_cloud %}
+        </div>
       </div>
     </aside>
   </div>
@@ -242,6 +276,7 @@
 
 {% block extra_scripts %}
   <script src="/static/js/blog.js" nonce="{{ request.csp_nonce }}" defer></script>
+  {# Recaptcha disabled for CSP/offline mode; enable only via config flag and local proxy if needed #}
 {% endblock %}
 
 

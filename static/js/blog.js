@@ -34,6 +34,37 @@
     return data;
   }
 
+  // Copy-to-clipboard for share links
+  function copyToClipboard(text) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(() => {});
+    }
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+    } catch (err) {
+      console.warn("Copy failed", err);
+    }
+    document.body.removeChild(ta);
+  }
+
+  document.addEventListener("click", (ev) => {
+    const btn = ev.target.closest(".js-copy-link");
+    if (!btn) return;
+    ev.preventDefault();
+    const url = btn.getAttribute("data-share-url") || btn.dataset.shareUrl;
+    copyToClipboard(url);
+    if (btn.dataset.toastTarget) {
+      // optional future toast hook
+    }
+  });
+
   // Inline helper for AI tag suggestion button
   document.addEventListener("click", async (ev) => {
     const btn = ev.target.closest("[data-ai-action='suggest_tags']");
@@ -67,7 +98,7 @@
             (t) =>
               `<span class="px-2 py-1 rounded-full bg-slate-100 border border-slate-200">${t}</span>`
           )
-          .join("");
+          .join(" | ");
       }
     } catch (err) {
       console.warn("Tag suggestions failed", err);
@@ -98,11 +129,11 @@ function renderCommentItem(c, depth = 0, currentUserId = null) {
     const header = doc.createElement("div");
     header.className = "flex items-center justify-between text-xs text-slate-500 flex-wrap";
     const userSpan = doc.createElement("span");
-    const edited = c.edited_at ? ` · edited ${new Date(c.edited_at).toLocaleString()}` : "";
-    userSpan.textContent = `${c.user || "User"} · ${new Date(c.created_at).toLocaleString()}${edited}`;
+    const edited = c.edited_at ? ` - edited ${new Date(c.edited_at).toLocaleString()}` : "";
+    userSpan.textContent = `${c.user || "User"} - ${new Date(c.created_at).toLocaleString()}${edited}`;
     const actions = doc.createElement("span");
     actions.className = "flex items-center gap-2";
-    actions.innerHTML = `${modChip}${statusChip}${aiChip}${reason ? `<span class="text-[11px] text-red-600">${reason}</span>` : ""}<button class="text-slate-500 hover:text-primary text-[11px]" data-comment-upvote="${c.id}">⇧ ${c.score || 0}</button><button class="text-slate-500 hover:text-amber-600 text-[11px]" data-comment-report="${c.id}">Report</button>`;
+    actions.innerHTML = `${modChip}${statusChip}${aiChip}${reason ? `<span class="text-[11px] text-red-600">${reason}</span>` : ""}<button class="text-slate-500 hover:text-primary text-[11px]" data-comment-upvote="${c.id}">&uarr; ${c.score || 0}</button><button class="text-slate-500 hover:text-amber-600 text-[11px]" data-comment-report="${c.id}">Report</button>`;
     if (c.is_owner || (currentUserId && String(currentUserId) === String(c.user_id))) {
       const editBtn = doc.createElement("button");
       editBtn.className = "text-slate-500 hover:text-primary text-[11px]";
@@ -650,7 +681,7 @@ function renderCommentItem(c, depth = 0, currentUserId = null) {
             box.textContent = "No similar posts found.";
             return;
           }
-          box.innerHTML = "Similar: " + data.items.map((p) => p.title).slice(0, 3).join(" • ");
+          box.innerHTML = "Similar: " + data.items.map((p) => p.title).slice(0, 3).join(" | ");
         } catch (_) {
           box.textContent = "";
         }
