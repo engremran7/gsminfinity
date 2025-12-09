@@ -23,12 +23,22 @@ class PostStatus(models.TextChoices):
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = models.SlugField(max_length=120, unique=True, blank=True)
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="children",
+        help_text="Optional parent to build nested categories (e.g., AI > Safety).",
+    )
 
     class Meta:
         ordering = ["name"]
         verbose_name_plural = "Categories"
 
     def __str__(self) -> str:
+        if self.parent:
+            return f"{self.parent} / {self.name}"
         return self.name
 
     def save(self, *args, **kwargs):
@@ -74,6 +84,14 @@ class Post(models.Model):
     featured = models.BooleanField(default=False)
     reading_time = models.PositiveIntegerField(default=0, help_text="Minutes")
     version = models.PositiveIntegerField(default=1)
+    is_ai_generated = models.BooleanField(default=False)
+    ai_run_id = models.CharField(max_length=100, blank=True, default="")
+    ai_error = models.TextField(blank=True, default="")
+    allow_comments = models.BooleanField(default=True)
+    noindex = models.BooleanField(
+        default=False,
+        help_text="If true, exclude from indexing until manually cleared.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -203,5 +221,94 @@ class BlogSettings(SingletonModel):
 
     def __str__(self) -> str:
         return "Blog Settings"
+
+
+# -------------------------------------------------
+# Multilingual (custom translation tables)
+# -------------------------------------------------
+
+
+class PostTranslation(models.Model):
+    post = models.ForeignKey("blog.Post", on_delete=models.CASCADE, related_name="translations")
+    language = models.CharField(max_length=10, db_index=True)
+    title = models.CharField(max_length=200, blank=True, default="")
+    summary = models.TextField(blank=True, default="", validators=[MaxLengthValidator(1000)])
+    body = models.TextField(blank=True, default="")
+    seo_title = models.CharField(max_length=240, blank=True, default="")
+    seo_description = models.CharField(max_length=320, blank=True, default="")
+
+    class Meta:
+        unique_together = ("post", "language")
+        indexes = [models.Index(fields=["language"], name="post_translation_lang_idx")]
+        verbose_name = "Post Translation"
+        verbose_name_plural = "Post Translations"
+
+    def __str__(self) -> str:
+        return f"{self.post} [{self.language}]"
+
+
+class CategoryTranslation(models.Model):
+    category = models.ForeignKey("blog.Category", on_delete=models.CASCADE, related_name="translations")
+    language = models.CharField(max_length=10, db_index=True)
+    name = models.CharField(max_length=120)
+
+    class Meta:
+        unique_together = ("category", "language")
+        indexes = [models.Index(fields=["language"], name="category_translation_lang_idx")]
+        verbose_name = "Category Translation"
+        verbose_name_plural = "Category Translations"
+
+    def __str__(self) -> str:
+        return f"{self.category} [{self.language}]"
+
+
+class TagTranslation(models.Model):
+    tag = models.ForeignKey("tags.Tag", on_delete=models.CASCADE, related_name="translations")
+    language = models.CharField(max_length=10, db_index=True)
+    name = models.CharField(max_length=80)
+    description = models.TextField(blank=True, default="")
+
+    class Meta:
+        unique_together = ("tag", "language")
+        indexes = [models.Index(fields=["language"], name="tag_translation_lang_idx")]
+        verbose_name = "Tag Translation"
+        verbose_name_plural = "Tag Translations"
+
+    def __str__(self) -> str:
+        return f"{self.tag} [{self.language}]"
+
+
+class AutoTopic(models.Model):
+    """
+    Queue for AI-generated blog posts.
+    """
+
+    STATUS_CHOICES = [
+        ("queued", "Queued"),
+        ("running", "Running"),
+        ("succeeded", "Succeeded"),
+        ("failed", "Failed"),
+    ]
+
+    topic = models.CharField(max_length=240)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="queued")
+    ai_run_id = models.CharField(max_length=100, blank=True, default="")
+    last_error = models.TextField(blank=True, default="")
+    scheduled_for = models.DateTimeField(null=True, blank=True)
+    retry_count = models.PositiveIntegerField(default=0)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    post = models.ForeignKey("blog.Post", null=True, blank=True, on_delete=models.SET_NULL)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"], name="blog_autotopic_status_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.topic} ({self.status})"
 
 

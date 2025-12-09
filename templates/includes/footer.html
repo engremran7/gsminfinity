@@ -1,5 +1,5 @@
 
-{% load static i18n_theme_tags %}
+{% load static i18n %}
 <footer class="bg-slate-800 text-slate-200 py-6">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex flex-col md:flex-row items-center justify-between gap-3">
@@ -9,13 +9,15 @@
         <a href="{% url 'pages:page' slug='cookies' %}" class="text-slate-200 hover:underline">Cookies</a>
         <a href="{% url 'pages:sitemap' %}" class="text-slate-200 hover:underline">Site map</a>
       </div>
-      <form method="post" action="{% url 'i18n_themes:switch' %}" class="inline-flex items-center gap-2 px-3 py-1 rounded border border-slate-600 bg-slate-700">
+      {% get_current_language as LANGUAGE_CODE %}
+      {% get_available_languages as LANGUAGES %}
+      <form method="post" action="{% url 'set_language' %}" class="inline-flex items-center gap-2 px-3 py-1 rounded border border-slate-600 bg-slate-700">
         {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
         <svg class="icon w-4 h-4 text-slate-200" aria-hidden="true"><use href="#icon-globe"></use></svg>
-        {% get_i18n_locales as switch_locales %}
-        <select name="locale" class="text-xs bg-slate-700 text-slate-100 border-slate-600 rounded px-2 py-1">
-          {% for loc in switch_locales %}
-          <option value="{{ loc.code }}">{{ loc.name|default:loc.code }}</option>
+        <select id="lang-switch-footer" name="language" class="text-xs bg-slate-700 text-slate-100 border-slate-600 rounded px-2 py-1">
+          {% for code, name in LANGUAGES %}
+          <option value="{{ code }}"{% if code == LANGUAGE_CODE %} selected{% endif %}>{{ name }}</option>
           {% endfor %}
         </select>
       </form>

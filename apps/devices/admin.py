@@ -15,17 +15,17 @@ class DeviceAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "display_name",
-        "machine_uuid",
+        "os_fingerprint",
         "is_trusted",
         "is_blocked",
         "risk_score",
         "last_seen_at",
     )
     list_filter = ("is_trusted", "is_blocked", "risk_score", "last_seen_at")
-    search_fields = ("machine_uuid", "user__email", "user__username", "display_name")
+    search_fields = ("os_fingerprint", "user__email", "user__username", "display_name")
     readonly_fields = ("first_seen_at", "last_seen_at")
 
-    actions = ["mark_trusted", "block_devices", "unblock_devices"]
+    actions = ["mark_trusted", "block_devices", "unblock_devices", "remove_devices"]
 
     @admin.action(description="Mark selected devices as trusted")
     def mark_trusted(self, request, queryset):
@@ -41,6 +41,12 @@ class DeviceAdmin(admin.ModelAdmin):
     def unblock_devices(self, request, queryset):
         updated = queryset.update(is_blocked=False, max_privilege_level="normal")
         self.message_user(request, f"{updated} device(s) unblocked.", messages.SUCCESS)
+
+    @admin.action(description="Remove selected devices")
+    def remove_devices(self, request, queryset):
+        count = queryset.count()
+        queryset.delete()
+        self.message_user(request, f"{count} device(s) removed.", messages.SUCCESS)
 
 
 @admin.register(DeviceConfig)
@@ -69,7 +75,7 @@ class AppPolicyAdmin(admin.ModelAdmin):
 class DeviceEventAdmin(admin.ModelAdmin):
     list_display = ("created_at", "event_type", "user", "device", "success", "reason", "ip")
     list_filter = ("event_type", "success", "created_at")
-    search_fields = ("user__email", "user__username", "device__machine_uuid", "reason", "ip", "user_agent")
+    search_fields = ("user__email", "user__username", "device__os_fingerprint", "reason", "ip", "user_agent")
     readonly_fields = ("created_at",)
 
     def has_add_permission(self, request):

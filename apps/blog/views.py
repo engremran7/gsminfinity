@@ -7,6 +7,8 @@ from django.core.paginator import Paginator
 from django.http import HttpRequest, HttpResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST, require_GET
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from django.views.decorators.cache import cache_page
 from django.template.loader import render_to_string
 from django.db.models import Q
 from django.db import transaction
@@ -29,6 +31,8 @@ from apps.core import ai
 from apps.core import ai_client
 from apps.blog.services import ai_editor, workflow
 from apps.core.utils.logging import log_event
+from apps.i18n.services import resolve_locale
+from apps.blog.models import PostTranslation, CategoryTranslation, TagTranslation
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +47,61 @@ def _sync_tag_usage(tags_qs):
                 tag.save(update_fields=["usage_count"])
         except Exception:
             continue
+
+
+def _apply_translations_to_posts(posts, locale: str | None):
+    """
+    Apply translations to a list/queryset of posts for the given locale.
+    Mutates objects in place for display purposes.
+    """
+    if not locale:
+        return posts
+    post_ids = [p.id for p in posts if getattr(p, "id", None)]
+    if not post_ids:
+        return posts
+    translations = {
+        pt.post_id: pt
+        for pt in PostTranslation.objects.filter(post_id__in=post_ids, language=locale)
+    }
+    categories = {p.category_id for p in posts if getattr(p, "category_id", None)}
+    cat_translations = {
+        ct.category_id: ct
+        for ct in CategoryTranslation.objects.filter(category_id__in=categories, language=locale)
+    } if categories else {}
+
+    tag_ids = set()
+    for p in posts:
+        try:
+            for t in p.tags.all():
+                tag_ids.add(t.id)
+        except Exception:
+            continue
+    tag_translations = {
+        tt.tag_id: tt
+        for tt in TagTranslation.objects.filter(tag_id__in=tag_ids, language=locale)
+    } if tag_ids else {}
+
+    for p in posts:
+        pt = translations.get(p.id)
+        if pt:
+            p.title = pt.title or p.title
+            p.summary = pt.summary or p.summary
+            p.body = pt.body or p.body
+            p.seo_title = pt.seo_title or p.seo_title
+            p.seo_description = pt.seo_description or p.seo_description
+        if p.category_id and p.category_id in cat_translations:
+            try:
+                p.category.name = cat_translations[p.category_id].name or p.category.name
+            except Exception:
+                pass
+        try:
+            for t in p.tags.all():
+                tt = tag_translations.get(t.id)
+                if tt:
+                    t.name = tt.name or t.name
+        except Exception:
+            pass
+    return posts
 
 
 def _ensure_post_seo(post: Post, request: HttpRequest | None = None):
@@ -83,6 +142,8 @@ def _ensure_post_seo(post: Post, request: HttpRequest | None = None):
             meta.meta_description = (post.seo_description or post.summary[:320])[:320]
         if not meta.canonical_url and request:
             meta.canonical_url = request.build_absolute_uri()
+        if hasattr(post, "noindex"):
+            meta.noindex = bool(post.noindex)
 
         if has_changes and auto_meta:
             meta.content_hash = content_hash
@@ -138,17 +199,23 @@ def post_list(request: HttpRequest) -> HttpResponse:
     date_to = request.GET.get("to") or ""
 
     if q:
-        posts = posts.filter(
-            Q(title__icontains=q)
-            | Q(body__icontains=q)
-            | Q(summary__icontains=q)
-            | Q(tags__name__icontains=q)
-            | Q(category__name__icontains=q)
+        vector = (
+            SearchVector("title", weight="A")
+            + SearchVector("summary", weight="B")
+            + SearchVector("body", weight="C")
+            + SearchVector("tags__name", weight="B")
+            + SearchVector("category__name", weight="C")
+        )
+        query = SearchQuery(q, search_type="plain")
+        posts = (
+            posts.annotate(rank=SearchRank(vector, query))
+            .filter(rank__gte=0.05)
+            .order_by("-rank", "-published_at")
         )
     if tag:
         posts = posts.filter(Q(tags__slug=tag) | Q(tags__name__iexact=tag))
     if category_slug:
-        posts = posts.filter(category__slug=category_slug)
+        posts = posts.filter(Q(category__slug=category_slug) | Q(category__parent__slug=category_slug))
     if author:
         posts = posts.filter(author__username=author)
     if date_from:
@@ -188,6 +255,8 @@ def post_list(request: HttpRequest) -> HttpResponse:
         # else: ignore invalid visibility requests
     paginator = Paginator(posts, 10)
     page_obj = paginator.get_page(request.GET.get("page") or 1)
+    current_locale = resolve_locale(request, "blog")
+    _apply_translations_to_posts(page_obj.object_list, current_locale)
     # Precompute display strings to keep templates simple and avoid filter gymnastics.
     for p in page_obj:
         published = p.published_at.strftime("%b %d, %Y") if p.published_at else "Draft"
@@ -228,7 +297,7 @@ def post_list(request: HttpRequest) -> HttpResponse:
         "active_author": author,
         "date_from": date_from,
         "date_to": date_to,
-        "categories": Category.objects.all().order_by("name"),
+        "categories": Category.objects.select_related("parent").order_by("parent__name", "name"),
         "status_filters": [
             ("", "All"),
             (PostStatus.PUBLISHED, "Published"),
@@ -287,6 +356,58 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
         )
     _ensure_post_seo(post, request)
 
+    # Tag cloud weights for sidebar (simple 3-tier scaling)
+    tag_cloud_raw = list(Tag.objects.filter(is_active=True).order_by("-usage_count")[:30])
+    if tag_cloud_raw:
+        max_usage = max([t.usage_count or 1 for t in tag_cloud_raw]) or 1
+        for t in tag_cloud_raw:
+            ratio = (t.usage_count or 0) / max_usage
+            if ratio >= 0.66:
+                t.weight = "lg"
+            elif ratio >= 0.33:
+                t.weight = "md"
+            else:
+                t.weight = "sm"
+    else:
+        tag_cloud_raw = []
+
+    canonical = post.canonical_url or request.build_absolute_uri()
+    current_locale = resolve_locale(request, "blog")
+
+    # Apply translations when available
+    if current_locale:
+        _apply_translations_to_posts(trending_posts, current_locale)
+        try:
+            t = PostTranslation.objects.filter(post=post, language=current_locale).first()
+            if t:
+                post.title = t.title or post.title
+                post.summary = t.summary or post.summary
+                post.body = t.body or post.body
+                post.seo_title = t.seo_title or post.seo_title
+                post.seo_description = t.seo_description or post.seo_description
+        except Exception:
+            pass
+        try:
+            if post.category:
+                ct = CategoryTranslation.objects.filter(category=post.category, language=current_locale).first()
+                if ct:
+                    post.category.name = ct.name or post.category.name
+        except Exception:
+            pass
+        # tags
+        try:
+            translated_tags = {}
+            for tag in post.tags.all():
+                tt = TagTranslation.objects.filter(tag=tag, language=current_locale).first()
+                if tt:
+                    translated_tags[tag.id] = tt.name
+            if translated_tags:
+                for tag in post.tags.all():
+                    if tag.id in translated_tags:
+                        tag.name = translated_tags[tag.id]
+        except Exception:
+            pass
+
     return render(
         request,
         "blog/post_detail.html",
@@ -296,8 +417,73 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
             "trending_tags": trending_tags,
             "trending_posts": trending_posts,
             "allow_user_posts": allow_user_posts,
+            "tag_cloud": tag_cloud_raw,
+            "canonical_url": canonical,
+            "current_locale": current_locale,
         },
     )
+
+
+@require_GET
+def post_archive_year(request: HttpRequest, year: int) -> HttpResponse:
+    posts = Post.objects.filter(
+        status=PostStatus.PUBLISHED,
+        publish_at__year=year,
+        publish_at__lte=timezone.now(),
+    ).select_related("author", "category")
+    current_locale = resolve_locale(request, "blog")
+    _apply_translations_to_posts(posts, current_locale)
+    return render(
+        request,
+        "blog/archive_year.html",
+        {"posts": posts, "year": year, "current_locale": current_locale},
+    )
+
+
+@require_GET
+def post_archive_month(request: HttpRequest, year: int, month: int) -> HttpResponse:
+    posts = Post.objects.filter(
+        status=PostStatus.PUBLISHED,
+        publish_at__year=year,
+        publish_at__month=month,
+        publish_at__lte=timezone.now(),
+    ).select_related("author", "category")
+    current_locale = resolve_locale(request, "blog")
+    _apply_translations_to_posts(posts, current_locale)
+    return render(
+        request,
+        "blog/archive_month.html",
+        {"posts": posts, "year": year, "month": month, "current_locale": current_locale},
+    )
+
+
+@require_GET
+def posts_api_public(request: HttpRequest) -> JsonResponse:
+    """
+    Lightweight public posts API (read-only).
+    """
+    qs = (
+        Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=timezone.now())
+        .select_related("author", "category")
+        .prefetch_related("tags")
+        .order_by("-published_at")[:50]
+    )
+    current_locale = resolve_locale(request, "blog")
+    _apply_translations_to_posts(qs, current_locale)
+    data = []
+    for p in qs:
+        data.append(
+            {
+                "title": p.title,
+                "slug": p.slug,
+                "summary": p.summary,
+                "url": request.build_absolute_uri(p.get_absolute_url()),
+                "category": p.category.name if p.category else None,
+                "tags": [t.name for t in p.tags.all()],
+                "published_at": p.published_at.isoformat() if p.published_at else None,
+            }
+        )
+    return JsonResponse({"items": data})
 
 
 @login_required

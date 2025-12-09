@@ -2,30 +2,137 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import uuid
 from typing import Any, Dict, Optional, Tuple
 
+from django.core import signing
 from django.conf import settings
 from django.utils import timezone
+from django.http import HttpResponse
 
 from apps.consent.utils import check as consent_check
 from apps.core.app_service import AppService
 from apps.core.utils.ip import get_client_ip
 from apps.devices.models import AppPolicy, Device, DeviceConfig, DeviceEvent
 from apps.devices.models_quota import UserDeviceQuota
+from apps.devices.utils.device_fingerprint import make_os_fingerprint
 
 logger = logging.getLogger(__name__)
 
 Policy = Dict[str, Any]
 Identity = Dict[str, Any]
 
+class DevicePolicyError(Exception):
+    def __init__(self, reason: str, context: Optional[Dict[str, Any]] = None):
+        super().__init__(reason)
+        self.reason = reason
+        self.context = context or {}
+
 
 def _hash_server_fingerprint(ua: str, ip: str, session_key: str) -> str:
     payload = f"{ua}|{ip}|{session_key}".encode("utf-8")
     return hashlib.sha256(payload).hexdigest()
 
+
+def _get_or_set_fallback_id(request, ua: str, ip: str) -> str:
+    """
+    Stable fallback identifier stored in session to avoid churn on session key rotation.
+    """
+    session = getattr(request, "session", None)
+    try:
+        if session is not None:
+            existing = session.get("device_fallback_id")
+            if existing:
+                return existing
+            new_id = _hash_server_fingerprint(ua, ip, str(uuid.uuid4()))
+            session["device_fallback_id"] = new_id
+            return new_id
+    except Exception:
+        pass
+    return _hash_server_fingerprint(ua, ip, str(uuid.uuid4()))
+
+
+def _parse_browser_family(ua: str) -> str:
+    ua_l = ua.lower()
+    if "chrome" in ua_l and "edg" not in ua_l and "opr" not in ua_l:
+        return "Chrome"
+    if "edg" in ua_l:
+        return "Edge"
+    if "firefox" in ua_l:
+        return "Firefox"
+    if "safari" in ua_l and "chrome" not in ua_l:
+        return "Safari"
+    if "opr" in ua_l or "opera" in ua_l:
+        return "Opera"
+    if "msie" in ua_l or "trident" in ua_l:
+        return "IE"
+    return "Browser"
+
+
+def _parse_os_family(ua: str) -> str:
+    ua_l = ua.lower()
+    if "windows" in ua_l:
+        return "Windows"
+    if "mac os" in ua_l or "macintosh" in ua_l:
+        return "macOS"
+    if "android" in ua_l:
+        return "Android"
+    if "iphone" in ua_l or "ipad" in ua_l or "ios" in ua_l:
+        return "iOS"
+    if "linux" in ua_l:
+        return "Linux"
+    return "OS"
+
+
+def make_device_token(user_id, device_id, reason: str) -> str:
+    payload = {"u": str(user_id), "d": str(device_id), "r": reason}
+    return signing.dumps(payload, salt="device-approval")
+
+
+def load_device_token(token: str, max_age: int = 86400) -> Optional[Dict[str, str]]:
+    try:
+        data = signing.loads(token, max_age=max_age, salt="device-approval")
+        if isinstance(data, dict) and data.get("u") and data.get("d"):
+            return data
+    except Exception:
+        return None
+    return None
+
+
+def mark_device_trusted(device_id, user_id) -> bool:
+    try:
+        from apps.devices.models import Device
+
+        device = Device.objects.filter(id=device_id, user_id=user_id).first()
+        if not device:
+            return False
+        device.is_trusted = True
+        device.is_blocked = False
+        device.save(update_fields=["is_trusted", "is_blocked"])
+        return True
+    except Exception:
+        return False
+
+
+def attach_device_cookie(response: HttpResponse, device: Device, max_age_days: int = 365) -> HttpResponse:
+    """
+    Persist the OS fingerprint for convenience (non-authoritative). This is a helper only;
+    the primary identity comes from the deterministic OS fingerprint hash.
+    """
+    try:
+        if response and device and getattr(device, "os_fingerprint", None):
+            response.set_cookie(
+                "os_fingerprint",
+                device.os_fingerprint,
+                max_age=max_age_days * 24 * 3600,
+                httponly=False,
+                secure=True,
+                samesite="Lax",
+            )
+    except Exception:
+        logger.debug("attach_device_cookie failed", exc_info=True)
+    return response
 
 def get_effective_policy(request, user=None, service_name: str | None = None) -> Policy:
     """
@@ -52,6 +159,7 @@ def get_effective_policy(request, user=None, service_name: str | None = None) ->
         "require_mfa_on_new_device": bool(getattr(config, "require_mfa_on_new_device", False)),
         "allow_server_fallback": bool(getattr(config, "allow_server_fallback", True)),
         "device_expiry_days": getattr(config, "device_expiry_days", None),
+        "risk_mfa_threshold": int(getattr(config, "risk_mfa_threshold", 75) or 75),
         "service_rules": {},
     }
 
@@ -85,57 +193,28 @@ def resolve_identity(
     service_name: str | None = None,
 ) -> Identity:
     """
-    Resolve device identity using primary (machine_uuid), secondary (enhanced FP),
-    or tertiary (server fallback) methods. Returns a dict with identity details.
+    Resolve device identity using OS fingerprint inputs (UA + JS payload).
     """
     policy = get_effective_policy(request, user=user, service_name=service_name)
     consent = getattr(request, "consent_categories", {}) or {}
     ip = get_client_ip(request) or ""
+    country = (
+        request.META.get("HTTP_CF_IPCOUNTRY")
+        or request.META.get("GEOIP_COUNTRY_CODE")
+        or request.META.get("HTTP_X_COUNTRY_CODE")
+        or ""
+    ).strip()
     ua = (request.META.get("HTTP_USER_AGENT") or "").strip()
 
-    machine_uuid = (
-        request.META.get("HTTP_X_DEVICE_ID")
-        or request.POST.get("machine_uuid")
-        or request.GET.get("machine_uuid")
-        or request.COOKIES.get("machine_uuid")
-        or None
-    )
-
-    fingerprint_hash = request.META.get("HTTP_X_DEVICE_FINGERPRINT") or request.POST.get("fingerprint_hash")
-    fingerprint_blob_raw = request.POST.get("fingerprint_blob") or request.META.get("HTTP_X_DEVICE_FP_BLOB")
-    fingerprint_blob = None
-    if fingerprint_blob_raw:
-        try:
-            if len(fingerprint_blob_raw.encode("utf-8")) <= 16384:
-                candidate = json.loads(fingerprint_blob_raw)
-                fingerprint_blob = candidate if isinstance(candidate, dict) else None
-        except Exception:
-            fingerprint_blob = None
-
-    enhanced_allowed = bool(policy.get("enhanced_fp")) and bool(
-        consent_check("fraud_prevention", request) or consent.get("fraud_prevention")
-    )
-
-    identity_level = "none"
-    server_fallback_fp = None
-
-    if machine_uuid:
-        identity_level = "primary"
-    elif policy.get("allow_server_fallback", True):
-        # Minimal consent for security: allow fallback unless explicitly denied
-        session_key = getattr(getattr(request, "session", None), "session_key", "") or ""
-        server_fallback_fp = _hash_server_fingerprint(ua, ip, session_key)
-        identity_level = "fallback"
-
+    payload = getattr(request, "device_payload", None) or {}
+    identity_level = "primary"
     return {
-        "machine_uuid": machine_uuid,
-        "fingerprint_hash": fingerprint_hash if enhanced_allowed else None,
-        "fingerprint_blob": fingerprint_blob if enhanced_allowed else None,
-        "server_fallback_fp": server_fallback_fp,
+        "payload": payload,
         "identity_level": identity_level,
         "policy_snapshot": policy,
         "consent_snapshot": consent,
         "ip": ip,
+        "country": country,
         "user_agent": ua,
     }
 
@@ -152,14 +231,33 @@ def resolve_or_create_device(
     ident = resolve_identity(request, user=user, service_name=service_name)
     policy = ident["policy_snapshot"]
     now = timezone.now()
+    payload = ident.get("payload") or {}
+    ua = ident.get("user_agent", "") or ""
+    ip = ident.get("ip", "") or ""
+    monthly_quota = policy.get("monthly_quota")
+    yearly_quota = policy.get("yearly_quota")
+    override = None
 
     device = None
     is_new = False
+    prev_event_ip = None
+    prev_country = None
+    try:
+        last_evt = DeviceEvent.objects.filter(user=user).order_by("-created_at").only("ip", "geo_region").first()
+        prev_event_ip = getattr(last_evt, "ip", None)
+        prev_country = getattr(last_evt, "geo_region", None)
+    except Exception:
+        prev_event_ip = None
+        prev_country = None
 
-    if ident["machine_uuid"]:
-        device = Device.objects.filter(user=user, machine_uuid=ident["machine_uuid"]).first()
-    elif ident["server_fallback_fp"]:
-        device = Device.objects.filter(user=user, machine_uuid=ident["server_fallback_fp"]).first()
+    # Compute deterministic OS fingerprint
+    os_fp, os_info = make_os_fingerprint(user.id, ua, payload)
+    if not os_fp:
+        if not policy.get("allow_server_fallback", True):
+            raise DevicePolicyError("device_key_required", {"policy": policy})
+        os_fp = _get_or_set_fallback_id(request, ua, ip)
+        ident["identity_level"] = "fallback"
+    ident["os_fingerprint"] = os_fp
 
     # Expire stale devices if configured
     expiry_days = policy.get("device_expiry_days")
@@ -167,36 +265,48 @@ def resolve_or_create_device(
         cutoff = now - timezone.timedelta(days=int(expiry_days))
         Device.objects.filter(user=user, last_seen_at__lt=cutoff).delete()
 
+    device = Device.objects.filter(user=user, os_fingerprint=os_fp).first()
+
     if device:
+        updates = ["last_seen_at"]
         device.last_seen_at = now
-        if ident["fingerprint_hash"]:
-            device.fingerprint_hash = ident["fingerprint_hash"]
-        if ident["fingerprint_blob"]:
-            device.metadata = ident["fingerprint_blob"]
-        device.save(update_fields=["last_seen_at", "fingerprint_hash", "metadata"])
+        device.os_name = os_info.name or device.os_name
+        device.os_version = os_info.version or device.os_version
+        device.browser_family = _parse_browser_family(ua or device.browser_family)
+        device.os_family = _parse_os_family(ua or device.os_family)
+        updates.extend(["os_name", "os_version", "browser_family", "os_family"])
+
+        try:
+            # merge payload into metadata without losing existing fields
+            metadata = device.metadata if isinstance(device.metadata, dict) else {}
+            if payload:
+                metadata = {**metadata, "payload": payload}
+                device.metadata = metadata
+                updates.append("metadata")
+        except Exception:
+            pass
+        device.save(update_fields=list(set(updates)))
     else:
-        # Enforce monthly/yearly quotas before creating
-        monthly_quota = policy.get("monthly_quota")
-        yearly_quota = policy.get("yearly_quota")
         override = UserDeviceQuota.objects.filter(user=user).first()
 
+        # Enforce monthly/yearly quotas before creating
         if monthly_quota:
             month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            month_count = Device.objects.filter(user=user, first_seen_at__gte=month_start).count()
+            month_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=month_start).count()
             if month_count >= int(monthly_quota):
-                return None, False, {"reason": "monthly_device_quota", "policy": policy}
+                raise DevicePolicyError("monthly_device_quota", {"policy": policy})
         if yearly_quota:
             year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-            year_count = Device.objects.filter(user=user, first_seen_at__gte=year_start).count()
+            year_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=year_start).count()
             if year_count >= int(yearly_quota):
-                return None, False, {"reason": "yearly_device_quota", "policy": policy}
+                raise DevicePolicyError("yearly_device_quota", {"policy": policy})
 
         # Enforce user-specific rolling window quota if configured
         if override:
             window_map = {"3m": 90, "6m": 180, "12m": 365}
             days = window_map.get(override.window, 180)
             window_start = max(override.last_reset_at, now - timezone.timedelta(days=days))
-            registrations = Device.objects.filter(user=user, first_seen_at__gte=window_start).count()
+            registrations = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=window_start).count()
             limit = override.max_devices if override.max_devices is not None else policy.get("max_devices") or 5
             if registrations >= int(limit):
                 _emit_security_event(
@@ -206,7 +316,7 @@ def resolve_or_create_device(
                     ip=ident.get("ip"),
                     metadata={"window_days": days, "limit": limit},
                 )
-                return None, False, {"reason": "user_window_quota", "policy": policy, "window_days": days}
+                raise DevicePolicyError("user_window_quota", {"policy": policy, "window_days": days})
 
         # Enforce global rolling quota when enabled in SecurityConfig (only if no per-user override)
         if not override:
@@ -227,7 +337,7 @@ def resolve_or_create_device(
                     },
                 )
                 window_start = max(quota_record.last_reset_at, now - timezone.timedelta(days=window_days))
-                registrations = Device.objects.filter(user=user, first_seen_at__gte=window_start).count()
+                registrations = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=window_start).count()
                 limit = quota_policy.get("default_limit", policy.get("max_devices") or 5)
                 if registrations >= int(limit):
                     _emit_security_event(
@@ -237,30 +347,102 @@ def resolve_or_create_device(
                         ip=ident.get("ip"),
                         metadata={"window_days": window_days, "limit": limit},
                     )
-                    return None, False, {"reason": "device_quota_exceeded", "policy": policy, "window_days": window_days}
+                    raise DevicePolicyError("device_quota_exceeded", {"policy": policy, "window_days": window_days})
 
         # Enforce max devices (global + per-user override)
         max_devices = int((override.max_devices if override and override.max_devices is not None else policy.get("max_devices") or 5))
-        current_count = Device.objects.filter(user=user).count()
+        current_count = Device.objects.filter(user=user, is_blocked=False).count()
         if current_count >= max_devices:
             if policy.get("device_locking_mode") == "strict":
-                return None, False, {"reason": "limit_reached", "policy": policy}
+                raise DevicePolicyError("limit_reached", {"policy": policy})
             # soft mode: evict oldest
-            oldest = Device.objects.filter(user=user).order_by("last_seen_at").first()
+            oldest = Device.objects.filter(user=user, is_blocked=False).order_by("last_seen_at").first()
             if oldest:
+                try:
+                    _log_event(oldest, user, service_name or "login", success=False, reason="evicted_oldest", ctx=ident)
+                    from apps.users.services.notifications import send_notification
+
+                    send_notification(
+                        user,
+                        "Old device removed",
+                        f"The oldest device ({getattr(oldest, 'display_name', '') or getattr(oldest, 'os_fingerprint', '')}) was removed to make room for a new sign-in.",
+                        level="info",
+                        channel="web",
+                    )
+                except Exception:
+                    logger.debug("Failed to log/notify eviction", exc_info=True)
                 oldest.delete()
         device = Device.objects.create(
             user=user,
-            machine_uuid=ident["machine_uuid"] or ident["server_fallback_fp"] or str(uuid.uuid4()),
-            fingerprint_hash=ident["fingerprint_hash"] or "",
-            metadata=ident["fingerprint_blob"] or {},
+            os_fingerprint=os_fp,
+            os_name=os_info.name,
+            os_version=os_info.version,
+            hardware_uuid=os_fp,  # legacy compatibility
+            browser_family=_parse_browser_family(ua),
+            os_family=_parse_os_family(ua),
+            metadata={"payload": payload} if payload else {},
             first_seen_at=now,
             last_seen_at=now,
-            is_trusted=not policy.get("strict_new_device_login", False),
+            # Always require explicit user approval/trust; start untrusted
+            is_trusted=False,
         )
         is_new = True
 
+    # Simple risk scoring heuristic
+    try:
+        risk = 0
+        country = ident.get("country", "") or ""
+        if is_new:
+            risk += 40
+        if ident.get("identity_level") != "primary":
+            risk += 10
+        if prev_event_ip and ip and prev_event_ip != ip:
+            risk += 15
+        if prev_country and country and prev_country != country:
+            risk += 15
+        if ua and device and device.metadata:
+            # compare UA family
+            prev_ua = device.metadata.get("ua_family") if isinstance(device.metadata, dict) else None
+            if prev_ua and prev_ua != ua:
+                risk += 10
+        risk = max(0, min(100, risk))
+        if device and risk != device.risk_score:
+            device.risk_score = risk
+            # persist UA family for future comparisons
+            if isinstance(device.metadata, dict):
+                device.metadata["ua_family"] = ua
+                if country:
+                    device.metadata["country"] = country
+            device.save(update_fields=["risk_score", "metadata"])
+        ident["risk_score"] = risk
+    except Exception:
+        ident["risk_score"] = getattr(device, "risk_score", 0) if device else 0
+
     ident["is_new"] = is_new
+    # Remaining quota/slots snapshot for UX
+    try:
+        allowed_max = int((override.max_devices if override and override.max_devices is not None else policy.get("max_devices") or 5))
+        current_count = Device.objects.filter(user=user, is_blocked=False).count()
+        ident["remaining_devices"] = max(0, allowed_max - current_count)
+    except Exception:
+        ident["remaining_devices"] = None
+
+    try:
+        reset_days: Optional[int] = None
+        if monthly_quota:
+            month_end = (now.replace(day=28) + timezone.timedelta(days=4)).replace(day=1)
+            reset_days = max(0, (month_end - now).days)
+        elif yearly_quota:
+            year_end = now.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=0)
+            reset_days = max(0, (year_end - now).days)
+        elif override:
+            window_map = {"3m": 90, "6m": 180, "12m": 365}
+            days = window_map.get(override.window, 180)
+            window_start = max(override.last_reset_at, now - timezone.timedelta(days=days))
+            reset_days = max(0, (window_start + timezone.timedelta(days=days) - now).days)
+        ident["quota_reset_days"] = reset_days
+    except Exception:
+        ident["quota_reset_days"] = None
     return device, is_new, ident
 
 
@@ -268,21 +450,42 @@ def enforce_device_policy_for_login(request, user) -> Tuple[bool, Dict[str, Any]
     """
     Enforce device policy during login.
     """
-    device, is_new, ctx = resolve_or_create_device(request, user, service_name="login")
+    try:
+        device, is_new, ctx = resolve_or_create_device(request, user, service_name="login")
+    except DevicePolicyError as exc:
+        _log_event(None, user, "login", success=False, reason=exc.reason, ctx=exc.context or {})
+        raise
+
+    if ctx.get("identity_level") != "primary":
+        _log_event(device, user, "login", success=False, reason="fallback_identity_blocked", ctx=ctx)
+        raise DevicePolicyError("fallback_identity_blocked", {"device": device})
 
     if device and device.is_blocked:
         _log_event(device, user, "login", success=False, reason="blocked_device", ctx=ctx)
-        return False, {"reason": "blocked_device", "device": device}
+        _notify_user_device_issue(user, "blocked_device", device, ctx)
+        raise DevicePolicyError("blocked_device", {"device": device})
 
     policy = ctx["policy_snapshot"]
 
     if policy.get("strict_new_device_login") and is_new and not device.is_trusted:
         _log_event(device, user, "login", success=False, reason="untrusted_new_device", ctx=ctx)
-        return False, {"reason": "untrusted_new_device", "device": device}
+        _notify_user_device_issue(user, "untrusted_new_device", device, ctx)
+        raise DevicePolicyError("untrusted_new_device", {"device": device})
 
     if policy.get("require_mfa_on_new_device") and is_new:
         _log_event(device, user, "login", success=False, reason="mfa_required", ctx=ctx)
-        return False, {"reason": "mfa_required", "device": device}
+        _notify_user_device_issue(user, "mfa_required", device, ctx)
+        raise DevicePolicyError("mfa_required", {"device": device})
+
+    # Risk-based MFA escalation
+    try:
+        risk_threshold = int(policy.get("risk_mfa_threshold") or 0)
+    except Exception:
+        risk_threshold = 0
+    if risk_threshold and device and getattr(device, "risk_score", 0) >= risk_threshold:
+        _log_event(device, user, "login", success=False, reason="mfa_required_risk", ctx=ctx)
+        _notify_user_device_issue(user, "mfa_required_risk", device, ctx)
+        raise DevicePolicyError("mfa_required_risk", {"device": device, "risk_score": getattr(device, "risk_score", 0)})
 
     _log_event(device, user, "login", success=True, reason="policy_pass", ctx=ctx)
     return True, {"device": device, "is_new": is_new, "context": ctx}
@@ -296,24 +499,48 @@ def enforce_device_policy_for_service(
     """
     Enforce device policy for a named service.
     """
-    device, is_new, ctx = resolve_or_create_device(request, user, service_name=service_name)
+    try:
+        device, is_new, ctx = resolve_or_create_device(request, user, service_name=service_name)
+    except DevicePolicyError as exc:
+        _log_event(None, user, service_name, success=False, reason=exc.reason, ctx=exc.context or {})
+        raise
+
+    if ctx.get("identity_level") != "primary":
+        _log_event(device, user, service_name, success=False, reason="fallback_identity_blocked", ctx=ctx)
+        raise DevicePolicyError("fallback_identity_blocked", {"device": device})
     policy = ctx["policy_snapshot"]
     service_rules = policy.get("service_rules") or {}
 
     if device and device.is_blocked:
         _log_event(device, user, service_name, success=False, reason="blocked_device", ctx=ctx)
-        return False, {"reason": "blocked_device", "device": device}
+        raise DevicePolicyError("blocked_device", {"device": device})
+
+    if policy.get("strict_new_device_login") and is_new and not (device and device.is_trusted):
+        _log_event(device, user, service_name, success=False, reason="untrusted_new_device", ctx=ctx)
+        raise DevicePolicyError("untrusted_new_device", {"device": device})
+
+    if policy.get("require_mfa_on_new_device") and is_new:
+        _log_event(device, user, service_name, success=False, reason="mfa_required", ctx=ctx)
+        raise DevicePolicyError("mfa_required", {"device": device})
+
+    try:
+        risk_threshold = int(policy.get("risk_mfa_threshold") or 0)
+    except Exception:
+        risk_threshold = 0
+    if risk_threshold and device and getattr(device, "risk_score", 0) >= risk_threshold:
+        _log_event(device, user, service_name, success=False, reason="mfa_required_risk", ctx=ctx)
+        raise DevicePolicyError("mfa_required_risk", {"device": device, "risk_score": getattr(device, "risk_score", 0)})
 
     if service_rules.get("trusted_device_only") and not (device and device.is_trusted):
         _log_event(device, user, service_name, success=False, reason="untrusted_device", ctx=ctx)
-        return False, {"reason": "untrusted_device", "device": device}
+        raise DevicePolicyError("untrusted_device", {"device": device})
 
     max_devices = service_rules.get("max_devices")
     if max_devices:
-        count = Device.objects.filter(user=user).count()
+        count = Device.objects.filter(user=user, is_blocked=False).count()
         if count > int(max_devices):
             _log_event(device, user, service_name, success=False, reason="service_device_limit", ctx=ctx)
-            return False, {"reason": "service_device_limit", "device": device}
+            raise DevicePolicyError("service_device_limit", {"device": device})
 
     _log_event(device, user, service_name, success=True, reason="policy_pass", ctx=ctx)
     return True, {"device": device, "is_new": is_new, "context": ctx}
@@ -328,6 +555,7 @@ def _log_event(device: Optional[Device], user, event_type: str, success: bool, r
         "reason": reason,
         "ip": ctx.get("ip", ""),
         "user_agent": ctx.get("user_agent", ""),
+        "geo_region": ctx.get("country", ""),
         "metadata": {"policy": ctx.get("policy_snapshot"), "consent": ctx.get("consent_snapshot")},
     }
     try:
@@ -355,7 +583,7 @@ def _log_event(device: Optional[Device], user, event_type: str, success: bool, r
             send_notification(
                 payload["user"],
                 "New device registered",
-                f"A new device ({getattr(device, 'machine_uuid', 'unknown')}) was added from {payload.get('ip') or 'unknown IP'}.",
+                f"A new device ({getattr(device, 'os_fingerprint', 'unknown')}) was added from {payload.get('ip') or 'unknown IP'}.",
                 level="warning",
                 channel="web",
             )
@@ -368,7 +596,7 @@ def _log_event(device: Optional[Device], user, event_type: str, success: bool, r
         if ai_api and hasattr(ai_api, "promote_from_device_event"):
             ai_api.promote_from_device_event(
                 {
-                    "device_identifier": getattr(device, "machine_uuid", None),
+                    "device_identifier": getattr(device, "os_fingerprint", None),
                     "ip": payload["ip"],
                     "user": payload["user"],
                     "event_type": event_type,
@@ -388,3 +616,40 @@ def _emit_security_event(event_type: str, user=None, device=None, ip: str | None
         emit_security_event(event_type, user=user, device=device, ip=ip, metadata=metadata)
     except Exception:
         return
+
+
+def _notify_user_device_issue(user, reason: str, device: Optional[Device], ctx: Dict[str, Any]) -> None:
+    """
+    Notify the user when a device is blocked or needs trust/MFA.
+    """
+    if not getattr(user, "is_authenticated", False):
+        return
+    try:
+        from apps.users.services.notifications import send_notification
+
+        ip = ctx.get("ip") or "unknown IP"
+        device_label = getattr(device, "display_name", None) or getattr(device, "os_fingerprint", None) or "device"
+        if reason == "blocked_device":
+            title = "Sign-in blocked"
+            message = f"Your device ({device_label}) was blocked from signing in from {ip}. If this was you, review devices and unblock."
+        elif reason == "untrusted_new_device":
+            title = "New device requires trust"
+            message = f"A new device ({device_label}) tried to sign in from {ip}. Trust it from an existing device if you recognize it."
+        elif reason == "mfa_required":
+            title = "Multi-factor required for new device"
+            message = f"A new device ({device_label}) requires MFA to finish signing in. Complete MFA or trust it from an existing device."
+        elif reason == "mfa_required_risk":
+            title = "Multi-factor required (risky device)"
+            message = f"This device ({device_label}) scored high risk from {ip}. Complete MFA or trust it from an existing device to continue."
+        else:
+            return
+
+        send_notification(
+            recipient=user,
+            title=title,
+            message=message,
+            level="warning",
+            channel="web",
+        )
+    except Exception:
+        logger.debug("notify user device issue skipped", exc_info=True)

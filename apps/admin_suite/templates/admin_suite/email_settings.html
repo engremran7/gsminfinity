@@ -1,0 +1,50 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Email & Delivery - Admin Suite{% endblock %}
+
+{% block content %}
+  <div class="space-y-4">
+    <div class="card bg-white border border-slate-200 rounded-lg p-5">
+      <h2 class="text-xl font-semibold text-slate-900 mb-3">Gmail SMTP (App Password)</h2>
+      <p class="text-sm text-slate-600 mb-4">
+        Configure Gmail delivery using an app password. From will default to the Gmail username when left blank.
+      </p>
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-700 mb-4">
+        <p class="font-semibold mb-1">Deliverability tips</p>
+        <ul class="list-disc ml-5 space-y-1">
+          <li>Add SPF for your sending domain: <code>v=spf1 include:_spf.google.com ~all</code>.</li>
+          <li>Ensure DKIM is enabled in your Gmail account (Admin console &gt; Apps &gt; Gmail &gt; Authenticate email).</li>
+          <li>Set a DMARC record (e.g., <code>v=DMARC1; p=quarantine; rua=mailto:postmaster@yourdomain.com</code>).</li>
+          <li>Use a dedicated From name/domain and keep templates consistent to avoid spam classification.</li>
+        </ul>
+      </div>
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-medium text-slate-800" for="{{ form.gmail_enabled.id_for_label|default:'id_gmail_enabled' }}">Enable Gmail</label>
+          {{ form.gmail_enabled }}
+        </div>
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-slate-800" for="{{ form.gmail_username.id_for_label|default:'id_gmail_username' }}">Gmail username</label>
+          {{ form.gmail_username }}
+        </div>
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-slate-800" for="{{ form.gmail_app_password.id_for_label|default:'id_gmail_app_password' }}">Gmail app password</label>
+          {{ form.gmail_app_password }}
+        </div>
+        <div class="space-y-1">
+          <label class="text-sm font-medium text-slate-800" for="{{ form.gmail_from_email.id_for_label|default:'id_gmail_from_email' }}">From email (optional)</label>
+          {{ form.gmail_from_email }}
+          <p class="text-xs text-slate-500">Defaults to the Gmail username if left blank.</p>
+        </div>
+        {% if form.non_field_errors %}
+          <div class="text-sm text-rose-600">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="flex justify-end gap-2">
+          <a href="{% url 'admin_suite:admin_suite_settings' %}" class="px-4 py-2 rounded border border-slate-200 text-slate-700 hover:bg-slate-50">Cancel</a>
+          <button type="submit" class="px-4 py-2 rounded bg-primary text-white">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

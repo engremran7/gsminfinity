@@ -73,7 +73,7 @@
     if (loading) {
       btn.dataset.originalText = btn.textContent;
       btn.disabled = true;
-      btn.textContent = "Thinking…";
+      btn.textContent = "Thinking...";
     } else {
       btn.disabled = false;
       if (btn.dataset.originalText) btn.textContent = btn.dataset.originalText;

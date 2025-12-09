@@ -1,18 +1,18 @@
 
 from __future__ import annotations
 
-from . import StubConnector
+from . import LoggingConnector
 
 
-class MailchimpConnector(StubConnector):
+class MailchimpConnector(LoggingConnector):
     channel = "mailchimp"
 
 
-class SendGridConnector(StubConnector):
+class SendGridConnector(LoggingConnector):
     channel = "sendgrid"
 
 
-class SubstackConnector(StubConnector):
+class SubstackConnector(LoggingConnector):
     channel = "substack"
 
 

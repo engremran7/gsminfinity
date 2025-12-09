@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 from django.urls import reverse
 
 from .models import Notification
+from .services.rate_limit import allow_action
 
 
 @login_required
@@ -30,6 +31,7 @@ def notifications_unread_json(request: HttpRequest) -> JsonResponse:
             "message": n.message,
             "priority": n.priority,
             "channel": n.channel,
+            "url": getattr(n, "url", None),
             "created_at": n.created_at.isoformat() if n.created_at else None,
         }
         for n in qs
@@ -49,9 +51,15 @@ def password_reset_verify(request: HttpRequest) -> JsonResponse:
     if not email or not code:
         return JsonResponse({"ok": False, "error": "Email and code are required."}, status=400)
 
+    # Per-IP/email throttle to prevent enumeration/guessing.
+    rl_key = f"pwreset_verify:{request.META.get('REMOTE_ADDR', 'unknown')}:{email}"
+    if not allow_action(rl_key, max_attempts=5, window_seconds=300):
+        return JsonResponse({"ok": False, "error": "Too many attempts. Try again later."}, status=429)
+
     user = get_user_model().objects.filter(email__iexact=email).first()
     if not user:
-        return JsonResponse({"ok": False, "error": "No account found for that email."}, status=404)
+        # Generic response to avoid user enumeration
+        return JsonResponse({"ok": False, "error": "Invalid or expired code."}, status=400)
 
     if not default_token_generator.check_token(user, code):
         return JsonResponse({"ok": False, "error": "Invalid or expired code."}, status=400)

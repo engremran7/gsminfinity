@@ -72,7 +72,7 @@ class SiteSettings(SingletonModel):
     )
 
     # ------------------------------------------------------------------
-    # Theme (kept minimal; runtime tokens come from i18n_themes)
+    # Theme (kept minimal; runtime tokens supplied by CSS)
     # ------------------------------------------------------------------
     primary_color = models.CharField(
         max_length=7,
@@ -90,7 +90,7 @@ class SiteSettings(SingletonModel):
     )
 
     # ------------------------------------------------------------------
-    # Localization (global defaults; detailed profiles live in i18n_themes)
+    # Localization (global defaults only)
     # ------------------------------------------------------------------
     default_language = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=50, default="UTC")
@@ -108,6 +108,26 @@ class SiteSettings(SingletonModel):
     sitemap_enabled = models.BooleanField(default=True, help_text="Expose sitemap.xml for published pages.")
     sitemap_index_enabled = models.BooleanField(default=True, help_text="Expose sitemap_index.xml for published pages.")
     sitemap_page_size = models.PositiveIntegerField(default=2000, help_text="Max URLs per sitemap chunk.")
+
+    # ------------------------------------------------------------------
+    # Email (Gmail App Password)
+    # ------------------------------------------------------------------
+    gmail_enabled = models.BooleanField(
+        default=False,
+        help_text="Use Gmail SMTP with an app password (recommended). When disabled, falls back to environment settings.",
+    )
+    gmail_username = models.EmailField(blank=True, default="", help_text="Gmail address used for SMTP AUTH.")
+    gmail_app_password = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        help_text="Gmail app password (never store your real password).",
+    )
+    gmail_from_email = models.EmailField(
+        blank=True,
+        default="",
+        help_text="Optional From header. Defaults to gmail_username when empty.",
+    )
 
     # ------------------------------------------------------------------
     # reCAPTCHA (global; per-app may override)

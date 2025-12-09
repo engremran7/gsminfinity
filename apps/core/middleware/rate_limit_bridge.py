@@ -31,19 +31,25 @@ class RateLimitBridgeMiddleware:
         high_risk_tokens = {"login", "signup", "reset", "token", "password", "mfa"}
         high_risk = any(part in high_risk_tokens for part in path_parts)
 
-        if high_risk or method in {"post", "put", "patch", "delete"}:
+        # Rate-limit only unsafe verbs by default; for high-risk auth flows, guard POSTs.
+        if method in {"post", "put", "patch", "delete"} or (high_risk and method == "post"):
             client_ip = get_client_ip(request) or "unknown"
             device = getattr(request, "device", None)
-            device_key = getattr(device, "machine_uuid", None) if device else None
+            device_key = getattr(device, "os_fingerprint", None) if device else None
             consent_state = getattr(request, "consent_categories", None)
             consent_flag = "consented" if consent_state else "unknown"
 
             key_parts = [method, client_ip, device_key or "nodev", consent_flag, path[:64]]
             key = "http:" + ":".join(key_parts)
 
+            # Tighter caps for auth-critical endpoints to reduce brute force/enumeration.
+            is_auth_path = any(part in {"login", "signup", "reset", "password"} for part in path_parts)
+            max_attempts = 5 if is_auth_path else 10
+            window_seconds = 300 if is_auth_path else 300
+
             allowed = True
             try:
-                allowed = rate_limit.allow_action(key, max_attempts=10, window_seconds=300)
+                allowed = rate_limit.allow_action(key, max_attempts=max_attempts, window_seconds=window_seconds)
             except Exception as exc:
                 logger.warning("Rate limiting failed for %s: %s", path, exc)
                 # Fail closed only for high-risk paths

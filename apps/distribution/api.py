@@ -6,18 +6,35 @@ from django.http import JsonResponse, HttpRequest, Http404
 from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_POST
 
-# Placeholder for future DistributionSettings if needed
+from apps.distribution.models import DistributionSettings
 
 
 def get_settings() -> Dict[str, Any]:
     """
-    Stub settings for distribution module; extend with real toggles as needed.
-    Default to disabled in production.
+    Resolve distribution settings from the singleton model with safe defaults.
     """
-    return {"distribution_enabled": False}
+    try:
+        cfg = DistributionSettings.get_solo()
+        return {
+            "distribution_enabled": cfg.distribution_enabled,
+            "auto_fanout_on_publish": cfg.auto_fanout_on_publish,
+            "default_channels": cfg.default_channels,
+            "max_retries": cfg.max_retries,
+            "retry_backoff_seconds": cfg.retry_backoff_seconds,
+            "allow_indexing_jobs": cfg.allow_indexing_jobs,
+        }
+    except Exception:
+        return {
+            "distribution_enabled": False,
+            "auto_fanout_on_publish": False,
+            "default_channels": [],
+            "max_retries": 3,
+            "retry_backoff_seconds": 1800,
+            "allow_indexing_jobs": False,
+        }
 
 
-@staff_member_required
+@staff_member_required(login_url="admin_suite:admin_suite_login")
 @require_POST
 def api_send_test(request: HttpRequest, slug: str):
     """

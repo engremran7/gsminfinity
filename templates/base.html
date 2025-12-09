@@ -1,8 +1,9 @@
 
-{% load static ads_tags i18n i18n_theme_tags %}
+{% load static ads_tags i18n %}
 {% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
 <!doctype html>
-<html lang="{{ request.COOKIES.lang|default:LANGUAGE_CODE|default:'en' }}" class="h-full">
+<html lang="{{ request.COOKIES.lang|default:LANGUAGE_CODE|default:'en' }}" dir="{% if LANGUAGE_BIDI %}rtl{% else %}ltr{% endif %}" class="h-full">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -39,11 +40,7 @@
     <link href="{% static 'css/main.css' %}" rel="stylesheet" />
     <link href="{% static 'css/style.css' %}" rel="stylesheet" />
     <link href="{% static 'css/summernote-overrides.css' %}" rel="stylesheet" />
-
-    {# ------------------------------------------------------------------ #}
-    {# HTMX (CSP-safe with nonce) #}
-    {# ------------------------------------------------------------------ #}
-    <script src="https://unpkg.com/htmx.org" nonce="{{ request.csp_nonce }}" defer></script>
+    <link href="{% static 'css/enterprise-frontend.css' %}" rel="stylesheet" />
 
     {# ------------------------------------------------------------------ #}
     {# SITE SETTINGS + AUTH FLAGS (JS globals) #}
@@ -55,6 +52,7 @@
             site_name: "{{ site_settings.site_name|default:'Site' }}",
             primary_color: "{{ site_settings.primary_color|default:'#0d6efd' }}",
         };
+        document.documentElement.style.setProperty('--site-primary-color', "{{ site_settings.primary_color|default:'#0d6efd' }}");
         // Auth status comes directly from the backend context processor (P0 dependency)
         window.AUTH_IS_AUTHENTICATED = {{ auth_is_authenticated|yesno:"true,false" }};
         window.FEATURE_FLAGS = {
@@ -68,17 +66,18 @@
             ad_aggressiveness_level: "{{ site_settings.ad_aggressiveness_level|default:'balanced' }}",
             ai_enabled: {{ app_registry.ai_enabled|default_if_none:True|yesno:"true,false" }},
             device_identity_enabled: {{ app_registry.device_identity_enabled|default_if_none:True|yesno:"true,false" }},
-            i18n_themes_enabled: {{ app_registry.i18n_themes_enabled|default_if_none:True|yesno:"true,false" }},
             crawler_guard_enabled: {{ app_registry.crawler_guard_enabled|default_if_none:True|yesno:"true,false" }},
         };
     </script>
 
     {% block extra_head %}{% endblock %}
     {% block json_ld %}{% endblock %}
+    <script src="{% static 'js/device_fingerprint.js' %}" defer></script>
 </head>
-<body class="min-h-screen" data-ai-endpoint="{% url 'ai:execute' %}">
+<body class="min-h-screen site-enterprise" data-ai-endpoint="{% url 'ai:execute' %}">
 
     {% include "includes/icon_sprite.html" %}
+    {% include "includes/device_prompt.html" %}
 
     {# ------------------------------------------------------------------ #}
     {# CONSENT BANNER SLOT (required by loader) #}
@@ -117,28 +116,14 @@
     {# ------------------------------------------------------------------ #}
     {# EXTRA SCRIPTS BLOCK (P0 Fix: Client-side Auth Toggle logic) #}
     {# ------------------------------------------------------------------ #}
-    <script src="{% static 'js/i18n_themes.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/main.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    <script src="{% static 'js/app-interactions.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/device_identity.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/ai_helpers.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
-    <script src="{% static 'js/htmx-csrf.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/consent-banner-loader.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/consent.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script nonce="{{ request.csp_nonce }}">
       document.addEventListener("DOMContentLoaded", async function () {
-        try {
-          if (window.I18nThemes && typeof window.I18nThemes.initTheme === "function") {
-            await window.I18nThemes.initTheme("core");
-          }
-          if (window.I18nThemes && typeof window.I18nThemes.loadTranslations === "function") {
-            // prefer cookie lang, then django LANGUAGE_CODE
-            const cookieMatch = (document.cookie.match(/(?:^|; )lang=([^;]+)/) || [])[1];
-            const locale = cookieMatch ? decodeURIComponent(cookieMatch) : "{{ LANGUAGE_CODE|default:'en' }}";
-            await window.I18nThemes.loadTranslations("core", locale, ["common"]);
-          }
-        } catch (err) {
-          console.warn("i18n init failed", err);
-        }
         try {
           if (window.DeviceIdentity && typeof window.DeviceIdentity.init === "function") {
             window.DeviceIdentity.init();
@@ -149,8 +134,10 @@
 
         // Keep language dropdown in sync with cookie (defaults to en)
         try {
-          const sels = document.querySelectorAll("#lang-switch, select[name='locale']");
-          const current = (document.cookie.match(/(?:^|; )lang=([^;]+)/) || [])[1];
+          const sels = document.querySelectorAll("#lang-switch, #lang-switch-footer, select[name='language']");
+          const cookieLang = (document.cookie.match(/(?:^|; )lang=([^;]+)/) || [])[1];
+          const djangoLang = (document.cookie.match(/(?:^|; )django_language=([^;]+)/) || [])[1];
+          const current = cookieLang || djangoLang;
           sels.forEach((sel) => {
             if (current) {
               sel.value = decodeURIComponent(current);

@@ -11,6 +11,8 @@ urlpatterns = [
     path("manage/", views.manage_posts, name="manage_posts"),
     path("manage/bulk_publish/", views.bulk_publish, name="bulk_publish"),
     path("create/", views.post_create, name="post_create"),
+    path("archives/<int:year>/", views.post_archive_year, name="post_archive_year"),
+    path("archives/<int:year>/<int:month>/", views.post_archive_month, name="post_archive_month"),
     path("feed/rss/", feeds.LatestRssFeed(), name="feed_rss"),
     path("feed/atom/", feeds.LatestAtomFeed(), name="feed_atom"),
     path("feed/json/", feeds.json_feed, name="feed_json"),
@@ -24,6 +26,7 @@ urlpatterns = [
     path("api/widgets/trending-tags/", views.widget_trending_tags, name="widget_trending_tags"),
     path("api/widgets/latest/", views.widget_latest_posts, name="widget_latest_posts"),
     path("api/widgets/top/", views.widget_top_posts, name="widget_top_posts"),
+    path("api/posts/public/", views.posts_api_public, name="posts_api_public"),
     path("<slug:slug>/", views.post_detail, name="post_detail"),
 ]
 

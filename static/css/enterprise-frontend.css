@@ -1,0 +1,330 @@
+/* Enterprise-inspired public theme for the blog/marketing surface.
+   - Rich gradients, glass/glow panels, strong typography.
+   - CSP-safe: no external @import. Uses system-safe stacks.
+   - Tailwind-friendly overrides to refresh existing classes.
+*/
+
+:root {
+  --ef-bg: #050a18;
+  --ef-panel: rgba(15, 23, 42, 0.78);
+  --ef-card: rgba(255, 255, 255, 0.06);
+  --ef-accent: #7c8cff;
+  --ef-accent-2: #22d3ee;
+  --ef-contrast: #0f172a;
+  --ef-text: #e2e8f0;
+  --ef-muted: #94a3b8;
+  --ef-line: rgba(255, 255, 255, 0.12);
+  --ef-radius: 16px;
+  --ef-shadow: 0 20px 70px rgba(0, 0, 0, 0.35);
+}
+
+body.site-enterprise {
+  background: radial-gradient(circle at 10% 10%, rgba(124, 140, 255, 0.2), transparent 30%),
+    radial-gradient(circle at 90% 10%, rgba(34, 211, 238, 0.18), transparent 26%),
+    radial-gradient(circle at 50% 80%, rgba(248, 113, 113, 0.18), transparent 30%),
+    var(--ef-bg);
+  color: var(--ef-text);
+}
+
+/* Navbar */
+.site-nav {
+  background: linear-gradient(120deg, rgba(12, 20, 38, 0.9), rgba(12, 26, 52, 0.82));
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--ef-line);
+}
+.site-nav a {
+  color: var(--ef-text);
+}
+.site-nav select {
+  background: var(--ef-card);
+  color: var(--ef-text);
+  border: 1px solid var(--ef-line);
+}
+
+/* Hero sections */
+.hero {
+  background: linear-gradient(140deg, rgba(124, 140, 255, 0.25), rgba(34, 211, 238, 0.18));
+  color: var(--ef-text);
+  border-bottom: 1px solid var(--ef-line);
+}
+
+/* Cards */
+.card {
+  background: var(--ef-panel);
+  border: 1px solid var(--ef-line);
+  border-radius: var(--ef-radius);
+  box-shadow: var(--ef-shadow);
+  color: var(--ef-text);
+}
+
+.card.light {
+  background: var(--ef-card);
+}
+
+.card:hover {
+  border-color: rgba(124, 140, 255, 0.5);
+}
+
+/* Buttons */
+.btn-primary,
+.btn-outline,
+.btn {
+  border-radius: 999px;
+  font-weight: 700;
+}
+.btn-primary {
+  background: linear-gradient(120deg, var(--ef-accent), var(--ef-accent-2));
+  color: #020617;
+  border: none;
+  box-shadow: var(--ef-shadow);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+}
+.btn-outline {
+  border: 1px solid var(--ef-line);
+  color: var(--ef-text);
+  background: transparent;
+}
+.btn-outline:hover {
+  background: var(--ef-card);
+}
+.btn.secondary,
+.btn-secondary {
+  background: var(--ef-panel);
+  color: var(--ef-text);
+  border: 1px solid var(--ef-line);
+}
+
+/* Panels and sections */
+.section-surface {
+  background: var(--ef-panel);
+  border-radius: var(--ef-radius);
+  border: 1px solid var(--ef-line);
+  box-shadow: var(--ef-shadow);
+}
+
+/* Text overrides */
+.text-slate-900,
+.text-slate-800 {
+  color: var(--ef-text) !important;
+}
+.text-slate-700,
+.text-slate-600,
+.text-slate-500 {
+  color: var(--ef-muted) !important;
+}
+
+/* Borders and backgrounds */
+.bg-white,
+.bg-slate-50,
+.bg-slate-100 {
+  background: var(--ef-panel) !important;
+}
+.border,
+.border-slate-100,
+.border-slate-200 {
+  border-color: var(--ef-line) !important;
+}
+
+/* Tables */
+table {
+  color: var(--ef-text);
+  background: transparent;
+}
+th,
+td {
+  border-color: var(--ef-line);
+}
+tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+  background: var(--ef-card);
+  color: var(--ef-text);
+  border: 1px solid var(--ef-line);
+  border-radius: 12px;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--ef-muted);
+}
+
+/* Footer */
+footer {
+  background: linear-gradient(120deg, rgba(12, 20, 38, 0.9), rgba(12, 26, 52, 0.82));
+  color: var(--ef-text);
+  border-top: 1px solid var(--ef-line);
+}
+
+/* Utility bumps */
+.glass {
+  background: var(--ef-card);
+  border: 1px solid var(--ef-line);
+  border-radius: var(--ef-radius);
+  box-shadow: var(--ef-shadow);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--ef-card);
+  border: 1px solid var(--ef-line);
+  color: var(--ef-text);
+  font-size: 12px;
+}
+
+.shadow-ef {
+  box-shadow: var(--ef-shadow);
+}
+
+/* Blog list tweaks */
+.post-card {
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.post-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.25);
+}
+
+/* Lift effect for cards */
+.lift {
+  position: relative;
+  overflow: hidden;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.lift::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08), transparent 35%);
+  opacity: 0;
+  transition: opacity 160ms ease;
+  pointer-events: none;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.3);
+}
+.lift:hover::after {
+  opacity: 1;
+}
+
+/* Widgets / stats grid */
+.widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+.widget {
+  background: linear-gradient(135deg, rgba(124, 140, 255, 0.22), rgba(34, 211, 238, 0.18));
+  border: 1px solid var(--ef-line);
+  border-radius: var(--ef-radius);
+  padding: 14px;
+  color: var(--ef-text);
+}
+.widget .stat {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+/* Timeline */
+.timeline {
+  position: relative;
+  padding-left: 18px;
+  border-left: 2px solid var(--ef-line);
+  display: grid;
+  gap: 12px;
+}
+.timeline .dot {
+  position: absolute;
+  left: -7px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--ef-accent), var(--ef-accent-2));
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+}
+.timeline .item {
+  position: relative;
+  padding-left: 10px;
+}
+.timeline .item .title {
+  font-weight: 700;
+}
+.timeline .item .meta {
+  color: var(--ef-muted);
+  font-size: 12px;
+}
+
+/* Modals */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+.modal-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal {
+  width: min(500px, 100%);
+  background: var(--ef-panel);
+  border: 1px solid var(--ef-line);
+  border-radius: var(--ef-radius);
+  padding: 18px;
+  box-shadow: var(--ef-shadow);
+}
+
+/* Tables */
+.table.zebra tbody tr:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.02);
+}
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--ef-panel);
+  z-index: 1;
+}
+
+/* Tags / chips */
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.chip {
+  background: var(--ef-card);
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--ef-text);
+  border: 1px solid var(--ef-line);
+}
+
+/* Utility spacing and flex helpers */
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.space-y-1 > * + * { margin-top: 4px; }
+.space-y-2 > * + * { margin-top: 8px; }
+.space-y-3 > * + * { margin-top: 12px; }
+.space-y-4 > * + * { margin-top: 16px; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }

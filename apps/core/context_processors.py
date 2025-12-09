@@ -68,6 +68,7 @@ def site_settings_context(request: HttpRequest) -> Dict[str, Any]:
             "enable_signup": bool(getattr(s, "enable_signup", True)),
             # Use getattr with a safe fallback to prevent exceptions
             "recaptcha_site_key": getattr(s, "recaptcha_public_key", "") or "",
+            "recaptcha_enabled": bool(getattr(s, "recaptcha_enabled", False)),
             "show_consent_banner": bool(getattr(s, "enable_notifications", False)),
         },
         "app_registry": reg,

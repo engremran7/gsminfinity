@@ -98,7 +98,19 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
                     "maintenance_mode",
                     "force_https",
                 ),
-                "description": "App-specific toggles now live in each app’s settings and AppRegistry.",
+                "description": "App-specific toggles now live in each app's settings and AppRegistry.",
+            },
+        ),
+        (
+            "Email (Gmail SMTP)",
+            {
+                "fields": (
+                    "gmail_enabled",
+                    "gmail_username",
+                    "gmail_app_password",
+                    "gmail_from_email",
+                ),
+                "description": "Configure Gmail with an app password. From defaults to the Gmail username when blank.",
             },
         ),
         (

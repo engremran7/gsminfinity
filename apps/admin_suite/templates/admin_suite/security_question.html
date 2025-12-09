@@ -1,0 +1,72 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Security Question Recovery</title>
+  <link href="{% static 'css/admin-suite.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}">
+  <link href="{% static 'css/enterprise-dashboard.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}">
+</head>
+<body class="admin-login">
+  <div class="admin-page">
+    <div class="admin-card">
+      <div class="admin-brand">
+        <img src="{% static 'img/default-logo.svg' %}" alt="Admin Suite" />
+        <span>Admin Suite</span>
+        <span class="tag">Recovery</span>
+      </div>
+      <p class="muted muted-spacing">Answer your security question first. After {{ max_attempts }} failed attempts, fallback to email code.</p>
+
+      {% if message %}
+        <div class="{% if success %}alert-success{% else %}alert-error{% endif %}">{{ message }}</div>
+      {% endif %}
+
+      <form method="post" class="admin-form">
+        {% csrf_token %}
+        <div>
+          <label for="identifier">Email or Username</label>
+          <input type="text" id="identifier" name="identifier" value="{{ identifier }}" required>
+        </div>
+
+        {% if sq and not fallback_ready %}
+          <div>
+            <label>Security Question</label>
+            <div class="muted">{{ sq.question_text }}</div>
+          </div>
+          <div>
+            <label for="answer">Your Answer</label>
+            <input type="password" id="answer" name="answer">
+          </div>
+          <button type="submit" name="action" value="answer" class="btn">Verify answer</button>
+        {% elif sq and fallback_ready %}
+          <div class="muted">Security question attempts exceeded. Use the email verification code to continue.</div>
+        {% elif user_obj %}
+          <div class="muted">No security question is configured for this account. Verify email to use the email reset fallback.</div>
+          <button type="submit" name="action" value="lookup" class="btn">Verify email</button>
+        {% else %}
+          <div class="muted">Enter your email or username to load your security question.</div>
+          <button type="submit" name="action" value="lookup" class="btn">Verify email</button>
+        {% endif %}
+      </form>
+
+      {% if fallback_ready and user_obj %}
+        <div class="muted muted-spacing">Email fallback</div>
+        <form method="post" class="admin-form">
+          {% csrf_token %}
+          <input type="hidden" name="identifier" value="{{ identifier }}">
+          <div class="flex gap-2">
+            <button type="submit" name="action" value="send_code" class="btn-ghost w-full">Send code</button>
+            <input type="text" name="code" placeholder="6-digit hex code" class="w-full">
+            <button type="submit" name="action" value="verify_code" class="btn">Verify</button>
+          </div>
+        </form>
+      {% else %}
+        <div class="muted muted-spacing">Enter a valid email/username and verify it to unlock email reset.</div>
+      {% endif %}
+
+      <div class="muted muted-spacing"><a href="{% url 'admin_suite:admin_suite_login' %}" class="link-btn">Back to Admin Login</a></div>
+    </div>
+  </div>
+</body>
+</html>

@@ -20,7 +20,20 @@ class Device(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="devices"
     )
-    machine_uuid = models.CharField(max_length=128)
+    # OS fingerprint (primary identity, per user per OS)
+    os_fingerprint = models.CharField(max_length=128, db_index=True, blank=True, default="")
+    os_name = models.CharField(max_length=50, blank=True, default="")
+    os_version = models.CharField(max_length=50, blank=True, default="")
+    # Legacy fields kept for compatibility; not used for identity
+    hardware_uuid = models.CharField(max_length=128, db_index=True, blank=True, default="")
+    device_key_id = models.CharField(max_length=128, db_index=True, blank=True, default="")
+    key_algorithm = models.CharField(
+        max_length=20,
+        choices=[("ES256", "ES256"), ("Ed25519", "Ed25519")],
+        default="ES256",
+        blank=True,
+    )
+    public_key = models.TextField(blank=True, default="")
     fingerprint_hash = models.CharField(max_length=128, blank=True, default="")
     display_name = models.CharField(max_length=150, blank=True, default="")
     browser_family = models.CharField(max_length=50, blank=True, default="")
@@ -42,11 +55,11 @@ class Device(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "machine_uuid"], name="device_user_machine_uuid_unique"
+                fields=["user", "os_fingerprint"], name="device_user_os_fingerprint_unique"
             )
         ]
         indexes = [
-            models.Index(fields=["user", "machine_uuid"], name="device_user_machine_idx"),
+            models.Index(fields=["user", "os_fingerprint"], name="device_user_osfp_idx"),
             models.Index(fields=["is_blocked"], name="device_blocked_idx"),
             models.Index(fields=["last_seen_at"], name="device_last_seen_idx"),
             models.Index(fields=["risk_score"], name="device_risk_idx"),
@@ -54,8 +67,15 @@ class Device(models.Model):
         ordering = ["-last_seen_at"]
 
     def __str__(self) -> str:
-        label = self.display_name or self.machine_uuid
+        label = self.display_name or self.os_fingerprint or self.hardware_uuid
         return f"{getattr(self.user, 'email', self.user_id)} :: {label}"
+
+    @property
+    def machine_uuid(self) -> str:
+        """
+        Legacy alias for compatibility with older code paths.
+        """
+        return self.hardware_uuid or self.os_fingerprint
 
 
 class DeviceConfig(SingletonModel):
@@ -86,6 +106,10 @@ class DeviceConfig(SingletonModel):
     device_expiry_days = models.PositiveIntegerField(null=True, blank=True)
     allow_server_fallback = models.BooleanField(default=True)
     ai_risk_scoring_enabled = models.BooleanField(default=False)
+    risk_mfa_threshold = models.PositiveIntegerField(
+        default=75,
+        help_text="If a device risk score meets/exceeds this value, require MFA to continue.",
+    )
 
     class Meta:
         verbose_name = "Device Config"

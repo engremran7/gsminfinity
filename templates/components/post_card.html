@@ -1,5 +1,5 @@
 
-<article class="relative rounded-2xl border border-slate-200 bg-white shadow-sm p-5 hover:-translate-y-0.5 transition transform">
+<article class="blog-card relative rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
   <div class="absolute top-4 right-4 flex items-center gap-2">
     {% if url %}
       <div class="flex items-center gap-1">
@@ -23,16 +23,16 @@
       </h2>
     {% if meta %}<p class="text-xs text-slate-500">{{ meta }}</p>{% endif %}
     <div class="flex flex-wrap gap-2 text-[11px] text-slate-600">
-      <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+      <span class="badge badge-soft">
         {{ published_at|default:"" }}
       </span>
       {% if reading_time %}
-        <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{{ reading_time }} min read</span>
+        <span class="badge badge-soft">{{ reading_time }} min read</span>
       {% endif %}
-      <span class="px-2 py-0.5 rounded-full {% if tags %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+      <span class="badge {% if tags %}badge-success{% else %}badge-warn{% endif %}">
         Tags {% if tags %}ready{% else %}missing{% endif %}
       </span>
-      <span class="px-2 py-0.5 rounded-full bg-{{ seo_ready|yesno:'emerald-100,amber-100' }} text-{{ seo_ready|yesno:'emerald-700,amber-700' }}">
+      <span class="badge {% if seo_ready %}badge-success{% else %}badge-warn{% endif %}">
         SEO {% if seo_ready %}set{% else %}pending{% endif %}
       </span>
     </div>

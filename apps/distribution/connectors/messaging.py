@@ -1,22 +1,22 @@
 
 from __future__ import annotations
 
-from . import StubConnector
+from . import LoggingConnector
 
 
-class TelegramConnector(StubConnector):
+class TelegramConnector(LoggingConnector):
     channel = "telegram"
 
 
-class DiscordConnector(StubConnector):
+class DiscordConnector(LoggingConnector):
     channel = "discord"
 
 
-class SlackConnector(StubConnector):
+class SlackConnector(LoggingConnector):
     channel = "slack"
 
 
-class WhatsAppConnector(StubConnector):
+class WhatsAppConnector(LoggingConnector):
     channel = "whatsapp"
 
 

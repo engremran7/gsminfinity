@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Device limit - remove a device{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+  <div class="bg-white shadow rounded-lg p-6 space-y-4">
+    <h1 class="text-xl font-semibold text-slate-900">Device limit reached</h1>
+    <p class="text-sm text-slate-600">Remove an old device so you can sign in from a new one.</p>
+
+    {% if error %}
+      <div class="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 text-sm">{{ error }}</div>
+    {% endif %}
+    {% if message %}
+      <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded p-3 text-sm">{{ message }}</div>
+    {% endif %}
+
+    {% if devices %}
+    <div class="divide-y divide-slate-200">
+      {% for d in devices %}
+        <div class="py-3 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-slate-900">{{ d.display_name|default:"Device" }}</p>
+            <p class="text-xs text-slate-500 break-all">ID: {{ d.os_fingerprint }}</p>
+            <p class="text-xs text-slate-500">Last seen: {{ d.last_seen_at|default:"-" }}</p>
+          </div>
+          <form method="post" onsubmit="return confirm('Remove this device?');">
+            {% csrf_token %}
+            <input type="hidden" name="device_id" value="{{ d.id }}">
+            <button type="submit" class="text-xs px-3 py-2 rounded border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100">
+              Remove
+            </button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p class="text-sm text-slate-600">No devices found for this account.</p>
+    {% endif %}
+
+    <div class="text-sm text-slate-600">
+      After removing a device, retry signing in from your new device.
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -18,6 +18,8 @@ class PostForm(forms.ModelForm):
             "status",
             "publish_at",
             "featured",
+            "allow_comments",
+            "noindex",
             "seo_title",
             "seo_description",
             "canonical_url",

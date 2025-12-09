@@ -1,0 +1,117 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - AI{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">AI Provider</h1>
+      <p class="text-sm text-slate-600">Configure DeepSeek/OpenAI endpoints, safety controls, and run test calls.</p>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">{{ message }}</div>
+  {% endif %}
+  {% if error %}
+  <div class="text-sm text-rose-700 bg-rose-50 border border-rose-100 px-3 py-2 rounded">{{ error }}</div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Provider configuration</h2>
+        <span class="text-xs text-slate-500">Staff view; superuser to save</span>
+      </div>
+      <form method="post" class="px-4 py-4 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save_ai_settings">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>Provider</span>
+            <select name="provider" class="w-full border rounded px-2 py-2 text-sm">
+              <option value="deepseek" {% if ai_settings.provider == "deepseek" %}selected{% endif %}>DeepSeek</option>
+              <option value="openai" {% if ai_settings.provider == "openai" %}selected{% endif %}>OpenAI</option>
+              <option value="azure_openai" {% if ai_settings.provider == "azure_openai" %}selected{% endif %}>Azure OpenAI</option>
+              <option value="custom" {% if ai_settings.provider == "custom" %}selected{% endif %}>Custom</option>
+            </select>
+          </label>
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>Base URL</span>
+            <input type="text" name="base_url" value="{{ ai_settings.base_url }}" class="w-full border rounded px-2 py-2 text-sm" placeholder="Optional override">
+          </label>
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>Model</span>
+            <input type="text" name="model_name" value="{{ ai_settings.model_name }}" class="w-full border rounded px-2 py-2 text-sm">
+          </label>
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>API key (write-only)</span>
+            <input type="password" name="api_key" value="" placeholder="{% if ai_settings.api_key_set %}********{% endif %}" class="w-full border rounded px-2 py-2 text-sm">
+          </label>
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>Timeout (seconds)</span>
+            <input type="number" min="5" name="timeout_seconds" value="{{ ai_settings.timeout_seconds }}" class="w-full border rounded px-2 py-2 text-sm">
+          </label>
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>Max tokens</span>
+            <input type="number" min="16" name="max_tokens" value="{{ ai_settings.max_tokens }}" class="w-full border rounded px-2 py-2 text-sm">
+          </label>
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>Temperature</span>
+            <input type="number" step="0.01" min="0" max="1" name="temperature" value="{{ ai_settings.temperature }}" class="w-full border rounded px-2 py-2 text-sm">
+          </label>
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>Retry limit</span>
+            <input type="number" min="1" max="10" name="retry_limit" value="{{ ai_settings.retry_limit }}" class="w-full border rounded px-2 py-2 text-sm">
+          </label>
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>Backoff min (s)</span>
+            <input type="number" step="0.1" min="0.1" name="backoff_min_seconds" value="{{ ai_settings.backoff_min_seconds }}" class="w-full border rounded px-2 py-2 text-sm">
+          </label>
+          <label class="text-sm text-slate-700 space-y-1">
+            <span>Backoff max (s)</span>
+            <input type="number" step="0.1" min="0.1" name="backoff_max_seconds" value="{{ ai_settings.backoff_max_seconds }}" class="w-full border rounded px-2 py-2 text-sm">
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-700">
+          <label class="flex items-center gap-2"><input type="checkbox" name="pii_redaction_enabled" value="1" {% if ai_settings.pii_redaction_enabled %}checked{% endif %}> PII redaction before send</label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="moderation_enabled" value="1" {% if ai_settings.moderation_enabled %}checked{% endif %}> Moderation heuristic enabled</label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="allow_tools" value="1" {% if ai_settings.allow_tools %}checked{% endif %}> Allow tool/function calls</label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="log_prompts" value="1" {% if ai_settings.log_prompts %}checked{% endif %}> Log prompts (debug only)</label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="log_completions" value="1" {% if ai_settings.log_completions %}checked{% endif %}> Log completions (debug only)</label>
+        </div>
+
+        <div class="flex justify-end">
+          <button type="submit" class="px-4 py-2 rounded bg-primary text-white text-sm">Save settings</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Test call</h2>
+        <span class="text-xs text-slate-500">Superuser only</span>
+      </div>
+      <form method="post" class="px-4 py-4 space-y-3 text-sm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="test_ai">
+        <label class="text-sm text-slate-700 space-y-1">
+          <span>Prompt</span>
+          <textarea name="prompt" rows="3" class="w-full border rounded px-2 py-2 text-sm" placeholder="Respond with 'pong'."></textarea>
+        </label>
+        <button type="submit" class="px-3 py-2 rounded bg-slate-900 text-white text-sm">Send test</button>
+      </form>
+      {% if test_output %}
+      <div class="px-4 pb-4 text-xs text-slate-700 space-y-2">
+        <div class="font-semibold">Response</div>
+        <pre class="bg-slate-50 border border-slate-200 rounded px-2 py-2 whitespace-pre-wrap text-slate-800">{{ test_output.text|default:"(no text)" }}</pre>
+        <div>Latency: {{ test_output.latency_ms }} ms</div>
+        <div>Usage: {{ test_output.usage|default:"n/a" }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

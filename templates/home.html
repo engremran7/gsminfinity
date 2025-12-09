@@ -1,77 +1,86 @@
-
 {% extends "base.html" %}
 {% load static %}
 
 {% block title %}Home - {{ site_settings.site_name|default:"Site" }}{% endblock %}
 
 {% block content %}
-<section class="py-16 bg-white text-center">
-  <div class="container mx-auto px-4 space-y-4">
-    <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900">
-      Welcome to {{ site_settings.site_name|default:"Site" }}
-    </h1>
-    <p class="text-slate-600 text-lg">
-      Django {{ django_version }} · Python {{ python_version }} · {{ now|date:"M j, Y, P" }}
-    </p>
-    {% if not request.user.is_authenticated %}
-      <div class="mt-6 flex justify-center gap-3">
-        <a href="{% url 'account_login' %}" class="btn-primary px-5 py-3 rounded-md text-white">
-          Sign in
+<section class="py-16 hero">
+  <div class="container mx-auto px-4 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+    <div class="space-y-4">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm">
+        <span class="pill">Enterprise mode</span>
+        <span class="text-slate-200">Django {{ django_version }} / Python {{ python_version }}</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">
+        {{ site_settings.site_name|default:"Site" }}
+      </h1>
+      <p class="text-lg text-slate-100 max-w-2xl">
+        Secure, multi-tenant ready platform with consent, SEO, ads, AI helpers, and device intelligence baked in.
+      </p>
+      {% if not request.user.is_authenticated %}
+        <div class="flex flex-wrap gap-3 pt-2">
+          <a href="{% url 'account_login' %}" class="btn-primary px-5 py-3">
+            Sign in
+          </a>
+          <a href="{% url 'account_signup' %}" class="btn-outline px-5 py-3">
+            Create account
+          </a>
+        </div>
+      {% endif %}
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
+        <div class="card light p-5">
+          <p class="text-sm text-slate-500">Total users</p>
+          <p class="text-3xl font-bold mt-1">{{ total_users|default:"-" }}</p>
+        </div>
+        <div class="card light p-5">
+          <p class="text-sm text-slate-500">Unread notifications</p>
+          <p class="text-3xl font-bold mt-1">{{ unread_notifications|default:"-" }}</p>
+        </div>
+        <div class="card light p-5">
+          <p class="text-sm text-slate-500">Active announcements</p>
+          <p class="text-3xl font-bold mt-1">{{ active_announcements|default:"-" }}</p>
+        </div>
+      </div>
+      {% if site_settings.enable_blog %}
+      <div class="pt-6">
+        <a href="{% url 'blog:post_list' %}" class="btn-outline px-5 py-3">
+          Explore the blog
         </a>
-        <a href="{% url 'account_signup' %}" class="btn-outline px-5 py-3 rounded-md">
-          Create account
-        </a>
       </div>
-    {% endif %}
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-12">
-      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-slate-100">
-        <h3 class="text-3xl font-bold text-slate-900">
-          {{ total_users|default:"-" }}
-        </h3>
-        <p class="text-slate-600 text-sm mt-1">Total users</p>
-      </div>
-
-      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-slate-100">
-        <h3 class="text-3xl font-bold text-slate-900">
-          {{ unread_notifications|default:"-" }}
-        </h3>
-        <p class="text-slate-600 text-sm mt-1">Unread notifications</p>
-      </div>
-
-      <div class="bg-white shadow-md rounded-xl p-6 text-center border border-slate-100">
-        <h3 class="text-3xl font-bold text-slate-900">
-          {{ active_announcements|default:"-" }}
-        </h3>
-        <p class="text-slate-600 text-sm mt-1">Active announcements</p>
-      </div>
+      {% endif %}
+    </div>
+    <div class="section-surface p-6 space-y-3">
+      <h3 class="text-2xl font-bold">Built-in controls</h3>
+      <ul class="space-y-2 text-slate-200">
+        <li>- Consent-aware ads and device identity</li>
+        <li>- MFA, email verification, and anti-enumeration</li>
+        <li>- SEO automation, feeds, and link intelligence</li>
+        <li>- AI helpers for titles, summaries, and moderation</li>
+      </ul>
+      <div class="pill mt-3 inline-flex">Live {{ now|date:"M j, Y, P" }}</div>
     </div>
   </div>
 </section>
 
 <section class="container mx-auto mt-12 px-4">
-  <h2 class="text-2xl font-bold mb-6 text-slate-900">Recent announcements</h2>
+  <div class="section-surface p-6">
+    <h2 class="text-2xl font-bold mb-6">Recent announcements</h2>
 
-  {% if announcements %}
-    <div class="space-y-4">
-      {% for a in announcements %}
-        <div class="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
-          <h5 class="text-xl font-semibold text-slate-900">
-            {{ a.title|default:"(untitled)" }}
-          </h5>
-          <p class="text-slate-500 text-sm">{{ a.created_at|date:"M d, Y" }}</p>
-          <p class="text-slate-700 mt-2">{{ a.message|truncatechars:200 }}</p>
-        </div>
-      {% endfor %}
-    </div>
-  {% else %}
-    <div class="bg-blue-50 text-blue-800 border border-blue-200 p-4 rounded-lg">
-      No announcements available.
-    </div>
-  {% endif %}
+    {% if announcements %}
+      <div class="space-y-4">
+        {% for a in announcements %}
+          <div class="glass p-5">
+            <h5 class="text-xl font-semibold">
+              {{ a.title|default:"(untitled)" }}
+            </h5>
+            <p class="text-slate-500 text-sm">{{ a.created_at|date:"M d, Y" }}</p>
+            <p class="text-slate-500 mt-2">{{ a.message|truncatechars:200 }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-slate-500">No announcements available.</p>
+    {% endif %}
+  </div>
 </section>
-
-<div id="consent-banner-slot"></div>
 {% endblock %}
-
-

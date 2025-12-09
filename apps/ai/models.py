@@ -12,11 +12,26 @@ class AISettings(SingletonModel):
     """
 
     ai_enabled = models.BooleanField(default=True)
-    default_model = models.CharField(max_length=100, default="gpt-4")
+    default_model = models.CharField(max_length=100, default="deepseek-chat")
     enable_vector_search = models.BooleanField(default=True)
     enable_auto_translation = models.BooleanField(default=True)
     enable_safety_firewall = models.BooleanField(default=True)
     default_locale = models.CharField(max_length=16, default="en")
+    provider = models.CharField(max_length=50, default="deepseek")
+    base_url = models.URLField(blank=True, default="")
+    api_key = models.TextField(blank=True, default="")
+    model_name = models.CharField(max_length=100, default="deepseek-chat")
+    timeout_seconds = models.PositiveIntegerField(default=30)
+    max_tokens = models.PositiveIntegerField(default=1024)
+    temperature = models.DecimalField(max_digits=3, decimal_places=2, default=0.30)
+    log_prompts = models.BooleanField(default=False)
+    log_completions = models.BooleanField(default=False)
+    pii_redaction_enabled = models.BooleanField(default=True)
+    moderation_enabled = models.BooleanField(default=True)
+    allow_tools = models.BooleanField(default=False)
+    retry_limit = models.PositiveSmallIntegerField(default=3)
+    backoff_min_seconds = models.FloatField(default=0.5)
+    backoff_max_seconds = models.FloatField(default=4.0)
 
     class Meta:
         verbose_name = "AI Settings"

@@ -181,7 +181,7 @@ def search_duplicates(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"items": pairs})
 
 
-@staff_member_required
+@staff_member_required(login_url="admin_suite:admin_suite_login")
 def duplicates_review(request: HttpRequest) -> HttpResponse:
     threshold = 0.7
     tags = list(Tag.objects.filter(is_active=True, is_deleted=False))
@@ -200,7 +200,7 @@ def duplicates_review(request: HttpRequest) -> HttpResponse:
     return render(request, "tags/admin_duplicates.html", {"pairs": pairs})
 
 
-@staff_member_required
+@staff_member_required(login_url="admin_suite:admin_suite_login")
 def keyword_review(request: HttpRequest) -> HttpResponse:
     suggestions = (
         Tag.objects.none()
@@ -211,7 +211,7 @@ def keyword_review(request: HttpRequest) -> HttpResponse:
     return render(request, "tags/admin_keyword_review.html", {"suggestions": suggestions})
 
 
-@staff_member_required
+@staff_member_required(login_url="admin_suite:admin_suite_login")
 @require_POST
 def apply_keyword(request: HttpRequest) -> HttpResponse:
     from .models_keyword import KeywordSuggestion

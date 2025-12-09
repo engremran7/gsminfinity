@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import timedelta
 from typing import Any, Dict, Optional
 
 from allauth.account.forms import LoginForm, SignupForm
@@ -26,13 +27,20 @@ from apps.users.models import Announcement, Notification
 from apps.users.services.rate_limit import allow_action
 from apps.users.services.recaptcha import verify_recaptcha
 from apps.core.app_service import AppService
-from apps.devices.services import make_device_token, load_device_token, mark_device_trusted
+from apps.devices.services import (
+    make_device_token,
+    load_device_token,
+    mark_device_trusted,
+    attach_device_cookie,
+)
+from apps.devices.services import DevicePolicyError
 from apps.core.utils.ip import get_client_ip
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.cache import cache
 from django.core.validators import RegexValidator
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -53,9 +61,7 @@ def profile(request: HttpRequest) -> HttpResponse:
     """
     context: dict[str, Any] = {
         "user": request.user,
-        "notifications": Notification.objects.filter(user=request.user).order_by(
-            "-created_at"
-        )[:10],
+        "notifications": Notification.objects.filter(recipient=request.user).order_by("-created_at")[:10],
         "announcements": Announcement.objects.filter(is_active=True).order_by(
             "-created_at"
         )[:5],
@@ -83,23 +89,33 @@ def devices_view(request: HttpRequest) -> HttpResponse:
     else:
         if request.method == "POST":
             action = request.POST.get("action") or ""
+            if action == "clear_device_prompt":
+                request.session.pop("pending_device_prompt_uuid", None)
+                return redirect("users:devices")
             device_id = request.POST.get("device_id") or ""
             try:
                 device = Device.objects.filter(user=request.user, id=device_id).first()
                 if not device:
                     error = "Device not found."
                 else:
-                    if action == "trust":
-                        device.is_trusted = True
-                        device.save(update_fields=["is_trusted"])
-                        message = "Device trusted."
-                    elif action == "untrust":
-                        device.is_trusted = False
-                        device.save(update_fields=["is_trusted"])
-                        message = "Device untrusted."
-                    elif action == "delete":
-                        device.delete()
-                        message = "Device removed."
+                    # Only staff/superusers may change trust state or delete devices
+                    if not request.user.is_staff and not request.user.is_superuser:
+                        error = "You do not have permission to change device trust or remove devices."
+                    else:
+                        if action == "trust":
+                            device.is_trusted = True
+                            device.save(update_fields=["is_trusted"])
+                            message = "Device trusted."
+                        elif action == "untrust":
+                            device.is_trusted = False
+                            device.save(update_fields=["is_trusted"])
+                            message = "Device untrusted."
+                        elif action == "delete":
+                            if device.is_trusted and not request.user.is_superuser:
+                                error = "Trusted devices cannot be removed directly. Untrust first or ask an admin."
+                            else:
+                                device.delete()
+                                message = "Device removed."
             except Exception as exc:
                 error = f"Action failed: {exc}"
 
@@ -109,7 +125,7 @@ def devices_view(request: HttpRequest) -> HttpResponse:
                 .order_by("-last_seen_at")
                 .values(
                     "id",
-                    "machine_uuid",
+                    "os_fingerprint",
                     "display_name",
                     "browser_family",
                     "os_family",
@@ -272,10 +288,29 @@ class EnterpriseLoginView(LoginView):
         try:
             devices_api = AppService.get("devices")
             if devices_api and hasattr(devices_api, "enforce_device_policy_for_login"):
-                allowed, ctx = devices_api.enforce_device_policy_for_login(self.request, self.request.user)
-                if not allowed:
-                    reason = (ctx or {}).get("reason") if isinstance(ctx, dict) else ""
-                    device_obj = (ctx or {}).get("device")
+                try:
+                    allowed, ctx = devices_api.enforce_device_policy_for_login(self.request, self.request.user)
+                    enforcement_ctx = ctx or {}
+                    setattr(self.request, "device", enforcement_ctx.get("device"))
+                    try:
+                        attach_device_cookie(response, enforcement_ctx.get("device"))
+                    except Exception:
+                        logger.debug("attach_device_cookie failed", exc_info=True)
+                    if enforcement_ctx.get("is_new"):
+                        remaining = enforcement_ctx.get("context", {}).get("remaining_devices")
+                        reset_days = enforcement_ctx.get("context", {}).get("quota_reset_days")
+                        suffix = ""
+                        if remaining is not None:
+                            suffix += f" Remaining device slots: {remaining}."
+                        if reset_days is not None:
+                            suffix += f" Quotas reset in ~{reset_days} days."
+                        messages.info(
+                            self.request,
+                            f"New device detected and registered.{suffix} Trust it from your devices page to avoid future prompts.",
+                        )
+                except DevicePolicyError as exc:
+                    reason = exc.reason
+                    device_obj = (exc.context or {}).get("device")
                     approval_token = None
                     try:
                         if device_obj:
@@ -286,6 +321,8 @@ class EnterpriseLoginView(LoginView):
                         approval_token = None
                     if reason == "blocked_device":
                         msg = "This device is blocked. Contact support to unblock."
+                    elif reason == "device_key_required":
+                        msg = "Device fingerprint is required. Allow device fingerprinting and refresh to continue."
                     elif reason == "untrusted_new_device":
                         msg = "New device detected and not trusted. Approve it from a trusted session to continue."
                     elif reason == "mfa_required":
@@ -306,12 +343,20 @@ class EnterpriseLoginView(LoginView):
                         messages.error(self.request, msg)
                         return redirect("users:device_approval_needed")
                     if reason in {"device_quota_exceeded", "limit_reached", "user_window_quota", "monthly_device_quota", "yearly_device_quota"}:
+                        try:
+                            self.request.session["pending_device_reason"] = reason
+                            attempt_id = (exc.context or {}).get("os_fingerprint") or getattr(device_obj, "os_fingerprint", None)
+                            if attempt_id:
+                                self.request.session["pending_device_attempt"] = attempt_id
+                        except Exception:
+                            pass
                         messages.error(self.request, msg)
                         return redirect("users:device_eviction")
+                    if reason == "fallback_identity_blocked":
+                        messages.error(self.request, "Device identity was fallback-based and blocked. Provide a device fingerprint to continue.")
+                        return redirect("users:devices")
                     form.add_error(None, msg)
                     return self.form_invalid(form)
-                enforcement_ctx = ctx or {}
-                setattr(self.request, "device", enforcement_ctx.get("device"))
             else:
                 # Fallback: register device even if AppService is disabled
                 try:
@@ -320,10 +365,21 @@ class EnterpriseLoginView(LoginView):
                     device, is_new, ctx = resolve_or_create_device(self.request, self.request.user, service_name="login")
                     enforcement_ctx = ctx or {}
                     setattr(self.request, "device", device)
+                    try:
+                        attach_device_cookie(response, device)
+                    except Exception:
+                        logger.debug("attach_device_cookie failed", exc_info=True)
                     if is_new:
+                        remaining = enforcement_ctx.get("remaining_devices")
+                        reset_days = enforcement_ctx.get("quota_reset_days")
+                        suffix = ""
+                        if remaining is not None:
+                            suffix += f" Remaining device slots: {remaining}."
+                        if reset_days is not None:
+                            suffix += f" Quotas reset in ~{reset_days} days."
                         messages.info(
                             self.request,
-                            "New device detected. Trust it from your account to avoid future prompts.",
+                            f"New device detected and registered.{suffix} Trust it from your account to avoid future prompts.",
                         )
                 except Exception:
                     logger.debug("Device registration fallback skipped", exc_info=True)
@@ -406,10 +462,12 @@ class EnterpriseSignupView(SignupView):
             logger.info("Signup attempt blocked by settings.")
             return self.form_invalid(form)
 
-        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get(
-            "recaptcha_token"
-        )
-        if s.get("recaptcha_enabled", False) and token:
+        token = self.request.POST.get("g-recaptcha-response") or self.request.POST.get("recaptcha_token")
+        if s.get("recaptcha_enabled", False):
+            if not token:
+                form.add_error(None, "reCAPTCHA verification is required.")
+                logger.info("Signup blocked: missing reCAPTCHA token for ip=%s", self.request.META.get("REMOTE_ADDR"))
+                return self.form_invalid(form)
             try:
                 client_ip = (
                     (
@@ -423,7 +481,7 @@ class EnterpriseSignupView(SignupView):
                 rc = verify_recaptcha(token, client_ip, action="signup")
                 if not rc.get("ok"):
                     form.add_error(None, "reCAPTCHA failed. Please retry.")
-                    logger.info("reCAPTCHA failed during signup → %s", rc)
+                    logger.info("reCAPTCHA failed during signup | ip=%s | rc=%s", client_ip, rc)
                     return self.form_invalid(form)
             except Exception:
                 logger.exception("reCAPTCHA error during signup")
@@ -450,11 +508,27 @@ def verify_email_view(request):
             messages.error(request, "Verification code required.")
             return render(request, "users/verify_email.html")
 
-        if code == getattr(user, "verification_code", ""):
+        attempt_key = f"verify_email_attempts:{user.id}"
+        attempts = cache.get(attempt_key, 0)
+        if attempts >= 5:
+            messages.error(request, "Too many attempts. Please try again later.")
+            return render(request, "users/verify_email.html")
+
+        expected = getattr(user, "verification_code", "") or ""
+        sent_at = getattr(user, "verification_code_sent_at", None)
+        ttl_hours = getattr(settings, "EMAIL_VERIFICATION_CODE_TTL_HOURS", 24)
+        expired = not sent_at or timezone.now() - sent_at > timedelta(hours=ttl_hours)
+
+        if not expected or expired:
+            messages.error(request, "Your verification code has expired. Request a new code.")
+            return render(request, "users/verify_email.html")
+
+        if code == expected:
             user.email_verified_at = timezone.now()
             user.verification_code = ""
-            user.save(update_fields=["email_verified_at", "verification_code"])
-            # Notify user (best-effort)
+            user.verification_code_sent_at = None
+            user.save(update_fields=["email_verified_at", "verification_code", "verification_code_sent_at"])
+            cache.delete(attempt_key)
             try:
                 from apps.users.services.notifications import send_notification
 
@@ -469,6 +543,7 @@ def verify_email_view(request):
             messages.success(request, "Email verified successfully.")
             return redirect("users:dashboard")
 
+        cache.set(attempt_key, attempts + 1, 900)
         messages.error(request, "Invalid verification code.")
         logger.warning("Invalid verification attempt for user=%s", user.pk)
 
@@ -561,7 +636,7 @@ def device_eviction(request: HttpRequest) -> HttpResponse:
         devices = list(
             Device.objects.filter(user=request.user)
             .order_by("last_seen_at")
-            .values("id", "display_name", "machine_uuid", "last_seen_at", "is_trusted", "is_blocked")
+            .values("id", "display_name", "os_fingerprint", "last_seen_at", "is_trusted", "is_blocked")
         )
     except Exception as exc:
         error = f"Could not load devices: {exc}"
@@ -577,8 +652,7 @@ def device_eviction(request: HttpRequest) -> HttpResponse:
 @require_http_methods(["GET", "POST"])
 def device_mfa_challenge(request: HttpRequest) -> HttpResponse:
     """
-    Placeholder MFA challenge: accept any non-empty code for demo;
-    replace with real MFA verification as needed.
+    MFA challenge for device trust. Fails closed until a real MFA provider is wired.
     """
     token = request.GET.get("t") or _get_pending_device_token(request)
     if not token:
@@ -588,18 +662,22 @@ def device_mfa_challenge(request: HttpRequest) -> HttpResponse:
     if not data or str(request.user.id) != str(data.get("u")):
         messages.error(request, "This challenge link is invalid or expired.")
         return redirect("users:dashboard")
+    attempt_key = f"device_mfa_attempts:{request.user.id}:{token}"
+    attempts = cache.get(attempt_key, 0)
+    if attempts >= 5:
+        messages.error(request, "Too many attempts. Please try again later.")
+        return redirect("users:dashboard")
     if request.method == "POST":
         code = (request.POST.get("code") or "").strip()
         if not code:
             messages.error(request, "Enter the code to continue.")
         else:
-            # TODO: integrate real MFA validation
-            if mark_device_trusted(data.get("d"), request.user.id):
-                messages.success(request, "MFA passed. Device trusted.")
-                request.session.pop("pending_device_token", None)
-                request.session.pop("pending_device_reason", None)
-                return redirect("users:dashboard")
-            messages.error(request, "Could not trust device. Try again.")
+            cache.set(attempt_key, attempts + 1, 900)
+            messages.error(
+                request,
+                "MFA verification is not available. Contact support to complete device approval.",
+            )
+            return redirect("users:device_approval_needed")
     return render(
         request,
         "users/device_mfa_challenge.html",
@@ -646,10 +724,10 @@ def dashboard_view(request):
         from apps.devices.models import Device
 
         ident = resolve_identity(request, user=request.user, service_name="login")
-        candidate_id = ident.get("machine_uuid") or ident.get("server_fallback_fp")
+        candidate_id = ident.get("os_fingerprint") or ident.get("server_fallback_fp")
         if candidate_id:
             current_device = (
-                Device.objects.filter(user=request.user, machine_uuid=candidate_id)
+                Device.objects.filter(user=request.user, os_fingerprint=candidate_id)
                 .values("id", "is_trusted", "is_blocked", "display_name", "last_seen_at")
                 .first()
             )

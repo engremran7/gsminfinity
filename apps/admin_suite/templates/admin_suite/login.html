@@ -1,0 +1,52 @@
+{% load static form_tags %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Suite Login</title>
+  <link href="{% static 'css/admin-suite.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}">
+  <link href="{% static 'css/enterprise-dashboard.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}">
+</head>
+<body class="admin-login">
+  <div class="admin-page">
+    <div class="admin-card">
+    <div class="admin-brand">
+      <img src="{% static 'img/default-logo.svg' %}" alt="Admin Suite" />
+      <span>Admin Suite</span>
+      <span class="tag">Enterprise</span>
+    </div>
+    <p class="muted muted-spacing">Staff-only access. Non-staff logins are redirected to the main site.</p>
+
+    {% if form.errors %}
+      <div class="alert">Invalid credentials. Please try again.</div>
+    {% endif %}
+
+    <form method="post" class="admin-form">
+      {% csrf_token %}
+      <div>
+        <label for="{{ form.username.id_for_label }}">Email or Username</label>
+        {{ form.username|add_class:"mt-1" }}
+      </div>
+      <div>
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password|add_class:"mt-1" }}
+      </div>
+      <button type="submit" class="btn">Sign in</button>
+    </form>
+
+    <div class="footer">
+      <div class="row center-row">
+        <span class="pill">SSO-ready</span>
+        <span class="pill">MFA enforced</span>
+        <span class="pill">IP + device checks</span>
+      </div>
+      <div class="links">
+        <a class="link-btn" href="{% url 'admin_suite:admin_suite_security_question' %}">Forgot password</a>
+      </div>
+      <div class="muted muted-spacing">Need the regular site? <a href="{% url 'pages:home' %}">Go to Home</a></div>
+    </div>
+    </div>
+  </div>
+</body>
+</html>

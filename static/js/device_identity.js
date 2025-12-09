@@ -146,39 +146,39 @@
         "submit",
         async () => {
           try {
-            const consentState =
-              (window.Consent && window.Consent.getState && window.Consent.getState()) ||
-              window.CONSENT_CATEGORIES ||
-              null;
-            const uuid = await getOrCreateMachineUuid(consentState);
-            if (uuid && !form.querySelector('input[name="machine_uuid"]')) {
-              const input = document.createElement("input");
-              input.type = "hidden";
-              input.name = "machine_uuid";
-              input.value = uuid;
-              form.appendChild(input);
-            }
-            if (form.dataset.collectFingerprint === "true") {
-              const fp = await collectEnhancedFingerprint(consentState);
-              if (fp.fingerprint_hash && !form.querySelector('input[name="fingerprint_hash"]')) {
-                const hashInput = document.createElement("input");
-                hashInput.type = "hidden";
-                hashInput.name = "fingerprint_hash";
-                hashInput.value = fp.fingerprint_hash;
-                form.appendChild(hashInput);
-              }
-              if (fp.fingerprint_blob && !form.querySelector('input[name="fingerprint_blob"]')) {
-                const blobInput = document.createElement("input");
-                blobInput.type = "hidden";
-                blobInput.name = "fingerprint_blob";
-                blobInput.value = JSON.stringify(fp.fingerprint_blob || {});
-                form.appendChild(blobInput);
-              }
-            }
-          } catch (e) {
-            /* non-fatal */
+          const consentState =
+            (window.Consent && window.Consent.getState && window.Consent.getState()) ||
+            window.CONSENT_CATEGORIES ||
+            null;
+          const uuid = await getOrCreateMachineUuid(consentState);
+          if (uuid && !form.querySelector('input[name="machine_uuid"]')) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "machine_uuid";
+            input.value = uuid;
+            form.appendChild(input);
           }
-        },
+          if (form.dataset.collectFingerprint === "true") {
+            const fp = await collectEnhancedFingerprint(consentState);
+            if (fp.fingerprint_hash && !form.querySelector('input[name="fingerprint_hash"]')) {
+              const hashInput = document.createElement("input");
+              hashInput.type = "hidden";
+              hashInput.name = "fingerprint_hash";
+              hashInput.value = fp.fingerprint_hash;
+              form.appendChild(hashInput);
+            }
+            if (fp.fingerprint_blob && !form.querySelector('input[name="fingerprint_blob"]')) {
+              const blobInput = document.createElement("input");
+              blobInput.type = "hidden";
+              blobInput.name = "fingerprint_blob";
+              blobInput.value = JSON.stringify(fp.fingerprint_blob || {});
+              form.appendChild(blobInput);
+            }
+          }
+        } catch (e) {
+          /* non-fatal */
+        }
+      },
         { once: true }
       );
     });

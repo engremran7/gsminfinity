@@ -18,9 +18,11 @@
     {% if messages %}
       <ul class="space-y-2">
         {% for message in messages %}
-          {% if message.level|default:0 >= 30 %}
+          {% with tags=message.tags|default_if_none:"" %}
+          {% if message.level|default:0 >= 30 and not "admin_only" in tags %}
             <li class="text-sm text-red-700">{{ message }}</li>
           {% endif %}
+          {% endwith %}
         {% endfor %}
       </ul>
     {% endif %}

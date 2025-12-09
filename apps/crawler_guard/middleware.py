@@ -97,7 +97,7 @@ class CrawlerGuardMiddleware:
             devices_api = AppService.get("devices")
             if devices_api and hasattr(devices_api, "resolve_identity"):
                 ident = devices_api.resolve_identity(request)
-                return ident.get("machine_uuid") or ident.get("server_fallback_fp")
+                return ident.get("os_fingerprint") or ident.get("server_fallback_fp")
         except Exception:
             return None
         return None

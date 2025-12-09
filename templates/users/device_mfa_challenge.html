@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}MFA required for this device{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto px-4 py-12">
+  <div class="bg-white shadow rounded-lg p-6 space-y-4">
+    <h1 class="text-xl font-semibold text-slate-900">Verify to trust this device</h1>
+    <p class="text-sm text-slate-600">
+      This device was flagged as new or high-risk. Complete MFA to trust it and continue.
+    </p>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="text-sm {% if message.tags %}text-{{ message.tags }}-700{% else %}text-slate-700{% endif %}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      <label class="block">
+        <span class="text-sm text-slate-700">One-time code</span>
+        <input type="text" name="code" class="w-full border rounded px-3 py-2" autocomplete="one-time-code" inputmode="numeric" required>
+      </label>
+      <button type="submit" class="w-full bg-primary text-white rounded px-4 py-2">Verify</button>
+    </form>
+
+    <p class="text-xs text-slate-500">Use your existing MFA method. After success, this device will be marked trusted.</p>
+  </div>
+</div>
+{% endblock %}

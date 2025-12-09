@@ -55,6 +55,7 @@ def send_notification(
                 recipient=recipient,
                 title=title[:255],
                 message=message,
+                url=url[:500] if url else None,
                 priority=level,  # FIXED: your model uses 'priority'
                 channel=channel,  # NEW: support channel usage
                 # created_at auto_set by model default (best practice)
@@ -109,6 +110,7 @@ def broadcast_notification(
             recipient=r,
             title=title[:255],
             message=message,
+            url=url[:500] if url else None,
             priority=level,
             channel=channel,
             created_at=now,

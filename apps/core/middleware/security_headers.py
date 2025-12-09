@@ -66,13 +66,24 @@ class SecurityHeadersMiddleware:
         # ------------------------------------------------------------------
         # Nonce-based CSP even in DEBUG to discourage inline/eval
         script_hosts = self._merge_sources(
-            ["'self'", f"'nonce-{nonce}'", "https://www.google.com/recaptcha/", "https://www.gstatic.com/recaptcha/"],
+            [
+                "'self'",
+                f"'nonce-{nonce}'",
+                "https://www.google.com/recaptcha/",
+                "https://www.gstatic.com/recaptcha/",
+            ],
             getattr(settings, "SECURITY_SCRIPT_SRC_EXTRA", ()),
         )
         style_hosts = self._merge_sources(
-            ["'self'", f"'nonce-{nonce}'", "https://cdn.jsdelivr.net"],
+            [
+                "'self'",
+                f"'nonce-{nonce}'",
+            ],
             getattr(settings, "SECURITY_STYLE_SRC_EXTRA", ()),
         )
+        # Explicitly apply the same sources to style-src-attr/elem to avoid inline allowances
+        style_attr_hosts = list(style_hosts)
+        style_elem_hosts = list(style_hosts)
         connect_hosts = self._merge_sources(
             ["'self'", "ws:", "wss:"],
             getattr(settings, "SECURITY_CONNECT_SRC_EXTRA", ()),
@@ -86,6 +97,8 @@ class SecurityHeadersMiddleware:
             f"default-src 'self'; "
             f"script-src {' '.join(script_hosts)}; "
             f"style-src {' '.join(style_hosts)}; "
+            f"style-src-attr {' '.join(style_attr_hosts)}; "
+            f"style-src-elem {' '.join(style_elem_hosts)}; "
             "img-src 'self' data: https:; "
             f"connect-src {' '.join(connect_hosts)}; "
             f"frame-src {' '.join(frame_hosts)};"

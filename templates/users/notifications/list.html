@@ -21,15 +21,15 @@
     <div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-200 overflow-hidden">
       {% for n in notifications %}
         <a href="{% url 'users_notifications:detail' n.pk %}"
-           class="flex items-start px-4 py-3 hover:bg-slate-50 {% if not n.read_at %}bg-blue-50/50{% endif %}">
+           class="flex items-start px-4 py-3 hover:bg-slate-50 {% if not n.is_read %}bg-blue-50/50{% endif %}">
           <div class="flex-1">
             <div class="flex items-center justify-between mb-1">
               <span class="text-sm font-medium text-slate-900">{{ n.title }}</span>
               <span class="text-xs text-slate-400">{{ n.created_at|naturaltime }}</span>
             </div>
-            <p class="text-xs text-slate-600 line-clamp-2">{{ n.body|default:n.summary|truncatechars:180 }}</p>
+            <p class="text-xs text-slate-600 line-clamp-2">{{ n.message|truncatechars:180 }}</p>
           </div>
-          {% if not n.read_at %}
+          {% if not n.is_read %}
             <span class="w-2 h-2 rounded-full bg-primary ms-3 mt-2"></span>
           {% endif %}
         </a>

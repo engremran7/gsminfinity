@@ -1,5 +1,4 @@
 {% extends "admin_suite/base.html" %}
-
 {% block title %}Admin Suite - Distribution{% endblock %}
 
 {% block content %}
@@ -7,29 +6,40 @@
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-2xl font-semibold text-slate-900">Distribution</h1>
-      <p class="text-sm text-slate-600">Accounts, plans, jobs, and logs.</p>
-    </div>
-    <div class="flex gap-2">
-      <a href="#accounts" title="Jump to accounts" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Accounts</a>
-      <a href="#plans" title="Jump to plans" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Plans</a>
-      <a href="#jobs" title="Jump to jobs" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Jobs</a>
-      <a href="#logs" title="Jump to logs" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Logs</a>
+      <p class="text-sm text-slate-600">Accounts, settings, jobs, and logs.</p>
     </div>
   </div>
 
   {% if message %}
-  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+  <div class="text-sm text-amber-800 bg-amber-50 border border-amber-100 px-3 py-2 rounded">
     {{ message }}
   </div>
   {% endif %}
 
-  <form method="get" class="flex items-center gap-2">
-    <input type="text" name="q" value="{{ q }}" placeholder="Search channel/account/status" class="border rounded px-3 py-2 text-sm w-64">
-    <button type="submit" class="px-3 py-2 text-sm rounded bg-primary text-white">Search</button>
-    {% if q %}
-      <a href="{% url 'admin_suite:admin_suite_distribution' %}" class="text-sm text-primary hover:underline">Clear</a>
-    {% endif %}
-  </form>
+  <div class="grid md:grid-cols-3 gap-4">
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+      <div class="text-xs uppercase text-slate-500 mb-1">Distribution</div>
+      <div class="text-lg font-semibold text-slate-800">{{ dist_settings.distribution_enabled|yesno:"Enabled,Disabled" }}</div>
+      <div class="text-[12px] text-slate-600">Auto fanout: {{ dist_settings.auto_fanout_on_publish|yesno:"On,Off" }}</div>
+      <div class="text-[12px] text-slate-600">Require approval: {{ dist_settings.require_admin_approval|yesno:"Yes,No" }}</div>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+      <div class="text-xs uppercase text-slate-500 mb-1">Channels</div>
+      <div class="text-lg font-semibold text-slate-800">
+        {% if dist_settings.default_channels %}
+          {{ dist_settings.default_channels|join:", " }}
+        {% else %}
+          All enabled
+        {% endif %}
+      </div>
+      <div class="text-[12px] text-slate-600">Indexing allowed: {{ dist_settings.allow_indexing_jobs|yesno:"Yes,No" }}</div>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+      <div class="text-xs uppercase text-slate-500 mb-1">Retries</div>
+      <div class="text-lg font-semibold text-slate-800">{{ dist_settings.max_retries }} attempts</div>
+      <div class="text-[12px] text-slate-600">Backoff: {{ dist_settings.retry_backoff_seconds }}s</div>
+    </div>
+  </div>
 
   <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
     <div class="border rounded-lg p-4 bg-white shadow-sm">
@@ -47,10 +57,6 @@
     <div class="border rounded-lg p-4 bg-white shadow-sm">
       <div class="text-sm text-slate-500">Jobs failed</div>
       <div class="text-2xl font-semibold text-slate-900">{{ stats.jobs_failed }}</div>
-      {% if stats.jobs_pending %}
-        {% widthratio stats.jobs_failed stats.jobs_pending 100 as fail_pct %}
-        <div class="text-xs text-slate-500 mt-1">vs pending: {{ fail_pct }}%</div>
-      {% endif %}
     </div>
     <div class="border rounded-lg p-4 bg-white shadow-sm">
       <div class="text-sm text-slate-500">Logs (24h)</div>
@@ -58,20 +64,26 @@
     </div>
   </div>
 
-  <div id="accounts" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
     <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
       <div class="px-4 py-3 border-b flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-900">Accounts</h2>
         <span class="text-xs text-slate-500">Latest</span>
       </div>
       <div class="px-4 py-3 border-b">
-        <form method="post" class="flex flex-wrap items-center gap-2 text-sm">
+        <form method="post" class="space-y-2 text-sm">
           {% csrf_token %}
           <input type="hidden" name="action" value="save_account">
-          <input type="text" name="channel" placeholder="channel" class="border rounded px-2 py-1 w-32">
-          <input type="text" name="account_name" placeholder="account name" class="border rounded px-2 py-1 w-48">
-          <label class="flex items-center gap-1 text-slate-600"><input type="checkbox" name="is_active" value="1" checked> Active</label>
-          <button type="submit" class="px-3 py-1 rounded bg-primary text-white text-sm">Add</button>
+          <div class="grid md:grid-cols-2 gap-2">
+            <label class="flex flex-col text-slate-700">Channel {{ account_form.channel }}</label>
+            <label class="flex flex-col text-slate-700">Account Name {{ account_form.account_name }}</label>
+            <label class="flex flex-col text-slate-700">Access Token {{ account_form.access_token }}</label>
+            <label class="flex flex-col text-slate-700">Refresh Token {{ account_form.refresh_token }}</label>
+            <label class="flex flex-col text-slate-700">Expires {{ account_form.token_expires_at }}</label>
+            <label class="flex flex-col text-slate-700">Config JSON {{ account_form.config }}</label>
+            <label class="flex items-center gap-2 text-slate-700">{{ account_form.is_active }} Active</label>
+          </div>
+          <button type="submit" class="px-3 py-2 rounded bg-primary text-white text-sm">Save account</button>
         </form>
       </div>
       <div class="overflow-x-auto">
@@ -91,26 +103,12 @@
               <td class="px-4 py-2">{{ a.channel }}</td>
               <td class="px-4 py-2">{{ a.account_name }}</td>
               <td class="px-4 py-2">{{ a.is_active|yesno:"Yes,No" }}</td>
-              <td class="px-4 py-2">{{ a.token_expires_at }}</td>
-              <td class="px-4 py-2">
-                <form method="post">
+              <td class="px-4 py-2">{{ a.token_expires_at|default:"-" }}</td>
+              <td class="px-4 py-2 space-y-1">
+                <form method="post" class="inline">
                   {% csrf_token %}
-                  <input type="hidden" name="action" value="{% if a.is_active %}disable_account{% else %}enable_account{% endif %}">
                   <input type="hidden" name="account_id" value="{{ a.id }}">
-                  <button type="submit" title="Toggle account active state" class="text-xs text-primary hover:underline">
-                    {% if a.is_active %}Disable{% else %}Enable{% endif %}
-                  </button>
-                </form>
-                <form method="post" class="mt-2 space-y-1 text-xs">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="save_account">
-                  <input type="hidden" name="account_id" value="{{ a.id }}">
-                  <input type="text" name="channel" value="{{ a.channel }}" class="border rounded px-2 py-1 w-full" placeholder="channel">
-                  <input type="text" name="account_name" value="{{ a.account_name }}" class="border rounded px-2 py-1 w-full" placeholder="account name">
-                  <label class="flex items-center gap-1 text-slate-600">
-                    <input type="checkbox" name="is_active" value="1" {% if a.is_active %}checked{% endif %}> Active
-                  </label>
-                  <button type="submit" class="text-slate-600 hover:underline">Save</button>
+                  <button type="submit" name="action" value="{% if a.is_active %}disable_account{% else %}enable_account{% endif %}" class="text-xs text-primary hover:underline">{% if a.is_active %}Disable{% else %}Enable{% endif %}</button>
                 </form>
               </td>
             </tr>
@@ -122,7 +120,7 @@
       </div>
     </div>
 
-    <div id="jobs" class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
       <div class="px-4 py-3 border-b flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-900">Jobs</h2>
         <span class="text-xs text-slate-500">Recent</span>
@@ -147,18 +145,12 @@
               <td class="px-4 py-2">{{ j.created_at }}</td>
               <td class="px-4 py-2">{{ j.attempt_count }}</td>
               <td class="px-4 py-2">{{ j.last_error|default:"-" }}</td>
-              <td class="px-4 py-2">
+              <td class="px-4 py-2 space-y-1">
                 <form method="post">
                   {% csrf_token %}
-                  <input type="hidden" name="action" value="retry_job">
                   <input type="hidden" name="job_id" value="{{ j.id }}">
-                  <button type="submit" class="text-xs text-primary hover:underline">Retry</button>
-                </form>
-                <form method="post">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="delete_job">
-                  <input type="hidden" name="job_id" value="{{ j.id }}">
-                  <button type="submit" class="text-xs text-red-600 hover:underline">Delete</button>
+                  <button type="submit" name="action" value="retry_job" class="text-xs text-primary hover:underline">Retry</button>
+                  <button type="submit" name="action" value="cancel_job" class="text-xs text-amber-700 hover:underline">Cancel</button>
                 </form>
               </td>
             </tr>
@@ -168,112 +160,55 @@
           </tbody>
         </table>
       </div>
-      <div class="px-4 py-3 border-t flex items-center justify-between text-sm text-slate-600">
-        <div>Page {{ page }} / Page size {{ page_size }}</div>
-        <div class="space-x-2">
-          {% if page > 1 %}
-          <a href="?page={{ page|add:"-1" }}&page_size={{ page_size }}{% if q %}&q={{ q }}{% endif %}" class="text-primary hover:underline" title="Previous page">Prev</a>
-          {% endif %}
-          {% if jobs|length >= page_size %}
-          <a href="?page={{ page|add:"1" }}&page_size={{ page_size }}{% if q %}&q={{ q }}{% endif %}" class="text-primary hover:underline" title="Next page">Next</a>
-          {% endif %}
-        </div>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-4">
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-slate-900">Plans</h2>
+        <span class="text-xs text-slate-500">Latest</span>
+      </div>
+      <div class="px-4 py-3 space-y-2 text-sm">
+        {% for p in plans %}
+          <div class="rounded border border-slate-200 bg-slate-50 p-3">
+            <div class="font-semibold text-slate-900">{{ p.post.title }}</div>
+            <div class="text-[12px] text-slate-600">Status: {{ p.status }} | Channels: {{ p.channels|join:", " }}</div>
+            {% if p.schedule_at %}<div class="text-[12px] text-slate-500">Scheduled: {{ p.schedule_at }}</div>{% endif %}
+          </div>
+        {% empty %}
+          <p class="text-slate-500">No plans.</p>
+        {% endfor %}
       </div>
     </div>
-  </div>
 
-  <div id="plans" class="border rounded-lg bg-white shadow-sm overflow-hidden">
-    <div class="px-4 py-3 border-b flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-slate-900">Plans</h2>
-      <span class="text-xs text-slate-500">Latest</span>
-    </div>
-    <div class="px-4 py-3 border-b">
-      <form method="post" class="flex flex-wrap items-center gap-2 text-sm">
-        {% csrf_token %}
-        <input type="hidden" name="action" value="save_plan">
-        <input type="text" name="name" placeholder="Plan name" class="border rounded px-2 py-1 w-40">
-        <input type="text" name="description" placeholder="Description" class="border rounded px-2 py-1 w-64">
-        <label class="flex items-center gap-1 text-slate-600"><input type="checkbox" name="is_active" value="1" checked> Active</label>
-        <button type="submit" class="px-3 py-1 rounded bg-primary text-white text-sm">Add</button>
-      </form>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-200">
-        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
-          <tr>
-            <th class="px-4 py-2">Name</th>
-            <th class="px-4 py-2">Description</th>
-            <th class="px-4 py-2">Active</th>
-            <th class="px-4 py-2">Created</th>
-            <th class="px-4 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
-          {% for p in plans %}
-          <tr>
-            <td class="px-4 py-2">{{ p.name }}</td>
-            <td class="px-4 py-2">{{ p.description }}</td>
-            <td class="px-4 py-2">{{ p.is_active|yesno:"Yes,No" }}</td>
-            <td class="px-4 py-2">{{ p.created_at }}</td>
-            <td class="px-4 py-2">
-              <form method="post" class="flex flex-col gap-1 text-xs">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="save_plan">
-                <input type="hidden" name="plan_id" value="{{ p.id }}">
-                <input type="text" name="name" value="{{ p.name }}" class="border rounded px-2 py-1 w-full" placeholder="Name">
-                <input type="text" name="description" value="{{ p.description }}" class="border rounded px-2 py-1 w-full" placeholder="Description">
-                <label class="flex items-center gap-1 text-slate-600">
-                  <input type="checkbox" name="is_active" value="1" {% if p.is_active %}checked{% endif %}> Active
-                </label>
-                <button type="submit" class="text-slate-600 hover:underline">Save</button>
-              </form>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="5" class="px-4 py-3 text-slate-500">No plans.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="logs" class="border rounded-lg bg-white shadow-sm overflow-hidden">
-    <div class="px-4 py-3 border-b">
-      <h2 class="text-lg font-semibold text-slate-900">Logs (latest)</h2>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-200">
-        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
-          <tr>
-            <th class="px-4 py-2">Job</th>
-            <th class="px-4 py-2">Level</th>
-            <th class="px-4 py-2">Message</th>
-            <th class="px-4 py-2">At</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
-          {% for l in logs %}
-          <tr>
-            <td class="px-4 py-2">{{ l.job_id }}</td>
-            <td class="px-4 py-2">{{ l.level }}</td>
-            <td class="px-4 py-2">{{ l.message }}</td>
-            <td class="px-4 py-2">{{ l.created_at }}</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="4" class="px-4 py-3 text-slate-500">No logs.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <div class="px-4 py-3 border-t flex items-center justify-between text-sm text-slate-600">
-      <div>Page {{ page }} / Page size {{ page_size }}</div>
-      <div class="space-x-2">
-        {% if page > 1 %}
-        <a href="?page={{ page|add:"-1" }}&page_size={{ page_size }}{% if q %}&q={{ q }}{% endif %}" class="text-primary hover:underline" title="Previous page">Prev</a>
-        {% endif %}
-        {% if logs|length >= page_size %}
-        <a href="?page={{ page|add:"1" }}&page_size={{ page_size }}{% if q %}&q={{ q }}{% endif %}" class="text-primary hover:underline" title="Next page">Next</a>
-        {% endif %}
+    <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b">
+        <h2 class="text-lg font-semibold text-slate-900">Logs (latest)</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-200">
+          <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+            <tr>
+              <th class="px-4 py-2">Job</th>
+              <th class="px-4 py-2">Level</th>
+              <th class="px-4 py-2">Message</th>
+              <th class="px-4 py-2">At</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+            {% for l in logs %}
+            <tr>
+              <td class="px-4 py-2">{{ l.job_id }}</td>
+              <td class="px-4 py-2">{{ l.level }}</td>
+              <td class="px-4 py-2">{{ l.message }}</td>
+              <td class="px-4 py-2">{{ l.created_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="px-4 py-3 text-slate-500">No logs.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

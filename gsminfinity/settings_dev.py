@@ -16,13 +16,34 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+# Provide safe local defaults for required env vars before importing base settings.
+os.environ.setdefault("DB_USER", "postgres")
+os.environ.setdefault("DB_PASSWORD", "postgres")
+os.environ.setdefault("DB_HOST", "localhost")
+os.environ.setdefault("DB_PORT", "5433")
+
 from .settings import *  # import production defaults
+
+# ============================================================
+# Database (safe local defaults)
+# ============================================================
+# Default to SQLite for local development to avoid Postgres auth/config friction.
+# Set DJANGO_DEV_DB=postgres to keep Postgres in dev.
+if os.environ.get("DJANGO_DEV_DB", "").lower() != "postgres":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # ============================================================
 # Environment / Debug
 # ============================================================
 DEBUG = True
 ENV = "development"
+# Enable custom admin suite in development by default
+ADMIN_SUITE_ENABLED = True
 
 # Allow sync DB/session access in async dev server contexts (suppress SynchronousOnlyOperation)
 os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
@@ -144,6 +165,11 @@ SECURITY_FRAME_SRC_EXTRA = (
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
+
+# ============================================================
+# Admin suite redirects (dev parity with production)
+# ============================================================
+LOGOUT_REDIRECT_URL = "admin_suite:admin_suite_login"
 
 
 # ============================================================

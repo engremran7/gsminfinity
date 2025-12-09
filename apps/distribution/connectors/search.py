@@ -1,14 +1,14 @@
 
 from __future__ import annotations
 
-from . import StubConnector
+from . import LoggingConnector
 
 
-class GoogleIndexingConnector(StubConnector):
+class GoogleIndexingConnector(LoggingConnector):
     channel = "google_indexing"
 
 
-class BingConnector(StubConnector):
+class BingConnector(LoggingConnector):
     channel = "bing_indexing"
 
 

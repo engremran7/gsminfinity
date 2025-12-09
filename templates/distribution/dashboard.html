@@ -6,6 +6,50 @@
     <h1 class="text-2xl font-bold text-slate-900">Distribution</h1>
     <p class="text-sm text-slate-600">Accounts, templates, plans, and recent share jobs/logs.</p>
   </div>
+
+  <div class="grid md:grid-cols-3 gap-4">
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+      <div class="text-xs uppercase text-slate-500 mb-1">Distribution</div>
+      <div class="text-lg font-semibold text-slate-800">{{ dist_settings.distribution_enabled|yesno:"Enabled,Disabled" }}</div>
+      <div class="text-[12px] text-slate-600">Auto fanout on publish: {{ dist_settings.auto_fanout_on_publish|yesno:"On,Off" }}</div>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+      <div class="text-xs uppercase text-slate-500 mb-1">Channels</div>
+      <div class="text-lg font-semibold text-slate-800">
+        {% if dist_settings.default_channels %}
+          {{ dist_settings.default_channels|join:", " }}
+        {% else %}
+          All enabled
+        {% endif %}
+      </div>
+      <div class="text-[12px] text-slate-600">Indexing jobs allowed: {{ dist_settings.allow_indexing_jobs|yesno:"Yes,No" }}</div>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+      <div class="text-xs uppercase text-slate-500 mb-1">Retries</div>
+      <div class="text-lg font-semibold text-slate-800">{{ dist_settings.max_retries }} max attempts</div>
+      <div class="text-[12px] text-slate-600">Backoff: {{ dist_settings.retry_backoff_seconds }}s</div>
+    </div>
+  </div>
+
+  <div class="rounded-xl border {% if readiness.has_gaps %}border-amber-300 bg-amber-50{% else %}border-slate-200 bg-white{% endif %} shadow-sm p-4 space-y-2">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-800">Channel readiness</h2>
+        <p class="text-[12px] text-slate-600">Active accounts vs enabled channels</p>
+      </div>
+      {% if readiness.has_gaps %}
+        <span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800">Missing providers</span>
+      {% else %}
+        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">All covered</span>
+      {% endif %}
+    </div>
+    <div class="text-sm text-slate-700">Enabled: {{ readiness.enabled_channels|join:", " }}</div>
+    <div class="text-sm text-slate-700">Active: {{ readiness.active_channels|join:", "|default:"None" }}</div>
+    {% if readiness.missing_channels %}
+      <div class="text-sm text-amber-800">Missing accounts for: {{ readiness.missing_channels|join:", " }}</div>
+    {% endif %}
+  </div>
+
   <div class="grid lg:grid-cols-3 gap-4">
     <section class="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
       <div class="flex items-center justify-between">
@@ -17,7 +61,8 @@
           <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div class="font-semibold text-slate-900">{{ acc.get_channel_display }}</div>
             <div class="text-xs text-slate-600">Name: {{ acc.account_name|default:"-" }}</div>
-            <div class="text-[11px] text-slate-500">Active: {{ acc.is_active|yesno:"Yes,No" }}{% if acc.is_expired %} • Expired{% endif %}</div>
+            <div class="text-[11px] text-slate-500">Active: {{ acc.is_active|yesno:"Yes,No" }}{% if acc.is_expired %} - Expired{% endif %}</div>
+            {% if acc.last_tested_at %}<div class="text-[11px] text-slate-500">Tested: {{ acc.last_tested_at|date:"M j, Y H:i" }}</div>{% endif %}
           </div>
         {% empty %}
           <p class="text-sm text-slate-500">No accounts configured.</p>
@@ -48,8 +93,11 @@
       <div class="space-y-2 text-sm">
         {% for plan in plans %}
           <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div class="font-semibold text-slate-900">{{ plan.name }}</div>
-            <div class="text-xs text-slate-600">Status: {{ plan.status|default:"-" }}</div>
+            <div class="font-semibold text-slate-900">{{ plan.post.title }}</div>
+            <div class="text-xs text-slate-600">Status: {{ plan.status|default:"-" }} | Channels: {{ plan.channels|join:", " }}</div>
+            {% if plan.schedule_at %}
+            <div class="text-[12px] text-slate-500">Scheduled: {{ plan.schedule_at|date:"M j, Y H:i" }}</div>
+            {% endif %}
           </div>
         {% empty %}
           <p class="text-sm text-slate-500">No plans.</p>
@@ -77,8 +125,13 @@
       <div class="space-y-2 text-sm">
         {% for job in jobs %}
           <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div class="font-semibold text-slate-900">{{ job.job_type }}</div>
-            <div class="text-xs text-slate-600">Status: {{ job.status }} • {{ job.created_at|date:"M j, Y H:i" }}</div>
+            <div class="font-semibold text-slate-900">{{ job.channel|upper }} — {{ job.post.title }}</div>
+            <div class="text-xs text-slate-600">Status: {{ job.status }} | Attempts: {{ job.attempt_count }}</div>
+            <div class="text-[12px] text-slate-500">Created: {{ job.created_at|date:"M j, Y H:i" }}</div>
+            {% if readiness.missing_channels and job.channel in readiness.missing_channels %}
+              <div class="text-[12px] text-amber-700">Warning: No active account for this channel.</div>
+            {% endif %}
+            {% if job.last_error %}<div class="text-[12px] text-red-600">Error: {{ job.last_error|truncatechars:140 }}</div>{% endif %}
           </div>
         {% empty %}
           <p class="text-sm text-slate-500">No jobs yet.</p>

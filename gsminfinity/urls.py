@@ -28,6 +28,7 @@ from django.urls import include, path, re_path
 from django.utils.module_loading import import_string
 from django.views.generic import RedirectView
 from apps.core import views as core_views
+from apps.pages import views as pages_views
 
 logger = logging.getLogger(__name__)
 
@@ -72,18 +73,19 @@ admin.site.index_title = "System Management Console"
 # URL Patterns
 # =====================================================================
 urlpatterns = [
-    # Admin Suite (custom) becomes primary at /admin; keep Django admin at /django-admin/
+    # Admin Suite (custom) is primary at /admin; Django admin removed from default surface.
     path("admin/", include(("apps.admin_suite.urls", "admin_suite"), namespace="admin_suite")),
     path("admin-suite/", RedirectView.as_view(url="/admin/", permanent=True)),
+    # Keep Django admin available under a non-default path for reverse('admin:*') compatibility
+    path("django-admin/", admin.site.urls),
     # Legacy Django-admin blog paths redirect to Admin Suite blog manager
     path("admin/blog/", RedirectView.as_view(url="/admin/blog/", permanent=False)),
     path(
         "admin/blog/post/<int:pk>/change/",
         RedirectView.as_view(url="/admin/blog/?post_id=%(pk)s", permanent=False),
     ),
-    path("django-admin/", admin.site.urls),
     # Django i18n (language switching)
-    path("i18n/setlang/", include("django.conf.urls.i18n")),
+    path("i18n/", include("django.conf.urls.i18n")),
     # Authentication (allauth)
     path("accounts/", include("allauth.urls")),
     # Users module
@@ -112,6 +114,7 @@ urlpatterns = [
     # Distribution / syndication
     path("distribution/", include(("apps.distribution.urls", "distribution"), namespace="distribution")),
     path("devices/", include(("apps.devices.urls", "devices"), namespace="devices")),
+    path("i18n/app/", include(("apps.i18n.urls", "i18n"), namespace="i18n")),
     # Tags API
     path("tags/", include(("apps.tags.urls", "tags"), namespace="tags")),
     # Blog (public)
@@ -120,15 +123,18 @@ urlpatterns = [
     path("comments/", include(("apps.comments.urls", "comments"), namespace="comments")),
     # Security suite status
     path("security/", include(("apps.security_suite.urls", "security_suite"), namespace="security_suite")),
-    # i18n + themes micro-app
-    path("i18n/", include(("apps.i18n_themes.urls", "i18n_themes"), namespace="i18n_themes")),
     # AI micro-app
     path("ai/", include(("apps.ai.urls", "ai"), namespace="ai")),
     # App registry API
     path("apps/", include(("apps.app_registry.urls", "app_registry"), namespace="app_registry")),
     # Legacy core namespace (site_map redirects, etc.)
     path("core/", include(("apps.core.urls", "core"), namespace="core")),
-    # Public root pages now served by pages app (catch-all)
+    # Legacy /pages/* routes redirect to new root-based pages
+    path("pages/", RedirectView.as_view(url="/", permanent=True)),
+    path("pages/<slug:slug>/", RedirectView.as_view(url="/%(slug)s/", permanent=True)),
+    # Light landing that highlights latest posts; full blog at /blog/
+    path("", pages_views.home_landing, name="home"),
+    # Public pages (slug-based)
     path("", include(("apps.pages.urls", "pages"), namespace="pages")),
     # Health check (well-known)
     path(

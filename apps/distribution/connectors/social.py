@@ -1,34 +1,34 @@
 
 from __future__ import annotations
 
-from . import ConnectorResult, StubConnector
+from . import LoggingConnector
 
 
-class TwitterConnector(StubConnector):
+class TwitterConnector(LoggingConnector):
     channel = "twitter"
 
 
-class LinkedInConnector(StubConnector):
+class LinkedInConnector(LoggingConnector):
     channel = "linkedin"
 
 
-class FacebookConnector(StubConnector):
+class FacebookConnector(LoggingConnector):
     channel = "facebook"
 
 
-class InstagramConnector(StubConnector):
+class InstagramConnector(LoggingConnector):
     channel = "instagram"
 
 
-class PinterestConnector(StubConnector):
+class PinterestConnector(LoggingConnector):
     channel = "pinterest"
 
 
-class RedditConnector(StubConnector):
+class RedditConnector(LoggingConnector):
     channel = "reddit"
 
 
-class TikTokConnector(StubConnector):
+class TikTokConnector(LoggingConnector):
     channel = "tiktok"
 
 

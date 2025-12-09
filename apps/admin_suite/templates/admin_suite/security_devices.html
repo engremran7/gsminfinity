@@ -38,7 +38,7 @@
         <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
           {% for d in devices %}
           <tr>
-            <td class="px-4 py-2">{{ d.machine_uuid }}</td>
+            <td class="px-4 py-2">{{ d.os_fingerprint }}</td>
             <td class="px-4 py-2">{{ d.user_id }}</td>
             <td class="px-4 py-2">{{ d.is_trusted|yesno:"Yes,No" }}</td>
             <td class="px-4 py-2">{{ d.is_blocked|yesno:"Yes,No" }}</td>
@@ -65,7 +65,13 @@
                 {% csrf_token %}
                 <input type="hidden" name="user_id" value="{{ d.user_id }}">
                 <input type="hidden" name="action" value="reset_quota">
-                <button type="submit" title="Reset this user’s rolling device window" class="text-sm text-slate-600 hover:text-slate-800">Reset quota</button>
+                <button type="submit" title="Reset this user's rolling device window" class="text-sm text-slate-600 hover:text-slate-800">Reset quota</button>
+              </form>
+              <form method="post" class="inline" onsubmit="return confirm('Delete this device?');">
+                {% csrf_token %}
+                <input type="hidden" name="device_id" value="{{ d.id }}">
+                <input type="hidden" name="action" value="delete">
+                <button type="submit" class="text-sm text-rose-600 hover:text-rose-800">Delete</button>
               </form>
             </td>
           </tr>

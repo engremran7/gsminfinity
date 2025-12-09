@@ -22,6 +22,28 @@
     <a href="{% url 'users:dashboard' %}" class="text-sm text-primary hover:underline">Back to dashboard</a>
   </div>
 
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div class="bg-white shadow rounded-lg p-4 space-y-3">
+      <h2 class="text-sm font-semibold text-slate-900">Export device key</h2>
+      <p class="text-xs text-slate-600">Export your device key (encrypted) to reuse on another browser on this machine.</p>
+      <div class="space-y-2">
+        <input type="password" id="export-passphrase" class="w-full text-sm border rounded px-3 py-2" placeholder="Passphrase to encrypt export" />
+        <button type="button" id="export-key-btn" class="text-xs px-4 py-2 rounded bg-slate-900 text-white hover:bg-slate-800">Export key</button>
+        <textarea id="export-output" class="w-full text-xs border rounded px-3 py-2 h-24" readonly placeholder="Exported key blob will appear here"></textarea>
+      </div>
+    </div>
+    <div class="bg-white shadow rounded-lg p-4 space-y-3">
+      <h2 class="text-sm font-semibold text-slate-900">Import device key</h2>
+      <p class="text-xs text-slate-600">Paste the exported blob and passphrase to reuse the same device ID on another browser.</p>
+      <div class="space-y-2">
+        <textarea id="import-blob" class="w-full text-xs border rounded px-3 py-2 h-24" placeholder='Paste JSON: {"blob":"...","salt":"...","iv":"..."}'></textarea>
+        <input type="password" id="import-passphrase" class="w-full text-sm border rounded px-3 py-2" placeholder="Passphrase used during export" />
+        <button type="button" id="import-key-btn" class="text-xs px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">Import & register</button>
+        <p id="import-status" class="text-xs text-slate-600"></p>
+      </div>
+    </div>
+  </div>
+
   {% if error %}
   <div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-4 mb-4">
     {{ error }}
@@ -70,7 +92,7 @@
               {{ device.display_name|default:"Device" }}
             </p>
             <p class="text-xs text-slate-500 break-all">
-              ID: {{ device.machine_uuid|default:"unknown" }}
+              ID: {{ device.os_fingerprint|default:"unknown" }}
             </p>
           </div>
           {% if device.is_blocked %}
@@ -88,22 +110,27 @@
           <p>Risk score: {{ device.risk_score|default:"0" }}/100</p>
         </div>
         <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
-          <form method="post" class="inline">
-            {% csrf_token %}
-            <input type="hidden" name="device_id" value="{{ device.id }}">
-            {% if device.is_trusted %}
-              <input type="hidden" name="action" value="untrust">
-              <button type="submit" class="text-xs px-3 py-2 rounded border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100">
-                Mark untrusted
-              </button>
-            {% else %}
-              <input type="hidden" name="action" value="trust">
-              <button type="submit" class="text-xs px-3 py-2 rounded border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100">
-                Trust device
-              </button>
-            {% endif %}
-          </form>
-          {% if not device.is_trusted %}
+          {% if request.user.is_staff %}
+            <form method="post" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="device_id" value="{{ device.id }}">
+              {% if device.is_trusted %}
+                <input type="hidden" name="action" value="untrust">
+                <button type="submit" class="text-xs px-3 py-2 rounded border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100">
+                  Mark untrusted
+                </button>
+              {% else %}
+                <input type="hidden" name="action" value="trust">
+                <button type="submit" class="text-xs px-3 py-2 rounded border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100">
+                  Trust device
+                </button>
+              {% endif %}
+            </form>
+          {% else %}
+            <span class="text-xs text-slate-500">Only admins can trust/untrust devices. Contact support for changes.</span>
+          {% endif %}
+
+          {% if request.user.is_staff and not device.is_trusted %}
             <form method="post" class="inline" onsubmit="return confirm('Remove this device? It will need to sign in again.');">
               {% csrf_token %}
               <input type="hidden" name="device_id" value="{{ device.id }}">
@@ -112,8 +139,10 @@
                 Remove
               </button>
             </form>
+          {% elif request.user.is_staff and device.is_trusted %}
+            <span class="text-xs text-slate-500">Trusted devices must be untrusted before removal.</span>
           {% else %}
-            <span class="text-xs text-slate-500">Trusted devices can’t be removed here. Untrust first to remove.</span>
+            <span class="text-xs text-slate-500">Only admins can remove devices.</span>
           {% endif %}
         </div>
       </div>

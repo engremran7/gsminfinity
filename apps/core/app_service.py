@@ -33,7 +33,8 @@ class AppService:
         try:
             reg = AppRegistry.get_solo()
             enabled = getattr(reg, f"{key}_enabled", True)
-            if enabled is False:
+            # For device identity, prefer fail-open so device enforcement/registration still runs.
+            if key != "devices" and enabled is False:
                 return None
         except Exception:
             # Fail-open if registry missing

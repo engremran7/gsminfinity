@@ -18,7 +18,10 @@ from django.core.exceptions import ValidationError
 from django.http import HttpRequest
 from django.urls import NoReverseMatch, reverse
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
+from apps.core.utils.ip import get_client_ip
+from apps.consent.utils import hash_ip
 logger = logging.getLogger(__name__)
 
 
@@ -36,6 +39,18 @@ def _safe_reverse(name: str, default: str = "/") -> str:
 
 class CustomAccountAdapter(DefaultAccountAdapter):
     """Account adapter with hardened password rules and trusted social email."""
+    def send_mail(self, template_prefix, email, context):
+        # Enrich reset/verification emails with timestamp and anonymized requester IP when available.
+        context = context or {}
+        context.setdefault("now", timezone.now())
+        try:
+            request = context.get("request")
+            ip = get_client_ip(request) if request else None
+            if ip:
+                context["client_ip"] = hash_ip(ip)
+        except Exception:
+            context.setdefault("client_ip", None)
+        return super().send_mail(template_prefix, email, context)
 
     def is_open_for_signup(self, request: Optional[HttpRequest]) -> bool:
         try:

@@ -32,7 +32,6 @@ SINGLETON_MODELS: Iterable[str] = (
     "apps.distribution.models.DistributionSettings",
     "apps.users.models.UsersSettings",
     "apps.ai.models.AISettings",
-    "apps.i18n_themes.models.LanguageProfile",
     # users referral system is disabled; ensure a baseline UsersSettings row exists but leave referral optional
 )
 
@@ -91,30 +90,5 @@ def seed_singletons(sender, **kwargs):  # pragma: no cover - signal hook
             AppPolicy.objects.get_or_create(name=DEFAULT_APP_POLICY["name"], defaults=DEFAULT_APP_POLICY)
         except Exception as exc:
             logger.debug("Default AppPolicy seed skipped: %s", exc)
-
-    # Seed baseline language profile + locales for i18n_themes
-    if _is_installed("apps.i18n_themes.models.Locale"):
-        try:
-            from apps.i18n_themes.models import LanguageProfile, Locale
-
-            # Baseline locales
-            for code, name, direction in (
-                ("en", "English", "ltr"),
-                ("ur", "Urdu", "rtl"),
-                ("ar", "Arabic", "rtl"),
-            ):
-                Locale.objects.get_or_create(
-                    code=code,
-                    defaults={"name": name, "direction": direction, "enabled_global": True},
-                )
-
-            # Baseline language profile for core app
-            LanguageProfile.objects.get_or_create(
-                app_id="core",
-                site_id=None,
-                defaults={"default_locale": "en", "supported_locales": ["en", "ur"], "fallback_locale": "en"},
-            )
-        except Exception as exc:
-            logger.debug("Default i18n locales/profile seed skipped: %s", exc)
 
 

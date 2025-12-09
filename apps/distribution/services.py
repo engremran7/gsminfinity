@@ -30,6 +30,9 @@ def _enabled_channels() -> List[str]:
         settings_obj = dist_api.get_settings() if dist_api and hasattr(dist_api, "get_settings") else {}
         if not settings_obj.get("distribution_enabled", True):
             return []
+        override = settings_obj.get("default_channels") or []
+        if override:
+            return override
     except Exception:
         pass
     return getattr(settings, "DISTRIBUTION_CHANNELS", list(Channel.values))
@@ -161,6 +164,15 @@ def should_fanout(post: Post) -> bool:
 def fanout_post_publish(post: Post, *, created_by=None) -> SharePlan | None:
     if not should_fanout(post):
         return None
+    try:
+        dist_api = AppService.get("distribution")
+        settings_obj = dist_api.get_settings() if dist_api and hasattr(dist_api, "get_settings") else {}
+        if not settings_obj.get("distribution_enabled", True):
+            return None
+        if not settings_obj.get("auto_fanout_on_publish", True):
+            return None
+    except Exception:
+        pass
     plan = create_plan_for_post(post, created_by=created_by)
     if not plan:
         logger.info("distribution.plan.skipped", extra={"post": post.slug, "reason": "no_channels"})

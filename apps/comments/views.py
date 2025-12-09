@@ -17,6 +17,10 @@ from django.utils import timezone
 from django.db.models import F
 from django.contrib.admin.views.decorators import staff_member_required
 from datetime import timedelta
+import requests
+from django.conf import settings
+from django.core.mail import send_mail
+from urllib.parse import urlencode
 
 from apps.blog.models import Post
 from apps.core.views import _get_site_settings_snapshot
@@ -55,11 +59,17 @@ def add_comment(request: HttpRequest, slug: str) -> HttpResponse:
         return HttpResponseForbidden("Consent required.")
 
     post = get_object_or_404(Post, slug=slug)
+    if hasattr(post, "allow_comments") and not post.allow_comments:
+        return HttpResponseBadRequest("Comments are disabled for this post.")
     if not post.is_live and not (request.user.is_staff or request.user == post.author):
         return HttpResponseBadRequest("Comments are disabled for this post.")
     body = (request.POST.get("body") or "").strip()
+    if request.POST.get("hp"):
+        return HttpResponseBadRequest("Comment body required.")
     if not body:
         return HttpResponseBadRequest("Comment body required.")
+    if not _verify_recaptcha(request):
+        return HttpResponseBadRequest("Recaptcha failed.")
     if not _check_comment_rate_limit(request):
         return HttpResponseBadRequest("Too many comments, slow down.")
     Comment.objects.create(
@@ -99,6 +109,8 @@ def list_comments(request: HttpRequest, slug: str) -> JsonResponse:
         return JsonResponse({"error": "consent_required"}, status=403)
 
     post = get_object_or_404(Post, slug=slug)
+    if hasattr(post, "allow_comments") and not post.allow_comments:
+        return JsonResponse({"error": "comments_disabled"}, status=403)
     if not post.is_live and not (request.user.is_staff or request.user == post.author):
         return JsonResponse({"error": "comments_disabled"}, status=403)
     sort = request.GET.get("sort", "new")
@@ -144,6 +156,8 @@ def list_comments(request: HttpRequest, slug: str) -> JsonResponse:
             "page": page_obj.number,
             "pages": paginator.num_pages,
             "total": paginator.count,
+            "recaptcha_required": bool(getattr(settings, "RECAPTCHA_SECRET_KEY", None)),
+            "recaptcha_site_key": getattr(settings, "RECAPTCHA_PUBLIC_KEY", ""),
         }
     )
 
@@ -178,11 +192,17 @@ def add_comment_json(request: HttpRequest, slug: str) -> JsonResponse:
     if not _check_comment_rate_limit(request):
         return JsonResponse({"error": "rate_limited"}, status=429)
     post = get_object_or_404(Post, slug=slug)
+    if hasattr(post, "allow_comments") and not post.allow_comments:
+        return JsonResponse({"error": "comments_disabled"}, status=403)
     if not post.is_live and not (request.user.is_staff or request.user == post.author):
         return JsonResponse({"error": "comments_disabled"}, status=403)
     body = (request.POST.get("body") or "").strip()
+    if request.POST.get("hp"):
+        return JsonResponse({"error": "Comment body required."}, status=400)
     if not body:
         return JsonResponse({"error": "Comment body required."}, status=400)
+    if not _verify_recaptcha(request):
+        return JsonResponse({"error": "recaptcha_failed"}, status=400)
     parent_id = request.POST.get("parent")
     parent = None
     if parent_id:
@@ -207,6 +227,13 @@ def add_comment_json(request: HttpRequest, slug: str) -> JsonResponse:
             status = Comment.Status.APPROVED
     except Exception:
         status = Comment.Status.APPROVED
+    # Akismet spam check (optional)
+    try:
+        if _check_akismet(request, body, post):
+            status = Comment.Status.SPAM
+            meta["akismet"] = "spam"
+    except Exception:
+        pass
     is_approved = status == Comment.Status.APPROVED
 
     comment = Comment.objects.create(
@@ -224,6 +251,8 @@ def add_comment_json(request: HttpRequest, slug: str) -> JsonResponse:
     msg = "Comment posted"
     if status != Comment.Status.APPROVED:
         msg = "Submitted for review" if status == Comment.Status.PENDING else "Flagged as spam"
+    _notify_post_author(comment, request)
+    _notify_parent_commenter(parent, comment, request)
     return JsonResponse(
         {
             "ok": True,
@@ -355,14 +384,130 @@ def _has_comments_consent(request: HttpRequest) -> bool:
     return True
 
 
-@staff_member_required
+def _verify_recaptcha(request: HttpRequest) -> bool:
+    """
+    Optional Recaptcha verification. Returns True if verification is disabled or passes.
+    Expects token in request.POST['recaptcha_token'] when enabled.
+    """
+    secret = getattr(settings, "RECAPTCHA_SECRET_KEY", None)
+    if not secret:
+        try:
+            from apps.site_settings.models import SiteSettings
+
+            s = SiteSettings.get_solo()
+            secret = getattr(s, "recaptcha_private_key", None)
+        except Exception:
+            secret = None
+    if not secret:
+        return True
+    token = request.POST.get("recaptcha_token") or ""
+    if not token:
+        return False
+    try:
+        resp = requests.post(
+            "https://www.google.com/recaptcha/api/siteverify",
+            data={"secret": secret, "response": token},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return bool(data.get("success"))
+    except Exception:
+        return False
+
+
+def _check_akismet(request: HttpRequest, body: str, post: Post) -> bool:
+    """
+    Optional Akismet spam check. Returns True if flagged as spam.
+    """
+    api_key = getattr(settings, "AKISMET_API_KEY", None)
+    blog_url = getattr(settings, "AKISMET_BLOG_URL", None) or getattr(settings, "SITE_URL", None)
+    if not api_key or not blog_url:
+        return False
+    try:
+        ip = get_client_ip(request) or ""
+        useragent = request.META.get("HTTP_USER_AGENT", "")
+        referrer = request.META.get("HTTP_REFERER", "")
+        data = {
+            "blog": blog_url,
+            "user_ip": ip,
+            "user_agent": useragent,
+            "referrer": referrer,
+            "comment_type": "comment",
+            "comment_author": str(getattr(request.user, "username", "")),
+            "comment_content": body,
+            "permalink": request.build_absolute_uri(post.get_absolute_url()),
+        }
+        resp = requests.post(f"https://{api_key}.rest.akismet.com/1.1/comment-check", data=data, timeout=5)
+        resp.raise_for_status()
+        result = resp.text.strip().lower()
+        return result == "true"
+    except Exception:
+        return False
+
+
+def _notify_post_author(comment: Comment, request: HttpRequest) -> None:
+    """
+    Notify post author on new comment (best-effort).
+    """
+    try:
+        post = comment.post
+        author = getattr(post, "author", None)
+        if not (post and author and author.email):
+            return
+        subject = f"New comment on: {post.title}"
+        body = (
+            f"A new comment was posted by {comment.user}.\n\n"
+            f"Content:\n{comment.body}\n\n"
+            f"Status: {comment.status}\n"
+            f"Link: {request.build_absolute_uri(post.get_absolute_url())}"
+        )
+        send_mail(
+            subject,
+            body,
+            getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@example.com"),
+            [author.email],
+            fail_silently=True,
+        )
+    except Exception:
+        return
+
+
+def _notify_parent_commenter(parent: Comment | None, comment: Comment, request: HttpRequest) -> None:
+    """
+    Notify parent commenter on reply (best-effort).
+    """
+    if not parent:
+        return
+    try:
+        if not getattr(parent, "user", None) or not parent.user.email:
+            return
+        subject = f"New reply to your comment on: {comment.post.title}"
+        body = (
+            f"{comment.user} replied to your comment.\n\n"
+            f"Reply:\n{comment.body}\n\n"
+            f"Status: {comment.status}\n"
+            f"Link: {request.build_absolute_uri(comment.post.get_absolute_url())}"
+        )
+        send_mail(
+            subject,
+            body,
+            getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@example.com"),
+            [parent.user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        return
+
+
+@staff_member_required(login_url="admin_suite:admin_suite_login")
 def moderation_queue(request: HttpRequest) -> HttpResponse:
     pending = Comment.objects.filter(status=Comment.Status.PENDING, is_deleted=False).order_by("-created_at")[:50]
     recent = Comment.objects.filter(status__in=[Comment.Status.APPROVED, Comment.Status.REJECTED, Comment.Status.SPAM], is_deleted=False).order_by("-created_at")[:50]
     return render(request, "comments/moderation_panel.html", {"pending_comments": pending, "recent_comments": recent})
 
 
-@staff_member_required
+@staff_member_required(login_url="admin_suite:admin_suite_login")
 @require_POST
 def moderation_action(request: HttpRequest) -> HttpResponse:
     cid = request.POST.get("comment_id")

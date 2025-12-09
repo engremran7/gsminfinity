@@ -6,6 +6,32 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+def _drop_legacy_consent_columns(schema_editor):
+    """
+    Safely drop legacy consent columns on databases that support ALTER TABLE DROP COLUMN.
+    SQLite is skipped to avoid table rewrites during dev; extra columns there are harmless.
+    """
+    vendor = getattr(schema_editor.connection, "vendor", "")
+    if vendor == "sqlite":
+        return
+
+    statements = [
+        ('consent_consentrecord', ('user_id', 'policy_id')),
+        ('consent_consentlog', ('user_id',)),
+    ]
+    with schema_editor.connection.cursor() as cursor:
+        for table, columns in statements:
+            for col in columns:
+                try:
+                    cursor.execute(f'ALTER TABLE "{table}" DROP COLUMN IF EXISTS "{col}";')
+                except Exception:
+                    # Ignore if column or backend does not support IF EXISTS
+                    try:
+                        cursor.execute(f'ALTER TABLE "{table}" DROP COLUMN "{col}";')
+                    except Exception:
+                        pass
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -41,19 +67,6 @@ class Migration(migrations.Migration):
             options={
                 'ordering': ['-created_at'],
             },
-        ),
-        # Drop indexes that reference fields being removed (user on ConsentRecord)
-        migrations.RemoveField(
-            model_name='consentlog',
-            name='user',
-        ),
-        migrations.RemoveField(
-            model_name='consentrecord',
-            name='policy',
-        ),
-        migrations.RemoveField(
-            model_name='consentrecord',
-            name='user',
         ),
         migrations.AlterModelOptions(
             name='consentcategory',
@@ -129,6 +142,11 @@ class Migration(migrations.Migration):
             model_name='consentevent',
             name='policy',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='consent.consentpolicy'),
+        ),
+        # Drop legacy user/policy columns on non-SQLite backends; SQLite keeps them to avoid table remakes.
+        migrations.RunPython(
+            code=lambda apps, schema_editor: _drop_legacy_consent_columns(schema_editor),
+            reverse_code=migrations.RunPython.noop,
         ),
         migrations.DeleteModel(
             name='ConsentLog',

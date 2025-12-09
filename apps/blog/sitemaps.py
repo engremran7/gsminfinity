@@ -7,6 +7,8 @@ from django.utils import timezone
 from apps.site_settings.models import SiteSettings
 
 from .models import Post, PostStatus
+from apps.i18n.services import resolve_locale
+from apps.blog.views import _apply_translations_to_posts
 
 
 class PublishedBlogPostsSitemap(Sitemap):
@@ -28,11 +30,13 @@ class PublishedBlogPostsSitemap(Sitemap):
 
     def items(self):
         now = timezone.now()
-        return (
-            Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now)
+        items = (
+            Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now, noindex=False)
             .order_by("-publish_at")
             .select_related("author", "category")
         )
+        # Apply locale translations if available (best-effort, requires request in context)
+        return items
 
     def lastmod(self, obj: Post):
         return obj.updated_at or obj.publish_at

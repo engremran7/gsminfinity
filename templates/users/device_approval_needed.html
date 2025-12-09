@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Device approval required{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-4 py-12">
+  <div class="bg-white shadow rounded-lg p-6 space-y-4">
+    <h1 class="text-xl font-semibold text-slate-900">Device approval required</h1>
+    <p class="text-sm text-slate-600">
+      This device was stopped because it is new or high-risk. Approve it from a trusted, signed-in session to continue.
+    </p>
+
+    {% if reason %}
+      <div class="text-xs text-slate-500">Reason: {{ reason }}</div>
+    {% endif %}
+
+    {% if approval_url and token %}
+      <div class="border border-slate-200 rounded p-3 bg-slate-50">
+        <p class="text-sm text-slate-700 font-medium mb-2">Approval link</p>
+        <code class="block text-xs break-all text-slate-600">{{ approval_url }}</code>
+        <p class="text-xs text-slate-500 mt-2">Open this link on a trusted device where you're already signed in to approve and trust this device.</p>
+      </div>
+    {% else %}
+      <p class="text-sm text-slate-600">No approval token found. Try signing in again to generate a new link.</p>
+    {% endif %}
+
+    <div class="space-y-2 text-sm">
+      <a href="{% url 'account_login' %}" class="text-primary hover:underline">Back to sign in</a>
+      <a href="{% url 'users:devices' %}" class="text-slate-600 hover:underline">Manage devices</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

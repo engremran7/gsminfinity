@@ -7,7 +7,7 @@ from django.db import models
 class AppEntry(models.Model):
     """
     Central registry of app capabilities, consent, and identity requirements.
-    Populated from i18n_themes manifests or explicit registration.
+    Populated from app manifests or explicit registration.
     """
 
     app_id = models.CharField(max_length=64, unique=True)

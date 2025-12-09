@@ -1,0 +1,13 @@
+<div class="flex flex-wrap gap-2">
+  {% for tag in tags %}
+    {% if tag.weight == "lg" %}
+      <a href="{% url 'blog:post_list' %}?tag={{ tag.slug }}" class="text-base font-semibold text-primary hover:underline">{{ tag.name }}</a>
+    {% elif tag.weight == "md" %}
+      <a href="{% url 'blog:post_list' %}?tag={{ tag.slug }}" class="text-sm font-medium text-slate-800 hover:underline">{{ tag.name }}</a>
+    {% else %}
+      <a href="{% url 'blog:post_list' %}?tag={{ tag.slug }}" class="text-xs text-slate-600 hover:underline">{{ tag.name }}</a>
+    {% endif %}
+  {% empty %}
+    <span class="text-xs text-slate-500">No tags yet.</span>
+  {% endfor %}
+</div>

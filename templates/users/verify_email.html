@@ -6,14 +6,45 @@
 <div class="max-w-md mx-auto py-12">
   <div class="bg-white shadow rounded-lg p-6">
     <h3 class="text-lg font-medium mb-2">Verify your email</h3>
-    <p class="text-sm text-slate-600 mb-4">Enter the verification code sent to your email.</p>
+    <p class="text-sm text-slate-600 mb-4">
+      Enter the verification code sent to your email. This page auto-checks every few seconds and will continue once your email is verified (even if an admin marks it verified).
+    </p>
     <form method="post" class="space-y-4">
       {% csrf_token %}
       <input type="text" name="code" class="w-full border border-slate-300 rounded px-3 py-2" placeholder="Verification code" />
       <button type="submit" class="bg-primary text-white px-4 py-2 rounded w-full">Verify</button>
     </form>
+    <div id="verify-status" class="text-xs text-slate-500 mt-3" aria-live="polite"></div>
   </div>
 </div>
+<script>
+(function() {
+  const statusEl = document.getElementById("verify-status");
+  if (!statusEl) return;
+  let retries = 0;
+
+  const check = async () => {
+    try {
+      const resp = await fetch("{% url 'users:verify_email_status' %}", { headers: { "Accept": "application/json" } });
+      if (!resp.ok) throw new Error("network");
+      const data = await resp.json();
+      if (data.verified && data.redirect) {
+        statusEl.textContent = "Email verified. Redirecting...";
+        window.location.href = data.redirect;
+        return;
+      }
+      statusEl.textContent = "Waiting for verification...";
+    } catch (e) {
+      statusEl.textContent = "Checking verification status failed; retrying...";
+    } finally {
+      retries += 1;
+      const backoff = Math.min(15000, 3000 + retries * 500);
+      setTimeout(check, backoff);
+    }
+  };
+  check();
+})();
+</script>
 {% endblock %}
 
 

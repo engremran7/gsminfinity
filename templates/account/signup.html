@@ -35,7 +35,7 @@
     </div>
 
     <div class="space-y-4">
-      <form method="post" action="{% url 'account_signup' %}" class="space-y-4">
+      <form method="post" action="{% url 'account_signup' %}" class="space-y-4" data-collect-fingerprint="true">
         {% csrf_token %}
         {{ form.non_field_errors }}
         <div class="space-y-3">

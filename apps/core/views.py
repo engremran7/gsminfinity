@@ -266,6 +266,10 @@ def home(request: HttpRequest) -> HttpResponse:
             return Announcement.objects.filter(is_active=True)
         except Exception:
             return []
+    try:
+        from apps.pages.models import Page  # type: ignore
+    except Exception:
+        Page = None
 
     # System info
     try:

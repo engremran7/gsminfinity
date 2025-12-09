@@ -207,6 +207,31 @@ class DistributionSettings(SingletonModel):
     """
 
     distribution_enabled = models.BooleanField(default=True)
+    auto_fanout_on_publish = models.BooleanField(
+        default=True,
+        help_text="Automatically queue distribution when a post is published.",
+    )
+    default_channels = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Optional override for enabled channels (empty = all supported).",
+    )
+    max_retries = models.PositiveIntegerField(
+        default=3,
+        help_text="Maximum retry attempts per job before marking as failed.",
+    )
+    retry_backoff_seconds = models.PositiveIntegerField(
+        default=1800,
+        help_text="Minimum age (seconds) before retrying a failed job.",
+    )
+    allow_indexing_jobs = models.BooleanField(
+        default=False,
+        help_text="Allow search engine indexing submit jobs (Google/Bing).",
+    )
+    require_admin_approval = models.BooleanField(
+        default=False,
+        help_text="Require admin approval before executing queued jobs.",
+    )
 
     class Meta:
         verbose_name = "Distribution Settings"

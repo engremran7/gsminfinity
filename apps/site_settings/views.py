@@ -233,7 +233,7 @@ info = settings_info
 @require_GET
 @vary_on_headers("Host")
 @cache_page(300)
-@staff_member_required
+@staff_member_required(login_url="admin_suite:admin_suite_login")
 def site_settings_view(request: HttpRequest) -> HttpResponse:
     """Visible to staff/admin only - shows full active settings."""
     s = SimpleLazyObject(lambda: _get_settings(request))

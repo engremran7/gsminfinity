@@ -12,6 +12,8 @@ from apps.seo.services.internal_linking.engine import refresh_linkable_entity
 from apps.users.services.notifications import broadcast_notification, notifications_enabled
 from apps.users.models import CustomUser
 from .models import Post, PostStatus
+import requests
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -63,5 +65,21 @@ def post_after_save(sender, instance: Post, **kwargs):
             )
         except Exception:
             logger.debug("post_after_save notification failed for post %s", instance.pk, exc_info=True)
+
+    # Ping search engines on publish
+    if created and instance.status == PostStatus.PUBLISHED and instance.is_live:
+        try:
+            sitemap_url = getattr(settings, "SITE_URL", "").rstrip("/") + "/sitemap.xml"
+            if sitemap_url.startswith("http"):
+                for ping in [
+                    f"https://www.google.com/ping?sitemap={sitemap_url}",
+                    f"https://www.bing.com/ping?sitemap={sitemap_url}",
+                ]:
+                    try:
+                        requests.get(ping, timeout=3)
+                    except Exception:
+                        continue
+        except Exception:
+            logger.debug("post_after_save ping failed for post %s", instance.pk, exc_info=True)
 
 

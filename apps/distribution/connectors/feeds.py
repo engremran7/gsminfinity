@@ -1,22 +1,22 @@
 
 from __future__ import annotations
 
-from . import StubConnector
+from . import LoggingConnector
 
 
-class RssConnector(StubConnector):
+class RssConnector(LoggingConnector):
     channel = "rss"
 
 
-class AtomConnector(StubConnector):
+class AtomConnector(LoggingConnector):
     channel = "atom"
 
 
-class JsonFeedConnector(StubConnector):
+class JsonFeedConnector(LoggingConnector):
     channel = "json"
 
 
-class WebSubConnector(StubConnector):
+class WebSubConnector(LoggingConnector):
     channel = "websub"
 
 

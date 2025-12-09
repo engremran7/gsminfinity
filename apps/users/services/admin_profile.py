@@ -60,7 +60,7 @@ def get_user_profile(user_id: str) -> Dict[str, Any]:
             Device.objects.filter(user=user)
             .order_by("-last_seen_at")
             .values(
-                "machine_uuid",
+                "os_fingerprint",
                 "is_blocked",
                 "is_trusted",
                 "last_seen_at",

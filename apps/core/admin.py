@@ -38,7 +38,6 @@ class AppRegistryAdmin(SingletonModelAdmin):
         "device_identity_enabled",
         "crawler_guard_enabled",
         "ai_behavior_enabled",
-        "i18n_themes_enabled",
         "ai_enabled",
     )
     fieldsets = (
@@ -78,7 +77,6 @@ class AppRegistryAdmin(SingletonModelAdmin):
             {
                 "fields": (
                     "users_enabled",
-                    "i18n_themes_enabled",
                 )
             },
         ),

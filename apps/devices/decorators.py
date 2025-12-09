@@ -8,7 +8,11 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
-from apps.devices.services import enforce_device_policy_for_login, enforce_device_policy_for_service
+from apps.devices.services import (
+    enforce_device_policy_for_login,
+    enforce_device_policy_for_service,
+    DevicePolicyError,
+)
 
 
 def audit_device_event(event_type: str = "login") -> Callable:
@@ -20,10 +24,11 @@ def audit_device_event(event_type: str = "login") -> Callable:
         @wraps(view_func)
         def _wrapped(request: HttpRequest, *args, **kwargs):
             user = getattr(request, "user", None)
-            allowed, ctx = enforce_device_policy_for_login(request, user)
-            if not allowed:
-                return JsonResponse({"ok": False, "reason": ctx.get("reason")}, status=403)
-            setattr(request, "device", ctx.get("device"))
+            try:
+                _, ctx = enforce_device_policy_for_login(request, user)
+                setattr(request, "device", ctx.get("device"))
+            except DevicePolicyError as exc:
+                return JsonResponse({"ok": False, "reason": exc.reason}, status=403)
             return view_func(request, *args, **kwargs)
 
         return _wrapped
@@ -43,10 +48,11 @@ def require_registered_device(service_name: str, redirect_url: Optional[str] = N
             if not user or not getattr(user, "is_authenticated", False):
                 return redirect(redirect_url or reverse("account_login"))
 
-            allowed, ctx = enforce_device_policy_for_service(request, user, service_name)
-            if not allowed:
-                return JsonResponse({"ok": False, "reason": ctx.get("reason")}, status=403)
-            setattr(request, "device", ctx.get("device"))
+            try:
+                _, ctx = enforce_device_policy_for_service(request, user, service_name)
+                setattr(request, "device", ctx.get("device"))
+            except DevicePolicyError as exc:
+                return JsonResponse({"ok": False, "reason": exc.reason}, status=403)
             return view_func(request, *args, **kwargs)
 
         return _wrapped

@@ -4,13 +4,21 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
-from celery import shared_task
+try:
+    from celery import shared_task
+except Exception:  # pragma: no cover - fallback when Celery not installed
+    def shared_task(*dargs, **dkwargs):
+        def decorator(func):
+            return func
+        return decorator
 from django.utils import timezone
+from django.conf import settings
 
 from django.db import transaction
 
 from .connectors import dispatch
-from .models import ShareJob
+from .models import ShareJob, SocialAccount
+from apps.distribution.api import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +57,41 @@ def pump_due_jobs() -> None:
 
 @shared_task(name="distribution.retry_failed_jobs")
 def retry_failed_jobs() -> None:
-    cutoff = timezone.now() - timedelta(hours=6)
-    failed = ShareJob.objects.filter(status="failed", updated_at__gte=cutoff, attempt_count__lt=3)[:50]
+    cfg = get_settings()
+    max_retries = cfg.get("max_retries", 3)
+    backoff_seconds = cfg.get("retry_backoff_seconds", 1800)
+    cutoff = timezone.now() - timedelta(seconds=backoff_seconds)
+    failed = ShareJob.objects.filter(status="failed", updated_at__lte=cutoff, attempt_count__lt=max_retries)[:50]
     for job in failed:
         job.status = "pending"
         job.save(update_fields=["status", "updated_at"])
         deliver_job.delay(job.id)
+
+
+def enqueue_pending_for_account(account: SocialAccount) -> int:
+    """
+    When a social account becomes active, assign and enqueue pending/skipped jobs for that channel.
+    Jobs are spaced to respect provider rate limits.
+    """
+    interval = getattr(settings, "DISTRIBUTION_MIN_ACCOUNT_INTERVAL_SECONDS", 30)
+    now = timezone.now()
+    jobs = (
+        ShareJob.objects.filter(
+            channel=account.channel,
+            status__in=["pending", "skipped"],
+        )
+        .order_by("created_at")[:200]
+    )
+    count = 0
+    for idx, job in enumerate(jobs):
+        if not job.account_id:
+            job.account = account
+        job.status = "pending"
+        if not job.schedule_at:
+            job.schedule_at = now + timedelta(seconds=interval * idx)
+        job.save(update_fields=["account", "status", "schedule_at", "updated_at"])
+        deliver_job.delay(job.id)
+        count += 1
+    return count
 
 

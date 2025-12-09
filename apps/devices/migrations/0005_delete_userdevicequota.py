@@ -10,7 +10,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.DeleteModel(
-            name='UserDeviceQuota',
-        ),
+        # No-op to avoid deleting the quota model (kept for enforcement)
     ]

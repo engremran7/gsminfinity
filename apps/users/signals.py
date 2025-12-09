@@ -21,7 +21,6 @@ from django.utils import timezone
 
 from apps.core.utils.ip import get_client_ip
 from apps.users.services.notifications import send_notification
-from apps.users.services.notifications import send_notification
 
 logger = logging.getLogger(__name__)
 
@@ -167,7 +166,7 @@ def handle_user_logged_in(sender, request, user, **kwargs):
     try:
         ip = get_client_ip(request) if request else ""
         device = getattr(request, "device", None)
-        device_id = getattr(device, "machine_uuid", None)
+        device_id = getattr(device, "os_fingerprint", None)
         msg_parts = [f"Login from {ip or 'unknown IP'}"]
         if device_id:
             msg_parts.append(f"device {device_id}")

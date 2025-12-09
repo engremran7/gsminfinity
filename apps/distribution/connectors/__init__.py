@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from apps.distribution.models import ShareJob, ShareLog
+from apps.distribution.api import get_settings
+from apps.distribution.models import SocialAccount
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +94,58 @@ def connector_for(channel: str) -> Connector:
 
 
 def dispatch(job: ShareJob) -> ConnectorResult:
+    cfg = get_settings()
+    # Honor indexing toggle
+    if job.channel in {"google_indexing", "bing_indexing"} and not cfg.get("allow_indexing_jobs", False):
+        return ConnectorResult(
+            ok=True,
+            status_override="skipped",
+            message="Indexing jobs disabled in settings",
+        )
+
+    # Require an active SocialAccount for channels that need credentials
+    account_required = {
+        "twitter",
+        "linkedin",
+        "facebook",
+        "instagram",
+        "pinterest",
+        "reddit",
+        "tiktok",
+        "telegram",
+        "discord",
+        "slack",
+        "whatsapp",
+        "mailchimp",
+        "sendgrid",
+        "substack",
+        "devto",
+        "hashnode",
+        "medium",
+        "gist",
+    }
+    account = job.account
+    if job.channel in account_required:
+        if not account or not getattr(account, "is_active", False):
+            has_account = SocialAccount.objects.filter(channel=job.channel, is_active=True).exists()
+            if not has_account:
+                return ConnectorResult(
+                    ok=True,
+                    status_override="skipped",
+                    message="No active provider configured for this channel",
+                )
+            return ConnectorResult(
+                ok=True,
+                status_override="skipped",
+                message="Job has no account assigned; active provider exists but was not linked",
+            )
+        if not account.access_token:
+            return ConnectorResult(
+                ok=True,
+                status_override="skipped",
+                message="Provider configured but missing access_token",
+            )
+
     connector = connector_for(job.channel)
     try:
         result = connector.send(job)

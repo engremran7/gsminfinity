@@ -4,10 +4,7 @@ ENTERPRISE-GRADE SITE HEADER #} {# - Dynamic site_header text from admin #} {# -
 Theme-aware primary color #} {# - Safe rendering (no ORM hits, no ASGI
 violations) #} {#
 site_settings and site_settings.site_header %}
-<div
-  class="py-2 text-white"
-  style="background-color: {{ site_settings.primary_color|default:'#0d6efd' }}"
->
+<div class="py-2 text-white site-header-bar">
   <div
     class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center"
   >

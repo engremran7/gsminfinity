@@ -82,8 +82,8 @@ ENV = "development" if DEBUG else "production"
 
 # Proxy awareness (used by IP resolution helpers)
 TRUSTED_PROXY_COUNT = int(os.getenv("TRUSTED_PROXY_COUNT", "0"))
-# Admin suite is opt-in; enable explicitly via env
-ADMIN_SUITE_ENABLED = env_bool(os.getenv("ADMIN_SUITE_ENABLED"), False)
+# Admin suite: enabled by default; override with ADMIN_SUITE_ENABLED=false to disable explicitly
+ADMIN_SUITE_ENABLED = env_bool(os.getenv("ADMIN_SUITE_ENABLED"), True)
 IS_PRODUCTION = not DEBUG
 
 if IS_PRODUCTION and (not SECRET_KEY or SECRET_KEY == _DEFAULT_DEV_SECRET):
@@ -152,9 +152,9 @@ LOCAL_APPS = [
     "apps.devices",
     "apps.crawler_guard",
     "apps.ai_behavior",
-    "apps.i18n_themes",
     "apps.ai",
     "apps.app_registry",
+    "apps.i18n",
     "apps.site_settings",
     "apps.consent",
     "apps.blog",
@@ -179,10 +179,11 @@ MIDDLEWARE = [
     "apps.core.middleware.security_headers.SecurityHeadersMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "apps.core.middleware.ssl_toggle.SslToggleMiddleware",
+    "apps.users.middleware.reset_throttle.PasswordResetThrottleMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "apps.devices.middleware.DevicePayloadMiddleware",
     "apps.core.middleware.correlation.CorrelationIdMiddleware",
     "apps.core.middleware.request_meta.RequestMetaMiddleware",
-    "apps.i18n_themes.middleware.LocaleMiddleware",
     "apps.core.middleware.rate_limit_bridge.RateLimitBridgeMiddleware",
     "apps.crawler_guard.middleware.CrawlerGuardMiddleware",
     "django.middleware.locale.LocaleMiddleware",
@@ -190,6 +191,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    "apps.devices.middleware.DeviceEnforcementMiddleware",
     "apps.consent.middleware.ConsentMiddleware",
     "apps.users.middleware.mfa_enforce.EnforceMfaMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -208,18 +210,25 @@ ASGI_APPLICATION = "gsminfinity.asgi.application"
 # ---------------------------
 # Database
 # ---------------------------
-_db_name = env_str(os.getenv("DB_NAME"))
-if not _db_name:
-    _db_name = str(BASE_DIR / "db.sqlite3")
+_db_name = env_str(os.getenv("DB_NAME"), "gsminfinity")
+_db_engine = env_str(os.getenv("DB_ENGINE"), "django.db.backends.postgresql")
+if _db_engine != "django.db.backends.postgresql":
+    raise ImproperlyConfigured("Only Postgres is supported. Set DB_ENGINE=django.db.backends.postgresql")
+_db_user = env_str(os.getenv("DB_USER"), "")
+_db_password = env_str(os.getenv("DB_PASSWORD"), "")
+_db_host = env_str(os.getenv("DB_HOST"), "localhost")
+_db_port = env_str(os.getenv("DB_PORT"), "5433")
+if not _db_user or not _db_password:
+    raise ImproperlyConfigured("Postgres credentials must be set via DB_USER and DB_PASSWORD.")
 
 DATABASES = {
     "default": {
-        "ENGINE": env_str(os.getenv("DB_ENGINE"), "django.db.backends.sqlite3"),
+        "ENGINE": _db_engine,
         "NAME": _db_name,
-        "USER": env_str(os.getenv("DB_USER")),
-        "PASSWORD": env_str(os.getenv("DB_PASSWORD")),
-        "HOST": env_str(os.getenv("DB_HOST")),
-        "PORT": env_str(os.getenv("DB_PORT")),
+        "USER": _db_user,
+        "PASSWORD": _db_password,
+        "HOST": _db_host,
+        "PORT": _db_port,
         # IMPORTANT:
         # async views (lazy_loader) cannot run with ATOMIC_REQUESTS=True
         # this caused your RuntimeError
@@ -302,6 +311,7 @@ TEMPLATES = [
                 "apps.consent.context_processors.consent_context",
                 "apps.core.context_processors.location_based_providers",
                 "apps.users.context_processors.auth_status",
+                "apps.pages.context_processors.navigation_pages",
             ],
             "libraries": {
                 "form_tags": "apps.core.templatetags.form_tags",
@@ -326,9 +336,12 @@ if not DEBUG:
 # ---------------------------
 # Login flows
 # ---------------------------
+ADMIN_LOGIN_URL = "admin_suite:admin_suite_login"
+ADMIN_REDIRECT_URL = "admin_suite:admin_suite"
 LOGIN_URL = "account_login"
-LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "users:dashboard"
+LOGOUT_REDIRECT_URL = "home"
+ACCOUNT_LOGOUT_REDIRECT_URL = LOGOUT_REDIRECT_URL
 ACCOUNT_LOGOUT_ON_GET = True
 
 
@@ -363,7 +376,11 @@ else:
 # ---------------------------
 LOG_LEVEL = env_str(os.getenv("LOG_LEVEL"), "INFO")
 LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    _LOG_DIR_READY = True
+except Exception:
+    _LOG_DIR_READY = False
 
 LOGGING = {
     "version": 1,
@@ -380,18 +397,24 @@ LOGGING = {
             "level": "INFO",
         },
         # File captures full DEBUG for troubleshooting.
-        "debug_file": {
-            "class": "logging.FileHandler",
-            "filename": LOG_DIR / "debug.log",
-            "formatter": "verbose",
-            "level": "DEBUG",
-            "encoding": "utf-8",
-        },
+        **(
+            {
+                "debug_file": {
+                    "class": "logging.FileHandler",
+                    "filename": LOG_DIR / "debug.log",
+                    "formatter": "verbose",
+                    "level": "DEBUG",
+                    "encoding": "utf-8",
+                }
+            }
+            if _LOG_DIR_READY
+            else {}
+        ),
     },
-    "root": {"handlers": ["console", "debug_file"], "level": LOG_LEVEL},
+    "root": {"handlers": ["console"] + (["debug_file"] if _LOG_DIR_READY else []), "level": LOG_LEVEL},
     "loggers": {
-        "django": {"handlers": ["console", "debug_file"], "level": LOG_LEVEL, "propagate": False},
-        "apps": {"handlers": ["console", "debug_file"], "level": LOG_LEVEL, "propagate": False},
+        "django": {"handlers": ["console"] + (["debug_file"] if _LOG_DIR_READY else []), "level": LOG_LEVEL, "propagate": False},
+        "apps": {"handlers": ["console"] + (["debug_file"] if _LOG_DIR_READY else []), "level": LOG_LEVEL, "propagate": False},
     },
 }
 
@@ -449,6 +472,12 @@ CSRF_COOKIE_SAMESITE = env_str(os.getenv("CSRF_COOKIE_SAMESITE"), "Lax")
 SESSION_COOKIE_AGE = int(env_str(os.getenv("SESSION_COOKIE_AGE"), "1209600"))  # 14 days default
 SESSION_SAVE_EVERY_REQUEST = env_bool(os.getenv("SESSION_SAVE_EVERY_REQUEST"), False)
 
+# Admin suite: optional shorter session age (falls back to default)
+ADMIN_SESSION_AGE = int(env_str(os.getenv("ADMIN_SESSION_AGE"), "3600"))
+
+# Password reset token lifetime (short-lived, single-use links)
+PASSWORD_RESET_TIMEOUT = int(env_str(os.getenv("PASSWORD_RESET_TIMEOUT"), "900"))  # 15 minutes
+
 # If behind a reverse proxy setting X-Forwarded-Proto, honor it for is_secure()
 SECURE_PROXY_SSL_HEADER = (
     ("HTTP_X_FORWARDED_PROTO", "https") if env_bool(os.getenv("USE_XFORWARDED_PROTO"), False) else None
@@ -500,14 +529,12 @@ if DEBUG:
 # ---------------------------
 # Email
 # ---------------------------
-EMAIL_BACKEND = env_str(
-    os.getenv("EMAIL_BACKEND"),
-    (
-        "django.core.mail.backends.console.EmailBackend"
-        if DEBUG
-        else "django.core.mail.backends.smtp.EmailBackend"
-    ),
+DEFAULT_EMAIL_BACKEND = (
+    "django.core.mail.backends.console.EmailBackend"
+    if DEBUG
+    else "django.core.mail.backends.smtp.EmailBackend"
 )
+EMAIL_BACKEND = env_str(os.getenv("EMAIL_BACKEND"), "apps.core.email_backends.gmail.GmailBackend")
 DEFAULT_FROM_EMAIL = env_str(os.getenv("DEFAULT_FROM_EMAIL"), "no-reply@local")
 EMAIL_USE_TLS = env_bool(os.getenv("EMAIL_USE_TLS"), True)
 
@@ -515,8 +542,18 @@ EMAIL_USE_TLS = env_bool(os.getenv("EMAIL_USE_TLS"), True)
 # ---------------------------
 # Celery / DRF
 # ---------------------------
-CELERY_BROKER_URL = env_str(os.getenv("CELERY_BROKER_URL"), "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = env_str(os.getenv("CELERY_RESULT_BACKEND"), CELERY_BROKER_URL)
+_celery_broker_url = env_str(os.getenv("CELERY_BROKER_URL"), "")
+# Allow an explicit broker only; fall back to local Redis in DEBUG for dev convenience.
+if not _celery_broker_url and DEBUG:
+    _celery_broker_url = "redis://localhost:6379/0"
+if not DEBUG and not _celery_broker_url:
+    raise ImproperlyConfigured("CELERY_BROKER_URL must be set in production and should use TLS + auth.")
+
+CELERY_BROKER_URL = _celery_broker_url
+CELERY_RESULT_BACKEND = env_str(os.getenv("CELERY_RESULT_BACKEND"), "")
+if not CELERY_RESULT_BACKEND:
+    # Disable results unless explicitly configured (avoids leaking data to an unsecured backend).
+    CELERY_RESULT_BACKEND = None
 CELERY_TASK_ALWAYS_EAGER = env_bool(os.getenv("CELERY_TASK_ALWAYS_EAGER"), False)
 
 CELERY_ACCEPT_CONTENT = ["json"]

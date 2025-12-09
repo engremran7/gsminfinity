@@ -1,22 +1,22 @@
 
 from __future__ import annotations
 
-from . import StubConnector
+from . import LoggingConnector
 
 
-class DevtoConnector(StubConnector):
+class DevtoConnector(LoggingConnector):
     channel = "devto"
 
 
-class HashnodeConnector(StubConnector):
+class HashnodeConnector(LoggingConnector):
     channel = "hashnode"
 
 
-class MediumConnector(StubConnector):
+class MediumConnector(LoggingConnector):
     channel = "medium"
 
 
-class GistConnector(StubConnector):
+class GistConnector(LoggingConnector):
     channel = "gist"
 
 

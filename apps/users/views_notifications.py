@@ -6,7 +6,7 @@ from typing import Any, Dict
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
@@ -25,6 +25,7 @@ def _serialize_notification(n: Notification) -> Dict[str, Any]:
         "message": getattr(n, "message", ""),
         "priority": getattr(n, "priority", None),
         "channel": getattr(n, "channel", None),
+        "url": getattr(n, "url", None),
         "is_read": bool(n.is_read),
         "created_at": n.created_at.isoformat() if n.created_at else None,
         "read_at": n.read_at.isoformat() if n.read_at else None,
@@ -93,7 +94,9 @@ def notification_mark_read(request: HttpRequest, pk: int) -> JsonResponse:
         notif.read_at = timezone.now()
         notif.save(update_fields=["is_read", "read_at"])
 
-    return JsonResponse({"ok": True})
+    if "application/json" in (request.headers.get("Accept") or "") or request.headers.get("HX-Request"):
+        return JsonResponse({"ok": True})
+    return redirect(request.META.get("HTTP_REFERER") or "users_notifications:list")
 
 
 @login_required
@@ -103,6 +106,8 @@ def notification_mark_all_read(request: HttpRequest) -> JsonResponse:
         is_read=True,
         read_at=timezone.now(),
     )
-    return JsonResponse({"ok": True})
+    if "application/json" in (request.headers.get("Accept") or "") or request.headers.get("HX-Request"):
+        return JsonResponse({"ok": True})
+    return redirect(request.META.get("HTTP_REFERER") or "users_notifications:list")
 
 

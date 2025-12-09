@@ -6,7 +6,7 @@
 {% block auth_description %}Access your account to continue.{% endblock %}
 {% block auth_submit_label %}Sign in{% endblock %}
 {% block auth_form %}
-<form method="post" action="{% url 'account_login' %}" class="space-y-4" id="login-form">
+<form method="post" action="{% url 'account_login' %}" class="space-y-4" id="login-form" data-collect-fingerprint="true">
   {% csrf_token %}
   {{ form.as_p }}
   <input type="hidden" name="fingerprint_hash" id="id_fingerprint_hash">
@@ -14,6 +14,11 @@
   <p class="text-xs text-slate-500">
     Password tip: use 8+ chars, mix letters/numbers; avoid common words.
   </p>
+  {% if request.session.pending_device_token %}
+    <div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+      You have a pending device approval. <a class="underline" href="{% url 'users:device_approval_needed' %}">Open approval page</a>.
+    </div>
+  {% endif %}
   <button type="submit" class="bg-primary text-white px-4 py-2 rounded w-full">
     Sign in
   </button>
@@ -23,6 +28,10 @@
   <div class="flex items-center justify-between mt-4 text-sm">
     <a href="{% url 'account_reset_password' %}" class="text-primary">Forgot password?</a>
     <a href="{% url 'account_signup' %}" class="text-slate-600">Create account</a>
+  </div>
+  <div class="flex items-center justify-between mt-3 text-xs text-slate-600">
+    <span>Staff member?</span>
+    <a href="{% url 'admin_suite:admin_suite_login' %}" class="text-primary font-semibold">Go to Admin Login</a>
   </div>
 {% endblock %}
 {% block extra_scripts %}

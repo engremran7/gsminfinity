@@ -10,7 +10,11 @@ class DevicesConfig(AppConfig):
     verbose_name = "Device Identity"
 
     def ready(self) -> None:
-        # Import signals later if needed; keep startup light.
-        return
+        # Import signals to keep device registration alive on login.
+        try:
+            from . import signals  # noqa: F401
+        except Exception:
+            # Keep startup resilient; log via default logger inside signals if needed.
+            pass
 
 

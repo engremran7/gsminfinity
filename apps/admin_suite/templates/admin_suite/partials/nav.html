@@ -1,22 +1,24 @@
-<nav class="w-60 shrink-0 bg-white border border-slate-200 rounded-lg shadow-sm p-4 h-fit">
-  <div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Navigation</div>
-  <ul class="space-y-1 text-sm">
+<nav>
+  <div class="text-xs text-muted uppercase tracking-wide mb-2">Navigation</div>
+  <ul class="nav">
     {% with active=nav_active|default:"" %}
-      <li><a href="{% url 'admin_suite:admin_suite' %}" class="block px-3 py-2 rounded {% if active == 'overview' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Overview</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_security' %}" class="block px-3 py-2 rounded {% if active == 'security' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Security</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_users' %}" class="block px-3 py-2 rounded {% if active == 'users' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Users</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_consent' %}" class="block px-3 py-2 rounded {% if active == 'consent' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Consent</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_pages' %}" class="block px-3 py-2 rounded {% if active == 'pages' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Pages</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_blog' %}" class="block px-3 py-2 rounded {% if active == 'blog' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Blog</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_content' %}" class="block px-3 py-2 rounded {% if active == 'content' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Content</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_comments' %}" class="block px-3 py-2 rounded {% if active == 'comments' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Comments</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_marketing' %}" class="block px-3 py-2 rounded {% if active == 'marketing' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Marketing</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_ads' %}" class="block px-3 py-2 rounded {% if active == 'ads' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Ads</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_seo' %}" class="block px-3 py-2 rounded {% if active == 'seo' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">SEO</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_tags' %}" class="block px-3 py-2 rounded {% if active == 'tags' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Tags</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_distribution' %}" class="block px-3 py-2 rounded {% if active == 'distribution' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Distribution</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_registry' %}" class="block px-3 py-2 rounded {% if active == 'registry' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">App Registry</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_settings' %}" class="block px-3 py-2 rounded {% if active == 'settings' %}bg-slate-100 font-semibold{% else %}hover:bg-slate-50{% endif %}">Settings</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite' %}" class="{% if active == 'overview' %}active{% endif %}">Overview</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_security' %}" class="{% if active == 'security' %}active{% endif %}">Security</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_users' %}" class="{% if active == 'users' %}active{% endif %}">Users</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_consent' %}" class="{% if active == 'consent' %}active{% endif %}">Consent</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_pages' %}" class="{% if active == 'pages' %}active{% endif %}">Pages</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_blog' %}" class="{% if active == 'blog' %}active{% endif %}">Blog</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_content' %}" class="{% if active == 'content' %}active{% endif %}">Content</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_comments' %}" class="{% if active == 'comments' %}active{% endif %}">Comments</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_marketing' %}" class="{% if active == 'marketing' %}active{% endif %}">Marketing</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_ads' %}" class="{% if active == 'ads' %}active{% endif %}">Ads</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_ai' %}" class="{% if active == 'ai' %}active{% endif %}">AI</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_seo' %}" class="{% if active == 'seo' %}active{% endif %}">SEO</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_tags' %}" class="{% if active == 'tags' %}active{% endif %}">Tags</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_distribution' %}" class="{% if active == 'distribution' %}active{% endif %}">Distribution</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_registry' %}" class="{% if active == 'registry' %}active{% endif %}">App Registry</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_settings' %}" class="{% if active == 'settings' %}active{% endif %}">Settings</a></li>
+      <li><a href="{% url 'admin_suite:admin_suite_email_settings' %}" class="{% if active == 'settings_email' %}active{% endif %}">Email & Delivery</a></li>
     {% endwith %}
   </ul>
 </nav>

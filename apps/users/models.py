@@ -26,6 +26,7 @@ from django.contrib.auth.models import (
     BaseUserManager,
     PermissionsMixin,
 )
+from django.contrib.auth.hashers import make_password, check_password
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.utils import timezone
@@ -152,6 +153,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     last_unlock = models.DateTimeField(null=True, blank=True)
     email_verified_at = models.DateTimeField(null=True, blank=True)
     verification_code = models.CharField(max_length=24, blank=True)
+    verification_code_sent_at = models.DateTimeField(null=True, blank=True)
 
     # Signup metadata
     signup_method = models.CharField(
@@ -289,8 +291,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
         code = "".join(secrets.choice(alphabet) for _ in range(length))
         self.verification_code = code
+        self.verification_code_sent_at = timezone.now()
         try:
-            self.save(update_fields=["verification_code"])
+            self.save(update_fields=["verification_code", "verification_code_sent_at"])
         except Exception as exc:
             logger.exception("Verification code save failed for %s : %s", self.email, exc)
         return code
@@ -338,6 +341,7 @@ class Notification(models.Model):
     )
     title = models.CharField(max_length=255)
     message = models.TextField()
+    url = models.URLField(max_length=500, blank=True, null=True)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default="info")
     channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES, default="web")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -373,6 +377,7 @@ class Notification(models.Model):
             "message": self.message,
             "priority": self.priority,
             "channel": self.channel,
+            "url": getattr(self, "url", None),
             "is_read": bool(self.is_read),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "read_at": self.read_at.isoformat() if self.read_at else None,
@@ -497,5 +502,54 @@ class UsersSettings(SingletonModel):
 
     def __str__(self) -> str:
         return "Users Settings"
+
+
+# --------------------------------------------------------------------------
+# Security Questions (admin-grade recovery)
+# --------------------------------------------------------------------------
+class SecurityQuestion(models.Model):
+    """
+    Stores a single security question/answer pair per user for admin-grade recovery.
+    Answers are hashed with Django's password hasher.
+    """
+
+    QUESTION_CHOICES = [
+        ("first_pet", "Name of your first pet?"),
+        ("mother_maiden", "What is your mother's maiden name?"),
+        ("first_school", "Name of your first school?"),
+        ("city_born", "City where you were born?"),
+        ("custom", "Custom question"),
+    ]
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="security_question",
+    )
+    question_key = models.CharField(max_length=50, choices=QUESTION_CHOICES, default="first_pet")
+    custom_question = models.CharField(max_length=255, blank=True, default="")
+    answer_hash = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Security Question"
+        verbose_name_plural = "Security Questions"
+
+    def __str__(self) -> str:
+        return f"Security Question for {getattr(self.user, 'email', self.user_id)}"
+
+    @property
+    def question_text(self) -> str:
+        if self.question_key == "custom" and self.custom_question:
+            return self.custom_question
+        return dict(self.QUESTION_CHOICES).get(self.question_key, "Security question")
+
+    def set_answer(self, raw_answer: str) -> None:
+        self.answer_hash = make_password((raw_answer or "").strip())
+
+    def check_answer(self, raw_answer: str) -> bool:
+        return check_password((raw_answer or "").strip(), self.answer_hash)
 
 

@@ -51,6 +51,9 @@
                     <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{{ post.get_status_display }}</span>
                     <span class="px-2 py-0.5 rounded-full {% if post.tags.all|length > 0 %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">Tags {% if post.tags.all|length > 0 %}ready{% else %}missing{% endif %}</span>
                     <span class="px-2 py-0.5 rounded-full {% if post.seo_title or post.seo_description %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">SEO {% if post.seo_title or post.seo_description %}set{% else %}pending{% endif %}</span>
+                    {% if post.is_ai_generated %}
+                      <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">AI</span>
+                    {% endif %}
                   </div>
                 </div>
                 <div class="flex items-center gap-3 text-xs text-slate-600 flex-wrap">
@@ -96,6 +99,9 @@
                     <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{{ post.get_status_display }}</span>
                     <span class="px-2 py-0.5 rounded-full {% if post.tags.all|length > 0 %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">Tags {% if post.tags.all|length > 0 %}ready{% else %}missing{% endif %}</span>
                     <span class="px-2 py-0.5 rounded-full {% if post.seo_title or post.seo_description %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">SEO {% if post.seo_title or post.seo_description %}set{% else %}pending{% endif %}</span>
+                    {% if post.is_ai_generated %}
+                      <span class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">AI</span>
+                    {% endif %}
                   </div>
                 </div>
                 <div class="flex items-center gap-2 text-xs text-slate-600 flex-wrap">
