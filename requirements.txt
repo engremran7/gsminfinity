@@ -16,5 +16,9 @@ gunicorn
 uvicorn
 whitenoise
 pytest
+pytest-django
+pytest-cov
+coverage
+codecov
 PyJWT
 pywebpush>=1.14.0
