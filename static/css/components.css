@@ -26,6 +26,9 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 
@@ -42,11 +45,15 @@
 
 .btn-primary:hover:not(:disabled) {
   background-color: var(--color-brand-700);
+  -webkit-transform: translateY(-1px);
+  -ms-transform: translateY(-1px);
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
 .btn-primary:active:not(:disabled) {
+  -webkit-transform: translateY(0);
+  -ms-transform: translateY(0);
   transform: translateY(0);
 }
 
@@ -318,6 +325,9 @@
   background-color: var(--color-slate-200);
   color: var(--color-slate-600);
   font-weight: 500;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 
@@ -647,6 +657,7 @@
   inset: 0;
   z-index: var(--z-modal-backdrop);
   background-color: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   opacity: 0;
   visibility: hidden;

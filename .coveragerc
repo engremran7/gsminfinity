@@ -1,18 +1,28 @@
 [coverage:run]
-source = apps
+source = .
 omit =
     */migrations/*
     */tests/*
     */test_*.py
     */__pycache__/*
     */venv/*
+    */.venv/*
     */env/*
+    */node_modules/*
     */staticfiles/*
+    */static/*
     manage.py
-    conftest.py
+    */wsgi.py
+    */asgi.py
+    */settings*.py
+    */conftest.py
+    tools/*
+    */admin.py
+    gsminfinity/development.py
 
 [coverage:report]
 precision = 2
+show_missing = True
 skip_covered = False
 skip_empty = True
 sort = Cover
@@ -24,9 +34,13 @@ exclude_lines =
     raise NotImplementedError
     if __name__ == .__main__.:
     if TYPE_CHECKING:
-    @abstract
     @abstractmethod
+    @abc.abstractmethod
+    pass
 
 [coverage:html]
 directory = htmlcov
 title = GSM Infinity Coverage Report
+
+[coverage:xml]
+output = coverage.xml
