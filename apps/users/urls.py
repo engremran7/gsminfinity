@@ -7,7 +7,7 @@ Enterprise-grade URL configuration for GSMInfinity Users module.
 from allauth.account.views import LogoutView
 from django.urls import path
 
-from . import api, views_notifications
+from . import api, views_notifications, admin_views
 from .views import (
     EnterpriseLoginView,
     EnterpriseSignupView,
@@ -25,6 +25,9 @@ from .views import (
     approve_device,
     device_eviction,
     device_mfa_challenge,
+    notification_settings,
+    push_subscription,
+    unsubscribe_push,
 )
 
 app_name = "users"
@@ -51,7 +54,18 @@ urlpatterns = [
     path("notifications/", views_notifications.notification_list, name="notifications"),
     path("notifications/<int:pk>/", views_notifications.notification_detail, name="notification_detail"),
     path("notifications/mark-all/", views_notifications.notification_mark_all_read, name="notification_mark_all"),
+    path("notifications/settings/", notification_settings, name="notification_settings"),
+    path("notifications/push/subscribe/", push_subscription, name="push_subscription"),
+    path("notifications/push/unsubscribe/", unsubscribe_push, name="unsubscribe_push"),
+    path("admin/notification-dashboard/", admin_views.notification_dashboard, name="notification_dashboard"),
     path("api/password-reset/verify/", api.password_reset_verify, name="password_reset_verify"),
 ]
+
+# Admin API endpoints (add to main admin URLconf via gsminfinity/urls.py)
+admin_api_patterns = [
+    path("admin/users/notification/stats/", api.notification_stats, name="notification_stats_api"),
+]
+
+urlpatterns += admin_api_patterns
 
 

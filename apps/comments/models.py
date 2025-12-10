@@ -11,6 +11,13 @@ from django.contrib.contenttypes.models import ContentType
 
 from apps.core.models import TimestampedModel, SoftDeleteModel
 
+# Import enhanced models for migrations
+from apps.comments.models_enhanced import (
+    CommentReaction, CommentVote, CommentFlag, CommentMention,
+    CommentEdit, CommentBookmark, CommentAward, CommentAnalytics,
+    CommentThread, ModerationAction
+)
+
 
 class Comment(TimestampedModel, SoftDeleteModel):
     class Status(models.TextChoices):

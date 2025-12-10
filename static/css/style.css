@@ -66,17 +66,23 @@ a:hover {
   color: var(--color-text);
 }
 
-/* High-contrast form inputs for dark cards */
+/* High-contrast form inputs for light cards with dark text */
 .profile-input {
-  color: #f8fafc !important;
-  background: #0b1220 !important;
-  border: 1px solid #1f2937 !important;
-  caret-color: #38bdf8;
+  color: #0f172a !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  caret-color: #0ea5a4;
 }
 
 .profile-input::placeholder {
-  color: #cbd5e1 !important;
+  color: #64748b !important;
   opacity: 1;
+}
+
+.profile-input:focus {
+  border-color: #0ea5a4 !important;
+  outline: 2px solid #0ea5a4;
+  outline-offset: 0;
 }
 
 /* Improve accessibility — never fully remove outlines. */

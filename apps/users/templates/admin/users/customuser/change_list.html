@@ -1,0 +1,69 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.user-admin-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.stat-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+}
+.stat-card h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.stat-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0ea5a4;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="user-admin-stats">
+    <div class="stat-card">
+        <h3>Total Users</h3>
+        <div class="number">{{ cl.result_count }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Active Users</h3>
+        <div class="number" id="active-count">-</div>
+    </div>
+    <div class="stat-card">
+        <h3>Staff Members</h3>
+        <div class="number" id="staff-count">-</div>
+    </div>
+    <div class="stat-card">
+        <h3>Verified Emails</h3>
+        <div class="number" id="verified-count">-</div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // Fetch user stats from API if available
+    const activeEl = document.getElementById('active-count');
+    const staffEl = document.getElementById('staff-count');
+    const verifiedEl = document.getElementById('verified-count');
+    
+    // Simple placeholder - would ideally fetch from admin API
+    activeEl.textContent = '{{ cl.result_list|length }}';
+    staffEl.textContent = '...';
+    verifiedEl.textContent = '...';
+})();
+</script>
+
+{{ block.super }}
+{% endblock %}

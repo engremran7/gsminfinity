@@ -4,17 +4,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{% block title %}Admin Suite{% endblock %}</title>
-  <link href="{% static 'css/admin-suite.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/enterprise-dashboard.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Admin Suite{% endblock %} | GSM Infinity</title>
+  
+  <!-- New Admin Panel CSS (Modular Architecture) -->
+  <link href="{% static 'css/admin/enterprise.min.css' %}?v=2.2" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/components.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/forms.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/tables.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/widgets.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/layout.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/motion.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  
   {% block extra_head %}{% endblock %}
 </head>
 <body class="admin-suite">
-  <div class="page-shell">
-    <aside class="sidebar">
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
       {% include "admin_suite/partials/nav.html" %}
     </aside>
-    <main class="main text-slate-900">
+    <main class="admin-main">
       {% include "admin_suite/partials/header.html" %}
       <section class="card bg-panel mt-3">
         <div class="space-y-4">
@@ -26,7 +35,12 @@
     </main>
   </div>
   {% include "admin_suite/partials/footer.html" %}
-  <script src="{% static 'js/main.js' %}" defer></script>
+  
+  <!-- New Admin Panel JavaScript (Modular Architecture) -->
+  <script src="{% static 'js/admin/htmx-offline.js' %}" nonce="{{ request.csp_nonce|default:'' }}" defer></script>
+  <script src="{% static 'js/admin/enterprise.js' %}" nonce="{{ request.csp_nonce|default:'' }}" defer></script>
+  <script src="{% static 'js/admin/enterprise-extended.js' %}" nonce="{{ request.csp_nonce|default:'' }}" defer></script>
+  
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>

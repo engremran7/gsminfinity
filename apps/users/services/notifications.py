@@ -36,11 +36,14 @@ def send_notification(
     level: str = "info",  # mapped to model.priority
     url: Optional[str] = None,
     actor: Optional[User] = None,
-    channel: Optional[str] = None,  # NEW: support channel field
+    channel: Optional[str] = None,
+    action_type: Optional[str] = "system",
+    icon: Optional[str] = None,
 ) -> Optional[Notification]:
     """
     Safely create a notification for a user.
     Returns the Notification instance or None on error.
+    Respects user notification preferences.
     """
 
     if not notifications_enabled():
@@ -49,6 +52,24 @@ def send_notification(
     if not recipient:
         return None
 
+    # Check user preferences
+    try:
+        from apps.users.models import NotificationPreferences
+        prefs = NotificationPreferences.objects.filter(user=recipient).first()
+        
+        if prefs:
+            # Check if it's quiet hours
+            if prefs.is_quiet_hours_now() and level != "critical":
+                logger.debug("Skipping notification for user %s during quiet hours", recipient.pk)
+                return None
+            
+            # Check if web notifications are enabled for this type
+            if channel == "web" and not prefs.should_send_web(action_type):
+                logger.debug("Web notifications disabled for user %s, type %s", recipient.pk, action_type)
+                return None
+    except Exception as exc:
+        logger.debug("Failed to check notification preferences: %s", exc)
+
     try:
         with transaction.atomic():
             n = Notification.objects.create(
@@ -56,13 +77,15 @@ def send_notification(
                 title=title[:255],
                 message=message,
                 url=url[:500] if url else None,
-                priority=level,  # FIXED: your model uses 'priority'
-                channel=channel,  # NEW: support channel usage
-                # created_at auto_set by model default (best practice)
+                priority=level,
+                channel=channel,
+                action_type=action_type or "system",
+                icon=icon or "",
+                actor=actor,
             )
 
-            # Optional: trigger websockets / signals / push
-            # publish_notification(n)
+            # Send push notification if enabled
+            _send_push_notification(n, recipient, action_type)
 
             return n
 
@@ -83,6 +106,8 @@ def broadcast_notification(
     url: Optional[str] = None,
     actor: Optional[User] = None,
     channel: Optional[str] = None,
+    action_type: Optional[str] = "system",
+    icon: Optional[str] = None,
 ) -> int:
     """
     Bulk-create notifications for an iterable/QuerySet of users.
@@ -113,6 +138,9 @@ def broadcast_notification(
             url=url[:500] if url else None,
             priority=level,
             channel=channel,
+            action_type=action_type or "system",
+            icon=icon or "",
+            actor=actor,
             created_at=now,
         )
         for r in user_list
@@ -124,5 +152,66 @@ def broadcast_notification(
     except Exception as exc:
         logger.exception("broadcast_notification failed: %s", exc)
         return 0
+
+
+def _send_push_notification(notification: Notification, recipient: User, action_type: str) -> None:
+    """
+    Send push notification to user's subscribed devices.
+    """
+    try:
+        from apps.users.models import NotificationPreferences, PushSubscription
+        
+        # Check if push is enabled
+        prefs = NotificationPreferences.objects.filter(user=recipient).first()
+        if not prefs or not prefs.push_enabled:
+            return
+        
+        # Get active subscriptions
+        subscriptions = PushSubscription.objects.filter(user=recipient, is_active=True)
+        if not subscriptions.exists():
+            return
+        
+        # Prepare push payload
+        payload = {
+            'title': notification.title,
+            'body': notification.message[:100],
+            'icon': f'/static/img/{notification.icon}.png' if notification.icon else '/static/img/logo.png',
+            'badge': '/static/img/logo.png',
+            'tag': f'notification-{notification.pk}',
+            'url': notification.url or '/users/notifications/',
+            'notificationId': notification.pk,
+        }
+        
+        # Try sending via pywebpush (if installed)
+        try:
+            from pywebpush import webpush, WebPushException
+            import json
+            
+            vapid_claims = {
+                "sub": f"mailto:{getattr(settings, 'VAPID_ADMIN_EMAIL', 'admin@example.com')}"
+            }
+            
+            for subscription in subscriptions:
+                try:
+                    webpush(
+                        subscription_info=subscription.to_dict(),
+                        data=json.dumps(payload),
+                        vapid_private_key=getattr(settings, 'VAPID_PRIVATE_KEY', ''),
+                        vapid_claims=vapid_claims
+                    )
+                    subscription.last_used_at = timezone.now()
+                    subscription.save(update_fields=['last_used_at'])
+                except WebPushException as exc:
+                    logger.warning("Push failed for subscription %s: %s", subscription.pk, exc)
+                    if exc.response and exc.response.status_code in [404, 410]:
+                        # Subscription expired
+                        subscription.is_active = False
+                        subscription.save(update_fields=['is_active'])
+                        
+        except ImportError:
+            logger.debug("pywebpush not installed, skipping push notifications")
+            
+    except Exception as exc:
+        logger.exception("Failed to send push notification: %s", exc)
 
 

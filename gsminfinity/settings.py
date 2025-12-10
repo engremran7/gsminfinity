@@ -193,6 +193,7 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "apps.devices.middleware.DeviceEnforcementMiddleware",
     "apps.consent.middleware.ConsentMiddleware",
+    "apps.users.middleware.profile_completion.EnforceProfileCompletionMiddleware",
     "apps.users.middleware.mfa_enforce.EnforceMfaMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -396,15 +397,17 @@ LOGGING = {
             "formatter": "simple",
             "level": "INFO",
         },
-        # File captures full DEBUG for troubleshooting.
+        # File captures full DEBUG for troubleshooting with rotation (max 10MB per file, keep 5 backups).
         **(
             {
                 "debug_file": {
-                    "class": "logging.FileHandler",
+                    "class": "logging.handlers.RotatingFileHandler",
                     "filename": LOG_DIR / "debug.log",
                     "formatter": "verbose",
                     "level": "DEBUG",
                     "encoding": "utf-8",
+                    "maxBytes": 10485760,  # 10MB
+                    "backupCount": 5,  # Keep 5 old files (max 60MB total)
                 }
             }
             if _LOG_DIR_READY

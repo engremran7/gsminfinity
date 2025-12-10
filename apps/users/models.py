@@ -114,6 +114,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=150, blank=True, default="")
 
     # Profile
+    bio = models.TextField(max_length=500, blank=True, default="", help_text="Short biography")
     country = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
     currency = models.CharField(max_length=10, null=True, blank=True)
@@ -224,6 +225,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     # ============================================================
     # Utilities
     # ============================================================
+    def get_full_name(self) -> str:
+        """Return the full name or username as fallback."""
+        return self.full_name or self.username or self.email.split('@')[0]
+    
     @property
     def is_verified(self) -> bool:
         return bool(self.email_verified_at)
@@ -333,6 +338,20 @@ class Notification(models.Model):
         ("sms", "SMS"),
         ("push", "Push"),
     ]
+    ACTION_TYPE_CHOICES = [
+        ("comment", "Comment"),
+        ("reply", "Reply"),
+        ("reaction", "Reaction"),
+        ("mention", "Mention"),
+        ("vote", "Vote"),
+        ("award", "Award"),
+        ("post", "Post"),
+        ("like", "Like"),
+        ("follow", "Follow"),
+        ("security", "Security"),
+        ("moderation", "Moderation"),
+        ("system", "System"),
+    ]
 
     recipient = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -344,6 +363,16 @@ class Notification(models.Model):
     url = models.URLField(max_length=500, blank=True, null=True)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default="info")
     channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES, default="web")
+    action_type = models.CharField(max_length=20, choices=ACTION_TYPE_CHOICES, default="system", help_text="Type of action that triggered notification")
+    icon = models.CharField(max_length=50, blank=True, help_text="Icon name for UI display (e.g., comment, heart, bell)")
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="triggered_notifications",
+        help_text="User who triggered this notification"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
     read_at = models.DateTimeField(null=True, blank=True)
@@ -551,5 +580,152 @@ class SecurityQuestion(models.Model):
 
     def check_answer(self, raw_answer: str) -> bool:
         return check_password((raw_answer or "").strip(), self.answer_hash)
+
+
+# --------------------------------------------------------------------------
+# NotificationPreferences
+# --------------------------------------------------------------------------
+class NotificationPreferences(models.Model):
+    """User notification preferences for granular control over notification channels and types."""
+    
+    FREQUENCY_CHOICES = [
+        ('instant', 'Instant'),
+        ('hourly', 'Hourly Digest'),
+        ('daily', 'Daily Digest'),
+        ('weekly', 'Weekly Digest'),
+        ('never', 'Never'),
+    ]
+    
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notification_preferences'
+    )
+    
+    # Email notification toggles
+    email_comments = models.BooleanField(default=True, help_text="Email when someone comments on your posts")
+    email_replies = models.BooleanField(default=True, help_text="Email when someone replies to your comments")
+    email_mentions = models.BooleanField(default=True, help_text="Email when someone mentions you")
+    email_new_posts = models.BooleanField(default=False, help_text="Email about new blog posts")
+    email_security = models.BooleanField(default=True, help_text="Email for security alerts (always enabled)")
+    email_frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='instant')
+    
+    # Web notification toggles
+    web_comments = models.BooleanField(default=True, help_text="Web notifications for comment interactions")
+    web_awards = models.BooleanField(default=True, help_text="Web notifications for awards and achievements")
+    web_moderation = models.BooleanField(default=True, help_text="Web notifications for moderation updates")
+    web_system = models.BooleanField(default=True, help_text="Web notifications for system announcements")
+    
+    # Push notification toggle
+    push_enabled = models.BooleanField(default=False, help_text="Enable browser push notifications")
+    
+    # Quiet hours
+    quiet_hours_enabled = models.BooleanField(default=False, help_text="Mute notifications during quiet hours")
+    quiet_hours_start = models.TimeField(default='22:00', help_text="Start of quiet hours")
+    quiet_hours_end = models.TimeField(default='08:00', help_text="End of quiet hours")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Notification Preferences"
+        verbose_name_plural = "Notification Preferences"
+    
+    def __str__(self) -> str:
+        return f"Preferences for {self.user.email}"
+    
+    def is_quiet_hours_now(self) -> bool:
+        """Check if current time is within quiet hours."""
+        if not self.quiet_hours_enabled:
+            return False
+        
+        from datetime import time
+        current_time = timezone.now().time()
+        
+        if self.quiet_hours_start < self.quiet_hours_end:
+            # Normal range (e.g., 22:00 - 23:59)
+            return self.quiet_hours_start <= current_time <= self.quiet_hours_end
+        else:
+            # Overnight range (e.g., 22:00 - 08:00)
+            return current_time >= self.quiet_hours_start or current_time <= self.quiet_hours_end
+    
+    def should_send_email(self, notification_type: str) -> bool:
+        """Check if email should be sent for this notification type."""
+        if self.email_frequency == 'never':
+            return False
+        
+        # Security always sent
+        if notification_type == 'security':
+            return True
+        
+        # Check specific type preferences
+        type_map = {
+            'comment': self.email_comments,
+            'reply': self.email_replies,
+            'mention': self.email_mentions,
+            'post': self.email_new_posts,
+        }
+        
+        return type_map.get(notification_type, False)
+    
+    def should_send_web(self, notification_type: str) -> bool:
+        """Check if web notification should be sent for this notification type."""
+        type_map = {
+            'comment': self.web_comments,
+            'reply': self.web_comments,
+            'reaction': self.web_comments,
+            'vote': self.web_comments,
+            'award': self.web_awards,
+            'moderation': self.web_moderation,
+            'system': self.web_system,
+        }
+        
+        return type_map.get(notification_type, True)
+
+
+# --------------------------------------------------------------------------
+# PushSubscription
+# --------------------------------------------------------------------------
+class PushSubscription(models.Model):
+    """Store push notification subscriptions for web push."""
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='push_subscriptions'
+    )
+    
+    # Web Push subscription details
+    endpoint = models.URLField(max_length=500, unique=True)
+    p256dh = models.CharField(max_length=255, help_text="Encryption key")
+    auth = models.CharField(max_length=255, help_text="Authentication secret")
+    
+    # Metadata
+    user_agent = models.CharField(max_length=500, blank=True)
+    device_name = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Push Subscription"
+        verbose_name_plural = "Push Subscriptions"
+        indexes = [
+            models.Index(fields=['user', 'is_active'], name='push_user_active_idx'),
+        ]
+    
+    def __str__(self) -> str:
+        return f"Push subscription for {self.user.email} ({self.device_name or 'Unknown device'})"
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dict for pywebpush library."""
+        return {
+            'endpoint': self.endpoint,
+            'keys': {
+                'p256dh': self.p256dh,
+                'auth': self.auth,
+            }
+        }
 
 

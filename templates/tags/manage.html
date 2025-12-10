@@ -47,7 +47,7 @@
           <p class="text-xs text-slate-500">Merge a source tag into a target tag.</p>
           <input type="text" name="source" placeholder="source-slug" class="w-full border border-slate-200 rounded px-3 py-2 text-sm" required />
           <input type="text" name="target" placeholder="target-slug" class="w-full border border-slate-200 rounded px-3 py-2 text-sm" required />
-          <button type="submit" class="btn-primary w-full py-2 rounded text-white text-sm">Merge tags</button>
+          <button type="submit" class="btn-primary w-full py-2 rounded text-sm">Merge tags</button>
         </form>
         <div class="border-t border-slate-200 pt-2 space-y-2">
           <a href="{% url 'tags:duplicates_review' %}" class="text-primary hover:underline">Review duplicates</a>
@@ -79,7 +79,7 @@
       <span class="text-xs text-slate-500">Uses /tags/suggest/ to propose tags.</span>
     </div>
     <textarea id="tag-ai-text" rows="3" class="w-full border border-slate-200 rounded px-3 py-2 text-sm" placeholder="Paste content to get suggested tags"></textarea>
-    <button type="button" id="tag-ai-btn" class="btn-primary px-4 py-2 rounded text-white text-sm">Get suggestions</button>
+    <button type="button" id="tag-ai-btn" class="btn-primary px-4 py-2 rounded text-sm">Get suggestions</button>
     <div id="tag-ai-results" class="flex flex-wrap gap-2 text-sm text-slate-700"></div>
   </section>
 </div>

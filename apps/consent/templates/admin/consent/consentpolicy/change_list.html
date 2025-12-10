@@ -1,0 +1,71 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.consent-admin-header {
+    background: linear-gradient(135deg, #0ea5a4 0%, #0a7f7e 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+.consent-admin-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+}
+.consent-admin-header p {
+    margin: 0;
+    opacity: 0.9;
+}
+.policy-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.policy-stat {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+.policy-stat .label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+.policy-stat .value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0ea5a4;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="consent-admin-header">
+    <h2>GDPR Consent Management</h2>
+    <p>Manage consent policies, track user decisions, and ensure regulatory compliance</p>
+</div>
+
+<div class="policy-stats">
+    <div class="policy-stat">
+        <div class="label">Total Policies</div>
+        <div class="value">{{ cl.result_count }}</div>
+    </div>
+    <div class="policy-stat">
+        <div class="label">Active Policy</div>
+        <div class="value">1</div>
+    </div>
+    <div class="policy-stat">
+        <div class="label">Decisions Logged</div>
+        <div class="value" id="decisions-count">-</div>
+    </div>
+</div>
+
+{{ block.super }}
+{% endblock %}

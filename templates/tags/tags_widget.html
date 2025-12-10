@@ -1,0 +1,274 @@
+{% load static %}
+
+<div class="tags-widget">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold text-gray-900">Tags</h3>
+    {% if user.is_authenticated %}
+      <button type="button" class="btn btn-sm btn-ghost" onclick="Enterprise.openModal('suggest-tag-modal')">
+        <svg class="icon w-4 h-4" aria-hidden="true">
+          <use href="#icon-plus"></use>
+        </svg>
+        Suggest
+      </button>
+    {% endif %}
+  </div>
+  
+  <!-- Post Tags -->
+  <div class="flex flex-wrap gap-2 mb-4">
+    {% for tag in post.tags.all %}
+      <a href="{% url 'tags:detail' tag.slug %}" class="chip chip-primary">
+        {% if tag.category.icon %}
+          <span>{{ tag.category.icon }}</span>
+        {% endif %}
+        {{ tag.name }}
+        <span class="text-xs text-gray-500 ml-1">({{ tag.usage_count }})</span>
+      </a>
+    {% empty %}
+      <span class="text-sm text-gray-500">No tags yet</span>
+    {% endfor %}
+  </div>
+  
+  <!-- Tag Actions -->
+  {% if user.is_authenticated %}
+    <div class="flex items-center gap-2 mb-4">
+      {% for tag in post.tags.all %}
+        <button 
+          type="button" 
+          class="btn btn-sm btn-ghost {% if tag.is_subscribed %}active{% endif %}"
+          onclick="subscribeToTag('{{ tag.slug }}')"
+          data-tag-slug="{{ tag.slug }}"
+          title="Subscribe to updates"
+        >
+          <svg class="icon w-4 h-4" aria-hidden="true">
+            <use href="{% if tag.is_subscribed %}#icon-bell-solid{% else %}#icon-bell{% endif %}"></use>
+          </svg>
+        </button>
+      {% endfor %}
+    </div>
+  {% endif %}
+  
+  <!-- Related Tags -->
+  {% if related_tags %}
+    <div class="mt-6">
+      <h4 class="text-sm font-semibold text-gray-700 mb-3">Related Tags</h4>
+      <div class="flex flex-wrap gap-2">
+        {% for tag in related_tags %}
+          <a href="{% url 'tags:detail' tag.slug %}" class="chip chip-secondary">
+            {{ tag.name }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+  
+  <!-- Trending Tags -->
+  {% if trending_tags %}
+    <div class="mt-6">
+      <h4 class="text-sm font-semibold text-gray-700 mb-3">
+        <svg class="icon w-4 h-4 inline-block text-orange-500" aria-hidden="true">
+          <use href="#icon-fire"></use>
+        </svg>
+        Trending Tags
+      </h4>
+      <div class="flex flex-wrap gap-2">
+        {% for tag in trending_tags %}
+          <a href="{% url 'tags:detail' tag.slug %}" class="chip chip-warning">
+            {{ tag.name }}
+            {% if tag.trending_growth_rate %}
+              <span class="text-xs text-orange-600 ml-1">
+                +{{ tag.trending_growth_rate|floatformat:0 }}%
+              </span>
+            {% endif %}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Tag Suggest Modal -->
+<div class="modal" id="suggest-tag-modal">
+  <div class="modal-backdrop" onclick="Enterprise.closeModal('suggest-tag-modal')"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Suggest a Tag</h3>
+      <button class="modal-close" onclick="Enterprise.closeModal('suggest-tag-modal')">&times;</button>
+    </div>
+    <form id="suggest-tag-form" class="modal-body">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="tag-name">Tag Name</label>
+        <input 
+          type="text" 
+          id="tag-name" 
+          name="name" 
+          class="form-input" 
+          placeholder="e.g., python, web-development"
+          required
+          pattern="[a-z0-9-]+"
+          title="Lowercase letters, numbers, and hyphens only"
+        >
+        <span class="form-help">Use lowercase letters, numbers, and hyphens</span>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="tag-description">Description</label>
+        <textarea 
+          id="tag-description" 
+          name="description" 
+          class="form-textarea" 
+          rows="3"
+          placeholder="Brief description of what this tag represents"
+        ></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="tag-category">Category</label>
+        <select id="tag-category" name="category" class="form-select">
+          <option value="">-- Select Category --</option>
+          {% for category in tag_categories %}
+            <option value="{{ category.id }}">
+              {% if category.icon %}{{ category.icon }} {% endif %}
+              {{ category.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="Enterprise.closeModal('suggest-tag-modal')">
+        Cancel
+      </button>
+      <button type="submit" form="suggest-tag-form" class="btn btn-primary" id="submit-tag-suggestion">
+        Submit Suggestion
+      </button>
+    </div>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+  // Subscribe to tag
+  window.subscribeToTag = async function(tagSlug) {
+    try {
+      const response = await fetch(`/api/tags/${tagSlug}/subscribe/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify({ notification_frequency: 'daily' })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        Enterprise.showToast(
+          data.subscribed ? 'Subscribed to tag updates!' : 'Unsubscribed from tag',
+          'success'
+        );
+        
+        // Update button state
+        const btn = document.querySelector(`[data-tag-slug="${tagSlug}"]`);
+        if (btn) {
+          btn.classList.toggle('active', data.subscribed);
+          const icon = btn.querySelector('use');
+          if (icon) {
+            icon.setAttribute('href', data.subscribed ? '#icon-bell-solid' : '#icon-bell');
+          }
+        }
+      }
+    } catch (error) {
+      Enterprise.showToast('Failed to update subscription', 'error');
+    }
+  };
+  
+  // Submit tag suggestion
+  const suggestForm = document.getElementById('suggest-tag-form');
+  if (suggestForm) {
+    suggestForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submit-tag-suggestion');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      
+      try {
+        const formData = new FormData(this);
+        const data = {
+          name: formData.get('name'),
+          description: formData.get('description'),
+          category: formData.get('category')
+        };
+        
+        const response = await fetch('/api/tags/suggest/create/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          Enterprise.showToast('Tag suggestion submitted for review!', 'success');
+          Enterprise.closeModal('suggest-tag-modal');
+          this.reset();
+        } else {
+          const error = await response.json();
+          Enterprise.showToast(error.message || 'Failed to submit suggestion', 'error');
+        }
+      } catch (error) {
+        Enterprise.showToast('Network error. Please try again.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Suggestion';
+      }
+    });
+  }
+});
+</script>
+
+<style>
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.chip-primary {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.chip-primary:hover {
+  background-color: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+.chip-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.chip-secondary:hover {
+  background-color: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.chip-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.chip-warning:hover {
+  background-color: #fde68a;
+  transform: translateY(-1px);
+}
+</style>

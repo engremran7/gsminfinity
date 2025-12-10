@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+  <!-- Header Section -->
+  <div class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p class="mt-1 text-sm text-gray-600">Welcome back, {{ user.get_full_name|default:user.username }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href="{% url 'users:profile' %}" class="btn btn-light">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-user"></use></svg>
+            Profile
+          </a>
+          <a href="{% url 'blog:post_list' %}" class="btn btn-primary">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-edit"></use></svg>
+            Browse Posts
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Alerts Section -->
+    {% if current_device and not current_device.is_trusted %}
+      <div class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+        <svg class="icon w-5 h-5 text-amber-600 mt-0.5" aria-hidden="true"><use href="#icon-alert"></use></svg>
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-amber-900">Trust this device</p>
+          <p class="text-sm text-amber-800 mt-1">
+            We detected you're on an untrusted device{% if current_device.display_name %} ({{ current_device.display_name }}){% endif %}. 
+            If this is yours, mark it trusted to avoid friction next time.
+          </p>
+        </div>
+        <a href="{% url 'users:devices' %}" class="text-sm font-semibold text-primary hover:underline">Manage</a>
+      </div>
+    {% endif %}
+
+    {% if profile_missing_fields %}
+      <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+        <svg class="icon w-5 h-5 text-blue-600 mt-0.5" aria-hidden="true"><use href="#icon-info"></use></svg>
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-blue-900">Complete your profile</p>
+          <p class="text-sm text-blue-800 mt-1">
+            Add your {{ profile_missing_fields|join:", " }} to keep your account details up to date.
+          </p>
+        </div>
+        <a href="{% url 'users:profile' %}" class="text-sm font-semibold text-primary hover:underline">Go to profile</a>
+      </div>
+    {% endif %}
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Credits Card -->
+      <div class="card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Credits</p>
+            <p class="mt-2 text-3xl font-bold text-gray-900">{{ user.credits|default:0 }}</p>
+          </div>
+          <div class="p-3 bg-green-100 rounded-lg">
+            <svg class="icon w-6 h-6 text-green-600" aria-hidden="true"><use href="#icon-dollar"></use></svg>
+          </div>
+        </div>
+        <div class="mt-4">
+          <a href="#" class="text-sm text-primary font-semibold hover:underline">Add credits →</a>
+        </div>
+      </div>
+
+      <!-- Posts Card -->
+      <div class="card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Your Posts</p>
+            <p class="mt-2 text-3xl font-bold text-gray-900">{{ stats.posts_count|default:0 }}</p>
+          </div>
+          <div class="p-3 bg-blue-100 rounded-lg">
+            <svg class="icon w-6 h-6 text-blue-600" aria-hidden="true"><use href="#icon-file-text"></use></svg>
+          </div>
+        </div>
+        <div class="mt-4">
+          <a href="{% url 'blog:post_list' %}" class="text-sm text-primary font-semibold hover:underline">View all →</a>
+        </div>
+      </div>
+
+      <!-- Comments Card -->
+      <div class="card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Comments</p>
+            <p class="mt-2 text-3xl font-bold text-gray-900">{{ stats.comments_count|default:0 }}</p>
+          </div>
+          <div class="p-3 bg-purple-100 rounded-lg">
+            <svg class="icon w-6 h-6 text-purple-600" aria-hidden="true"><use href="#icon-comment"></use></svg>
+          </div>
+        </div>
+        <div class="mt-4">
+          <span class="text-sm text-gray-500">Activity this month</span>
+        </div>
+      </div>
+
+      <!-- Notifications Card -->
+      <div class="card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Notifications</p>
+            <p class="mt-2 text-3xl font-bold text-gray-900">{{ unread_notifications|default:0 }}</p>
+          </div>
+          <div class="p-3 bg-orange-100 rounded-lg">
+            <svg class="icon w-6 h-6 text-orange-600" aria-hidden="true"><use href="#icon-bell"></use></svg>
+          </div>
+        </div>
+        <div class="mt-4">
+          <a href="{% url 'users:notifications_list' %}" class="text-sm text-primary font-semibold hover:underline">View all →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left Column - Recent Activity -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Announcements -->
+        <div class="card">
+          <div class="card-header flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-megaphone"></use></svg>
+              <h3 class="card-title">Announcements</h3>
+            </div>
+            <span class="text-xs text-gray-500">Latest updates</span>
+          </div>
+          <div class="card-body">
+            {% if announcements %}
+              <div class="space-y-4">
+                {% for announcement in announcements %}
+                  <div class="border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors">
+                    <div class="flex items-start justify-between gap-4">
+                      <div class="flex-1">
+                        <h4 class="text-sm font-semibold text-gray-900">{{ announcement.title }}</h4>
+                        <p class="text-sm text-gray-600 mt-1">{{ announcement.message|truncatewords:30 }}</p>
+                      </div>
+                      <span class="text-xs text-gray-500 whitespace-nowrap">{{ announcement.start_at|date:"M j" }}</span>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-sm text-gray-500 text-center py-8">No announcements at this time</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+          <div class="card-header">
+            <div class="flex items-center gap-2">
+              <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-activity"></use></svg>
+              <h3 class="card-title">Recent Activity</h3>
+            </div>
+          </div>
+          <div class="card-body">
+            {% if recent_activities %}
+              <div class="space-y-4">
+                {% for activity in recent_activities %}
+                  <div class="flex items-start gap-4">
+                    <div class="p-2 bg-gray-100 rounded-lg">
+                      <svg class="icon w-4 h-4 text-gray-600" aria-hidden="true"><use href="#icon-{{ activity.icon|default:'circle' }}"></use></svg>
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-sm text-gray-900">{{ activity.description }}</p>
+                      <p class="text-xs text-gray-500 mt-1">{{ activity.created_at|timesince }} ago</p>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-sm text-gray-500 text-center py-8">No recent activity</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Sidebar -->
+      <div class="space-y-6">
+        <!-- Quick Actions -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Quick Actions</h3>
+          </div>
+          <div class="card-body">
+            <div class="space-y-2">
+              <a href="{% url 'users:profile' %}" class="btn btn-light w-full justify-start">
+                <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-user"></use></svg>
+                Edit Profile
+              </a>
+              <a href="{% url 'account_change_password' %}" class="btn btn-light w-full justify-start">
+                <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-lock"></use></svg>
+                Change Password
+              </a>
+              <a href="{% url 'users:devices' %}" class="btn btn-light w-full justify-start">
+                <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-smartphone"></use></svg>
+                Manage Devices
+              </a>
+              <a href="{% url 'users:notifications_list' %}" class="btn btn-light w-full justify-start">
+                <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-bell"></use></svg>
+                Notifications
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Info -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Account Info</h3>
+          </div>
+          <div class="card-body">
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Member since</span>
+                <span class="font-medium text-gray-900">{{ user.date_joined|date:"M Y" }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Email status</span>
+                <span class="font-medium {% if user.email_verified_at %}text-green-600{% else %}text-amber-600{% endif %}">
+                  {% if user.email_verified_at %}Verified{% else %}Not verified{% endif %}
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Role</span>
+                <span class="font-medium text-gray-900">{{ user.get_role_display|default:"Member" }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Help & Support -->
+        <div class="card bg-gradient-to-br from-primary to-purple-600 text-white">
+          <div class="card-body">
+            <h3 class="text-lg font-semibold mb-2">Need Help?</h3>
+            <p class="text-sm text-white/90 mb-4">Our support team is here to assist you</p>
+            <a href="#" class="btn bg-white text-primary hover:bg-gray-100 w-full">
+              Contact Support
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

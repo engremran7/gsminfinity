@@ -1,0 +1,63 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.settings-admin-header {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+.settings-admin-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+}
+.settings-admin-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+.settings-help-box {
+    background: #e0f2fe;
+    border-left: 4px solid #0284c7;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+}
+.settings-help-box h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    color: #0c4a6e;
+}
+.settings-help-box p {
+    margin: 0;
+    color: #075985;
+    font-size: 0.875rem;
+}
+.fieldset-branding {
+    background: linear-gradient(to right, #fef3c7, #fef9e7);
+    border: 2px solid #fbbf24;
+}
+.fieldset-security {
+    background: linear-gradient(to right, #fce7f3, #fef2f2);
+    border: 2px solid #f43f5e;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-admin-header">
+    <h2>Site Settings Configuration</h2>
+    <p>Configure global site settings, branding, features, and integrations</p>
+</div>
+
+<div class="settings-help-box">
+    <h3>💡 Configuration Tips</h3>
+    <p>These settings control site-wide behavior. Changes take effect immediately after saving. Use caution when modifying security and availability settings.</p>
+</div>
+
+{{ block.super }}
+{% endblock %}

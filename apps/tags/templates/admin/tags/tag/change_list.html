@@ -1,0 +1,97 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.tag-admin-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+.tag-admin-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.tag-admin-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+.tag-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.tag-stat {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+.tag-stat .label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+.tag-stat .value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #10b981;
+}
+.tag-help-box {
+    background: #d1fae5;
+    border-left: 4px solid #10b981;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+}
+.tag-help-box p {
+    margin: 0;
+    color: #065f46;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tag-admin-header">
+    <h2>
+        🏷️ Tag Management
+    </h2>
+    <p>Organize content taxonomy, merge duplicates, and leverage AI suggestions</p>
+</div>
+
+<div class="tag-help-box">
+    <p><strong>💡 Best Practice:</strong> Keep tags curated to avoid fragmentation. Use synonyms and merge duplicates regularly.</p>
+</div>
+
+<div class="tag-stats">
+    <div class="tag-stat">
+        <div class="label">Total Tags</div>
+        <div class="value">{{ cl.result_count }}</div>
+    </div>
+    <div class="tag-stat">
+        <div class="label">Curated Tags</div>
+        <div class="value" id="curated-count">-</div>
+    </div>
+    <div class="tag-stat">
+        <div class="label">AI Suggested</div>
+        <div class="value" id="ai-count">-</div>
+    </div>
+    <div class="tag-stat">
+        <div class="label">Total Usage</div>
+        <div class="value" id="usage-count">-</div>
+    </div>
+</div>
+
+{{ block.super }}
+{% endblock %}

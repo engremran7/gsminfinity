@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}User Dashboard - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <div class="card">
+    <div class="card-header">
+      <h1 class="card-title text-2xl">Welcome, {{ user.username }}!</h1>
+    </div>
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Stats -->
+        <div class="stat-card">
+          <div class="stat-card-icon primary">
+            <svg class="icon w-6 h-6" aria-hidden="true">
+              <use href="#icon-user"></use>
+            </svg>
+          </div>
+          <div class="stat-card-value">{{ user.get_full_name|default:user.username }}</div>
+          <div class="stat-card-label">Profile</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-card-icon success">
+            <svg class="icon w-6 h-6" aria-hidden="true">
+              <use href="#icon-check"></use>
+            </svg>
+          </div>
+          <div class="stat-card-value">Active</div>
+          <div class="stat-card-label">Account Status</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-card-icon warning">
+            <svg class="icon w-6 h-6" aria-hidden="true">
+              <use href="#icon-calendar"></use>
+            </svg>
+          </div>
+          <div class="stat-card-value">{{ user.date_joined|date:"M d, Y" }}</div>
+          <div class="stat-card-label">Member Since</div>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="mt-8">
+        <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+        <div class="flex flex-wrap gap-3">
+          <a href="{% url 'users:profile' %}" class="btn btn-primary">
+            View Profile
+          </a>
+          <a href="{% url 'blog:post_list' %}" class="btn btn-secondary">
+            Browse Posts
+          </a>
+          <a href="{% url 'account_email' %}" class="btn btn-ghost">
+            Account Settings
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

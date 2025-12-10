@@ -83,7 +83,7 @@
           {% csrf_token %}
           <input type="hidden" name="content_type" value="{{ post_content_type_id }}">
           <label class="block text-sm font-medium text-slate-700">Post</label>
-          <select name="object_id" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm">
+          <select name="object_id" class="w-full border border-slate-200 rounded-md px-3 py-2 text-sm" aria-label="Select content object for SEO optimization">
             {% for post in recent_posts %}
               <option value="{{ post.id }}">{{ post.title }}</option>
             {% endfor %}

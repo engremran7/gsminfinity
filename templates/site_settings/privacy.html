@@ -1,10 +1,39 @@
-
 {% extends "base.html" %}
-{% block title %}Privacy Policy{% endblock %}
+{% block title %}Privacy Policy - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 py-10 prose prose-slate">
-  <h1>Privacy Policy</h1>
-  <p>This site’s privacy policy is managed by the administrator. Contact support if you need the full policy text.</p>
+<div class="max-w-4xl mx-auto px-4 py-10">
+  <div class="space-y-6">
+    <header class="space-y-2">
+      <p class="text-xs uppercase tracking-wide text-primary font-semibold">Legal</p>
+      <h1 class="text-4xl font-bold text-slate-900">Privacy Policy</h1>
+      <p class="text-sm text-slate-600">Last updated: {{ site_settings.updated_at|date:"F j, Y"|default:"Recently" }}</p>
+    </header>
+
+    <div class="card p-8 prose prose-slate max-w-none">
+      <h2>Privacy & Data Protection</h2>
+      <p>This site's privacy policy is managed by the administrator. We are committed to protecting your personal information and your right to privacy.</p>
+      
+      <h3>Information We Collect</h3>
+      <p>We collect information that you provide directly to us when using our services, including account registration, profile information, and usage data.</p>
+      
+      <h3>How We Use Your Information</h3>
+      <p>Your information is used to provide and improve our services, communicate with you, and ensure security.</p>
+      
+      <h3>Data Protection</h3>
+      <p>We implement appropriate security measures to protect your personal information against unauthorized access, alteration, or disclosure.</p>
+      
+      <h3>Your Rights</h3>
+      <p>You have the right to access, correct, or delete your personal information. Contact our support team for assistance.</p>
+      
+      <p class="text-sm text-slate-500 mt-8">For the complete privacy policy or specific inquiries, please contact our support team.</p>
+    </div>
+
+    <div class="flex gap-3">
+      <a href="{% url 'consent:privacy_center' %}" class="btn-primary px-6 py-2 rounded">Manage Consent</a>
+      <a href="/" class="btn-outline px-6 py-2 rounded">Back to Home</a>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

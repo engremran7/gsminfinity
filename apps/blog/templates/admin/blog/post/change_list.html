@@ -1,0 +1,109 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.blog-admin-header {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+.blog-admin-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.blog-admin-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+.blog-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.blog-stat {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+.blog-stat .label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+.blog-stat .value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #f59e0b;
+}
+.blog-quick-links {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+.blog-quick-links h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+    color: #78350f;
+}
+.blog-quick-links a {
+    display: inline-block;
+    margin-right: 1rem;
+    margin-bottom: 0.5rem;
+    color: #92400e;
+    text-decoration: underline;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="blog-admin-header">
+    <h2>
+        📝 Blog Post Management
+    </h2>
+    <p>Create, edit, and publish content with AI assistance and SEO optimization</p>
+</div>
+
+<div class="blog-quick-links">
+    <h3>⚡ Quick Actions</h3>
+    <a href="/admin/blog/post/add/">Create New Post</a>
+    <a href="/admin/blog/category/">Manage Categories</a>
+    <a href="/blog/manage/">Public Dashboard</a>
+    <a href="/admin/tags/tag/">Manage Tags</a>
+</div>
+
+<div class="blog-stats">
+    <div class="blog-stat">
+        <div class="label">Total Posts</div>
+        <div class="value">{{ cl.result_count }}</div>
+    </div>
+    <div class="blog-stat">
+        <div class="label">Published</div>
+        <div class="value" id="published-count">-</div>
+    </div>
+    <div class="blog-stat">
+        <div class="label">Drafts</div>
+        <div class="value" id="draft-count">-</div>
+    </div>
+    <div class="blog-stat">
+        <div class="label">AI Generated</div>
+        <div class="value" id="ai-count">-</div>
+    </div>
+</div>
+
+{{ block.super }}
+{% endblock %}

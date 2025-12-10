@@ -1,0 +1,106 @@
+name: Django CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install coverage pytest pytest-django pytest-cov
+    
+    - name: Run migrations
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        DJANGO_SETTINGS_MODULE: gsminfinity.settings_dev
+      run: |
+        python manage.py migrate --noinput
+    
+    - name: Run tests with coverage
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        DJANGO_SETTINGS_MODULE: gsminfinity.settings_dev
+      run: |
+        coverage run --source='apps' manage.py test --keepdb
+        coverage xml
+        coverage report
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+    
+    - name: Check code style
+      run: |
+        pip install black isort flake8
+        black --check apps/
+        isort --check-only apps/
+        flake8 apps/ --max-line-length=120 --exclude=migrations,__pycache__
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Collect static files
+      env:
+        DJANGO_SETTINGS_MODULE: gsminfinity.settings
+        DJANGO_SECRET_KEY: 'ci-build-key'
+      run: |
+        python manage.py collectstatic --noinput
+    
+    - name: Check for security issues
+      run: |
+        pip install bandit safety
+        bandit -r apps/ -ll
+        safety check --json || true

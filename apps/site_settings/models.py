@@ -159,6 +159,10 @@ class SiteSettings(SingletonModel):
     )
     enforce_unique_device = models.BooleanField(default=True)
     require_mfa = models.BooleanField(default=False)
+    require_profile_completion = models.BooleanField(
+        default=True,
+        help_text="Require social auth users to complete profile before accessing the site"
+    )
 
     mfa_totp_issuer = models.CharField(max_length=50, default="Site")
 

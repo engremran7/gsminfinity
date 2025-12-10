@@ -2,34 +2,51 @@
 # PYTHON / DJANGO
 #######################################
 
-# Virtual env
+# Virtual environments
 .venv/
 venv/
 env/
 .vnv/
+ENV/
+.Python
 
 # Python bytecode
 *.pyc
 *.pyo
 *.pyd
+*.pyw
+*.py[cod]
+*$py.class
 __pycache__/
+
+# C extensions
+*.so
 
 # Django local files
 *.sqlite3
+*.db
 *.log
 logs/
 
-# Local settings overrides
+# Django settings overrides
 local_settings.py
+development.py
+settings_dev.py
+
+# Media files (user uploads)
+media/
+uploads/
 
 #######################################
 # ENV / SECRET FILES
 #######################################
 .env
-*.env
 .env.*
+!.env.sample
 *.secret
 *.key
+*.pem
+*.crt
 
 #######################################
 # STATIC / BUILD ARTIFACTS
@@ -55,17 +72,40 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 .pnp/
 .pnp.js
 .eslintcache
+package-lock.json
 
 #######################################
 # EDITOR / IDE
 #######################################
 
+# VS Code
 .vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
 .idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
 *.swp
+*.swo
+*~
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Emacs
+*~
+\#*\#
+.\#*
 
 #######################################
 # TESTING / COVERAGE
@@ -78,13 +118,32 @@ htmlcov/
 .pytest_cache/
 nosetests.xml
 coverage.xml
+*.cover
+.hypothesis/
+.tox/
+.nox/
 
 #######################################
 # MAC / WINDOWS / OS JUNK
 #######################################
 
 .DS_Store
+.AppleDouble
+.LSOverride
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+#######################################
+# GIT / VERSION CONTROL
+#######################################
+
+# Duplicate git directories
+*.git/
+gsminfinity.git/
 
 #######################################
 # MISC + NOISE
@@ -92,23 +151,109 @@ Thumbs.db
 
 # Generated docs
 /docs/_build/
+/docs/_static/
+/docs/_templates/
 
 # Type checker caches
 .mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
 ruff_cache/
 pyrightconfig.json
 
-# Backup files
-*.bak
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Distribution / packaging
+*.egg
+*.egg-info/
+.eggs/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+#######################################
+# PROJECT-SPECIFIC TEMPORARY FILES
+#######################################
+
+# Test artifacts and temporary files
+test_*.py
+*_test_*.py
+*.test.py
+analyze_*.py
+apply_*.ps1
+
+# Database backups
+*.sqlite3.bak
+*.db.bak
+db_*.sqlite3
+
+# Old/backup files
 *.old
+*.bak
+*.backup
+*_old.*
+*_backup.*
+*.tmp
 *.orig
 
-# Containers / deployments (optional)
-docker-data/
+#######################################
+# AUDIT/REPORT DOCUMENTS (KEEP CLEAN)
+#######################################
 
-# Local recovery dumps
-_recovery/
+# Exclude audit reports and summaries (keep only main README and app docs)
+*_AUDIT*.md
+*_SUMMARY*.md
+*_REPORT*.md
+*_PLAN*.md
+*_GUIDE*.md
+*_DELIVERY*.md
+*_INTEGRATION*.md
+*_MIGRATION*.md
+*_SUCCESS*.md
+*_COMPLETE*.md
+*_MODERNIZATION*.md
+IMPLEMENTATION_*.md
+DEPLOYMENT_*.md
+REFACTORING_*.md
+PLUGGABLE_*.md
+ENTERPRISE_*.md
+COMPLETE_*.md
+BACKEND_*.md
+FRONTEND_*.md
+NOTIFICATION_*.md
+HTMX_*.md
+PROJECT_STATUS.md
+QUICKSTART.md
 
-# Local tooling / audits
-tools/
-audit_*.txt
+# Keep only essential documentation
+!README.md
+!OPS.md
+!docs/README.md
+!apps/*/README.md
+!security_suite/README.md
+
+#######################################
+# DEPLOYMENT / OPERATIONS SCRIPTS
+#######################################
+
+deploy_*.py
+create_sample_*.py
+generate_*.ps1
+
+#######################################
+# SECURITY / SENSITIVE
+#######################################
+
+# Never commit secrets
+secrets/
+*.gpg
+id_rsa
+id_rsa.pub

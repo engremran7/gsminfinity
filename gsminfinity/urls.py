@@ -115,12 +115,16 @@ urlpatterns = [
     path("distribution/", include(("apps.distribution.urls", "distribution"), namespace="distribution")),
     path("devices/", include(("apps.devices.urls", "devices"), namespace="devices")),
     path("i18n/app/", include(("apps.i18n.urls", "i18n"), namespace="i18n")),
-    # Tags API
+    # Tags
     path("tags/", include(("apps.tags.urls", "tags"), namespace="tags")),
     # Blog (public)
     path("blog/", include(("apps.blog.urls", "blog"), namespace="blog")),
     # Comments API
     path("comments/", include(("apps.comments.urls", "comments"), namespace="comments")),
+    
+    # Enhanced API endpoints
+    path("api/comments/", include(("apps.comments.urls_api", "comments_api"), namespace="comments_api")),
+    path("api/tags/", include(("apps.tags.urls_api", "tags_api"), namespace="tags_api")),
     # Security suite status
     path("security/", include(("apps.security_suite.urls", "security_suite"), namespace="security_suite")),
     # AI micro-app

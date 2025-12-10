@@ -9,67 +9,78 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
   <div class="blog-layout">
     <section aria-labelledby="blog-heading" class="space-y-4">
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 id="blog-heading" class="text-3xl font-bold text-slate-900 inline-flex items-center gap-2">
-            <svg class="icon w-5 h-5" aria-hidden="true"><use href="#icon-book-open"></use></svg>
-            Blog
-          </h1>
-          <p class="text-sm text-slate-600">Latest posts, product updates, and AI-powered insights.</p>
-          <p class="text-xs text-slate-500">Ads and SEO obey global toggles; internal links and meta stay stable unless you trigger updates.</p>
-        </div>
-        <div class="flex items-center gap-3 flex-wrap justify-end">
-          <form method="get" class="flex items-center gap-2 flex-wrap">
-            <label class="visually-hidden" for="search">Search</label>
-            <input id="search" name="q" value="{{ q|default_if_none:'' }}" placeholder="Search posts..."
-              class="w-48 sm:w-60 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20" />
-            <select name="category" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm">
-              <option value="">All categories</option>
-              {% for c in categories %}
-                <option value="{{ c.slug }}" {% if active_category == c.slug %}selected{% endif %}>
-                  {% if c.parent %}{{ c.parent.name }} / {% endif %}{{ c.name }}
-                </option>
-              {% endfor %}
-            </select>
-            <input type="date" name="from" value="{{ date_from }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm" aria-label="From date">
-            <input type="date" name="to" value="{{ date_to }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm" aria-label="To date">
-            <select name="sort" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm">
-              {% for value,label in sort_options %}
-                <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-            <button type="submit" class="btn-outline text-sm px-3 py-2 rounded-md border border-slate-300">Search</button>
-            {% if q or active_category or active_tag or active_status or active_author or date_from or date_to %}
-              <a href="{% url 'blog:post_list' %}" class="text-xs text-slate-600 underline">Clear</a>
-            {% endif %}
-          </form>
-          <div class="flex items-center gap-2 text-xs">
-            {% for st,label in status_filters %}
-              {% if active_status|default:'' == st %}
-                {% with is_active=True %}
-                  <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if active_tag %}tag={{ active_tag|urlencode }}&{% endif %}{% if active_category %}category={{ active_category|urlencode }}&{% endif %}{% if author %}author={{ author|urlencode }}&{% endif %}{% if st %}status={{ st }}{% endif %}"
-                     class="inline-flex items-center px-3 py-1.5 rounded-full border bg-primary text-white border-primary">
-                    {{ label }}
-                  </a>
-                {% endwith %}
-              {% else %}
-                <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if active_tag %}tag={{ active_tag|urlencode }}&{% endif %}{% if active_category %}category={{ active_category|urlencode }}&{% endif %}{% if author %}author={{ author|urlencode }}&{% endif %}{% if st %}status={{ st }}{% endif %}"
-                   class="inline-flex items-center px-3 py-1.5 rounded-full border bg-white text-slate-700 border-slate-200">
-                  {{ label }}
-                </a>
-              {% endif %}
-            {% endfor %}
+      <div class="space-y-4">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 id="blog-heading" class="text-3xl font-bold text-slate-900 inline-flex items-center gap-2">
+              <svg class="icon w-5 h-5" aria-hidden="true"><use href="#icon-book-open"></use></svg>
+              Blog
+            </h1>
+            <p class="text-sm text-slate-600">Latest posts, product updates, and AI-powered insights.</p>
+            <p class="text-xs text-slate-500">Ads and SEO obey global toggles; internal links and meta stay stable unless you trigger updates.</p>
           </div>
           {% if request.user.is_staff or request.user.is_superuser or allow_user_posts %}
-            <a href="{% url 'blog:manage_posts' %}" class="btn-outline px-3 py-2 rounded-md border border-slate-300 text-sm">Manage</a>
-            {% if request.user.is_staff or request.user.is_superuser %}
-              <a href="/admin/blog/category/add/" class="btn-outline px-3 py-2 rounded-md border border-slate-300 text-sm">Add category</a>
-            {% endif %}
-            <a href="{% url 'blog:post_create' %}" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-plus"></use></svg>
-              New Post{% if not request.user.is_staff and not request.user.is_superuser %} (community){% endif %}
-            </a>
+            <div class="flex items-center gap-2">
+              <a href="{% url 'blog:manage_posts' %}" class="btn-outline px-3 py-2 rounded border border-slate-300 text-sm whitespace-nowrap">Manage</a>
+              {% if request.user.is_staff or request.user.is_superuser %}
+                <a href="/admin/blog/category/add/" class="btn-outline px-3 py-2 rounded border border-slate-300 text-sm whitespace-nowrap">Add category</a>
+              {% endif %}
+              <a href="{% url 'blog:post_create' %}" class="btn-primary px-4 py-2 rounded inline-flex items-center gap-1 whitespace-nowrap">
+                <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-plus"></use></svg>
+                New Post{% if not request.user.is_staff and not request.user.is_superuser %} (community){% endif %}
+              </a>
+            </div>
           {% endif %}
+        </div>
+        
+        <!-- Search and Filter Section -->
+        <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
+          <form method="get" class="space-y-3">
+            <div class="flex items-center gap-2 flex-wrap">
+              <label class="visually-hidden" for="search">Search</label>
+              <input id="search" name="q" value="{{ q|default_if_none:'' }}" placeholder="Search posts..."
+                class="flex-1 min-w-[200px] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20" />
+              <select name="category" aria-label="Filter by category" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                <option value="">All categories</option>
+                {% for c in categories %}
+                  <option value="{{ c.slug }}" {% if active_category == c.slug %}selected{% endif %}>
+                    {% if c.parent %}{{ c.parent.name }} / {% endif %}{{ c.name }}
+                  </option>
+                {% endfor %}
+              </select>
+              <select name="sort" aria-label="Sort posts by" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+                {% for value,label in sort_options %}
+                  <option value="{{ value }}" {% if sort == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <input type="date" name="from" value="{{ date_from }}" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" aria-label="From date" placeholder="From date">
+              <input type="date" name="to" value="{{ date_to }}" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" aria-label="To date" placeholder="To date">
+              <button type="submit" class="btn-primary text-sm px-4 py-2 rounded">Search</button>
+              {% if q or active_category or active_tag or active_status or active_author or date_from or date_to %}
+                <a href="{% url 'blog:post_list' %}" class="text-sm text-slate-600 underline hover:text-slate-900">Clear filters</a>
+              {% endif %}
+            </div>
+            {% if status_filters %}
+            <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-200">
+              <span class="text-xs font-medium text-slate-700">Status:</span>
+              {% for st,label in status_filters %}
+                {% if active_status|default:'' == st %}
+                  <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if active_tag %}tag={{ active_tag|urlencode }}&{% endif %}{% if active_category %}category={{ active_category|urlencode }}&{% endif %}{% if author %}author={{ author|urlencode }}&{% endif %}{% if st %}status={{ st }}{% endif %}"
+                     class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium btn-primary">
+                    {{ label }}
+                  </a>
+                {% else %}
+                  <a href="?{% if q %}q={{ q|urlencode }}&{% endif %}{% if active_tag %}tag={{ active_tag|urlencode }}&{% endif %}{% if active_category %}category={{ active_category|urlencode }}&{% endif %}{% if author %}author={{ author|urlencode }}&{% endif %}{% if st %}status={{ st }}{% endif %}"
+                     class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-white text-slate-700 border border-slate-300 hover:bg-slate-50">
+                    {{ label }}
+                  </a>
+                {% endif %}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </form>
         </div>
       </div>
 
@@ -113,7 +124,7 @@
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-2">
           <div class="flex items-center justify-between">
             <div>
-              <h3 class="text-sm font-semibold text-slate-800">Your drafts & scheduled</h3>
+              <h3 class="text-sm font-semibold text-slate-900">Your drafts & scheduled</h3>
               <p class="text-xs text-slate-500">Visible only to you.</p>
             </div>
             {% if request.user.is_staff or request.user.is_superuser or allow_user_posts %}
@@ -152,19 +163,19 @@
         {% render_ad_slot "sidebar-rect" %}
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-800">Trending posts</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Trending posts</h3>
           </div>
           {% include "blog/partials/trending_widget.html" with posts=trending_posts %}
         </div>
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-800">Trending tags</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Trending tags</h3>
           </div>
           {% include "components/tag_badges.html" with tags=trending_tags %}
         </div>
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-800">Latest</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Latest</h3>
           </div>
           {% include "blog/partials/latest_widget.html" with posts=latest_posts %}
         </div>

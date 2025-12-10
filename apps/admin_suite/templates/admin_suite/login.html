@@ -4,9 +4,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Admin Suite Login</title>
-  <link href="{% static 'css/admin-suite.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}">
-  <link href="{% static 'css/enterprise-dashboard.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}">
+  <link href="{% static 'css/admin/enterprise.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/auth.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/components.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/forms.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/motion.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
 </head>
 <body class="admin-login">
   <div class="admin-page">

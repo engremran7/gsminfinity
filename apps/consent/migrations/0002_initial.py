@@ -68,6 +68,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='consentrecord',
-            constraint=models.CheckConstraint(condition=models.Q(('user__isnull', False), models.Q(('session_key__isnull', False), models.Q(('session_key', ''), _negated=True)), _connector='OR'), name='valid_user_or_session'),
+            constraint=models.CheckConstraint(check=models.Q(('user__isnull', False), models.Q(('session_key__isnull', False), models.Q(('session_key', ''), _negated=True)), _connector='OR'), name='valid_user_or_session'),
         ),
     ]

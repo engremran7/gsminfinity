@@ -1,8 +1,30 @@
 {
-  "devDependencies": {
+  "name": "gsminfinity-admin",
+  "version": "2.0.0",
+  "description": "GSM Infinity Admin Frontend - Enterprise admin suite with offline Tailwind + HTMX",
+  "private": true,
+  "scripts": {
+    "deploy": "python deploy_admin.py",
+    "build:css": "npx tailwindcss -i ./static/css/admin/enterprise.css -o ./staticfiles/css/admin/enterprise.min.css --minify",
+    "build:all": "npm run build:css && python manage.py collectstatic --noinput",
+    "watch:css": "npx tailwindcss -i ./static/css/admin/enterprise.css -o ./staticfiles/css/admin/enterprise.min.css --watch",
+    "test:a11y": "axe docs/admin-components.html"
+  },
+  "dependencies": {
+    "tailwindcss": "^3.4.13",
     "@tailwindcss/forms": "^0.5.10",
-    "@tailwindcss/line-clamp": "^0.4.4",
     "@tailwindcss/typography": "^0.5.19",
-    "tailwindcss": "^3.4.13"
-  }
+    "@tailwindcss/line-clamp": "^0.4.4"
+  },
+  "keywords": [
+    "admin",
+    "dashboard",
+    "django",
+    "tailwind",
+    "htmx",
+    "offline",
+    "csp"
+  ],
+  "author": "GSM Infinity Team",
+  "license": "MIT"
 }

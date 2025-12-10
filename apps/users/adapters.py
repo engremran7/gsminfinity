@@ -104,8 +104,18 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         return _safe_reverse("users:dashboard", default="/")
 
     def get_signup_redirect_url(self, request: HttpRequest) -> str:
-        # Regular/password signups go straight to dashboard; social flows handled separately.
-        return _safe_reverse("users:dashboard", default="/users/profile/")
+        """Redirect email signups - show profile prompt if incomplete"""
+        user = getattr(request, "user", None)
+        if user and not getattr(user, "profile_completed", False):
+            return _safe_reverse("users:tell_us_about_you", default="/users/profile/")
+        return _safe_reverse("users:dashboard", default="/")
+    
+    def get_email_verification_redirect_url(self, email_address) -> str:
+        """After email verification, redirect to profile completion if needed"""
+        user = getattr(email_address, "user", None)
+        if user and not getattr(user, "profile_completed", False):
+            return _safe_reverse("users:tell_us_about_you", default="/users/profile/")
+        return _safe_reverse("users:dashboard", default="/")
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
@@ -119,8 +129,13 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         return _safe_reverse("users:tell_us_about_you", default="/users/profile/")
 
     def get_signup_redirect_url(self, request: HttpRequest) -> str:
-        logger.debug("Social signup redirect -> users:tell_us_about_you")
-        return _safe_reverse("users:tell_us_about_you", default="/users/profile/")
+        """Redirect social signups to onboarding if profile not completed"""
+        user = getattr(request, "user", None)
+        if user and not getattr(user, "profile_completed", False):
+            logger.debug("Social signup redirect -> users:tell_us_about_you")
+            return _safe_reverse("users:tell_us_about_you", default="/users/profile/")
+        logger.debug("Social signup redirect -> users:dashboard (profile already complete)")
+        return _safe_reverse("users:dashboard", default="/")
 
     def pre_social_login(self, request: HttpRequest, sociallogin: SocialLogin) -> None:
         """

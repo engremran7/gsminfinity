@@ -10,8 +10,8 @@ from django.views.decorators.http import require_http_methods, require_POST, req
 from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from django.views.decorators.cache import cache_page
 from django.template.loader import render_to_string
-from django.db.models import Q
-from django.db import transaction
+from django.db.models import Q, Count, F
+from django.db import transaction, models
 from django.utils import timezone
 from django.contrib.contenttypes.models import ContentType
 
@@ -283,12 +283,36 @@ def post_list(request: HttpRequest) -> HttpResponse:
         Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
         .order_by("-published_at")[:5]
     )
+    # Get featured post (most recent featured or latest published)
+    featured_post = Post.objects.filter(
+        status=PostStatus.PUBLISHED, 
+        publish_at__lte=now_ts,
+        featured=True
+    ).order_by('-published_at').first()
+    
+    if not featured_post:
+        featured_post = Post.objects.filter(
+            status=PostStatus.PUBLISHED,
+            publish_at__lte=now_ts
+        ).order_by('-published_at').first()
+    
+    # Annotate categories with post count
+    from django.db.models import Count
+    categories_with_count = Category.objects.annotate(
+        post_count=Count('posts', filter=models.Q(posts__status=PostStatus.PUBLISHED, posts__publish_at__lte=now_ts))
+    ).select_related("parent").order_by("parent__name", "name")
+    
+    # Get popular tags for sidebar
+    popular_tags = Tag.objects.filter(is_active=True).order_by('-usage_count')[:15]
+    
     context = {
-        "posts": page_obj.object_list,
+        "posts": page_obj,  # Pass page_obj directly for pagination
+        "featured_post": featured_post,
         "page_obj": page_obj,
         "q": q,
         "trending_tags": trending_tags,
         "trending_posts": trending_posts,
+        "popular_tags": popular_tags,
         "latest_posts": latest_posts,
         "allow_user_posts": allow_user_posts,
         "active_status": status_filter,
@@ -297,7 +321,8 @@ def post_list(request: HttpRequest) -> HttpResponse:
         "active_author": author,
         "date_from": date_from,
         "date_to": date_to,
-        "categories": Category.objects.select_related("parent").order_by("parent__name", "name"),
+        "categories": categories_with_count,
+        "selected_category": Category.objects.filter(slug=category_slug).first() if category_slug else None,
         "status_filters": [
             ("", "All"),
             (PostStatus.PUBLISHED, "Published"),
@@ -312,7 +337,7 @@ def post_list(request: HttpRequest) -> HttpResponse:
             ("title", "Title A-Z"),
         ],
     }
-    return render(request, "blog/post_list.html", context)
+    return render(request, "blog/post_list_enhanced.html", context)
 
 
 def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
@@ -408,14 +433,39 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
         except Exception:
             pass
 
+    # Get comments for the post
+    from apps.comments.models import Comment
+    comments = Comment.objects.filter(
+        post=post,
+        is_deleted=False,
+        parent__isnull=True  # Top-level comments only, replies are nested
+    ).select_related('user').order_by('-created_at')
+    
+    # Get tag categories for the tags widget
+    tag_categories = Tag.CATEGORY_CHOICES if hasattr(Tag, 'CATEGORY_CHOICES') else []
+    
+    # Get popular tags for sidebar
+    popular_tags = Tag.objects.filter(is_active=True).order_by('-usage_count')[:10]
+    
+    # Get related posts based on tags
+    related_posts = Post.objects.filter(
+        tags__in=post.tags.all(),
+        status=PostStatus.PUBLISHED,
+        publish_at__lte=timezone.now(),
+    ).exclude(pk=post.pk).distinct().order_by('-published_at')[:3]
+    
     return render(
         request,
-        "blog/post_detail.html",
+        "blog/post_detail_enhanced.html",
         {
             "post": post,
+            "comments": comments,
+            "related_posts": related_posts,
             "related_widget_html": related_widget_html,
             "trending_tags": trending_tags,
             "trending_posts": trending_posts,
+            "popular_tags": popular_tags,
+            "tag_categories": tag_categories,
             "allow_user_posts": allow_user_posts,
             "tag_cloud": tag_cloud_raw,
             "canonical_url": canonical,
@@ -838,5 +888,74 @@ def api_similar_posts(request: HttpRequest) -> JsonResponse:
         for p in posts
     ]
     return JsonResponse({"items": items})
+
+
+@login_required
+@require_POST
+def post_like(request: HttpRequest, pk: int) -> JsonResponse:
+    """
+    Like/unlike a blog post.
+    """
+    try:
+        post = get_object_or_404(Post, pk=pk)
+        
+        # Check if user has already liked this post
+        # Using a simple approach - you may want to create a PostLike model later
+        liked_posts = request.session.get('liked_posts', [])
+        
+        if pk in liked_posts:
+            # Unlike
+            liked_posts.remove(pk)
+            post.likes_count = max(0, (post.likes_count or 0) - 1)
+            action = 'unliked'
+        else:
+            # Like
+            liked_posts.append(pk)
+            post.likes_count = (post.likes_count or 0) + 1
+            action = 'liked'
+        
+        request.session['liked_posts'] = liked_posts
+        post.save(update_fields=['likes_count'])
+        
+        return JsonResponse({
+            'ok': True,
+            'action': action,
+            'likes_count': post.likes_count
+        })
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+
+@login_required
+@require_POST
+def post_bookmark(request: HttpRequest, pk: int) -> JsonResponse:
+    """
+    Bookmark/unbookmark a blog post.
+    """
+    try:
+        post = get_object_or_404(Post, pk=pk)
+        
+        # Check if user has already bookmarked this post
+        bookmarked_posts = request.session.get('bookmarked_posts', [])
+        
+        if pk in bookmarked_posts:
+            # Remove bookmark
+            bookmarked_posts.remove(pk)
+            action = 'unbookmarked'
+        else:
+            # Add bookmark
+            bookmarked_posts.append(pk)
+            action = 'bookmarked'
+        
+        request.session['bookmarked_posts'] = bookmarked_posts
+        request.session.modified = True
+        
+        return JsonResponse({
+            'ok': True,
+            'action': action,
+            'is_bookmarked': pk in bookmarked_posts
+        })
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
 
 

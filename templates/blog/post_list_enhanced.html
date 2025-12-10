@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Blog - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <!-- Header -->
+  <header class="mb-10">
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">Latest Articles</h1>
+    <p class="text-xl text-gray-600">
+      Discover insights, tutorials, and stories from our community
+    </p>
+  </header>
+  
+  <!-- Filters -->
+  <div class="flex flex-wrap items-center gap-4 mb-8">
+    <!-- Category Filter -->
+    <div class="flex items-center gap-2">
+      <label class="text-sm font-semibold text-gray-700">Category:</label>
+      <select class="form-select form-select-sm" id="category-filter" onchange="window.location.href=this.value">
+        <option value="{% url 'blog:post_list' %}">All Categories</option>
+        {% for category in categories %}
+          <option value="{% url 'blog:post_list' %}?category={{ category.slug }}" {% if selected_category == category %}selected{% endif %}>
+            {{ category.name }} ({{ category.post_count }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    
+    <!-- Sort -->
+    <div class="flex items-center gap-2">
+      <label class="text-sm font-semibold text-gray-700">Sort:</label>
+      <select class="form-select form-select-sm" id="sort-filter">
+        <option value="latest">Latest</option>
+        <option value="popular">Most Popular</option>
+        <option value="trending">Trending</option>
+        <option value="commented">Most Commented</option>
+      </select>
+    </div>
+    
+    <!-- Search -->
+    <div class="flex-1 min-w-[200px]">
+      <form action="{% url 'blog:post_list' %}" method="get" class="mb-0">
+        <input 
+          type="search" 
+          name="q"
+          placeholder="Search articles..." 
+          class="form-input form-input-sm w-full"
+          id="search-input"
+          value="{{ q|default:'' }}"
+        >
+      </form>
+    </div>
+  </div>
+  
+  <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+    <!-- Posts List -->
+    <div class="space-y-6">
+      <!-- Featured Post -->
+      {% if featured_post %}
+        <article class="card card-hover overflow-hidden">
+          <div class="grid md:grid-cols-2">
+            {% if featured_post.hero_image %}
+              <img 
+                src="{{ featured_post.hero_image.url }}" 
+                alt="{{ featured_post.title }}"
+                class="w-full h-full object-cover"
+              >
+            {% endif %}
+            <div class="p-6 flex flex-col justify-center">
+              <div class="badge badge-warning mb-3">⭐ Featured</div>
+              <h2 class="text-2xl font-bold text-gray-900 mb-3 hover:text-primary transition-colors">
+                <a href="{{ featured_post.get_absolute_url }}">{{ featured_post.title }}</a>
+              </h2>
+              <p class="text-gray-600 mb-4 line-clamp-3">
+                {{ featured_post.summary }}
+              </p>
+              <div class="flex items-center gap-4 text-sm text-gray-500">
+                <div class="flex items-center gap-2">
+                  <div class="avatar avatar-sm">
+                    {{ featured_post.author.username|first|upper }}
+                  </div>
+                  <span>{{ featured_post.author.username }}</span>
+                </div>
+                <span>·</span>
+                <time>{{ featured_post.published_at|date:"M d, Y" }}</time>
+                <span>·</span>
+                <span>{{ featured_post.reading_time }} min</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      {% endif %}
+      
+      <!-- Regular Posts -->
+      <div class="space-y-6" id="posts-list">
+        {% for post in posts %}
+          <article class="card card-hover">
+            <div class="card-body">
+              <div class="flex gap-6">
+                {% if post.hero_image %}
+                  <a href="{{ post.get_absolute_url }}" class="flex-shrink-0 hidden md:block">
+                    <img 
+                      src="{{ post.hero_image.url }}" 
+                      alt="{{ post.title }}"
+                      class="w-48 h-32 object-cover rounded-lg"
+                    >
+                  </a>
+                {% endif %}
+                
+                <div class="flex-1 min-w-0">
+                  <!-- Meta -->
+                  <div class="flex items-center gap-2 mb-2 flex-wrap">
+                    {% if post.category %}
+                      <span class="badge badge-primary badge-sm">{{ post.category.name }}</span>
+                    {% endif %}
+                    <span class="text-sm text-gray-500">
+                      {{ post.published_at|date:"M d, Y" }}
+                    </span>
+                  </div>
+                  
+                  <!-- Title -->
+                  <h3 class="text-xl font-bold text-gray-900 mb-2 hover:text-primary transition-colors line-clamp-2">
+                    <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+                  </h3>
+                  
+                  <!-- Summary -->
+                  <p class="text-gray-600 mb-3 line-clamp-2">
+                    {{ post.summary }}
+                  </p>
+                  
+                  <!-- Footer -->
+                  <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center gap-4 text-gray-500">
+                      <div class="flex items-center gap-1">
+                        <svg class="icon w-4 h-4" aria-hidden="true">
+                          <use href="#icon-eye"></use>
+                        </svg>
+                        <span>{{ post.views_count }}</span>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <svg class="icon w-4 h-4" aria-hidden="true">
+                          <use href="#icon-comment"></use>
+                        </svg>
+                        <span>{{ post.comments_count }}</span>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <svg class="icon w-4 h-4" aria-hidden="true">
+                          <use href="#icon-heart"></use>
+                        </svg>
+                        <span>{{ post.likes_count }}</span>
+                      </div>
+                    </div>
+                    
+                    <span class="text-gray-500">{{ post.reading_time }} min read</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        {% empty %}
+          <div class="empty-state">
+            <div class="empty-state-icon">📝</div>
+            <div class="empty-state-title">No posts found</div>
+            <div class="empty-state-description">
+              Try adjusting your filters or search query
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      
+      <!-- Pagination -->
+      {% if posts.has_other_pages %}
+        <nav class="flex items-center justify-center gap-2 mt-8">
+          {% if posts.has_previous %}
+            <a href="?page={{ posts.previous_page_number }}" class="btn btn-secondary btn-sm">
+              <svg class="icon w-4 h-4" aria-hidden="true">
+                <use href="#icon-arrow-left"></use>
+              </svg>
+              Previous
+            </a>
+          {% endif %}
+          
+          <div class="flex items-center gap-1">
+            {% for num in posts.paginator.page_range %}
+              {% if posts.number == num %}
+                <span class="px-3 py-2 bg-primary text-white rounded font-semibold text-sm">{{ num }}</span>
+              {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
+                <a href="?page={{ num }}" class="px-3 py-2 hover:bg-gray-100 rounded text-sm">{{ num }}</a>
+              {% endif %}
+            {% endfor %}
+          </div>
+          
+          {% if posts.has_next %}
+            <a href="?page={{ posts.next_page_number }}" class="btn btn-secondary btn-sm">
+              Next
+              <svg class="icon w-4 h-4" aria-hidden="true">
+                <use href="#icon-arrow-right"></use>
+              </svg>
+            </a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="space-y-6">
+      <!-- Search Widget -->
+      <div class="card">
+        <div class="card-body">
+          <form action="{% url 'blog:post_list' %}" method="get" class="space-y-3">
+            <input 
+              type="search" 
+              name="q" 
+              placeholder="Search articles..." 
+              class="form-input"
+              value="{{ q|default:'' }}"
+            >
+            <button type="submit" class="btn btn-primary w-full">
+              <svg class="icon w-4 h-4" aria-hidden="true">
+                <use href="#icon-search"></use>
+              </svg>
+              Search
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Popular Tags -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title text-sm">Popular Tags</h3>
+        </div>
+        <div class="card-body">
+          <div class="flex flex-wrap gap-2">
+            {% for tag in popular_tags %}
+              <a href="{% url 'tags:detail' tag.slug %}" class="chip chip-primary">
+                {{ tag.name }}
+                <span class="text-xs text-gray-500 ml-1">({{ tag.usage_count }})</span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Categories -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title text-sm">Categories</h3>
+        </div>
+        <div class="card-body">
+          <div class="space-y-2">
+            {% for category in categories %}
+              <a href="{% url 'blog:post_list' %}?category={{ category.slug }}" 
+                 class="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors">
+                <span class="text-sm font-medium text-gray-700">{{ category.name }}</span>
+                <span class="badge badge-neutral badge-sm">{{ category.post_count }}</span>
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Trending Posts -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title text-sm">
+            <svg class="icon w-4 h-4 inline-block text-orange-500" aria-hidden="true">
+              <use href="#icon-fire"></use>
+            </svg>
+            Trending This Week
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="space-y-4">
+            {% for post in trending_posts %}
+              <article>
+                <h4 class="text-sm font-semibold text-gray-900 hover:text-primary mb-1 line-clamp-2">
+                  <a href="{{ post.get_absolute_url }}">{{ post.title }}</a>
+                </h4>
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                  <span>{{ post.views_count }} views</span>
+                  <span>·</span>
+                  <span>{{ post.comments_count }} comments</span>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Newsletter -->
+      <div class="card bg-gradient-to-br from-purple-500 to-pink-600 text-white">
+        <div class="card-body">
+          <h3 class="text-lg font-bold mb-2">📬 Stay Updated</h3>
+          <p class="text-sm text-purple-100 mb-4">
+            Get weekly digest of best articles
+          </p>
+          <form class="space-y-3">
+            <input 
+              type="email" 
+              placeholder="Your email" 
+              class="form-input"
+              required
+            >
+            <button type="submit" class="btn btn-light w-full">
+              Subscribe
+            </button>
+          </form>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+  // Search with debounce
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    let timeout;
+    searchInput.addEventListener('input', function() {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        // Implement search logic
+        console.log('Search:', this.value);
+      }, 300);
+    });
+  }
+  
+  // Sort filter
+  const sortFilter = document.getElementById('sort-filter');
+  if (sortFilter) {
+    sortFilter.addEventListener('change', function() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('sort', this.value);
+      window.location.href = url.toString();
+    });
+  }
+});
+</script>
+{% endblock %}

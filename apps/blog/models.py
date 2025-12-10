@@ -92,6 +92,11 @@ class Post(models.Model):
         default=False,
         help_text="If true, exclude from indexing until manually cleared.",
     )
+    # Analytics fields
+    views_count = models.PositiveIntegerField(default=0, help_text="Total views")
+    likes_count = models.PositiveIntegerField(default=0, help_text="Total likes")
+    comments_count = models.PositiveIntegerField(default=0, help_text="Total comments")
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

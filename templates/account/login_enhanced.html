@@ -1,0 +1,135 @@
+
+{% extends "account/auth_base.html" %}
+{% load socialaccount %}
+
+{% block auth_title %}Sign In - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block auth_heading %}Welcome Back{% endblock %}
+{% block auth_description %}Sign in to your account to continue{% endblock %}
+
+{% block auth_body %}
+<!-- Social Login Options -->
+{% get_providers as socialaccount_providers %}
+{% if socialaccount_providers %}
+  <div class="space-y-3 mb-6">
+    {% for provider in socialaccount_providers %}
+      <a href="{% provider_login_url provider.id %}" class="btn btn-light w-full flex items-center justify-center gap-2">
+        <svg class="icon w-5 h-5" aria-hidden="true">
+          <use href="#icon-{{ provider.id }}"></use>
+        </svg>
+        Continue with {{ provider.name }}
+      </a>
+    {% endfor %}
+  </div>
+  
+  <div class="relative my-6">
+    <div class="absolute inset-0 flex items-center">
+      <div class="w-full border-t border-gray-300"></div>
+    </div>
+    <div class="relative flex justify-center text-sm">
+      <span class="px-4 bg-white text-gray-500">Or continue with email</span>
+    </div>
+  </div>
+{% endif %}
+
+<!-- Login Form -->
+<form method="post" action="{% url 'account_login' %}" class="space-y-5" id="login-form" data-collect-fingerprint="true">
+  {% csrf_token %}
+  
+  <div class="form-group">
+    <label for="id_login" class="form-label">Email or Username</label>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="icon w-5 h-5 text-gray-400" aria-hidden="true">
+          <use href="#icon-user"></use>
+        </svg>
+      </div>
+      <input type="text" name="login" id="id_login" class="form-input pl-10" placeholder="Enter your email or username" required autofocus>
+    </div>
+    {{ form.login.errors }}
+  </div>
+  
+  <div class="form-group">
+    <label for="id_password" class="form-label">Password</label>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg class="icon w-5 h-5 text-gray-400" aria-hidden="true">
+          <use href="#icon-lock"></use>
+        </svg>
+      </div>
+      <input type="password" name="password" id="id_password" class="form-input pl-10" placeholder="Enter your password" autocomplete="current-password" required>
+    </div>
+    {{ form.password.errors }}
+  </div>
+  
+  <div class="flex items-center justify-between">
+    <label class="flex items-center">
+      <input type="checkbox" name="remember" class="form-checkbox rounded">
+      <span class="ml-2 text-sm text-gray-600">Remember me</span>
+    </label>
+    <a href="{% url 'account_reset_password' %}" class="text-sm text-primary hover:text-primary-dark transition-colors">
+      Forgot password?
+    </a>
+  </div>
+  
+  {% if request.session.pending_device_token %}
+    <div class="alert alert-warning">
+      <svg class="icon w-5 h-5" aria-hidden="true">
+        <use href="#icon-alert-triangle"></use>
+      </svg>
+      <div>
+        <p class="font-semibold">Device Approval Required</p>
+        <p class="text-sm">You have a pending device approval.</p>
+        <a href="{% url 'users:device_approval_needed' %}" class="text-sm underline">Open approval page</a>
+      </div>
+    </div>
+  {% endif %}
+  
+  <input type="hidden" name="fingerprint_hash" id="id_fingerprint_hash">
+  <input type="hidden" name="fingerprint_blob" id="id_fingerprint_blob">
+  
+  <button type="submit" class="btn btn-primary w-full">
+    <svg class="icon w-5 h-5" aria-hidden="true">
+      <use href="#icon-arrow-right"></use>
+    </svg>
+    Sign In
+  </button>
+</form>
+
+<!-- Sign Up Link -->
+<div class="mt-6 text-center">
+  <p class="text-gray-600">
+    Don't have an account?
+    <a href="{% url 'account_signup' %}" class="text-primary hover:text-primary-dark font-semibold transition-colors">Sign up for free</a>
+  </p>
+</div>
+
+<!-- Admin Login Link -->
+<div class="mt-4 pt-4 border-t border-gray-200 text-center">
+  <p class="text-sm text-gray-600">
+    Staff member?
+    <a href="{% url 'admin_suite:admin_suite_login' %}" class="text-primary hover:text-primary-dark font-semibold transition-colors">Admin Login</a>
+  </p>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("login-form");
+  if (!form) return;
+  
+  form.addEventListener("submit", async function () {
+    try {
+      if (window.DeviceIdentity && typeof window.DeviceIdentity.collectEnhancedFingerprint === "function") {
+        const consentState = window.CONSENT_CATEGORIES || {};
+        const fp = await window.DeviceIdentity.collectEnhancedFingerprint(consentState);
+        document.getElementById("id_fingerprint_hash").value = fp.hash || "";
+        document.getElementById("id_fingerprint_blob").value = fp.blob ? JSON.stringify(fp.blob) : "";
+      }
+    } catch (err) {
+      console.warn("fingerprint collection failed", err);
+    }
+  });
+});
+</script>
+{% endblock %}

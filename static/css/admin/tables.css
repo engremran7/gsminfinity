@@ -1,0 +1,655 @@
+/**
+ * Enterprise Admin Tables
+ * Data tables, grids, and tabular layouts
+ * Version: 2.0.0
+ */
+
+/* ============================================================================
+   TABLE CONTAINER
+   ============================================================================ */
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-line);
+  background: var(--color-panel-light);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+/* ============================================================================
+   TABLE HEADER
+   ============================================================================ */
+
+.table thead {
+  background: var(--color-glass);
+  border-bottom: 2px solid var(--color-line);
+}
+
+.table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Sortable Headers */
+.table-sortable th {
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--transition-base);
+  position: relative;
+}
+
+.table-sortable th:hover {
+  color: var(--color-text);
+  background: var(--color-glass-strong);
+}
+
+.table-sortable th::after {
+  content: '';
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 4px solid var(--color-text-muted);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.table-sortable th:hover::after {
+  opacity: 0.5;
+}
+
+.table-sortable th.sorted-asc::after,
+.table-sortable th.sorted-desc::after {
+  opacity: 1;
+  border-bottom-color: var(--color-primary);
+}
+
+.table-sortable th.sorted-desc::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* ============================================================================
+   TABLE BODY
+   ============================================================================ */
+
+.table tbody tr {
+  border-bottom: 1px solid var(--color-line);
+  transition: all var(--transition-fast);
+}
+
+.table tbody tr:hover {
+  background: var(--color-glass);
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table td {
+  padding: 1rem;
+  color: var(--color-text-dim);
+  vertical-align: middle;
+}
+
+/* Clickable Rows */
+.table tbody tr.clickable {
+  cursor: pointer;
+}
+
+.table tbody tr.clickable:hover {
+  background: var(--color-glass-strong);
+}
+
+/* Selected Row */
+.table tbody tr.selected {
+  background: rgba(107, 139, 255, 0.1);
+  border-left: 3px solid var(--color-primary);
+}
+
+/* ============================================================================
+   TABLE CELLS - SPECIAL TYPES
+   ============================================================================ */
+
+/* Checkbox Column */
+.table-cell-checkbox {
+  width: 48px;
+  padding-left: 1.5rem;
+}
+
+/* Actions Column */
+.table-cell-actions {
+  width: 100px;
+  text-align: right;
+  padding-right: 1.5rem;
+}
+
+/* Avatar Column */
+.table-cell-avatar {
+  width: 64px;
+}
+
+.table-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Status Column */
+.table-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.table-status-success {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-success);
+}
+
+.table-status-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+}
+
+.table-status-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+
+.table-status-info {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--color-info);
+}
+
+.table-status-neutral {
+  background: var(--color-glass);
+  color: var(--color-text-muted);
+}
+
+.table-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Number Column */
+.table-cell-number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+/* Date Column */
+.table-cell-date {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Link Column */
+.table-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.table-link:hover {
+  color: var(--color-primary-light);
+  text-decoration: underline;
+}
+
+/* ============================================================================
+   TABLE FOOTER
+   ============================================================================ */
+
+.table tfoot {
+  background: var(--color-glass);
+  border-top: 2px solid var(--color-line);
+}
+
+.table tfoot td {
+  padding: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ============================================================================
+   TABLE VARIANTS
+   ============================================================================ */
+
+/* Compact Table */
+.table-compact td,
+.table-compact th {
+  padding: 0.625rem 0.75rem;
+}
+
+/* Striped Table */
+.table-striped tbody tr:nth-child(even) {
+  background: var(--color-glass);
+}
+
+/* Bordered Table */
+.table-bordered {
+  border: 1px solid var(--color-line);
+}
+
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid var(--color-line);
+}
+
+/* Borderless Table */
+.table-borderless tbody tr {
+  border-bottom: none;
+}
+
+/* ============================================================================
+   TABLE ACTIONS
+   ============================================================================ */
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.table-action-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.table-action-btn:hover {
+  background: var(--color-glass);
+  color: var(--color-text);
+}
+
+.table-action-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+
+/* ============================================================================
+   PAGINATION
+   ============================================================================ */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-xl);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-panel-light);
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.pagination-btn {
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  color: var(--color-text-dim);
+  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--color-glass);
+  border-color: var(--color-line-strong);
+  color: var(--color-text);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn.active {
+  background: linear-gradient(120deg, var(--color-primary), var(--color-accent));
+  border-color: var(--color-primary);
+  color: #020617;
+  font-weight: 600;
+}
+
+/* ============================================================================
+   TABLE TOOLBAR
+   ============================================================================ */
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-lg);
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-panel-light);
+  flex-wrap: wrap;
+}
+
+.table-toolbar-left,
+.table-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.table-toolbar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.table-toolbar-subtitle {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 0.125rem;
+}
+
+/* Bulk Actions */
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(107, 139, 255, 0.1);
+  border-radius: var(--radius-lg);
+  animation: slideInDown 0.3s ease-out;
+}
+
+.bulk-actions-text {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   FILTERS
+   ============================================================================ */
+
+.table-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0.375rem 0.75rem;
+  background: var(--color-glass);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  color: var(--color-text);
+}
+
+.filter-chip-remove {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-glass);
+  border: none;
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.filter-chip-remove:hover {
+  background: var(--color-line);
+  color: var(--color-danger);
+}
+
+/* ============================================================================
+   EXPANDABLE ROWS
+   ============================================================================ */
+
+.table-expandable tbody tr {
+  cursor: pointer;
+}
+
+.table-expand-toggle {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.table-expand-toggle:hover {
+  background: var(--color-glass);
+  color: var(--color-text);
+}
+
+.table-expand-toggle.expanded {
+  transform: rotate(90deg);
+}
+
+.table-expanded-content {
+  display: none;
+  padding: var(--space-xl);
+  background: var(--color-glass);
+  border-top: 1px solid var(--color-line);
+}
+
+.table-expanded-content.active {
+  display: block;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ============================================================================
+   EMPTY TABLE STATE
+   ============================================================================ */
+
+.table-empty {
+  padding: var(--space-3xl) var(--space-xl);
+  text-align: center;
+}
+
+.table-empty-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-xl);
+  opacity: 0.3;
+}
+
+.table-empty-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+}
+
+.table-empty-message {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xl);
+}
+
+/* ============================================================================
+   RESPONSIVE TABLE
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .table-responsive {
+    display: block;
+  }
+  
+  .table-responsive thead {
+    display: none;
+  }
+  
+  .table-responsive tbody,
+  .table-responsive tr,
+  .table-responsive td {
+    display: block;
+    width: 100%;
+  }
+  
+  .table-responsive tr {
+    margin-bottom: var(--space-lg);
+    padding: var(--space-lg);
+    background: var(--color-panel-light);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-xl);
+  }
+  
+  .table-responsive td {
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-line);
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .table-responsive td:last-child {
+    border-bottom: none;
+  }
+  
+  .table-responsive td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .table-toolbar-left,
+  .table-toolbar-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* ============================================================================
+   DATA GRID (CARD VIEW)
+   ============================================================================ */
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-lg);
+}
+
+.data-card {
+  background: var(--color-panel-light);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  transition: all var(--transition-base);
+  cursor: pointer;
+}
+
+.data-card:hover {
+  border-color: var(--color-line-strong);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.data-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+}
+
+.data-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.data-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.data-card-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.data-card-label {
+  color: var(--color-text-muted);
+}
+
+.data-card-value {
+  color: var(--color-text);
+  font-weight: 500;
+}

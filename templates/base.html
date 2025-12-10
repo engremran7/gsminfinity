@@ -35,10 +35,25 @@
     <meta name="theme-color" content="{{ site_settings.primary_color|default:'#0d6efd' }}" />
 
     {# ------------------------------------------------------------------ #}
-    {# FIXED STATIC CSS PATH (correct folder) #}
+    {# CSP NONCE META TAG #}
     {# ------------------------------------------------------------------ #}
+    <meta name="csp-nonce" content="{{ request.csp_nonce }}">
+
+    {# ------------------------------------------------------------------ #}
+    {# ENTERPRISE CSS ARCHITECTURE (Offline, CSP-Compliant) #}
+    {# ------------------------------------------------------------------ #}
+    <link href="{% static 'css/enterprise.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/components.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/forms.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/layout.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/tables.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/widgets.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/motion.css' %}" rel="stylesheet" />
+    
+    {# Legacy CSS (gradual migration) #}
     <link href="{% static 'css/main.css' %}" rel="stylesheet" />
     <link href="{% static 'css/style.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/auth-layout.css' %}" rel="stylesheet" />
     <link href="{% static 'css/summernote-overrides.css' %}" rel="stylesheet" />
     <link href="{% static 'css/enterprise-frontend.css' %}" rel="stylesheet" />
 
@@ -114,7 +129,14 @@
     {% include "components/modals.html" %}
 
     {# ------------------------------------------------------------------ #}
-    {# EXTRA SCRIPTS BLOCK (P0 Fix: Client-side Auth Toggle logic) #}
+    {# ENTERPRISE JAVASCRIPT (Offline, CSP-Compliant) #}
+    {# ------------------------------------------------------------------ #}
+    {# HTMX for AJAX interactions - TODO: Download manually from https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js #}
+    {# <script src="{% static 'js/htmx.min.js' %}" defer></script> #}
+    <script src="{% static 'js/enterprise.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
+    
+    {# ------------------------------------------------------------------ #}
+    {# LEGACY SCRIPTS (P0 Fix: Client-side Auth Toggle logic) #}
     {# ------------------------------------------------------------------ #}
     <script src="{% static 'js/main.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
     <script src="{% static 'js/app-interactions.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
@@ -183,6 +205,17 @@
             panel.classList.toggle("hidden", isOpen);
             toggle.setAttribute("aria-expanded", (!isOpen).toString());
           });
+        }
+        
+        // Register service worker for push notifications
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+          navigator.serviceWorker.register('{% static "js/sw.js" %}')
+            .then(function(registration) {
+              console.log('[Service Worker] Registered successfully:', registration.scope);
+            })
+            .catch(function(error) {
+              console.log('[Service Worker] Registration failed:', error);
+            });
         }
       });
     </script>

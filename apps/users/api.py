@@ -69,3 +69,31 @@ def password_reset_verify(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"ok": True, "redirect": reset_url})
 
 
+def notification_stats(request: HttpRequest) -> JsonResponse:
+    """
+    Quick notification statistics for admin dashboard widget.
+    """
+    if not request.user.is_staff:
+        return JsonResponse({"error": "Unauthorized"}, status=403)
+    
+    try:
+        from django.utils import timezone
+        from datetime import timedelta
+        from apps.users.models import CustomUser, Notification, PushSubscription
+        
+        today = timezone.now().date()
+        today_start = timezone.datetime.combine(today, timezone.datetime.min.time())
+        today_start = timezone.make_aware(today_start)
+        
+        stats = {
+            "unread": Notification.objects.filter(is_read=False).count(),
+            "active_users": CustomUser.objects.filter(is_active=True).count(),
+            "push_subscriptions": PushSubscription.objects.filter(is_active=True).count(),
+            "today_notifications": Notification.objects.filter(created_at__gte=today_start).count(),
+        }
+        
+        return JsonResponse(stats)
+    except Exception as exc:
+        return JsonResponse({"error": str(exc)}, status=500)
+
+

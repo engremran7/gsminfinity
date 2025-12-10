@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Complete Your Profile - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Progress Header -->
+    <div class="mb-8">
+      <div class="text-center mb-6">
+        {% if site_settings.logo %}
+          <img src="{{ site_settings.logo }}" alt="{{ site_settings.site_name }}" class="mx-auto h-12 w-auto mb-4">
+        {% endif %}
+        <h1 class="text-3xl font-bold text-gray-900">Welcome to {{ site_settings.site_name|default:"GSMInfinity" }}!</h1>
+        <p class="mt-2 text-gray-600">Let's set up your profile in just a few steps</p>
+      </div>
+
+      <!-- Progress Steps -->
+      <div class="max-w-2xl mx-auto">
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex-1 flex items-center">
+            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white font-semibold" id="step1-indicator">
+              1
+            </div>
+            <div class="flex-1 h-1 bg-gray-200 mx-2" id="step1-line"></div>
+          </div>
+          <div class="flex-1 flex items-center">
+            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-600 font-semibold" id="step2-indicator">
+              2
+            </div>
+            <div class="flex-1 h-1 bg-gray-200 mx-2" id="step2-line"></div>
+          </div>
+          <div class="flex-1 flex items-center">
+            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-600 font-semibold" id="step3-indicator">
+              3
+            </div>
+            <div class="flex-1 h-1 bg-gray-200 mx-2" id="step3-line"></div>
+          </div>
+          <div class="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-600 font-semibold" id="step4-indicator">
+            4
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-2xl mx-auto">
+      <form method="post" enctype="multipart/form-data" id="onboarding-form">
+        {% csrf_token %}
+
+        <!-- Step 1: Basic Info -->
+        <div class="card p-8 shadow-xl onboarding-step" id="step1" style="display: block;">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Basic Information</h2>
+            <p class="text-gray-600">Tell us a bit about yourself</p>
+          </div>
+
+          {% if messages %}
+            <div class="mb-6 space-y-2">
+              {% for message in messages %}
+                <div class="p-3 rounded-lg {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800{% elif message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800{% else %}bg-blue-50 border border-blue-200 text-blue-800{% endif %}">
+                  <p class="text-sm">{{ message }}</p>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="space-y-6">
+            <!-- Full Name -->
+            <div>
+              <label for="id_full_name" class="block text-sm font-medium text-gray-700 mb-2">
+                Full Name *
+              </label>
+              <input type="text" name="full_name" id="id_full_name" required
+                     class="form-input w-full"
+                     placeholder="Your full name"
+                     value="{{ user.full_name|default:'' }}">
+              <p class="mt-1 text-xs text-gray-500">This will be displayed publicly</p>
+            </div>
+
+            <!-- Bio -->
+            <div>
+              <label for="id_bio" class="block text-sm font-medium text-gray-700 mb-2">
+                Bio
+              </label>
+              <textarea name="bio" id="id_bio" rows="4"
+                        class="form-input w-full"
+                        placeholder="Tell us about yourself, your interests, expertise..."
+                        maxlength="500">{{ user.bio|default:'' }}</textarea>
+              <p class="mt-1 text-xs text-gray-500"><span id="bio-count">0</span>/500 characters</p>
+            </div>
+
+            <!-- Profile Picture -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Profile Picture
+              </label>
+              <div class="flex items-center gap-4">
+                <div class="avatar avatar-xl">
+                  {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" alt="Profile" id="avatar-preview">
+                  {% else %}
+                    <span id="avatar-preview">{{ user.full_name|default:user.username|default:user.email|first|upper }}</span>
+                  {% endif %}
+                </div>
+                <div>
+                  <input type="file" name="profile_picture" id="id_profile_picture" accept="image/*" class="hidden">
+                  <button type="button" onclick="document.getElementById('id_profile_picture').click()" class="btn btn-light">
+                    Choose Photo
+                  </button>
+                  <p class="mt-1 text-xs text-gray-500">JPG, PNG or GIF (max 5MB)</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex justify-end">
+            <button type="button" onclick="nextStep(2)" class="btn btn-primary px-8">
+              Next →
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: Account Settings -->
+        <div class="card p-8 shadow-xl onboarding-step" id="step2" style="display: none;">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Account Settings</h2>
+            <p class="text-gray-600">Set your username and password</p>
+          </div>
+
+          <div class="space-y-6">
+            <!-- Username -->
+            <div>
+              <label for="id_username" class="block text-sm font-medium text-gray-700 mb-2">
+                Username *
+              </label>
+              <div class="relative">
+                <input type="text" name="username" id="id_username" required
+                       class="form-input w-full pr-20"
+                       placeholder="Choose a unique username"
+                       value="{{ user.username|default:'' }}"
+                       pattern="[a-zA-Z0-9._-]{3,32}">
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <span id="username-status" class="text-xs"></span>
+                </div>
+              </div>
+              <p class="mt-1 text-xs text-gray-500">3-32 characters, letters, numbers, ._-</p>
+              <div id="username-availability" class="mt-2"></div>
+            </div>
+
+            <!-- Current Email -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div class="form-input bg-gray-50 text-gray-600">
+                {{ user.email }}
+              </div>
+              <p class="mt-1 text-xs text-gray-500">
+                {% if user.emailaddress_set.first.verified %}
+                  ✅ Verified
+                {% else %}
+                  ⚠️ Please verify your email
+                {% endif %}
+              </p>
+            </div>
+
+            <!-- Password Change (if needed) -->
+            {% if not user.has_usable_password %}
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div class="flex items-start gap-3">
+                <svg class="icon w-5 h-5 text-yellow-600 mt-0.5" aria-hidden="true"><use href="#icon-alert-triangle"></use></svg>
+                <div class="text-sm text-yellow-900">
+                  <p class="font-semibold mb-2">Set a password for your account</p>
+                  <div class="space-y-4">
+                    <div>
+                      <label for="id_new_password1" class="block text-sm font-medium mb-1">New Password</label>
+                      <input type="password" name="new_password1" id="id_new_password1"
+                             class="form-input w-full" placeholder="Enter new password">
+                    </div>
+                    <div>
+                      <label for="id_new_password2" class="block text-sm font-medium mb-1">Confirm Password</label>
+                      <input type="password" name="new_password2" id="id_new_password2"
+                             class="form-input w-full" placeholder="Confirm new password">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mt-8 flex justify-between">
+            <button type="button" onclick="prevStep(1)" class="btn btn-light px-8">
+              ← Back
+            </button>
+            <button type="button" onclick="nextStep(3)" class="btn btn-primary px-8">
+              Next →
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Preferences -->
+        <div class="card p-8 shadow-xl onboarding-step" id="step3" style="display: none;">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Notification Preferences</h2>
+            <p class="text-gray-600">Choose how you want to stay updated</p>
+          </div>
+
+          <div class="space-y-6">
+            <!-- Email Notifications -->
+            <div class="space-y-4">
+              <h3 class="font-semibold text-gray-900">Email Notifications</h3>
+              
+              <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <div class="flex-1">
+                  <div class="font-medium text-gray-900">Comments & Replies</div>
+                  <div class="text-sm text-gray-600">Get notified when someone comments on your posts</div>
+                </div>
+                <input type="checkbox" name="email_comments" checked class="form-checkbox">
+              </label>
+
+              <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <div class="flex-1">
+                  <div class="font-medium text-gray-900">Mentions</div>
+                  <div class="text-sm text-gray-600">When someone mentions you</div>
+                </div>
+                <input type="checkbox" name="email_mentions" checked class="form-checkbox">
+              </label>
+
+              <label class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <div class="flex-1">
+                  <div class="font-medium text-gray-900">New Blog Posts</div>
+                  <div class="text-sm text-gray-600">Updates on new content</div>
+                </div>
+                <input type="checkbox" name="email_new_posts" class="form-checkbox">
+              </label>
+            </div>
+
+            <!-- Email Frequency -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-3">Email Frequency</label>
+              <div class="space-y-2">
+                <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="email_frequency" value="instant" checked class="form-radio">
+                  <div class="ml-3">
+                    <div class="font-medium text-gray-900">Instant</div>
+                    <div class="text-sm text-gray-600">Receive emails immediately</div>
+                  </div>
+                </label>
+                <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="email_frequency" value="daily" class="form-radio">
+                  <div class="ml-3">
+                    <div class="font-medium text-gray-900">Daily Digest</div>
+                    <div class="text-sm text-gray-600">Once per day summary</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex justify-between">
+            <button type="button" onclick="prevStep(2)" class="btn btn-light px-8">
+              ← Back
+            </button>
+            <button type="button" onclick="nextStep(4)" class="btn btn-primary px-8">
+              Next →
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4: Review & Complete -->
+        <div class="card p-8 shadow-xl onboarding-step" id="step4" style="display: none;">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">All Set!</h2>
+            <p class="text-gray-600">Review your information and complete your profile</p>
+          </div>
+
+          <div class="space-y-6">
+            <!-- Summary -->
+            <div class="bg-gray-50 rounded-lg p-6 space-y-4">
+              <div>
+                <div class="text-sm font-medium text-gray-500">Full Name</div>
+                <div class="text-gray-900 font-medium" id="summary-fullname">-</div>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-gray-500">Username</div>
+                <div class="text-gray-900 font-medium" id="summary-username">-</div>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-gray-500">Email</div>
+                <div class="text-gray-900 font-medium">{{ user.email }}</div>
+              </div>
+              <div>
+                <div class="text-sm font-medium text-gray-500">Bio</div>
+                <div class="text-gray-900" id="summary-bio">-</div>
+              </div>
+            </div>
+
+            <!-- Optional: Browser Notifications -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div class="flex items-start gap-3">
+                <svg class="icon w-5 h-5 text-blue-600 mt-0.5" aria-hidden="true"><use href="#icon-bell"></use></svg>
+                <div class="flex-1">
+                  <div class="font-semibold text-blue-900 mb-2">Enable Desktop Notifications</div>
+                  <p class="text-sm text-blue-800 mb-3">Get instant updates even when your browser is closed</p>
+                  <button type="button" onclick="enablePushNotifications()" class="btn btn-primary btn-sm">
+                    Enable Notifications
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 flex justify-between">
+            <button type="button" onclick="prevStep(3)" class="btn btn-light px-8">
+              ← Back
+            </button>
+            <button type="submit" class="btn btn-primary px-8">
+              Complete Profile ✓
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+// Step Navigation
+function nextStep(stepNumber) {
+  // Validate current step
+  const currentStep = stepNumber - 1;
+  if (!validateStep(currentStep)) {
+    return;
+  }
+
+  // Hide all steps
+  document.querySelectorAll('.onboarding-step').forEach(el => el.style.display = 'none');
+  
+  // Show target step
+  document.getElementById(`step${stepNumber}`).style.display = 'block';
+  
+  // Update progress indicators
+  updateProgress(stepNumber);
+  
+  // Update summary if on final step
+  if (stepNumber === 4) {
+    updateSummary();
+  }
+  
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function prevStep(stepNumber) {
+  document.querySelectorAll('.onboarding-step').forEach(el => el.style.display = 'none');
+  document.getElementById(`step${stepNumber}`).style.display = 'block';
+  updateProgress(stepNumber);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function validateStep(stepNumber) {
+  switch(stepNumber) {
+    case 1:
+      const fullName = document.getElementById('id_full_name').value.trim();
+      if (!fullName) {
+        alert('Please enter your full name');
+        return false;
+      }
+      return true;
+    case 2:
+      const username = document.getElementById('id_username').value.trim();
+      if (!username || username.length < 3) {
+        alert('Please enter a valid username (3+ characters)');
+        return false;
+      }
+      return true;
+    default:
+      return true;
+  }
+}
+
+function updateProgress(currentStep) {
+  for (let i = 1; i <= 4; i++) {
+    const indicator = document.getElementById(`step${i}-indicator`);
+    const line = document.getElementById(`step${i}-line`);
+    
+    if (i < currentStep) {
+      // Completed
+      indicator.className = 'flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white font-semibold';
+      indicator.innerHTML = '✓';
+      if (line) line.className = 'flex-1 h-1 bg-green-500 mx-2';
+    } else if (i === currentStep) {
+      // Current
+      indicator.className = 'flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white font-semibold';
+      indicator.innerHTML = i;
+      if (line) line.className = 'flex-1 h-1 bg-gray-200 mx-2';
+    } else {
+      // Upcoming
+      indicator.className = 'flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-600 font-semibold';
+      indicator.innerHTML = i;
+      if (line) line.className = 'flex-1 h-1 bg-gray-200 mx-2';
+    }
+  }
+}
+
+function updateSummary() {
+  document.getElementById('summary-fullname').textContent = document.getElementById('id_full_name').value || '-';
+  document.getElementById('summary-username').textContent = document.getElementById('id_username').value || '-';
+  document.getElementById('summary-bio').textContent = document.getElementById('id_bio').value || 'No bio provided';
+}
+
+// Bio character counter
+document.getElementById('id_bio').addEventListener('input', function() {
+  document.getElementById('bio-count').textContent = this.value.length;
+});
+
+// Username availability check
+let usernameTimeout;
+document.getElementById('id_username').addEventListener('input', function() {
+  clearTimeout(usernameTimeout);
+  const username = this.value.trim();
+  const statusEl = document.getElementById('username-status');
+  const availEl = document.getElementById('username-availability');
+  
+  if (username.length < 3) {
+    statusEl.textContent = '';
+    availEl.innerHTML = '';
+    return;
+  }
+  
+  statusEl.innerHTML = '<span class="text-gray-500">Checking...</span>';
+  
+  usernameTimeout = setTimeout(() => {
+    fetch('{% url "users:check_username" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: `username=${encodeURIComponent(username)}`
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        if (data.same) {
+          statusEl.innerHTML = '<span class="text-blue-600">Current</span>';
+          availEl.innerHTML = '<div class="text-sm text-blue-600">This is your current username</div>';
+        } else {
+          statusEl.innerHTML = '<span class="text-green-600">✓</span>';
+          availEl.innerHTML = '<div class="text-sm text-green-600">✓ Username available</div>';
+        }
+      } else {
+        statusEl.innerHTML = '<span class="text-red-600">✗</span>';
+        availEl.innerHTML = '<div class="text-sm text-red-600">✗ Username taken</div>';
+      }
+    })
+    .catch(() => {
+      statusEl.textContent = '';
+      availEl.innerHTML = '';
+    });
+  }, 500);
+});
+
+// Profile picture preview
+document.getElementById('id_profile_picture').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const preview = document.getElementById('avatar-preview');
+      if (preview.tagName === 'IMG') {
+        preview.src = e.target.result;
+      } else {
+        preview.outerHTML = `<img src="${e.target.result}" alt="Profile" id="avatar-preview">`;
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// Push notifications
+function enablePushNotifications() {
+  if (!('Notification' in window)) {
+    alert('Your browser doesn\'t support notifications');
+    return;
+  }
+  
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      alert('✓ Notifications enabled successfully!');
+    }
+  });
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+  updateProgress(1);
+  document.getElementById('bio-count').textContent = document.getElementById('id_bio').value.length;
+});
+</script>
+{% endblock %}

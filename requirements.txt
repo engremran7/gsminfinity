@@ -17,3 +17,4 @@ uvicorn
 whitenoise
 pytest
 PyJWT
+pywebpush>=1.14.0

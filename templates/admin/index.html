@@ -1,0 +1,117 @@
+{% extends "admin/index.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.notification-dashboard-widget {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.notification-dashboard-widget h2 {
+    color: white;
+    margin: 0 0 10px 0;
+    font-size: 20px;
+}
+
+.notification-dashboard-widget p {
+    margin: 0 0 15px 0;
+    opacity: 0.9;
+}
+
+.notification-dashboard-widget .btn {
+    background: white;
+    color: #667eea;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.notification-dashboard-widget .btn:hover {
+    background: #f8f8f8;
+}
+
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.quick-stat {
+    background: rgba(255,255,255,0.2);
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.quick-stat-value {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.quick-stat-label {
+    font-size: 12px;
+    opacity: 0.9;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% if user.is_staff %}
+<div class="notification-dashboard-widget">
+    <h2>📊 Notification System Dashboard</h2>
+    <p>Monitor and manage your enterprise notification system with real-time statistics and insights.</p>
+    
+    <div class="quick-stats">
+        <div class="quick-stat">
+            <div class="quick-stat-value" id="unread-count">—</div>
+            <div class="quick-stat-label">Unread Notifications</div>
+        </div>
+        <div class="quick-stat">
+            <div class="quick-stat-value" id="active-users">—</div>
+            <div class="quick-stat-label">Active Users</div>
+        </div>
+        <div class="quick-stat">
+            <div class="quick-stat-value" id="push-subs">—</div>
+            <div class="quick-stat-label">Push Subscriptions</div>
+        </div>
+        <div class="quick-stat">
+            <div class="quick-stat-value" id="today-notifs">—</div>
+            <div class="quick-stat-label">Today's Notifications</div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 15px;">
+        <a href="{% url 'users:notification_dashboard' %}" class="btn">View Full Dashboard →</a>
+    </div>
+</div>
+
+<script>
+// Fetch quick stats
+fetch('/admin/users/notification/stats/')
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('unread-count').textContent = data.unread || '0';
+        document.getElementById('active-users').textContent = data.active_users || '0';
+        document.getElementById('push-subs').textContent = data.push_subscriptions || '0';
+        document.getElementById('today-notifs').textContent = data.today_notifications || '0';
+    })
+    .catch(() => {
+        document.getElementById('unread-count').textContent = 'N/A';
+        document.getElementById('active-users').textContent = 'N/A';
+        document.getElementById('push-subs').textContent = 'N/A';
+        document.getElementById('today-notifs').textContent = 'N/A';
+    });
+</script>
+{% endif %}
+
+{{ block.super }}
+{% endblock %}

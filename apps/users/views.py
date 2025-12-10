@@ -829,11 +829,13 @@ def auth_hub_view(request):
 @require_http_methods(["GET", "POST"])
 def tell_us_about_you(request: HttpRequest):
     """
-    Onboarding view that runs after social signup (and optionally manual signup)
-    to ensure the user has:
-      • a unique username
-      • a full name
-      • a usable password (required for social accounts)
+    Enhanced cascaded onboarding view that runs after signup.
+    Collects:
+      • Full name and bio
+      • Username
+      • Password (for social accounts)
+      • Profile picture
+      • Notification preferences
     """
     user = request.user
 
@@ -841,56 +843,95 @@ def tell_us_about_you(request: HttpRequest):
         return redirect("users:dashboard")
 
     if request.method == "POST":
-        form = TellUsAboutYouForm(request.POST, user=user, request=request)
-        if form.is_valid():
-            cleaned = form.cleaned_data
-            update_fields: list[str] = []
-
-            if user.username != cleaned["username"]:
-                user.username = cleaned["username"]
-                update_fields.append("username")
-
-            full_name = cleaned.get("full_name") or ""
-            if getattr(user, "full_name", "") != full_name:
+        update_fields: list[str] = []
+        
+        try:
+            # Step 1: Basic Info
+            full_name = (request.POST.get("full_name") or "").strip()
+            if full_name and getattr(user, "full_name", "") != full_name:
                 user.full_name = full_name
                 update_fields.append("full_name")
-
-            password = cleaned.get("password1") or ""
-            if password:
-                user.set_password(password)
-                update_fields.append("password")
-
-            if hasattr(user, "signup_method") and not user.signup_method:
-                user.signup_method = "social"
-                update_fields.append("signup_method")
-
-            if hasattr(user, "profile_completed") and not user.profile_completed:
+            
+            bio = (request.POST.get("bio") or "").strip()[:500]
+            if hasattr(user, "bio") and bio:
+                user.bio = bio
+                update_fields.append("bio")
+            
+            # Profile picture upload
+            if request.FILES.get("profile_picture"):
+                try:
+                    user.profile_picture = request.FILES["profile_picture"]
+                    update_fields.append("profile_picture")
+                except Exception as exc:
+                    logger.warning("Failed to upload profile picture: %s", exc)
+            
+            # Step 2: Account Settings
+            username = (request.POST.get("username") or "").strip()
+            if username and user.username != username:
+                # Validate username is available
+                User = get_user_model()
+                if not User.objects.filter(username__iexact=username).exclude(pk=user.pk).exists():
+                    user.username = username
+                    update_fields.append("username")
+                else:
+                    messages.error(request, "Username is already taken.")
+                    return redirect("users:tell_us_about_you")
+            
+            # Password for social accounts
+            new_password1 = request.POST.get("new_password1")
+            new_password2 = request.POST.get("new_password2")
+            if new_password1 and new_password2:
+                if new_password1 == new_password2:
+                    if len(new_password1) >= 8:
+                        user.set_password(new_password1)
+                        update_fields.append("password")
+                        update_session_auth_hash(request, user)
+                    else:
+                        messages.error(request, "Password must be at least 8 characters.")
+                        return redirect("users:tell_us_about_you")
+                else:
+                    messages.error(request, "Passwords don't match.")
+                    return redirect("users:tell_us_about_you")
+            
+            # Step 3: Notification Preferences
+            try:
+                from apps.users.models import NotificationPreferences
+                prefs, created = NotificationPreferences.objects.get_or_create(user=user)
+                
+                prefs.email_comments = request.POST.get("email_comments") == "on"
+                prefs.email_mentions = request.POST.get("email_mentions") == "on"
+                prefs.email_new_posts = request.POST.get("email_new_posts") == "on"
+                prefs.email_frequency = request.POST.get("email_frequency", "instant")
+                prefs.save()
+            except Exception as exc:
+                logger.warning("Failed to save notification preferences: %s", exc)
+            
+            # Mark profile as completed
+            if hasattr(user, "profile_completed"):
                 user.profile_completed = True
                 update_fields.append("profile_completed")
-
+            
+            if hasattr(user, "signup_method") and not user.signup_method:
+                user.signup_method = "email"
+                update_fields.append("signup_method")
+            
+            # Save all updates
             if update_fields:
                 user.save(update_fields=update_fields)
-
-            if password:
-                try:
-                    update_session_auth_hash(request, user)
-                except Exception:
-                    pass
-
-            try:
-                messages.success(request, _("Your profile has been completed."))
-            except Exception:
-                pass
-
+            
+            messages.success(request, "Welcome! Your profile has been completed.")
             return redirect("users:dashboard")
-    else:
-        initial: Dict[str, Any] = {
-            "username": user.username or "",
-            "full_name": getattr(user, "full_name", "") or "",
-        }
-        form = TellUsAboutYouForm(user=user, request=request, initial=initial)
-
-    return render(request, "users/tell_us_about_you.html", {"form": form})
+            
+        except Exception as exc:
+            logger.exception("Failed to complete profile: %s", exc)
+            messages.error(request, "An error occurred. Please try again.")
+            return redirect("users:tell_us_about_you")
+    
+    # GET request - show onboarding form
+    context = {
+        "user": user,
+    }
+    return render(request, "users/onboarding_cascade.html", context)
 
 
 # ============================================================
@@ -978,3 +1019,123 @@ def check_username(request: HttpRequest) -> JsonResponse:
     if user.username_last_changed_at and user.username_last_changed_at.year == now.year:
         limit_reached = (user.username_changes_this_year or 0) >= 2
     return JsonResponse({"ok": True, "limit_reached": limit_reached})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def notification_settings(request: HttpRequest) -> HttpResponse:
+    """
+    User notification preferences management.
+    """
+    from apps.users.models import NotificationPreferences
+    
+    # Get or create preferences
+    preferences, created = NotificationPreferences.objects.get_or_create(user=request.user)
+    
+    if request.method == "POST":
+        try:
+            # Email preferences
+            preferences.email_comments = request.POST.get('email_comments') == 'on'
+            preferences.email_replies = request.POST.get('email_replies') == 'on'
+            preferences.email_mentions = request.POST.get('email_mentions') == 'on'
+            preferences.email_new_posts = request.POST.get('email_new_posts') == 'on'
+            preferences.email_frequency = request.POST.get('email_frequency', 'instant')
+            
+            # Web preferences
+            preferences.web_comments = request.POST.get('web_comments') == 'on'
+            preferences.web_awards = request.POST.get('web_awards') == 'on'
+            preferences.web_moderation = request.POST.get('web_moderation') == 'on'
+            preferences.web_system = request.POST.get('web_system') == 'on'
+            
+            # Quiet hours
+            preferences.quiet_hours_enabled = request.POST.get('quiet_hours_enabled') == 'on'
+            if preferences.quiet_hours_enabled:
+                preferences.quiet_hours_start = request.POST.get('quiet_hours_start', '22:00')
+                preferences.quiet_hours_end = request.POST.get('quiet_hours_end', '08:00')
+            
+            preferences.save()
+            messages.success(request, "Notification preferences saved successfully!")
+            return redirect('users:notification_settings')
+            
+        except Exception as exc:
+            logger.exception("Failed to save notification preferences: %s", exc)
+            messages.error(request, "Failed to save preferences. Please try again.")
+    
+    context = {
+        'preferences': preferences,
+        'vapid_public_key': getattr(settings, 'VAPID_PUBLIC_KEY', ''),
+    }
+    
+    return render(request, 'users/notification_settings.html', context)
+
+
+@login_required
+@require_POST
+def push_subscription(request: HttpRequest) -> JsonResponse:
+    """
+    Save push notification subscription from service worker.
+    """
+    import json
+    from apps.users.models import PushSubscription
+    
+    try:
+        data = json.loads(request.body)
+        endpoint = data.get('endpoint')
+        keys = data.get('keys', {})
+        
+        if not endpoint or not keys.get('p256dh') or not keys.get('auth'):
+            return JsonResponse({'error': 'Invalid subscription data'}, status=400)
+        
+        # Get or create subscription
+        subscription, created = PushSubscription.objects.update_or_create(
+            user=request.user,
+            endpoint=endpoint,
+            defaults={
+                'p256dh': keys['p256dh'],
+                'auth': keys['auth'],
+                'user_agent': request.META.get('HTTP_USER_AGENT', '')[:500],
+                'is_active': True,
+            }
+        )
+        
+        # Enable push in preferences
+        from apps.users.models import NotificationPreferences
+        prefs, _ = NotificationPreferences.objects.get_or_create(user=request.user)
+        prefs.push_enabled = True
+        prefs.save(update_fields=['push_enabled'])
+        
+        return JsonResponse({
+            'ok': True,
+            'created': created,
+            'subscription_id': subscription.id
+        })
+        
+    except Exception as exc:
+        logger.exception("Failed to save push subscription: %s", exc)
+        return JsonResponse({'error': 'Server error'}, status=500)
+
+
+@login_required
+@require_POST
+def unsubscribe_push(request: HttpRequest) -> JsonResponse:
+    """
+    Unsubscribe from push notifications.
+    """
+    import json
+    from apps.users.models import PushSubscription
+    
+    try:
+        data = json.loads(request.body)
+        endpoint = data.get('endpoint')
+        
+        if endpoint:
+            PushSubscription.objects.filter(user=request.user, endpoint=endpoint).update(is_active=False)
+        else:
+            # Disable all user subscriptions
+            PushSubscription.objects.filter(user=request.user).update(is_active=False)
+        
+        return JsonResponse({'ok': True})
+        
+    except Exception as exc:
+        logger.exception("Failed to unsubscribe push: %s", exc)
+        return JsonResponse({'error': 'Server error'}, status=500)

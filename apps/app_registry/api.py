@@ -3,7 +3,33 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from apps.app_registry.services import all_entries, get_entry, register_or_update_entry
+from apps.app_registry.services.registry_service import AppRegistryService
+
+# Initialize service
+_service = AppRegistryService()
+
+# Legacy compatibility functions
+def all_entries():
+    """Legacy function - use AppRegistryService instead."""
+    from apps.app_registry.models import AppRegistry
+    return list(AppRegistry.objects.all())
+
+def get_entry(app_id: str):
+    """Legacy function - use AppRegistryService instead."""
+    from apps.app_registry.models import AppRegistry
+    return AppRegistry.objects.filter(app_id=app_id).first()
+
+def register_or_update_entry(**kwargs):
+    """Legacy function - use AppRegistryService instead."""
+    from apps.app_registry.models import AppRegistry
+    app_id = kwargs.get("app_id")
+    if not app_id:
+        raise ValueError("app_id is required")
+    entry, created = AppRegistry.objects.update_or_create(
+        app_id=app_id,
+        defaults=kwargs
+    )
+    return entry
 
 
 def list_registry() -> List[Dict[str, Any]]:

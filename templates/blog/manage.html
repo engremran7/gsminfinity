@@ -10,7 +10,7 @@
       <p class="text-sm text-slate-600">Your unpublished posts. Staff sees all; authors see their own.</p>
     </div>
     <div class="flex items-center gap-2">
-      <a href="{% url 'blog:post_create' %}" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-2">
+      <a href="{% url 'blog:post_create' %}" class="btn-primary px-4 py-2 rounded inline-flex items-center gap-2">
         <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-plus"></use></svg>
         New post
       </a>
@@ -32,7 +32,7 @@
               <input type="checkbox" class="h-4 w-4" data-select-all="drafts">
               Select all
             </label>
-            <button type="submit" class="btn-primary px-3 py-2 rounded text-white text-sm">Publish selected</button>
+            <button type="submit" class="btn-primary px-3 py-2 rounded text-sm">Publish selected</button>
           </div>
         </div>
         {% if drafts %}
@@ -41,7 +41,7 @@
               <article class="py-3 space-y-1">
                 <div class="flex items-center justify-between gap-2">
                   <div class="flex items-center gap-3">
-                    <input type="checkbox" name="post_id" value="{{ post.id }}" data-group="drafts" class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/50">
+                    <input type="checkbox" name="post_id" value="{{ post.id }}" aria-label="Select post" data-group="drafts" class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/50">
                     <div>
                       <p class="text-sm font-medium text-slate-900">{{ post.title }}</p>
                       <p class="text-xs text-slate-500">Updated {{ post.updated_at|date:"M j, Y H:i" }}</p>

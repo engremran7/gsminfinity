@@ -35,9 +35,9 @@
             <form method="post" action="{% url 'comments:moderation_action' %}" class="flex items-center flex-wrap gap-2">
               {% csrf_token %}
               <input type="hidden" name="comment_id" value="{{ c.id }}">
-              <button class="btn-primary text-xs px-3 py-1 rounded text-white" name="action" value="approve">Approve</button>
-              <button class="btn-outline text-xs px-3 py-1 rounded" name="action" value="reject">Reject</button>
-              <button class="text-xs text-red-600 hover:text-red-700" name="action" value="spam">Spam</button>
+              <button type="submit" class="btn-primary text-xs px-3 py-1 rounded text-white" name="action" value="approve">Approve</button>
+              <button type="submit" class="btn-outline text-xs px-3 py-1 rounded" name="action" value="reject">Reject</button>
+              <button type="submit" class="text-xs text-red-600 hover:text-red-700" name="action" value="spam">Spam</button>
             </form>
           </div>
         {% empty %}

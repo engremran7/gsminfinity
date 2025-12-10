@@ -12,7 +12,7 @@
     <form method="post" class="space-y-4">
       {% csrf_token %}
       <input type="text" name="code" class="w-full border border-slate-300 rounded px-3 py-2" placeholder="Verification code" />
-      <button type="submit" class="bg-primary text-white px-4 py-2 rounded w-full">Verify</button>
+      <button type="submit" class="btn-primary px-4 py-2 rounded w-full">Verify</button>
     </form>
     <div id="verify-status" class="text-xs text-slate-500 mt-3" aria-live="polite"></div>
   </div>

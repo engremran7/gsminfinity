@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Notification Settings - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white border-b border-gray-200">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'users:dashboard' %}" class="btn btn-light btn-sm">
+          <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+          Back
+        </a>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Notification Settings</h1>
+          <p class="mt-1 text-sm text-gray-600">Manage how you receive notifications</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    {% if messages %}
+      <div class="mb-6 space-y-3">
+        {% for message in messages %}
+          <div class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800{% elif message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800{% else %}bg-blue-50 border border-blue-200 text-blue-800{% endif %}">
+            <p class="text-sm">{{ message }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'users:notification_settings' %}" class="space-y-6">
+      {% csrf_token %}
+
+      <!-- Browser Push Notifications -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title flex items-center gap-2">
+            <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-bell"></use></svg>
+            Browser Notifications
+          </h3>
+        </div>
+        <div class="card-body space-y-4">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-semibold text-gray-900">Enable Desktop Notifications</h4>
+              <p class="text-sm text-gray-600 mt-1">Receive real-time notifications on your desktop even when the site is closed</p>
+              <div id="push-notification-status" class="mt-2"></div>
+            </div>
+            <button type="button" id="enable-push-btn" class="btn btn-primary">
+              Enable
+            </button>
+          </div>
+
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="flex items-start gap-3">
+              <svg class="icon w-5 h-5 text-blue-600 mt-0.5" aria-hidden="true"><use href="#icon-info"></use></svg>
+              <div class="text-sm text-blue-900">
+                <p class="font-semibold mb-1">How browser notifications work:</p>
+                <ul class="list-disc list-inside space-y-1 text-blue-800">
+                  <li>Click "Enable" and allow notifications in your browser</li>
+                  <li>You'll receive instant alerts for comments, replies, and mentions</li>
+                  <li>Works even when your browser is closed</li>
+                  <li>You can disable anytime from browser settings</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Email Notifications -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title flex items-center gap-2">
+            <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-mail"></use></svg>
+            Email Notifications
+          </h3>
+        </div>
+        <div class="card-body space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">Comments on your posts</h4>
+              <p class="text-xs text-gray-600">When someone comments on your blog post</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="email_comments" {% if preferences.email_comments %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">Replies to your comments</h4>
+              <p class="text-xs text-gray-600">When someone replies to your comment</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="email_replies" {% if preferences.email_replies %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">Mentions</h4>
+              <p class="text-xs text-gray-600">When someone mentions you in a comment</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="email_mentions" {% if preferences.email_mentions %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">New blog posts</h4>
+              <p class="text-xs text-gray-600">When new blog posts are published</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="email_new_posts" {% if preferences.email_new_posts %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">Security alerts</h4>
+              <p class="text-xs text-gray-600">Important security notifications (always enabled)</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="email_security" checked disabled>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Web Notifications -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title flex items-center gap-2">
+            <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-monitor"></use></svg>
+            Web Notifications
+          </h3>
+        </div>
+        <div class="card-body space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">Comment interactions</h4>
+              <p class="text-xs text-gray-600">Comments, replies, and reactions on your content</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="web_comments" {% if preferences.web_comments %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">Awards and achievements</h4>
+              <p class="text-xs text-gray-600">When you receive awards or reach milestones</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="web_awards" {% if preferences.web_awards %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">Moderation updates</h4>
+              <p class="text-xs text-gray-600">Updates on your comment moderation status</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="web_moderation" {% if preferences.web_moderation %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">System announcements</h4>
+              <p class="text-xs text-gray-600">Important platform updates and announcements</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="web_system" {% if preferences.web_system %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification Frequency -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title flex items-center gap-2">
+            <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-clock"></use></svg>
+            Email Digest Frequency
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="space-y-3">
+            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="email_frequency" value="instant" {% if preferences.email_frequency == 'instant' %}checked{% endif %} class="form-radio">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Instant</p>
+                <p class="text-xs text-gray-600">Receive emails immediately as notifications arrive</p>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="email_frequency" value="hourly" {% if preferences.email_frequency == 'hourly' %}checked{% endif %} class="form-radio">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Hourly Digest</p>
+                <p class="text-xs text-gray-600">Receive a summary email every hour</p>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="email_frequency" value="daily" {% if preferences.email_frequency == 'daily' %}checked{% endif %} class="form-radio">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Daily Digest</p>
+                <p class="text-xs text-gray-600">Receive a summary email once per day</p>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="email_frequency" value="weekly" {% if preferences.email_frequency == 'weekly' %}checked{% endif %} class="form-radio">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Weekly Digest</p>
+                <p class="text-xs text-gray-600">Receive a summary email once per week</p>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input type="radio" name="email_frequency" value="never" {% if preferences.email_frequency == 'never' %}checked{% endif %} class="form-radio">
+              <div>
+                <p class="text-sm font-medium text-gray-900">Never</p>
+                <p class="text-xs text-gray-600">Don't send any email notifications</p>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quiet Hours -->
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title flex items-center gap-2">
+            <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-moon"></use></svg>
+            Quiet Hours
+          </h3>
+        </div>
+        <div class="card-body space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-900">Enable quiet hours</h4>
+              <p class="text-xs text-gray-600">Mute non-critical notifications during specific hours</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="quiet_hours_enabled" id="quiet-hours-toggle" {% if preferences.quiet_hours_enabled %}checked{% endif %}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div id="quiet-hours-settings" class="space-y-3 {% if not preferences.quiet_hours_enabled %}opacity-50 pointer-events-none{% endif %}">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Start time</label>
+                <input type="time" name="quiet_hours_start" value="{{ preferences.quiet_hours_start|default:'22:00' }}" class="form-input">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">End time</label>
+                <input type="time" name="quiet_hours_end" value="{{ preferences.quiet_hours_end|default:'08:00' }}" class="form-input">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <div class="flex items-center justify-between">
+        <button type="submit" class="btn btn-primary">
+          <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-check"></use></svg>
+          Save Preferences
+        </button>
+        <a href="{% url 'users:dashboard' %}" class="text-sm text-gray-600 hover:text-gray-900">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+// Push Notifications Manager
+class PushNotificationManager {
+  constructor() {
+    this.statusEl = document.getElementById('push-notification-status');
+    this.enableBtn = document.getElementById('enable-push-btn');
+    this.init();
+  }
+
+  async init() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      this.updateStatus('Browser does not support push notifications', 'error');
+      this.enableBtn.disabled = true;
+      return;
+    }
+
+    this.enableBtn.addEventListener('click', () => this.requestPermission());
+    await this.checkPermissionStatus();
+  }
+
+  async checkPermissionStatus() {
+    const permission = Notification.permission;
+    
+    if (permission === 'granted') {
+      this.updateStatus('✓ Desktop notifications are enabled', 'success');
+      this.enableBtn.textContent = 'Enabled';
+      this.enableBtn.disabled = true;
+      this.enableBtn.classList.add('btn-light');
+      this.enableBtn.classList.remove('btn-primary');
+      await this.subscribeUser();
+    } else if (permission === 'denied') {
+      this.updateStatus('✗ Notifications are blocked. Enable them in browser settings.', 'error');
+      this.enableBtn.textContent = 'Blocked';
+      this.enableBtn.disabled = true;
+    } else {
+      this.updateStatus('Click "Enable" to receive desktop notifications', 'info');
+    }
+  }
+
+  async requestPermission() {
+    try {
+      const permission = await Notification.requestPermission();
+      
+      if (permission === 'granted') {
+        this.updateStatus('✓ Desktop notifications enabled successfully!', 'success');
+        this.enableBtn.textContent = 'Enabled';
+        this.enableBtn.disabled = true;
+        this.enableBtn.classList.add('btn-light');
+        this.enableBtn.classList.remove('btn-primary');
+        await this.subscribeUser();
+        
+        // Show test notification
+        new Notification('{{ site_settings.site_name|default:"GSMInfinity" }}', {
+          body: 'You will now receive notifications from us!',
+          icon: '{{ site_settings.logo|default:"/static/img/logo.png" }}',
+          badge: '{{ site_settings.logo|default:"/static/img/logo.png" }}'
+        });
+      } else {
+        this.updateStatus('✗ Notification permission denied', 'error');
+      }
+    } catch (error) {
+      console.error('Notification permission error:', error);
+      this.updateStatus('✗ Failed to enable notifications', 'error');
+    }
+  }
+
+  async subscribeUser() {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      
+      // Check if already subscribed
+      let subscription = await registration.pushManager.getSubscription();
+      
+      if (!subscription) {
+        // Subscribe to push notifications
+        const vapidPublicKey = '{{ vapid_public_key|default:"" }}';
+        if (!vapidPublicKey) {
+          console.warn('VAPID public key not configured');
+          return;
+        }
+        
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: this.urlBase64ToUint8Array(vapidPublicKey)
+        });
+      }
+      
+      // Send subscription to server
+      await this.sendSubscriptionToServer(subscription);
+    } catch (error) {
+      console.error('Push subscription error:', error);
+    }
+  }
+
+  async sendSubscriptionToServer(subscription) {
+    try {
+      const response = await fetch('{% url "users:push_subscription" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(subscription)
+      });
+      
+      if (response.ok) {
+        console.log('Push subscription saved successfully');
+      }
+    } catch (error) {
+      console.error('Failed to send subscription to server:', error);
+    }
+  }
+
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  updateStatus(message, type) {
+    const colors = {
+      success: 'text-green-700 bg-green-50 border-green-200',
+      error: 'text-red-700 bg-red-50 border-red-200',
+      info: 'text-blue-700 bg-blue-50 border-blue-200'
+    };
+    
+    this.statusEl.innerHTML = `
+      <div class="text-xs px-3 py-2 rounded border ${colors[type] || colors.info}">
+        ${message}
+      </div>
+    `;
+  }
+}
+
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+  new PushNotificationManager();
+  
+  // Quiet hours toggle
+  const quietHoursToggle = document.getElementById('quiet-hours-toggle');
+  const quietHoursSettings = document.getElementById('quiet-hours-settings');
+  
+  if (quietHoursToggle && quietHoursSettings) {
+    quietHoursToggle.addEventListener('change', function() {
+      if (this.checked) {
+        quietHoursSettings.classList.remove('opacity-50', 'pointer-events-none');
+      } else {
+        quietHoursSettings.classList.add('opacity-50', 'pointer-events-none');
+      }
+    });
+  }
+});
+</script>
+
+<style nonce="{{ request.csp_nonce }}">
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: #3b82f6;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>
+{% endblock %}

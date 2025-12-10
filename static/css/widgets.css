@@ -1,0 +1,845 @@
+/**
+ * Widgets CSS - Reusable UI Widgets
+ * Cards, panels, alerts, badges, and interactive components
+ */
+
+/* ============================================
+   Cards & Panels
+   ============================================ */
+
+.card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-footer {
+  padding: 1rem 1.5rem;
+  background: #f9fafb;
+  border-top: 1px solid #f3f4f6;
+}
+
+.card-compact .card-header,
+.card-compact .card-body,
+.card-compact .card-footer {
+  padding: 1rem;
+}
+
+.card-elevated {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================
+   Stats Cards
+   ============================================ */
+
+.stat-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stat-card-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.stat-card-icon.primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+}
+
+.stat-card-icon.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.stat-card-icon.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+}
+
+.stat-card-icon.danger {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.stat-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1;
+}
+
+.stat-card-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.stat-card-change {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.stat-card-change.positive {
+  color: #059669;
+}
+
+.stat-card-change.negative {
+  color: #dc2626;
+}
+
+/* ============================================
+   Alerts & Notifications
+   ============================================ */
+
+.alert {
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid transparent;
+}
+
+.alert-icon {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.alert-message {
+  font-size: 0.875rem;
+}
+
+.alert-success {
+  background: #ecfdf5;
+  border-left-color: #10b981;
+  color: #065f46;
+}
+
+.alert-warning {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+  color: #92400e;
+}
+
+.alert-error {
+  background: #fef2f2;
+  border-left-color: #ef4444;
+  color: #991b1b;
+}
+
+.alert-info {
+  background: #eff6ff;
+  border-left-color: #3b82f6;
+  color: #1e40af;
+}
+
+.alert-dismissible {
+  position: relative;
+  padding-right: 3rem;
+}
+
+.alert-dismiss {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.5;
+  padding: 0.25rem;
+  transition: opacity 0.15s ease;
+}
+
+.alert-dismiss:hover {
+  opacity: 1;
+}
+
+/* ============================================
+   Toast Notifications
+   ============================================ */
+
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 400px;
+}
+
+.toast {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border-left: 4px solid transparent;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast.toast-exit {
+  animation: slideOutRight 0.3s ease-in forwards;
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+/* ============================================
+   Badges
+   ============================================ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.badge-primary {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-neutral {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.badge-outline {
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+.badge-lg {
+  padding: 0.375rem 1rem;
+  font-size: 0.875rem;
+}
+
+.badge-dot::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 0.5rem;
+}
+
+/* ============================================
+   Progress Bars
+   ============================================ */
+
+.progress {
+  height: 0.5rem;
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-bar.success {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.progress-bar.warning {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+
+.progress-bar.danger {
+  background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+.progress-lg {
+  height: 1rem;
+}
+
+.progress-sm {
+  height: 0.25rem;
+}
+
+/* ============================================
+   Avatars
+   ============================================ */
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  font-weight: 600;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-sm {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.75rem;
+}
+
+.avatar-md {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 0.875rem;
+}
+
+.avatar-lg {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1rem;
+}
+
+.avatar-xl {
+  width: 4rem;
+  height: 4rem;
+  font-size: 1.25rem;
+}
+
+.avatar-group {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-group .avatar {
+  margin-left: -0.5rem;
+  border: 2px solid white;
+}
+
+.avatar-group .avatar:first-child {
+  margin-left: 0;
+}
+
+/* ============================================
+   Tabs
+   ============================================ */
+
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #e5e7eb;
+  gap: 0.5rem;
+}
+
+.tab {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: #111827;
+  border-bottom-color: #d1d5db;
+}
+
+.tab.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+}
+
+.tab-content {
+  padding: 1.5rem 0;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+/* ============================================
+   Accordion
+   ============================================ */
+
+.accordion {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.accordion-item {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.accordion-item:last-child {
+  border-bottom: none;
+}
+
+.accordion-header {
+  padding: 1rem 1.25rem;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 500;
+  color: #111827;
+  transition: background 0.15s ease;
+  user-select: none;
+}
+
+.accordion-header:hover {
+  background: #f9fafb;
+}
+
+.accordion-icon {
+  transition: transform 0.2s ease;
+}
+
+.accordion-item.active .accordion-icon {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.accordion-item.active .accordion-content {
+  max-height: 1000px;
+}
+
+.accordion-body {
+  padding: 1rem 1.25rem;
+  color: #6b7280;
+}
+
+/* ============================================
+   Tooltips
+   ============================================ */
+
+.tooltip {
+  position: absolute;
+  z-index: 9999;
+  background: #1f2937;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tooltip.show {
+  opacity: 1;
+}
+
+.tooltip-arrow {
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: #1f2937;
+  transform: rotate(45deg);
+}
+
+.tooltip[data-placement="top"] .tooltip-arrow {
+  bottom: -0.25rem;
+  left: 50%;
+  margin-left: -0.25rem;
+}
+
+.tooltip[data-placement="bottom"] .tooltip-arrow {
+  top: -0.25rem;
+  left: 50%;
+  margin-left: -0.25rem;
+}
+
+.tooltip[data-placement="left"] .tooltip-arrow {
+  right: -0.25rem;
+  top: 50%;
+  margin-top: -0.25rem;
+}
+
+.tooltip[data-placement="right"] .tooltip-arrow {
+  left: -0.25rem;
+  top: 50%;
+  margin-top: -0.25rem;
+}
+
+/* ============================================
+   Skeleton Loaders
+   ============================================ */
+
+.skeleton {
+  background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 0.25rem;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-text {
+  height: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-title {
+  height: 1.5rem;
+  width: 60%;
+  margin-bottom: 1rem;
+}
+
+.skeleton-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+}
+
+.skeleton-button {
+  height: 2.5rem;
+  width: 6rem;
+}
+
+/* ============================================
+   Spinners
+   ============================================ */
+
+.spinner {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 1.5px;
+}
+
+.spinner-lg {
+  width: 2rem;
+  height: 2rem;
+  border-width: 3px;
+}
+
+/* ============================================
+   Empty States
+   ============================================ */
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-state-icon {
+  width: 5rem;
+  height: 5rem;
+  margin: 0 auto 1.5rem;
+  opacity: 0.3;
+}
+
+.empty-state-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-description {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ============================================
+   Breadcrumbs
+   ============================================ */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.breadcrumb-item a {
+  color: #6b7280;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.breadcrumb-item a:hover {
+  color: #3b82f6;
+}
+
+.breadcrumb-item.active {
+  color: #111827;
+  font-weight: 500;
+}
+
+.breadcrumb-separator {
+  color: #d1d5db;
+}
+
+/* ============================================
+   Chips / Tags
+   ============================================ */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.chip-removable {
+  padding-right: 0.5rem;
+}
+
+.chip-remove {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: #d1d5db;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.chip-remove:hover {
+  background: #9ca3af;
+  color: white;
+}
+
+/* ============================================
+   Dark Mode Support
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    background: #1f2937;
+    color: #f3f4f6;
+  }
+
+  .card-header {
+    border-bottom-color: #374151;
+  }
+
+  .card-footer {
+    background: #111827;
+    border-top-color: #374151;
+  }
+
+  .stat-card {
+    background: #1f2937;
+  }
+
+  .stat-card-value {
+    color: #f3f4f6;
+  }
+
+  .toast {
+    background: #1f2937;
+    color: #f3f4f6;
+  }
+
+  .tooltip {
+    background: #374151;
+  }
+
+  .tooltip-arrow {
+    background: #374151;
+  }
+
+  .accordion {
+    border-color: #374151;
+  }
+
+  .accordion-item {
+    border-bottom-color: #374151;
+  }
+
+  .accordion-header {
+    background: #1f2937;
+    color: #f3f4f6;
+  }
+
+  .accordion-header:hover {
+    background: #374151;
+  }
+}

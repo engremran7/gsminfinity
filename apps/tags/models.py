@@ -7,6 +7,13 @@ from solo.models import SingletonModel
 
 from apps.core.models import SoftDeleteModel, TimestampedModel
 
+# Import enhanced models for migrations
+from apps.tags.models_enhanced import (
+    TagCategory, TagRelationship, TagTrending, TagAnalytics,
+    TagSubscription, TagSuggestion, TagBlacklist, TagMerge,
+    TagCollection, TagCollectionItem, TagAlias
+)
+
 
 class Tag(TimestampedModel, SoftDeleteModel):
     name = models.CharField(max_length=64, unique=True, help_text="Use concise, reusable names.")

@@ -137,7 +137,7 @@
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2">
             <svg class="icon w-4 h-4 text-primary" aria-hidden="true"><use href="#icon-share"></use></svg>
-            <h3 class="text-sm font-semibold text-slate-800">Share</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Share</h3>
           </div>
           <button type="button" class="text-xs text-slate-500 hover:text-primary" data-copy-target="share-url">Copy link</button>
         </div>
@@ -160,7 +160,7 @@
         </div>
         <div class="text-xs text-slate-500">
           <div class="flex items-center gap-2">
-            <input id="share-url" class="w-full border border-slate-200 rounded-md px-2 py-1" readonly value="{{ share_url }}">
+            <input id="share-url" aria-label="Share URL" class="w-full border border-slate-200 rounded-md px-2 py-1" readonly value="{{ share_url }}">
             <button type="button" class="btn-outline text-xs" data-copy-target="share-url">Copy</button>
           </div>
           <p class="mt-1">RSS: <a class="text-primary underline" href="{% url 'blog:feed_rss' %}">/feed/rss/</a> · JSON: <a class="text-primary underline" href="{% url 'blog:feed_json' %}">/feed/json/</a></p>
@@ -208,7 +208,7 @@
                 {% if request.user.is_authenticated %}
                   <form method="post" action="{% url 'comments:add_comment_json' slug=post.slug %}" class="mt-4 space-y-2" id="comment-form" data-post-slug="{{ post.slug }}">
                     {% csrf_token %}
-                    <input type="text" name="hp" class="hidden" tabindex="-1" autocomplete="off">
+                    <input type="text" name="hp" aria-label="Leave blank" class="hidden" tabindex="-1" autocomplete="off">
                     {% if recaptcha_enabled and recaptcha_site_key %}
                       <input type="hidden" name="recaptcha_token" id="recaptcha_token">
                       <div id="recaptcha-widget" class="mt-2"></div>
@@ -216,7 +216,7 @@
                     <label class="text-sm text-slate-700" for="comment-body">Add a comment</label>
                     <textarea id="comment-body" name="body" rows="3" required class="w-full border border-slate-200 rounded-md p-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"></textarea>
                     <p class="text-xs text-slate-500">Be constructive; inappropriate content may be removed.</p>
-                    <button type="submit" class="btn-primary px-4 py-2 rounded text-white inline-flex items-center gap-1">
+                    <button type="submit" class="btn-primary px-4 py-2 rounded inline-flex items-center gap-1">
                       <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-send"></use></svg>
                       Post comment
                     </button>
@@ -246,25 +246,25 @@
         {% render_ad_slot "sidebar-rect" %}
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-800">Trending posts</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Trending posts</h3>
           </div>
           {% include "blog/partials/trending_widget.html" with posts=trending_posts %}
         </div>
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-800">Related posts</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Related posts</h3>
           </div>
           {{ related_widget_html|safe }}
         </div>
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-800">Trending tags</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Trending tags</h3>
           </div>
           {% include "components/tag_badges.html" with tags=trending_tags %}
         </div>
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-800">Tag cloud</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Tag cloud</h3>
           </div>
           {% include "components/tag_cloud.html" with tags=tag_cloud %}
         </div>

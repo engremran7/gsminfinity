@@ -1,0 +1,370 @@
+{% load static %}
+
+<div class="comment-section" id="comments-section">
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">
+        <svg class="icon w-5 h-5 inline-block" aria-hidden="true">
+          <use href="#icon-comment"></use>
+        </svg>
+        Comments (<span id="comment-count">{{ comments.count }}</span>)
+      </h3>
+      <div class="flex items-center gap-2">
+        <select id="comment-sort" class="form-select form-select-sm">
+          <option value="score">Top</option>
+          <option value="created_at">Newest</option>
+          <option value="votes">Most Voted</option>
+          <option value="reactions">Most Reactions</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="card-body">
+      {% if user.is_authenticated %}
+        <!-- Comment Form -->
+        <form id="comment-form" class="form mb-6" data-comment-parent="">
+          {% csrf_token %}
+          <div class="form-group">
+            <label class="form-label" for="comment-content">Add a comment</label>
+            <textarea 
+              id="comment-content" 
+              name="content" 
+              class="form-textarea" 
+              rows="4" 
+              placeholder="Share your thoughts..."
+              required
+            ></textarea>
+            <span class="form-help">
+              Use @username to mention someone
+            </span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-gray-600" id="char-count">0 / 5000</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="btn btn-secondary btn-sm" id="cancel-reply" style="display: none;">
+                Cancel Reply
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm" id="submit-comment">
+                <svg class="icon w-4 h-4" aria-hidden="true">
+                  <use href="#icon-send"></use>
+                </svg>
+                Post Comment
+              </button>
+            </div>
+          </div>
+        </form>
+      {% else %}
+        <!-- Login Prompt -->
+        <div class="alert alert-info">
+          <div class="alert-icon">ℹ️</div>
+          <div class="alert-content">
+            <div class="alert-title">Join the conversation</div>
+            <div class="alert-message">
+              <a href="{% url 'account_login' %}?next={{ request.path }}" class="text-primary font-semibold hover:underline">
+                Sign in
+              </a> or 
+              <a href="{% url 'account_signup' %}?next={{ request.path }}" class="text-primary font-semibold hover:underline">
+                create an account
+              </a> to comment.
+            </div>
+          </div>
+        </div>
+      {% endif %}
+      
+      <!-- Comments List -->
+      <div id="comments-list" class="space-y-4">
+        {% for comment in comments %}
+          {% include "comments/_comment_item.html" with comment=comment %}
+        {% empty %}
+          <div class="empty-state">
+            <div class="empty-state-icon">💬</div>
+            <div class="empty-state-title">No comments yet</div>
+            <div class="empty-state-description">
+              Be the first to share your thoughts!
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      
+      <!-- Load More -->
+      {% if comments.has_next %}
+        <div class="text-center mt-6">
+          <button 
+            type="button" 
+            class="btn btn-secondary" 
+            id="load-more-comments"
+            data-page="{{ comments.next_page_number }}"
+          >
+            Load More Comments
+          </button>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+  const commentForm = document.getElementById('comment-form');
+  const commentContent = document.getElementById('comment-content');
+  const charCount = document.getElementById('char-count');
+  const submitBtn = document.getElementById('submit-comment');
+  const cancelBtn = document.getElementById('cancel-reply');
+  
+  // Character counter
+  if (commentContent && charCount) {
+    commentContent.addEventListener('input', function() {
+      const count = this.value.length;
+      charCount.textContent = count + ' / 5000';
+      if (count > 5000) {
+        charCount.classList.add('text-error');
+      } else {
+        charCount.classList.remove('text-error');
+      }
+    });
+  }
+  
+  // Submit comment
+  if (commentForm) {
+    commentForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const content = commentContent.value.trim();
+      if (!content) return;
+      
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner spinner-sm"></span> Posting...';
+      
+      try {
+        const formData = new FormData();
+        formData.append('content', content);
+        formData.append('content_type', '{{ content_type.id }}');
+        formData.append('object_id', '{{ object.id }}');
+        const parentId = commentForm.dataset.commentParent;
+        if (parentId) {
+          formData.append('parent', parentId);
+        }
+        
+        const response = await fetch('/api/comments/create/', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+          },
+          body: formData
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Show success toast
+          Enterprise.showToast('Comment posted successfully!', 'success');
+          
+          // Clear form
+          commentContent.value = '';
+          charCount.textContent = '0 / 5000';
+          
+          // Reset parent
+          commentForm.dataset.commentParent = '';
+          cancelBtn.style.display = 'none';
+          
+          // Reload comments or add new comment to list
+          location.reload();
+        } else {
+          const error = await response.json();
+          Enterprise.showToast(error.message || 'Failed to post comment', 'error');
+        }
+      } catch (error) {
+        Enterprise.showToast('Network error. Please try again.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg class="icon w-4 h-4"><use href="#icon-send"></use></svg> Post Comment';
+      }
+    });
+  }
+  
+  // Reply to comment
+  window.replyToComment = function(commentId, username) {
+    commentContent.focus();
+    commentContent.value = '@' + username + ' ';
+    commentForm.dataset.commentParent = commentId;
+    cancelBtn.style.display = 'inline-flex';
+    commentContent.scrollIntoView({ behavior: 'smooth' });
+  };
+  
+  // Cancel reply
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', function() {
+      commentForm.dataset.commentParent = '';
+      cancelBtn.style.display = 'none';
+      if (commentContent.value.startsWith('@')) {
+        commentContent.value = '';
+      }
+    });
+  }
+  
+  // Sort comments
+  const sortSelect = document.getElementById('comment-sort');
+  if (sortSelect) {
+    sortSelect.addEventListener('change', function() {
+      const sort = this.value;
+      const url = new URL(window.location.href);
+      url.searchParams.set('sort', sort);
+      window.location.href = url.toString();
+    });
+  }
+  
+  // Load more comments
+  const loadMoreBtn = document.getElementById('load-more-comments');
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', async function() {
+      const page = this.dataset.page;
+      const sort = sortSelect ? sortSelect.value : 'score';
+      
+      this.disabled = true;
+      this.innerHTML = '<span class="spinner spinner-sm"></span> Loading...';
+      
+      try {
+        const url = new URL('/api/comments/', window.location.origin);
+        url.searchParams.set('content_type', '{{ content_type.id }}');
+        url.searchParams.set('object_id', '{{ object.id }}');
+        url.searchParams.set('page', page);
+        url.searchParams.set('sort', sort);
+        
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Append comments to list
+          const commentsList = document.getElementById('comments-list');
+          data.results.forEach(comment => {
+            // Create comment element (simplified - in production, use template)
+            const div = document.createElement('div');
+            div.innerHTML = comment.html; // Server should return rendered HTML
+            commentsList.appendChild(div);
+          });
+          
+          // Update load more button
+          if (data.next) {
+            this.dataset.page = parseInt(page) + 1;
+            this.disabled = false;
+            this.innerHTML = 'Load More Comments';
+          } else {
+            this.remove();
+          }
+        }
+      } catch (error) {
+        Enterprise.showToast('Failed to load comments', 'error');
+        this.disabled = false;
+        this.innerHTML = 'Load More Comments';
+      }
+    });
+  }
+  
+  // Reaction handler
+  window.reactToComment = async function(commentId, reactionType) {
+    try {
+      const response = await fetch(`/api/comments/${commentId}/react/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify({ reaction_type: reactionType })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update reaction counts in UI
+        const reactionBtn = document.querySelector(`[data-comment-id="${commentId}"][data-reaction="${reactionType}"]`);
+        if (reactionBtn) {
+          const countSpan = reactionBtn.querySelector('.reaction-count');
+          if (countSpan) {
+            countSpan.textContent = data.count;
+          }
+          reactionBtn.classList.toggle('active', data.user_reacted);
+        }
+        
+        Enterprise.showToast('Reaction added!', 'success');
+      }
+    } catch (error) {
+      Enterprise.showToast('Failed to add reaction', 'error');
+    }
+  };
+  
+  // Vote handler
+  window.voteComment = async function(commentId, voteType) {
+    try {
+      const response = await fetch(`/api/comments/${commentId}/vote/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify({ vote_type: voteType })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update vote counts
+        const voteScore = document.querySelector(`#vote-score-${commentId}`);
+        if (voteScore) {
+          voteScore.textContent = data.score;
+        }
+        
+        // Update button states
+        const upvoteBtn = document.querySelector(`[data-comment-id="${commentId}"][data-vote="upvote"]`);
+        const downvoteBtn = document.querySelector(`[data-comment-id="${commentId}"][data-vote="downvote"]`);
+        
+        if (upvoteBtn && downvoteBtn) {
+          upvoteBtn.classList.toggle('active', data.user_vote === 'upvote');
+          downvoteBtn.classList.toggle('active', data.user_vote === 'downvote');
+        }
+      }
+    } catch (error) {
+      Enterprise.showToast('Failed to vote', 'error');
+    }
+  };
+  
+  // Bookmark handler
+  window.bookmarkComment = async function(commentId) {
+    try {
+      const response = await fetch(`/api/comments/${commentId}/bookmark/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify({ notes: '' })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        Enterprise.showToast(data.bookmarked ? 'Comment bookmarked!' : 'Bookmark removed', 'success');
+        
+        // Update bookmark button
+        const bookmarkBtn = document.querySelector(`[data-bookmark-comment="${commentId}"]`);
+        if (bookmarkBtn) {
+          bookmarkBtn.classList.toggle('active', data.bookmarked);
+        }
+      }
+    } catch (error) {
+      Enterprise.showToast('Failed to bookmark', 'error');
+    }
+  };
+  
+  // Flag handler
+  window.flagComment = function(commentId) {
+    // Open flag modal
+    const modal = document.getElementById('flag-modal');
+    if (modal) {
+      modal.dataset.commentId = commentId;
+      Enterprise.openModal('flag-modal');
+    }
+  };
+});
+</script>

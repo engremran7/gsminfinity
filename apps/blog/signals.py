@@ -62,6 +62,8 @@ def post_after_save(sender, instance: Post, **kwargs):
                 level="info",
                 url=instance.get_absolute_url(),
                 channel="web",
+                action_type="post",
+                icon="file-text",
             )
         except Exception:
             logger.debug("post_after_save notification failed for post %s", instance.pk, exc_info=True)

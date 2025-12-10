@@ -1,0 +1,135 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.app-registry-header {
+    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+.app-registry-header h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.app-registry-header .header-icon {
+    font-size: 1.75rem;
+}
+.app-registry-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+.feature-categories {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.feature-category {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+}
+.feature-category h3 {
+    margin: 0 0 0.75rem 0;
+    font-size: 1rem;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.feature-category .icon {
+    width: 24px;
+    height: 24px;
+    background: #8b5cf6;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.875rem;
+}
+.feature-category ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    list-style: disc;
+}
+.feature-category li {
+    color: #4b5563;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app-registry-header">
+    <h2>
+        <span class="header-icon">🎛️</span>
+        App Registry Configuration
+    </h2>
+    <p>Enable or disable major platform features. Changes take effect immediately.</p>
+</div>
+
+<div class="feature-categories">
+    <div class="feature-category">
+        <h3>
+            <span class="icon">📝</span>
+            Content & Engagement
+        </h3>
+        <ul>
+            <li>Blog - Article publishing</li>
+            <li>Comments - User discussions</li>
+            <li>Tags - Content taxonomy</li>
+        </ul>
+    </div>
+    
+    <div class="feature-category">
+        <h3>
+            <span class="icon">📈</span>
+            Growth & Monetization
+        </h3>
+        <ul>
+            <li>SEO - Search optimization</li>
+            <li>Ads - Advertisement management</li>
+            <li>Distribution - Content syndication</li>
+        </ul>
+    </div>
+    
+    <div class="feature-category">
+        <h3>
+            <span class="icon">🔒</span>
+            Security & AI
+        </h3>
+        <ul>
+            <li>Device Identity - Fingerprinting</li>
+            <li>Crawler Guard - Bot protection</li>
+            <li>AI Behavior - Anomaly detection</li>
+            <li>AI Services - Content generation</li>
+        </ul>
+    </div>
+    
+    <div class="feature-category">
+        <h3>
+            <span class="icon">👤</span>
+            Core Platform
+        </h3>
+        <ul>
+            <li>Users - Authentication & profiles</li>
+            <li>Consent - GDPR compliance</li>
+            <li>Settings - Site configuration</li>
+        </ul>
+    </div>
+</div>
+
+{{ block.super }}
+{% endblock %}

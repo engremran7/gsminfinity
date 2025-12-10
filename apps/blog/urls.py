@@ -27,6 +27,8 @@ urlpatterns = [
     path("api/widgets/latest/", views.widget_latest_posts, name="widget_latest_posts"),
     path("api/widgets/top/", views.widget_top_posts, name="widget_top_posts"),
     path("api/posts/public/", views.posts_api_public, name="posts_api_public"),
+    path("post/<int:pk>/like/", views.post_like, name="post_like"),
+    path("post/<int:pk>/bookmark/", views.post_bookmark, name="post_bookmark"),
     path("<slug:slug>/", views.post_detail, name="post_detail"),
 ]
 

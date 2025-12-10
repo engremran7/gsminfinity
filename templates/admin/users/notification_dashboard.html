@@ -1,0 +1,462 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Notification System Dashboard{% endblock %}
+
+{% block extrastyle %}
+<style>
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.stat-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stat-card h3 {
+    margin: 0 0 15px 0;
+    color: #417690;
+    font-size: 16px;
+    font-weight: 600;
+    border-bottom: 2px solid #417690;
+    padding-bottom: 10px;
+}
+
+.stat-value {
+    font-size: 36px;
+    font-weight: bold;
+    color: #333;
+    margin: 10px 0;
+}
+
+.stat-label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.stat-detail {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.stat-detail:last-child {
+    border-bottom: none;
+}
+
+.progress-bar {
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 5px 0;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #417690;
+    transition: width 0.3s ease;
+}
+
+.health-check {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+    background: #f8f8f8;
+}
+
+.health-check.success {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.health-check.error {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+}
+
+.health-icon {
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+.recent-notifications {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+
+.notification-item:hover {
+    background: #f8f8f8;
+}
+
+.badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.badge-info { background: #d1ecf1; color: #0c5460; }
+.badge-warning { background: #fff3cd; color: #856404; }
+.badge-critical { background: #f8d7da; color: #721c24; }
+.badge-success { background: #d4edda; color: #155724; }
+
+table.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+table.stats-table th,
+table.stats-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+table.stats-table th {
+    background: #f8f8f8;
+    font-weight: 600;
+}
+
+.action-buttons {
+    margin: 20px 0;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: #417690;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>📊 Notification System Dashboard</h1>
+    
+    {% if error %}
+    <div class="health-check error">
+        <span class="health-icon">❌</span>
+        <div>
+            <strong>Error loading dashboard</strong><br>
+            {{ error }}
+        </div>
+    </div>
+    {% else %}
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'admin:users_notificationpreferences_changelist' %}" class="btn btn-primary">
+            ⚙️ Manage Preferences
+        </a>
+        <a href="{% url 'admin:users_pushsubscription_changelist' %}" class="btn btn-primary">
+            🔔 Manage Subscriptions
+        </a>
+        <a href="{% url 'admin:users_notification_changelist' %}" class="btn btn-primary">
+            📬 View Notifications
+        </a>
+        <a href="{% url 'admin:users_userssettings_change' %}" class="btn btn-secondary">
+            🔧 System Settings
+        </a>
+    </div>
+
+    <!-- Health Checks -->
+    <div class="stat-card" style="margin-bottom: 20px;">
+        <h3>🏥 System Health</h3>
+        {% for check in health_checks %}
+        <div class="health-check {% if check.status %}success{% else %}error{% endif %}">
+            <span class="health-icon">{% if check.status %}✅{% else %}❌{% endif %}</span>
+            <div>
+                <strong>{{ check.name }}</strong><br>
+                <small>{{ check.message }}</small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="dashboard-grid">
+        <!-- User Statistics -->
+        <div class="stat-card">
+            <h3>👥 User Statistics</h3>
+            <div class="stat-detail">
+                <span>Total Active Users</span>
+                <strong>{{ user_stats.total }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>With Preferences</span>
+                <strong>{{ user_stats.with_preferences }} ({{ user_stats.prefs_percentage }}%)</strong>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ user_stats.prefs_percentage }}%;"></div>
+            </div>
+            <div class="stat-detail">
+                <span>With Push Enabled</span>
+                <strong>{{ user_stats.with_push }} ({{ user_stats.push_percentage }}%)</strong>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ user_stats.push_percentage }}%;"></div>
+            </div>
+        </div>
+
+        <!-- Notification Statistics -->
+        <div class="stat-card">
+            <h3>📬 Notification Statistics</h3>
+            <div class="stat-value">{{ notification_stats.total|default:0 }}</div>
+            <div class="stat-label">Total Notifications</div>
+            <div class="stat-detail">
+                <span>Unread</span>
+                <strong>{{ notification_stats.unread }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Read Rate</span>
+                <strong>{{ notification_stats.read_rate }}%</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Last 24 Hours</span>
+                <strong>{{ notification_stats.last_24h }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Last 7 Days</span>
+                <strong>{{ notification_stats.last_7d }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Last 30 Days</span>
+                <strong>{{ notification_stats.last_30d }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Avg per Day</span>
+                <strong>{{ notification_stats.avg_per_day }}</strong>
+            </div>
+        </div>
+
+        <!-- Push Subscription Statistics -->
+        <div class="stat-card">
+            <h3>🔔 Push Subscriptions</h3>
+            <div class="stat-value">{{ push_stats.active }}</div>
+            <div class="stat-label">Active Subscriptions</div>
+            <div class="stat-detail">
+                <span>Total</span>
+                <strong>{{ push_stats.total }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Inactive</span>
+                <strong>{{ push_stats.inactive }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>New (24h)</span>
+                <strong>{{ push_stats.new_24h }}</strong>
+            </div>
+        </div>
+
+        <!-- Preference Statistics -->
+        {% if preference_stats %}
+        <div class="stat-card">
+            <h3>⚙️ User Preferences</h3>
+            <div class="stat-detail">
+                <span>Email Comments Enabled</span>
+                <strong>{{ preference_stats.email_comments_enabled }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Email Replies Enabled</span>
+                <strong>{{ preference_stats.email_replies_enabled }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Email Mentions Enabled</span>
+                <strong>{{ preference_stats.email_mentions_enabled }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Push Enabled</span>
+                <strong>{{ preference_stats.push_enabled }}</strong>
+            </div>
+            <div class="stat-detail">
+                <span>Quiet Hours Enabled</span>
+                <strong>{{ preference_stats.quiet_hours_enabled }}</strong>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Browser Breakdown -->
+    {% if push_stats.browser_breakdown %}
+    <div class="stat-card" style="margin: 20px 0;">
+        <h3>🌐 Browser Distribution</h3>
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Browser</th>
+                    <th>Active Subscriptions</th>
+                    <th>Percentage</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for browser in push_stats.browser_breakdown %}
+                <tr>
+                    <td>{{ browser.name }}</td>
+                    <td>{{ browser.count }}</td>
+                    <td>
+                        {{ browser.percentage }}%
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ browser.percentage }}%;"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Email Frequency Breakdown -->
+    {% if preference_stats.frequency_breakdown %}
+    <div class="stat-card" style="margin: 20px 0;">
+        <h3>📧 Email Frequency Distribution</h3>
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Frequency</th>
+                    <th>Users</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for freq in preference_stats.frequency_breakdown %}
+                <tr>
+                    <td>{{ freq.email_frequency|title }}</td>
+                    <td>{{ freq.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Notification Type Distribution -->
+    {% if type_distribution %}
+    <div class="stat-card" style="margin: 20px 0;">
+        <h3>📊 Notification Types (Top 10)</h3>
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for type in type_distribution %}
+                <tr>
+                    <td>
+                        {{ type.action_type|title }}
+                        {% if type.action_type == 'comment' %}💬
+                        {% elif type.action_type == 'reply' %}↩️
+                        {% elif type.action_type == 'reaction' %}❤️
+                        {% elif type.action_type == 'mention' %}@
+                        {% elif type.action_type == 'award' %}🏆
+                        {% elif type.action_type == 'security' %}🔒
+                        {% endif %}
+                    </td>
+                    <td>{{ type.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Top Recipients -->
+    {% if top_recipients %}
+    <div class="stat-card" style="margin: 20px 0;">
+        <h3>🔝 Top Recipients</h3>
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Total Notifications</th>
+                    <th>Unread</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for recipient in top_recipients %}
+                <tr>
+                    <td>{{ recipient.recipient__email|default:recipient.recipient__username }}</td>
+                    <td>{{ recipient.total }}</td>
+                    <td>{{ recipient.unread }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Recent Notifications -->
+    {% if recent_notifications %}
+    <div class="stat-card" style="margin: 20px 0;">
+        <h3>🕐 Recent Notifications (Last 20)</h3>
+        <div class="recent-notifications">
+            {% for notification in recent_notifications %}
+            <div class="notification-item">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <strong>{{ notification.title }}</strong>
+                        <span class="badge badge-{{ notification.priority }}">{{ notification.priority|upper }}</span>
+                        <span class="badge badge-info">{{ notification.action_type|upper }}</span>
+                        {% if not notification.is_read %}
+                        <span class="badge badge-warning">UNREAD</span>
+                        {% endif %}
+                        <br>
+                        <small>
+                            To: {{ notification.recipient.email }}
+                            {% if notification.actor %}
+                            | From: {{ notification.actor.email }}
+                            {% endif %}
+                        </small>
+                        <br>
+                        <small style="color: #666;">{{ notification.created_at|date:"Y-m-d H:i:s" }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}
