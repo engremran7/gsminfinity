@@ -91,7 +91,7 @@
               <article class="py-3 space-y-1">
                 <div class="flex items-center justify-between gap-2">
                   <div class="flex items-center gap-3">
-                    <input type="checkbox" name="post_id" value="{{ post.id }}" data-group="scheduled" class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/50">
+                    <input type="checkbox" name="post_id" value="{{ post.id }}" id="post-{{ post.id }}" data-group="scheduled" class="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/50" aria-label="Select {{ post.title }}">
                     <p class="text-sm font-medium text-slate-900">{{ post.title }}</p>
                     <p class="text-xs text-slate-500">Scheduled for {{ post.publish_at|date:"M j, Y H:i" }}</p>
                   </div>

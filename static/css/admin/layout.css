@@ -112,8 +112,8 @@
   padding: var(--space-lg) var(--space-xl);
   cursor: pointer;
   transition: all var(--transition-base);
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
 }
 
 .accordion-header:hover {
@@ -162,8 +162,8 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   z-index: var(--z-modal-backdrop);
   animation: fadeIn 0.2s ease-out;
 }

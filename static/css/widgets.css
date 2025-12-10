@@ -518,6 +518,7 @@
   font-weight: 500;
   color: #111827;
   transition: background 0.15s ease;
+  -webkit-user-select: none;
   user-select: none;
 }
 

@@ -84,6 +84,7 @@
 
 .table-sortable th {
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
   position: relative;
   padding-right: 2rem;
@@ -556,6 +557,7 @@
   bottom: 0;
   width: 4px;
   cursor: col-resize;
+  -webkit-user-select: none;
   user-select: none;
   background: transparent;
 }

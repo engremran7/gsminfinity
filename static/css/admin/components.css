@@ -23,6 +23,7 @@
   cursor: pointer;
   transition: all var(--transition-base);
   white-space: nowrap;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -214,8 +215,8 @@
   border-radius: var(--radius-xl);
   border-left: 4px solid;
   background: var(--color-panel-light);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .alert-icon {
@@ -276,8 +277,8 @@
 .toast {
   pointer-events: auto;
   background: var(--color-panel-strong);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-xl);
   padding: 1rem;
@@ -304,8 +305,8 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   z-index: var(--z-modal-backdrop);
   display: flex;
   align-items: center;
@@ -457,8 +458,8 @@
   margin-top: var(--space-sm);
   min-width: 220px;
   background: var(--color-panel-strong);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
@@ -513,8 +514,8 @@
   position: fixed;
   z-index: var(--z-popover);
   background: var(--color-panel-strong);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
@@ -650,8 +651,8 @@
 
 .stat-card {
   background: var(--color-panel-light);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-2xl);
   padding: var(--space-xl);
@@ -868,4 +869,60 @@
 
 .skeleton-card {
   height: 200px;
+}
+
+/* ============================================================================
+   UTILITY CLASSES FOR COMMON INLINE STYLES
+   ============================================================================ */
+
+/* Positioning utilities */
+.pos-absolute { position: absolute; }
+.pos-relative { position: relative; }
+.top-n4 { top: -4px; }
+.right-n4 { right: -4px; }
+
+/* Display utilities */
+.d-none { display: none; }
+.d-flex { display: flex; }
+
+/* Flexbox utilities */
+.flex-dir-col { flex-direction: column; }
+.flex-1 { flex: 1; }
+.gap-xs { gap: 0.25rem; }
+.gap-sm { gap: 0.5rem; }
+.gap-md { gap: 0.75rem; }
+.justify-between { justify-content: space-between; }
+.align-start { align-items: flex-start; }
+
+/* Spacing utilities */
+.m-0 { margin: 0; }
+.ml-xs { margin-left: 0.25rem; }
+.mt-md { margin-top: 0.75rem; }
+.mt-lg { margin-top: 1rem; }
+.p-sm { padding: 0.5rem; }
+.p-0-sm { padding: 0.5rem 0; }
+
+/* Text utilities */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+
+/* Width utilities */
+.w-full { width: 100%; }
+.max-w-400 { max-width: 400px; }
+
+/* Color utilities */
+.color-secondary { color: var(--text-secondary); }
+
+/* Button reset utility */
+.btn-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
 }

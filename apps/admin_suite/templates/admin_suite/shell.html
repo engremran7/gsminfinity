@@ -35,7 +35,7 @@
             <!-- Quick Actions Bar -->
             <div class="admin-sidebar-actions">
                 <button class="btn btn-ghost btn-sm" onclick="AdminSuite.commandPalette.toggle()" title="Command Palette (Ctrl+K)">
-                    <span style="font-size: 0.875rem;">⌘K</span> Search
+                    <span class="text-sm">⌘K</span> Search
                 </button>
                 <button class="btn btn-ghost btn-sm" onclick="AdminSuite.ai.open()" title="AI Assistant (Ctrl+Shift+A)">
                     🤖
@@ -230,7 +230,7 @@
                     <button class="btn btn-ghost btn-icon" title="Notifications" onclick="AdminSuite.drawer.open('notifications')">
                         🔔
                         {% if notification_count %}
-                        <span class="badge badge-danger badge-sm" style="position: absolute; top: -4px; right: -4px;">{{ notification_count }}</span>
+                        <span class="badge badge-danger badge-sm pos-absolute top-n4 right-n4">{{ notification_count }}</span>
                         {% endif %}
                     </button>
 
@@ -238,7 +238,7 @@
                     <div class="dropdown">
                         <button class="btn btn-ghost btn-sm dropdown-trigger">
                             {{ request.user.username|first|upper }}
-                            <span style="margin-left: 0.25rem;">▾</span>
+                            <span class="ml-xs">▾</span>
                         </button>
                         <div class="dropdown-menu dropdown-menu-right">
                             <a href="{% url 'users:profile' %}" class="dropdown-item">
@@ -252,9 +252,9 @@
                                 <span>🌐</span> View Site
                             </a>
                             <div class="dropdown-divider"></div>
-                            <form method="post" action="{% url 'admin_suite:logout' %}" style="margin: 0;">
+                            <form method="post" action="{% url 'admin_suite:logout' %}" class="m-0">
                                 {% csrf_token %}
-                                <button type="submit" class="dropdown-item" style="width: 100%; text-align: left; background: none; border: none; cursor: pointer;">
+                                <button type="submit" class="dropdown-item btn-reset">
                                     <span>🚪</span> Logout
                                 </button>
                             </form>
@@ -293,7 +293,7 @@
     </div>
 
     <!-- Command Palette (Keyboard-triggered) -->
-    <div id="command-palette" class="command-palette" style="display: none;">
+    <div id="command-palette" class="command-palette d-none">
         <div class="command-palette-backdrop"></div>
         <div class="command-palette-container">
             <div class="command-palette-search">
@@ -313,16 +313,16 @@
                     <div class="empty-state-description">
                         Type to search or try these shortcuts:
                     </div>
-                    <div style="margin-top: 1rem; text-align: left; max-width: 400px;">
-                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                    <div class="mt-lg text-left max-w-400">
+                        <div class="d-flex justify-between p-0-sm">
                             <span>Go to Dashboard</span>
                             <kbd class="kbd">⌘ D</kbd>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                        <div class="d-flex justify-between p-0-sm">
                             <span>Manage Users</span>
                             <kbd class="kbd">⌘ U</kbd>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
+                        <div class="d-flex justify-between p-0-sm">
                             <span>Security Overview</span>
                             <kbd class="kbd">⌘ S</kbd>
                         </div>
@@ -333,7 +333,7 @@
     </div>
 
     <!-- AI Assistant Drawer -->
-    <div id="ai-drawer" class="drawer drawer-right" style="display: none;">
+    <div id="ai-drawer" class="drawer drawer-right d-none">
         <div class="drawer-backdrop"></div>
         <div class="drawer-content">
             <div class="drawer-header">
@@ -350,17 +350,16 @@
                 </div>
             </div>
             <div class="drawer-footer">
-                <form id="ai-chat-form" style="display: flex; gap: 0.5rem;">
+                <form id="ai-chat-form" class="d-flex gap-sm">
                     <input type="text" 
-                           class="input" 
+                           class="input flex-1" 
                            placeholder="Ask me anything..." 
-                           id="ai-input"
-                           style="flex: 1;">
+                           id="ai-input">
                     <button type="submit" class="btn btn-primary">
                         Send
                     </button>
                 </form>
-                <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary);">
+                <div class="mt-md text-xs color-secondary">
                     Press <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">Enter</kbd> to send
                 </div>
             </div>
@@ -368,7 +367,7 @@
     </div>
 
     <!-- Notification Drawer -->
-    <div id="notifications-drawer" class="drawer drawer-right" style="display: none;">
+    <div id="notifications-drawer" class="drawer drawer-right d-none">
         <div class="drawer-backdrop" onclick="AdminSuite.drawer.close('notifications')"></div>
         <div class="drawer-content">
             <div class="drawer-header">

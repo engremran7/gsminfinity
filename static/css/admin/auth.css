@@ -24,8 +24,8 @@
 
 .admin-card {
   background: var(--color-panel-light);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-2xl);
   padding: var(--space-3xl);
@@ -270,8 +270,8 @@
   border-radius: var(--radius-xl);
   border-left: 4px solid var(--color-danger);
   background: rgba(239, 68, 68, 0.08);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   margin-bottom: var(--space-xl);
   color: var(--color-text);
   font-size: 0.875rem;

@@ -54,17 +54,17 @@
           
           <!-- Share Buttons -->
           <div class="flex items-center gap-2">
-            <button type="button" class="btn btn-icon" onclick="Enterprise.copyToClipboard('{{ request.build_absolute_uri }}')">
+            <button type="button" class="btn btn-icon" onclick="Enterprise.copyToClipboard('{{ request.build_absolute_uri }}')" aria-label="Copy link to clipboard">
               <svg class="icon w-5 h-5" aria-hidden="true">
                 <use href="#icon-link"></use>
               </svg>
             </button>
-            <button type="button" class="btn btn-icon" onclick="window.open('https://twitter.com/intent/tweet?url={{ request.build_absolute_uri|urlencode }}&text={{ post.title|urlencode }}', '_blank')">
+            <button type="button" class="btn btn-icon" onclick="window.open('https://twitter.com/intent/tweet?url={{ request.build_absolute_uri|urlencode }}&text={{ post.title|urlencode }}', '_blank')" aria-label="Share on Twitter">
               <svg class="icon w-5 h-5" aria-hidden="true">
                 <use href="#icon-twitter"></use>
               </svg>
             </button>
-            <button type="button" class="btn btn-icon" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}', '_blank')">
+            <button type="button" class="btn btn-icon" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}', '_blank')" aria-label="Share on Facebook">
               <svg class="icon w-5 h-5" aria-hidden="true">
                 <use href="#icon-facebook"></use>
               </svg>

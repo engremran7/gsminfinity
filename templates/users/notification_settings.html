@@ -87,7 +87,7 @@
               <p class="text-xs text-gray-600">When someone comments on your blog post</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="email_comments" {% if preferences.email_comments %}checked{% endif %}>
+              <input type="checkbox" name="email_comments" {% if preferences.email_comments %}checked{% endif %} aria-label="Email notifications for comments on your blog post">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -98,7 +98,7 @@
               <p class="text-xs text-gray-600">When someone replies to your comment</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="email_replies" {% if preferences.email_replies %}checked{% endif %}>
+              <input type="checkbox" name="email_replies" {% if preferences.email_replies %}checked{% endif %} aria-label="Email notifications for replies to your comments">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -109,7 +109,7 @@
               <p class="text-xs text-gray-600">When someone mentions you in a comment</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="email_mentions" {% if preferences.email_mentions %}checked{% endif %}>
+              <input type="checkbox" name="email_mentions" {% if preferences.email_mentions %}checked{% endif %} aria-label="Email notifications when someone mentions you">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -120,7 +120,7 @@
               <p class="text-xs text-gray-600">When new blog posts are published</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="email_new_posts" {% if preferences.email_new_posts %}checked{% endif %}>
+              <input type="checkbox" name="email_new_posts" {% if preferences.email_new_posts %}checked{% endif %} aria-label="Email notifications for new blog posts">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -131,7 +131,7 @@
               <p class="text-xs text-gray-600">Important security notifications (always enabled)</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="email_security" checked disabled>
+              <input type="checkbox" name="email_security" checked disabled aria-label="Security alerts (always enabled)">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -153,7 +153,7 @@
               <p class="text-xs text-gray-600">Comments, replies, and reactions on your content</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="web_comments" {% if preferences.web_comments %}checked{% endif %}>
+              <input type="checkbox" name="web_comments" {% if preferences.web_comments %}checked{% endif %} aria-label="Web notifications for comment interactions">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -164,7 +164,7 @@
               <p class="text-xs text-gray-600">When you receive awards or reach milestones</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="web_awards" {% if preferences.web_awards %}checked{% endif %}>
+              <input type="checkbox" name="web_awards" {% if preferences.web_awards %}checked{% endif %} aria-label="Web notifications for awards and achievements">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -175,7 +175,7 @@
               <p class="text-xs text-gray-600">Updates on your comment moderation status</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="web_moderation" {% if preferences.web_moderation %}checked{% endif %}>
+              <input type="checkbox" name="web_moderation" {% if preferences.web_moderation %}checked{% endif %} aria-label="Web notifications for moderation updates">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -186,7 +186,7 @@
               <p class="text-xs text-gray-600">Important platform updates and announcements</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="web_system" {% if preferences.web_system %}checked{% endif %}>
+              <input type="checkbox" name="web_system" {% if preferences.web_system %}checked{% endif %} aria-label="Web notifications for system announcements">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -261,7 +261,7 @@
               <p class="text-xs text-gray-600">Mute non-critical notifications during specific hours</p>
             </div>
             <label class="toggle-switch">
-              <input type="checkbox" name="quiet_hours_enabled" id="quiet-hours-toggle" {% if preferences.quiet_hours_enabled %}checked{% endif %}>
+              <input type="checkbox" name="quiet_hours_enabled" id="quiet-hours-toggle" {% if preferences.quiet_hours_enabled %}checked{% endif %} aria-label="Enable quiet hours">
               <span class="toggle-slider"></span>
             </label>
           </div>
@@ -269,12 +269,12 @@
           <div id="quiet-hours-settings" class="space-y-3 {% if not preferences.quiet_hours_enabled %}opacity-50 pointer-events-none{% endif %}">
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Start time</label>
-                <input type="time" name="quiet_hours_start" value="{{ preferences.quiet_hours_start|default:'22:00' }}" class="form-input">
+                <label class="block text-sm font-medium text-gray-700 mb-2" for="quiet-hours-start">Start time</label>
+                <input type="time" name="quiet_hours_start" id="quiet-hours-start" value="{{ preferences.quiet_hours_start|default:'22:00' }}" class="form-input">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">End time</label>
-                <input type="time" name="quiet_hours_end" value="{{ preferences.quiet_hours_end|default:'08:00' }}" class="form-input">
+                <label class="block text-sm font-medium text-gray-700 mb-2" for="quiet-hours-end">End time</label>
+                <input type="time" name="quiet_hours_end" id="quiet-hours-end" value="{{ preferences.quiet_hours_end|default:'08:00' }}" class="form-input">
               </div>
             </div>
           </div>

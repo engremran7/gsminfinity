@@ -45,6 +45,7 @@
 /* Sortable Headers */
 .table-sortable th {
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
   transition: all var(--transition-base);
   position: relative;
