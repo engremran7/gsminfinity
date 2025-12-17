@@ -3,7 +3,7 @@
 """
 apps/users/models.py
 
-GSMInfinity - authoritative, enterprise-grade user models.
+AppCore - authoritative, hardened user models.
 
 Design:
 - CustomUser (email primary)
@@ -130,24 +130,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     # Permissions
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    can_create_blog_posts = models.BooleanField(
+        default=False,
+        help_text="Allow this user to create blog posts (individual permission override)"
+    )
 
-    # Credits (referrals deprecated)
+    # Credits (deprecated - kept for legacy compatibility)
     credits = models.PositiveIntegerField(default=0)
-    referral_code = models.CharField(
-        max_length=12,
-        unique=False,
-        blank=True,
-        null=True,
-        db_index=True,
-        help_text="Referral system disabled by default; code is optional.",
-    )
-    referred_by = models.ForeignKey(
-        "self",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="referrals",
-    )
 
     # Security & verification
     unlock_count = models.PositiveIntegerField(default=0)
@@ -171,7 +160,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     # Manager / ID
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []  # keep empty to simplify superuser creation prompts
+    REQUIRED_FIELDS: list[str] = []  # keep empty to simplify superuser creation prompts
     objects = CustomUserManager()
 
     class Meta:
@@ -181,7 +170,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         indexes = [
             models.Index(fields=["email"], name="user_email_idx"),
             models.Index(fields=["username"], name="user_username_idx"),
-            models.Index(fields=["referral_code"], name="user_referral_idx"),
         ]
 
     def __str__(self) -> str:
@@ -233,10 +221,17 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def is_verified(self) -> bool:
         return bool(self.email_verified_at)
 
-    def has_role(self, *roles: str) -> bool:
+    def has_role(self, *roles: object) -> bool:
+        """Return True if user's role matches any of the provided roles.
+
+        Django's `TextChoices` members are tuples at class definition time
+        which static type checkers can't resolve easily; accept object and
+        cast to `str` for robust runtime behavior and static compatibility.
+        """
         if not self.role:
             return False
-        return self.role in roles
+        roles_str = [str(r) for r in roles]
+        return self.role in roles_str
 
     def is_admin(self) -> bool:
         return self.is_superuser or self.has_role(self.Roles.ADMIN)
@@ -249,6 +244,15 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def is_moderator(self) -> bool:
         return self.has_role(self.Roles.MODERATOR)
+
+    def can_create_posts(self) -> bool:
+        """Check if user can create blog posts based on role, staff status, or explicit permission."""
+        return (
+            self.is_staff or 
+            self.is_superuser or 
+            self.can_create_blog_posts or 
+            self.has_role(self.Roles.AUTHOR, self.Roles.EDITOR, self.Roles.ADMIN)
+        )
 
     def mark_email_verified(self) -> None:
         if not self.email_verified_at:
@@ -727,5 +731,4 @@ class PushSubscription(models.Model):
                 'auth': self.auth,
             }
         }
-
 
