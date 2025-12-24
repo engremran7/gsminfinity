@@ -7,8 +7,8 @@ import sys
 def main():
     """Run administrative tasks."""
     # Default to development settings for local execution unless explicitly overridden.
-    # Production deployments must set DJANGO_SETTINGS_MODULE explicitly (e.g., gsminfinity.settings).
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gsminfinity.settings_dev')
+    # Production deployments must set DJANGO_SETTINGS_MODULE explicitly (e.g., app.settings).
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings_dev')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

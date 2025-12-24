@@ -1,0 +1,34 @@
+/**
+ * =============================================================================
+ * GSMINFINITY ENDUSER FRONTEND - Master CSS v4.0
+ * =============================================================================
+ * 
+ * This file aggregates all enduser-facing styles.
+ * The design system tokens and base styles are loaded via main.css in base.html.
+ * This file contains enduser-specific overrides and page styles.
+ * 
+ * Architecture:
+ * 1. Reset (normalize browser defaults)
+ * 2. Admin CSS (shared components - Tailwind compiled)
+ * 3. EndUser-specific enhancements
+ * 
+ * =============================================================================
+ */
+
+/* STEP 1: CSS RESET (browser normalization) */
+@import url('./reset.css');
+
+/* STEP 2: ADMIN SHARED STYLES (Tailwind compiled components) */
+@import url('../../css/admin/enterprise.css');
+@import url('../../css/admin/layout.css');
+@import url('../../css/admin/components.css');
+@import url('../../css/admin/forms.css');
+@import url('../../css/admin/tables.css');
+@import url('../../css/admin/motion.css');
+
+/* STEP 3: ENDUSER-SPECIFIC PAGE STYLES */
+@import url('./layout.css');
+@import url('./components.css');
+@import url('./home.css');
+@import url('./blog.css');
+@import url('./responsive.css');

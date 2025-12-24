@@ -1,30 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
 
-{% extends "base.html" %} {% load static %} {% block title %}Notification
-Details — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %} {%
-block content %}
-<div class="container py-4">
-  <h2 class="mb-3">Notification Details</h2>
+{% block title %}Notification Details — {{ site_settings.site_name|default:"Site" }}{% endblock %}
 
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <h5 class="card-title">{{ notification.title }}</h5>
-      <p class="text-muted small">
-        {{ notification.created_at|date:"Y-m-d H:i" }}
-      </p>
-
-      <p class="card-text">{{ notification.message }}</p>
-
-      {% if notification.url %}
-      <a href="{{ notification.url }}" class="btn btn-primary" target="_blank">
-        Open Related Page
-      </a>
-      {% endif %}
-    </div>
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-8">
+  {# Header with back button #}
+  <div class="flex items-center gap-4 mb-6">
+    <a 
+      href="{% url 'users_notifications:list' %}" 
+      class="inline-flex items-center gap-2 text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] transition-colors"
+      aria-label="Back to notifications"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      <span class="text-sm font-medium">Back</span>
+    </a>
+    <h1 class="text-2xl font-bold text-[var(--color-text-primary)]">Notification Details</h1>
   </div>
 
-  <a href="{% url 'users_notifications:list' %}" class="btn btn-link mt-3">
-    ← Back to Notifications
-  </a>
+  {# Notification card #}
+  <article class="card-glass rounded-2xl overflow-hidden">
+    {# Header with icon and timestamp #}
+    <div class="flex items-start gap-4 p-6 border-b border-[var(--color-border-default)]">
+      <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--color-brand-primary)] to-[var(--color-brand-secondary)] flex items-center justify-center shadow-lg shadow-[var(--color-brand-primary)]/25">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <h2 class="text-lg font-semibold text-[var(--color-text-primary)] truncate">
+          {{ notification.title }}
+        </h2>
+        <time 
+          datetime="{{ notification.created_at|date:'c' }}" 
+          class="text-sm text-[var(--color-text-muted)]"
+        >
+          {{ notification.created_at|date:"F j, Y \a\t g:i A" }}
+        </time>
+      </div>
+      {% if not notification.read_at %}
+      <span class="flex-shrink-0 px-3 py-1 text-xs font-semibold rounded-full bg-[var(--color-brand-primary)]/20 text-[var(--color-brand-primary)]">
+        New
+      </span>
+      {% endif %}
+    </div>
+
+    {# Content #}
+    <div class="p-6">
+      <p class="text-[var(--color-text-secondary)] leading-relaxed">
+        {{ notification.message }}
+      </p>
+    </div>
+
+    {# Actions #}
+    {% if notification.url %}
+    <div class="px-6 pb-6">
+      <a 
+        href="{{ notification.url }}" 
+        class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--color-brand-primary)] to-[var(--color-brand-secondary)] hover:from-[var(--color-brand-primary)]/90 hover:to-[var(--color-brand-secondary)]/90 text-white font-medium rounded-xl shadow-lg shadow-[var(--color-brand-primary)]/25 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-primary)] focus:ring-offset-2 focus:ring-offset-[var(--color-bg-page)]"
+        {% if notification.url|slice:":4" == "http" %}target="_blank" rel="noopener noreferrer"{% endif %}
+      >
+        <span>View Details</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+        </svg>
+      </a>
+    </div>
+    {% endif %}
+  </article>
+
+  {# Quick actions #}
+  <div class="mt-6 flex items-center justify-between">
+    <a 
+      href="{% url 'users_notifications:list' %}" 
+      class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-brand-primary)] transition-colors"
+    >
+      ← Back to all notifications
+    </a>
+    {% if notification.url %}
+    <a 
+      href="{{ notification.url }}"
+      class="text-sm font-medium text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)] transition-colors"
+    >
+      Open related page →
+    </a>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
 

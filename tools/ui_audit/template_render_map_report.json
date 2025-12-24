@@ -1,0 +1,197 @@
+{
+  "summary": {
+    "total_render_calls": 22,
+    "unique_views": 12,
+    "unique_templates": 19,
+    "issues_found": 4
+  },
+  "by_app": {
+    "analytics": [
+      {
+        "view": "analytics_dashboard",
+        "template": "analytics/dashboard.html",
+        "line": 49,
+        "conditional": false
+      },
+      {
+        "view": "realtime_dashboard",
+        "template": "analytics/realtime_dashboard.html",
+        "line": 64,
+        "conditional": false
+      },
+      {
+        "view": "traffic_report",
+        "template": "analytics/reports/traffic.html",
+        "line": 179,
+        "conditional": false
+      },
+      {
+        "view": "engagement_report",
+        "template": "analytics/reports/engagement.html",
+        "line": 185,
+        "conditional": false
+      },
+      {
+        "view": "content_report",
+        "template": "analytics/reports/content.html",
+        "line": 191,
+        "conditional": false
+      }
+    ],
+    "blog": [
+      {
+        "view": "_ensure_post_seo",
+        "template": "blog/post_list.html",
+        "line": 350,
+        "conditional": false
+      },
+      {
+        "view": "_ensure_post_seo",
+        "template": "blog/post_form.html",
+        "line": 690,
+        "conditional": true
+      },
+      {
+        "view": "_ensure_post_seo",
+        "template": "blog/category_form.html",
+        "line": 731,
+        "conditional": false
+      }
+    ],
+    "consent": [
+      {
+        "view": "privacy_center_authed",
+        "template": "consent/includes/banner.html",
+        "line": 206,
+        "conditional": false
+      }
+    ],
+    "tags": [
+      {
+        "view": "search",
+        "template": "tags/admin_duplicates.html",
+        "line": 203,
+        "conditional": false
+      },
+      {
+        "view": "search",
+        "template": "tags/admin_keyword_review.html",
+        "line": 214,
+        "conditional": false
+      }
+    ],
+    "users": [
+      {
+        "view": "EnterpriseLoginView",
+        "template": "account/login.html",
+        "line": 284,
+        "conditional": false
+      },
+      {
+        "view": "EnterpriseSignupView",
+        "template": "account/signup.html",
+        "line": 487,
+        "conditional": false
+      },
+      {
+        "view": "EnterpriseSignupView.form_valid",
+        "template": "users/verify_email.html",
+        "line": 546,
+        "conditional": true
+      },
+      {
+        "view": "EnterpriseSignupView.form_valid",
+        "template": "users/verify_email.html",
+        "line": 552,
+        "conditional": true
+      },
+      {
+        "view": "EnterpriseSignupView.form_valid",
+        "template": "users/verify_email.html",
+        "line": 561,
+        "conditional": true
+      },
+      {
+        "view": "EnterpriseSignupView.form_valid",
+        "template": "users/verify_email.html",
+        "line": 587,
+        "conditional": false
+      },
+      {
+        "view": "EnterpriseSignupView.form_valid",
+        "template": "users/verify_email_required.html",
+        "line": 629,
+        "conditional": true
+      },
+      {
+        "view": "EnterpriseSignupView._missing_profile_fields",
+        "template": "users/dashboard.html",
+        "line": 870,
+        "conditional": false
+      },
+      {
+        "view": "EnterpriseSignupView._missing_profile_fields",
+        "template": "account/hub.html",
+        "line": 907,
+        "conditional": false
+      },
+      {
+        "view": "EnterpriseSignupView._missing_profile_fields",
+        "template": "users/tell_us_about_you.html",
+        "line": 1034,
+        "conditional": false
+      },
+      {
+        "view": "EnterpriseSignupView._missing_profile_fields",
+        "template": "users/notification_settings.html",
+        "line": 1169,
+        "conditional": false
+      }
+    ]
+  },
+  "issues": [
+    {
+      "type": "MULTIPLE_TEMPLATES",
+      "severity": "warning",
+      "view": "_ensure_post_seo",
+      "templates": [
+        "blog/post_list.html",
+        "blog/post_form.html",
+        "blog/category_form.html"
+      ],
+      "message": "View renders 3 different templates"
+    },
+    {
+      "type": "MULTIPLE_TEMPLATES",
+      "severity": "warning",
+      "view": "search",
+      "templates": [
+        "tags/admin_duplicates.html",
+        "tags/admin_keyword_review.html"
+      ],
+      "message": "View renders 2 different templates"
+    },
+    {
+      "type": "MULTIPLE_TEMPLATES",
+      "severity": "warning",
+      "view": "EnterpriseSignupView.form_valid",
+      "templates": [
+        "users/verify_email.html",
+        "users/verify_email_required.html"
+      ],
+      "message": "View renders 2 different templates"
+    },
+    {
+      "type": "MULTIPLE_TEMPLATES",
+      "severity": "warning",
+      "view": "EnterpriseSignupView._missing_profile_fields",
+      "templates": [
+        "users/dashboard.html",
+        "account/hub.html",
+        "users/tell_us_about_you.html",
+        "users/notification_settings.html"
+      ],
+      "message": "View renders 4 different templates"
+    }
+  ]
+}

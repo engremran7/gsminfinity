@@ -6,7 +6,7 @@ import json
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
-from django.http import JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_GET, require_http_methods
 
@@ -15,13 +15,13 @@ from apps.ai import api
 
 @staff_member_required(login_url="admin_suite:admin_suite_login")
 @require_GET
-def settings_view(request):
+def settings_view(request: HttpRequest) -> JsonResponse:
     return JsonResponse(api.settings_snapshot())
 
 
 @staff_member_required(login_url="admin_suite:admin_suite_login")
 @require_GET
-def models_view(request):
+def models_view(request: HttpRequest) -> JsonResponse:
     kind = request.GET.get("kind")
     return JsonResponse(api.models(kind))
 
@@ -31,7 +31,7 @@ _AI_RL_WINDOW = 60  # seconds
 _AI_MAX_BODY = 64_000  # bytes
 
 
-def _parse_payload(request):
+def _parse_payload(request: HttpRequest) -> dict:
     raw = request.body or b""
     if len(raw) > _AI_MAX_BODY:
         return {"__error__": "payload_too_large"}
@@ -43,7 +43,7 @@ def _parse_payload(request):
         return {"__error__": "bad_payload"}
 
 
-def _enforce_rate_limit(request):
+def _enforce_rate_limit(request: HttpRequest) -> JsonResponse | None:
     user = getattr(request, "user", None)
     ident = None
     if user and getattr(user, "is_authenticated", False):
@@ -65,7 +65,7 @@ def _enforce_rate_limit(request):
 @csrf_protect
 @login_required
 @require_http_methods(["POST"])
-def execute_view(request):
+def execute_view(request: HttpRequest) -> JsonResponse:
     payload = _parse_payload(request)
     if payload.get("__error__"):
         status = 413 if payload["__error__"] == "payload_too_large" else 400

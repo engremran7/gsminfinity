@@ -1,0 +1,408 @@
+<!-- Global Search Modal -->
+<div id="global-search-modal" 
+     class="fixed inset-0 z-[100] hidden" 
+     role="dialog" 
+     aria-modal="true" 
+     aria-labelledby="search-modal-title">
+  <!-- Backdrop -->
+  <div class="global-search-backdrop absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden="true"></div>
+  
+  <!-- Modal Container -->
+  <div class="relative flex items-start justify-center pt-[10vh] px-4">
+    <div class="global-search-container w-full max-w-2xl bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-2xl shadow-2xl overflow-hidden">
+      
+      <!-- Search Header -->
+      <div class="flex items-center gap-3 p-4 border-b border-[var(--color-border-default)]">
+        <svg class="w-5 h-5 text-[var(--color-text-muted)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input type="search" 
+               id="global-search-input"
+               placeholder="Search brands, models, firmwares, or blog posts..."
+               autocomplete="off"
+               class="flex-1 bg-transparent text-[var(--color-text-primary)] text-base placeholder-[var(--color-text-muted)] focus:outline-none">
+        <button type="button" 
+                id="global-search-close"
+                class="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-secondary)] rounded-lg transition-colors"
+                aria-label="Close search">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Results Container -->
+      <div id="global-search-results" class="max-h-[60vh] overflow-y-auto">
+        <!-- Initial State -->
+        <div class="global-search-initial p-8 text-center text-[var(--color-text-muted)]">
+          <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <p class="text-sm">Start typing to search across the entire site</p>
+          <p class="text-xs mt-2 text-[var(--color-text-muted)]">Search for brands, device models, firmwares, or blog posts</p>
+        </div>
+      </div>
+      
+      <!-- Footer Hints -->
+      <div class="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)]/50 text-xs text-[var(--color-text-muted)]">
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1">
+            <kbd class="px-1.5 py-0.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded">↑</kbd>
+            <kbd class="px-1.5 py-0.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded">↓</kbd>
+            Navigate
+          </span>
+          <span class="flex items-center gap-1">
+            <kbd class="px-1.5 py-0.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded">Enter</kbd>
+            Select
+          </span>
+          <span class="flex items-center gap-1">
+            <kbd class="px-1.5 py-0.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded">Esc</kbd>
+            Close
+          </span>
+        </div>
+        <span>Press <kbd class="px-1.5 py-0.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded">/</kbd> anywhere to search</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+(function() {
+    const searchModal = document.getElementById('global-search-modal');
+    const searchBtn = document.getElementById('global-search-btn');
+    const searchInput = document.getElementById('global-search-input');
+    const searchResults = document.getElementById('global-search-results');
+    const searchClose = document.getElementById('global-search-close');
+    const backdrop = searchModal?.querySelector('.global-search-backdrop');
+    
+    let debounceTimer = null;
+    let abortController = null;
+    let selectedIndex = -1;
+    let results = [];
+    
+    // Open modal
+    function openSearch() {
+        if (!searchModal) return;
+        searchModal.classList.remove('hidden');
+        searchModal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => searchInput?.focus(), 100);
+    }
+    
+    // Close modal
+    function closeSearch() {
+        if (!searchModal) return;
+        searchModal.classList.add('hidden');
+        searchModal.classList.remove('flex');
+        document.body.style.overflow = '';
+        if (searchInput) searchInput.value = '';
+        resetResults();
+    }
+    
+    // Reset to initial state
+    function resetResults() {
+        results = [];
+        selectedIndex = -1;
+        if (searchResults) {
+            searchResults.innerHTML = `
+                <div class="global-search-initial p-8 text-center text-[var(--color-text-muted)]">
+                    <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <p class="text-sm">Start typing to search across the entire site</p>
+                    <p class="text-xs mt-2 text-[var(--color-text-muted)]">Search for brands, device models, firmwares, or blog posts</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Show loading state
+    function showLoading() {
+        if (searchResults) {
+            searchResults.innerHTML = `
+                <div class="p-8 text-center">
+                    <div class="inline-flex items-center gap-3 text-[var(--color-text-muted)]">
+                        <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Searching...</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    // Perform search
+    async function search(query) {
+        if (abortController) abortController.abort();
+        
+        if (query.length < 2) {
+            resetResults();
+            return;
+        }
+        
+        showLoading();
+        abortController = new AbortController();
+        
+        try {
+            const params = new URLSearchParams({ q: query, type: 'all', limit: 12 });
+            const response = await fetch(`/firmwares/api/search/autocomplete/?${params}`, {
+                signal: abortController.signal,
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            
+            if (!response.ok) throw new Error('Search failed');
+            const data = await response.json();
+            results = data.results || [];
+            renderResults(data);
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error('Search error:', error);
+            searchResults.innerHTML = `
+                <div class="p-8 text-center text-[var(--color-text-muted)]">
+                    <svg class="w-8 h-8 mx-auto mb-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p>Search failed. Please try again.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Render results
+    function renderResults(data) {
+        if (!searchResults || data.results.length === 0) {
+            searchResults.innerHTML = `
+                <div class="p-8 text-center text-[var(--color-text-muted)]">
+                    <svg class="w-10 h-10 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p class="font-medium">No results found</p>
+                    <p class="text-sm mt-1">Try different keywords or check spelling</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Group by type
+        const grouped = {};
+        data.results.forEach(item => {
+            if (!grouped[item.type]) grouped[item.type] = [];
+            grouped[item.type].push(item);
+        });
+        
+        const typeLabels = { brand: 'Brands', model: 'Models', variant: 'Variants', firmware: 'Firmwares', blog: 'Blog Posts' };
+        const typeIcons = {
+            brand: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>',
+            model: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>',
+            variant: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>',
+            firmware: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>',
+            blog: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'
+        };
+        const typeBadges = {
+            brand: 'bg-purple-500/20 text-purple-400',
+            model: 'bg-blue-500/20 text-blue-400',
+            variant: 'bg-cyan-500/20 text-cyan-400',
+            firmware: 'bg-green-500/20 text-green-400',
+            blog: 'bg-amber-500/20 text-amber-400'
+        };
+        
+        let html = '';
+        let globalIndex = 0;
+        
+        for (const [type, items] of Object.entries(grouped)) {
+            html += `<div class="py-2 px-3"><div class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-1">${typeLabels[type] || type}</div></div>`;
+            
+            items.forEach(item => {
+                const highlighted = highlightMatch(item.name, data.query);
+                html += `
+                    <a href="${item.url}" 
+                       class="global-search-item flex items-center gap-3 px-4 py-3 hover:bg-[var(--color-interactive-hover)] cursor-pointer transition-colors"
+                       data-index="${globalIndex}">
+                        <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-muted)]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">${typeIcons[type] || ''}</svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-[var(--color-text-primary)] truncate">${highlighted}</div>
+                            ${item.subtitle ? `<div class="text-xs text-[var(--color-text-muted)] truncate">${escapeHtml(item.subtitle)}</div>` : ''}
+                        </div>
+                        <span class="text-[10px] font-semibold uppercase px-2 py-1 rounded ${typeBadges[type] || ''}">${type}</span>
+                    </a>
+                `;
+                globalIndex++;
+            });
+        }
+        
+        // Add view all link
+        html += `
+            <div class="p-3 border-t border-[var(--color-border-default)]">
+                <a href="/firmwares/browse/?q=${encodeURIComponent(data.query)}" 
+                   class="flex items-center justify-center gap-2 p-2 text-sm font-medium text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] hover:bg-[var(--color-interactive-hover)] rounded-lg transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    View all results for "${escapeHtml(data.query)}"
+                </a>
+            </div>
+        `;
+        
+        searchResults.innerHTML = html;
+        selectedIndex = -1;
+        
+        // Add hover listeners
+        searchResults.querySelectorAll('.global-search-item').forEach(item => {
+            item.addEventListener('mouseenter', () => {
+                highlightItem(parseInt(item.dataset.index));
+            });
+        });
+    }
+    
+    // Highlight match
+    function highlightMatch(text, query) {
+        if (!query) return escapeHtml(text);
+        const escaped = escapeHtml(text);
+        const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+        return escaped.replace(regex, '<mark class="bg-yellow-500/30 text-yellow-200 px-0.5 rounded">$1</mark>');
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    
+    // Keyboard navigation
+    function highlightItem(index) {
+        const items = searchResults.querySelectorAll('.global-search-item');
+        items.forEach(i => i.classList.remove('bg-[var(--color-interactive-hover)]'));
+        
+        if (index >= 0 && index < items.length) {
+            selectedIndex = index;
+            items[index].classList.add('bg-[var(--color-interactive-hover)]');
+            items[index].scrollIntoView({ block: 'nearest' });
+        }
+    }
+    
+    function navigateResults(direction) {
+        const items = searchResults.querySelectorAll('.global-search-item');
+        if (!items.length) return;
+        
+        selectedIndex += direction;
+        if (selectedIndex < 0) selectedIndex = items.length - 1;
+        if (selectedIndex >= items.length) selectedIndex = 0;
+        
+        highlightItem(selectedIndex);
+    }
+    
+    function selectCurrent() {
+        const items = searchResults.querySelectorAll('.global-search-item');
+        if (selectedIndex >= 0 && items[selectedIndex]) {
+            window.location.href = items[selectedIndex].href;
+        }
+    }
+    
+    // Event listeners
+    if (searchBtn) {
+        searchBtn.addEventListener('click', openSearch);
+    }
+    
+    if (searchClose) {
+        searchClose.addEventListener('click', closeSearch);
+    }
+    
+    if (backdrop) {
+        backdrop.addEventListener('click', closeSearch);
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => search(e.target.value.trim()), 300);
+        });
+        
+        searchInput.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    navigateResults(1);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    navigateResults(-1);
+                    break;
+                case 'Enter':
+                    if (selectedIndex >= 0) {
+                        e.preventDefault();
+                        selectCurrent();
+                    }
+                    break;
+                case 'Escape':
+                    closeSearch();
+                    break;
+            }
+        });
+    }
+    
+    // Global keyboard shortcut
+    document.addEventListener('keydown', (e) => {
+        // Open with "/" key (when not in an input)
+        if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+            e.preventDefault();
+            openSearch();
+        }
+        
+        // Close with Escape
+        if (e.key === 'Escape' && !searchModal?.classList.contains('hidden')) {
+            closeSearch();
+        }
+    });
+})();
+</script>
+
+<style>
+#global-search-modal.flex {
+    animation: searchModalFadeIn 0.15s ease-out;
+}
+
+#global-search-modal .global-search-container {
+    animation: searchModalSlideIn 0.2s ease-out;
+}
+
+@keyframes searchModalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes searchModalSlideIn {
+    from { 
+        opacity: 0;
+        transform: translateY(-20px) scale(0.98);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+#global-search-results::-webkit-scrollbar {
+    width: 6px;
+}
+
+#global-search-results::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#global-search-results::-webkit-scrollbar-thumb {
+    background: var(--color-border-default);
+    border-radius: 3px;
+}
+
+#global-search-results::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+}
+</style>

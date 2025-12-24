@@ -1,16 +1,32 @@
 """
 Enhanced notification signals for comment interactions.
 Sends notifications for replies, mentions, reactions, and moderation actions.
+
+ARCHIVED: Signal receivers for enhanced models (CommentReaction, CommentVote, CommentMention, CommentAward)
+have been disabled as their models were moved to apps/core/versions/
+
+Core signals (notify_on_comment) remain active for the base Comment model.
 """
 
 from __future__ import annotations
 
 import logging
-from django.db.models.signals import post_save, pre_delete
+from django.apps import apps
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from apps.users.services.notifications import send_notification, notifications_enabled
 
 logger = logging.getLogger(__name__)
+
+
+def _get_notification_helpers():
+    """Lazy import notification helpers for modularity - users app is optional."""
+    if not apps.is_installed('apps.users'):
+        return None, lambda: False
+    try:
+        from apps.users.services.notifications import send_notification, notifications_enabled
+        return send_notification, notifications_enabled
+    except Exception:
+        return None, lambda: False
 
 
 @receiver(post_save, sender='comments.Comment')
@@ -20,7 +36,12 @@ def notify_on_comment(sender, instance, created, **kwargs):
     - Someone comments on a post (notify post author)
     - Someone replies to a comment (notify parent comment author)
     """
+    send_notification, notifications_enabled = _get_notification_helpers()
+    
     if not created or not notifications_enabled():
+        return
+    
+    if send_notification is None:
         return
     
     try:
@@ -59,149 +80,109 @@ def notify_on_comment(sender, instance, created, **kwargs):
         logger.exception("Failed to send comment notification: %s", exc)
 
 
-@receiver(post_save, sender='comments.CommentReaction')
-def notify_on_reaction(sender, instance, created, **kwargs):
-    """Notify comment author when someone reacts to their comment."""
-    if not created or not notifications_enabled():
-        return
-    
+@receiver(post_save, sender='comments.Comment')
+def sync_post_comment_count_on_save(sender, instance, created, **kwargs):
+    """
+    Sync the comment count on the related post when a comment is created or status changes.
+    Only counts approved comments.
+    """
     try:
-        comment = instance.comment
-        if comment.user != instance.user:
-            reaction_emoji = {
-                'like': '👍',
-                'love': '❤️',
-                'insight': '💡',
-                'laugh': '😄',
-                'celebrate': '🎉',
-                'pray': '🙏',
-                'curious': '🤔',
-                'dislike': '👎',
-            }.get(instance.reaction_type, '👍')
-            
-            send_notification(
-                recipient=comment.user,
-                title="New reaction on your comment",
-                message=f"{instance.user.get_full_name()} reacted {reaction_emoji} to your comment",
-                level="info",
-                url=(comment.post.get_absolute_url() if comment.post else "#") + f"#comment-{comment.pk}",
-                actor=instance.user,
-                channel="web",
-                action_type="reaction",
-                icon="heart",
-            )
-    except Exception as exc:
-        logger.exception("Failed to send reaction notification: %s", exc)
-
-
-@receiver(post_save, sender='comments.CommentVote')
-def notify_on_vote(sender, instance, created, **kwargs):
-    """Notify comment author when their comment gets upvoted."""
-    if not created or not notifications_enabled():
-        return
-    
-    try:
-        comment = instance.comment
-        if comment.user != instance.user and instance.vote_type == 'up':
-            send_notification(
-                recipient=comment.user,
-                title="Your comment was upvoted",
-                message=f"{instance.user.get_full_name()} upvoted your comment",
-                level="info",
-                url=(comment.post.get_absolute_url() if comment.post else "#") + f"#comment-{comment.pk}",
-                actor=instance.user,
-                channel="web",
-                action_type="vote",
-                icon="chevron-up",
-            )
-    except Exception as exc:
-        logger.exception("Failed to send vote notification: %s", exc)
-
-
-@receiver(post_save, sender='comments.CommentMention')
-def notify_on_mention(sender, instance, created, **kwargs):
-    """Notify user when they're mentioned in a comment."""
-    if not created or not notifications_enabled():
-        return
-    
-    try:
-        comment = instance.comment
-        send_notification(
-            recipient=instance.mentioned_user,
-            title="You were mentioned in a comment",
-            message=f"{comment.user.get_full_name()} mentioned you in a comment",
-            level="info",
-            url=(comment.post.get_absolute_url() if comment.post else "#") + f"#comment-{comment.pk}",
-            actor=comment.user,
-            channel="web",
-            action_type="mention",
-            icon="at-sign",
-        )
-    except Exception as exc:
-        logger.exception("Failed to send mention notification: %s", exc)
-
-
-@receiver(post_save, sender='comments.CommentAward')
-def notify_on_award(sender, instance, created, **kwargs):
-    """Notify comment author when they receive an award."""
-    if not created or not notifications_enabled():
-        return
-    
-    try:
-        comment = instance.comment
-        if comment.user != instance.awarded_by:
-            award_emoji = {
-                'gold': '🏆',
-                'silver': '🥈',
-                'bronze': '🥉',
-                'helpful': '✨',
-                'insightful': '💡',
-                'funny': '😂',
-            }.get(instance.award_type, '🏅')
-            
-            send_notification(
-                recipient=comment.user,
-                title=f"You received a {instance.award_type} award!",
-                message=f"{instance.awarded_by.get_full_name()} awarded your comment {award_emoji}",
-                level="info",
-                url=(comment.post.get_absolute_url() if comment.post else "#") + f"#comment-{comment.pk}",
-                actor=instance.awarded_by,
-                channel="web",
-                action_type="award",
-                icon="award",
-            )
-    except Exception as exc:
-        logger.exception("Failed to send award notification: %s", exc)
-
-
-@receiver(post_save, sender='comments.ModerationAction')
-def notify_on_moderation(sender, instance, created, **kwargs):
-    """Notify comment author about moderation actions."""
-    if not created or not notifications_enabled():
-        return
-    
-    try:
-        comment = instance.comment
-        action_messages = {
-            'approved': 'Your comment has been approved',
-            'rejected': 'Your comment was not approved',
-            'flagged': 'Your comment has been flagged for review',
-            'hidden': 'Your comment has been hidden',
-            'deleted': 'Your comment has been removed',
-        }
+        if not instance.post:
+            return
         
-        level = 'warning' if instance.action in ['rejected', 'flagged', 'hidden', 'deleted'] else 'info'
+        from apps.blog.models import Post
+        from django.db.models import Count, Q
         
-        send_notification(
-            recipient=comment.user,
-            title="Comment moderation update",
-            message=action_messages.get(instance.action, f"Action taken on your comment: {instance.action}"),
-            level=level,
-            url=(comment.post.get_absolute_url() if comment.post else "#") + f"#comment-{comment.pk}",
-            actor=instance.moderator,
-            channel="web",
-            action_type="moderation",
-            icon="flag",
-        )
+        # Get approved comment count
+        approved_count = instance.post.comments.filter(
+            Q(status='approved') | Q(status='APPROVED')
+        ).count()
+        
+        # Update post comment count if it has changed
+        if hasattr(instance.post, 'comments_count') and instance.post.comments_count != approved_count:
+            Post.objects.filter(pk=instance.post.pk).update(comments_count=approved_count)
+            logger.debug(f"Updated comment count for post {instance.post.pk}: {approved_count}")
+            
     except Exception as exc:
-        logger.exception("Failed to send moderation notification: %s", exc)
+        logger.error(f"Failed to sync comment count: {exc}")
+
+
+@receiver(post_delete, sender='comments.Comment')
+def sync_post_comment_count_on_delete(sender, instance, **kwargs):
+    """
+    Sync the comment count on the related post when a comment is deleted.
+    """
+    try:
+        if not instance.post:
+            return
+        
+        from apps.blog.models import Post
+        from django.db.models import Q
+        
+        # Get approved comment count (instance already deleted)
+        approved_count = instance.post.comments.filter(
+            Q(status='approved') | Q(status='APPROVED')
+        ).count()
+        
+        if hasattr(instance.post, 'comments_count'):
+            Post.objects.filter(pk=instance.post.pk).update(comments_count=approved_count)
+            logger.debug(f"Updated comment count after delete for post {instance.post.pk}: {approved_count}")
+            
+    except Exception as exc:
+        logger.error(f"Failed to sync comment count on delete: {exc}")
+
+
+# ARCHIVED: Enhanced model signal receivers
+# The following receivers depend on enhanced models that have been archived.
+# To restore them, reintegrate the models from apps/core/versions/
+
+# @receiver(post_save, sender='comments.CommentReaction')
+# def notify_on_reaction(sender, instance, created, **kwargs):
+#     """Notify comment author when someone reacts to their comment."""
+#     ...
+
+# @receiver(post_save, sender='comments.CommentVote')
+# def notify_on_vote(sender, instance, created, **kwargs):
+#     """Notify comment author when their comment gets upvoted."""
+#     ...
+
+# @receiver(post_save, sender='comments.CommentMention')
+# def notify_on_mention(sender, instance, created, **kwargs):
+#     """Notify user when they're mentioned in a comment."""
+#     ...
+
+# @receiver(post_save, sender='comments.CommentAward')
+# def notify_on_award(sender, instance, created, **kwargs):
+#     """Notify comment author when they receive an award."""
+#     ...
+#     try:
+#         comment = instance.comment
+#         if comment.user != instance.awarded_by:
+#             award_emoji = {
+#                 'gold': '🏆',
+#                 'silver': '🥈',
+#                 'bronze': '🥉',
+#                 'helpful': '✨',
+#                 'insightful': '💡',
+#                 'funny': '😂',
+#             }.get(instance.award_type, '🏅')
+#             
+#             send_notification(
+#                 recipient=comment.user,
+#                 title=f"You received a {instance.award_type} award!",
+#                 message=f"{instance.awarded_by.get_full_name()} awarded your comment {award_emoji}",
+#                 level="info",
+#                 url=(comment.post.get_absolute_url() if comment.post else "#") + f"#comment-{comment.pk}",
+#                 actor=instance.awarded_by,
+#                 channel="web",
+#                 action_type="award",
+#                 icon="award",
+#             )
+#     except Exception as exc:
+#         logger.exception("Failed to send award notification: %s", exc)
+
+
+# @receiver(post_save, sender='comments.ModerationAction')
+# def notify_on_moderation(sender, instance, created, **kwargs):
+#     """Notify comment author about moderation actions."""
+#     ...

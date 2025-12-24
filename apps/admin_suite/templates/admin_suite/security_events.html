@@ -1,0 +1,98 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Security Events{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Security Events</h1>
+      <p class="text-sm text-slate-600">Audit log of security-related events and incidents.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:security' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white text-primary hover:bg-slate-50">
+        ← Back to Security
+      </a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Total Events</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ events|length }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Critical</div>
+      <div class="text-2xl font-semibold text-rose-600">
+        {% with critical_count=events|dictsortreversed:"severity"|length %}0{% endwith %}
+      </div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Warnings</div>
+      <div class="text-2xl font-semibold text-amber-600">0</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Info</div>
+      <div class="text-2xl font-semibold text-blue-600">0</div>
+    </div>
+  </div>
+
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-900">Recent Events</h2>
+      <span class="text-xs text-slate-500">Last 100 events</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Time</th>
+            <th class="px-4 py-2">Event Type</th>
+            <th class="px-4 py-2">Severity</th>
+            <th class="px-4 py-2">IP Address</th>
+            <th class="px-4 py-2">User</th>
+            <th class="px-4 py-2">User Agent</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for event in events %}
+          <tr>
+            <td class="px-4 py-2 whitespace-nowrap">{{ event.created_at|date:"Y-m-d H:i:s" }}</td>
+            <td class="px-4 py-2">
+              <span class="font-medium">{{ event.event_type }}</span>
+            </td>
+            <td class="px-4 py-2">
+              {% if event.severity == "critical" %}
+                <span class="inline-flex items-center rounded-full bg-rose-50 text-rose-700 px-2 py-0.5 text-xs font-semibold">Critical</span>
+              {% elif event.severity == "warning" %}
+                <span class="inline-flex items-center rounded-full bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-semibold">Warning</span>
+              {% elif event.severity == "info" %}
+                <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 text-xs font-semibold">Info</span>
+              {% else %}
+                <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-xs">{{ event.severity|default:"Unknown" }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 font-mono text-xs">{{ event.ip_address|default:"-" }}</td>
+            <td class="px-4 py-2">{{ event.user__email|default:"-" }}</td>
+            <td class="px-4 py-2 max-w-xs truncate text-xs text-slate-500" title="{{ event.user_agent }}">
+              {{ event.user_agent|default:"-"|truncatechars:50 }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-8 text-center text-slate-500">
+              <div class="flex flex-col items-center gap-2">
+                <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                </svg>
+                <span>No security events recorded</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

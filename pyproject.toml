@@ -1,0 +1,144 @@
+[build-system]
+requires = ["setuptools>=75.0", "wheel", "setuptools_scm[toml]>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gsminfinity"
+version = "1.0.0"
+description = "Enterprise Django application - GSM Infinity Platform"
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "GSM Infinity Team"},
+]
+keywords = ["django", "cms", "blog", "advertising", "ai"]
+
+# NOTE: black and isort replaced by ruff (faster, unified)
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+exclude = [
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "build",
+    "dist",
+    "migrations",
+    "node_modules",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "S",   # flake8-bandit
+    "DJ",  # flake8-django
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "S101",  # assert used
+    "S105",  # hardcoded password (false positives)
+    "S106",  # hardcoded password (false positives)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "app"]
+known-third-party = ["django"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+plugins = ["mypy_django_plugin.main"]
+exclude = [
+    "migrations/",
+    "build/",
+    ".venv/",
+    "node_modules/",
+]
+
+[tool.django-stubs]
+django_settings_module = "app.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "app.settings_dev"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+testpaths = ["tests", "apps"]
+addopts = """
+    --cov=apps
+    --cov=app
+    --cov-report=html
+    --cov-report=term-missing
+    --cov-report=xml
+    --cov-fail-under=60
+    --strict-markers
+    -ra
+    --tb=short
+    --disable-warnings
+"""
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+    "security: marks tests as security tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+branch = true
+omit = [
+    "*/migrations/*",
+    "*/tests.py",
+    "manage.py",
+    "*/wsgi.py",
+    "*/asgi.py",
+    ".venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "if settings.DEBUG:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+ignore_errors = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "migrations", "node_modules"]
+skips = ["B101"]  # Skip assert_used check
+
+[tool.pylint.messages_control]
+disable = [
+    "C0111",  # missing-docstring
+    "R0903",  # too-few-public-methods
+    "R0913",  # too-many-arguments
+    "W0212",  # protected-access
+]
+
+[tool.pylint.format]
+max-line-length = 88
+
+[tool.pylint.basic]
+good-names = ["i", "j", "k", "ex", "Run", "_", "x", "y", "z"]

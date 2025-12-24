@@ -1,20 +1,20 @@
 {# Ad slot placeholder. Expects `placement`, `fallback_slug`, `allowed_types`, `allowed_sizes`. #}
 <div
   class="ad-slot block w-full"
-  data-ad-slot="{{ placement.slug|default:fallback_slug|escape }}"
-  data-allowed-types="{{ allowed_types|default:placement.allowed_types|default:'any'|escape }}"
-  data-allowed-sizes="{{ allowed_sizes|default:placement.allowed_sizes|default:'auto'|escape }}"
-  data-context="{{ placement.context|default:placement.page_context|escape }}"
+  data-ad-slot="{% if placement %}{{ placement.slug|escape }}{% else %}{{ fallback_slug|escape }}{% endif %}"
+  data-allowed-types="{% firstof allowed_types 'any'|escape %}"
+  data-allowed-sizes="{% firstof allowed_sizes 'auto'|escape %}"
+  data-context="{% if placement %}{{ placement.context|default:placement.page_context|escape }}{% endif %}"
   data-requires-consent="ads"
 >
-  <div class="w-full rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-500 text-center text-xs py-6">
+  <div class="w-full rounded-lg border border-dashed border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-muted)] text-center text-xs py-6">
     {% if placement %}
-      <div class="font-semibold text-slate-700">{{ placement.name|default:fallback_slug }}</div>
+      <div class="font-semibold text-[var(--color-text-secondary)]">{{ placement.name|default:fallback_slug }}</div>
       <div class="text-[11px] mt-1">Allowed: {{ allowed_types|default:"any" }} · Sizes: {{ allowed_sizes|default:"auto" }}</div>
     {% else %}
-      <div class="font-semibold text-slate-700">Ad slot: {{ fallback_slug }}</div>
+      <div class="font-semibold text-[var(--color-text-secondary)]">Ad slot: {{ fallback_slug }}</div>
       <div class="text-[11px] mt-1">No placement configured yet</div>
     {% endif %}
-    <div class="mt-2 text-[11px] text-slate-400">Frontend JS will lazy-load creatives respecting consent.</div>
+    <div class="mt-2 text-[11px] text-[var(--color-text-muted)]">Frontend JS will lazy-load creatives respecting consent.</div>
   </div>
 </div>

@@ -1,23 +1,27 @@
 
 {% extends "base.html" %}
-{% block title %}Verify email — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
-
+{% block title %}Verify email — {{ site_settings.site_name|default:"Site" }}{% endblock %}
+{% block sidebar_left %}{% endblock %}
 {% block content %}
-<div class="max-w-md mx-auto py-12">
-  <div class="bg-white shadow rounded-lg p-6">
-    <h3 class="text-lg font-medium mb-2">Verify your email</h3>
-    <p class="text-sm text-slate-600 mb-4">
-      Enter the verification code sent to your email. This page auto-checks every few seconds and will continue once your email is verified (even if an admin marks it verified).
-    </p>
-    <form method="post" class="space-y-4">
-      {% csrf_token %}
-      <input type="text" name="code" class="w-full border border-slate-300 rounded px-3 py-2" placeholder="Verification code" />
-      <button type="submit" class="btn-primary px-4 py-2 rounded w-full">Verify</button>
-    </form>
-    <div id="verify-status" class="text-xs text-slate-500 mt-3" aria-live="polite"></div>
+<div class="w-full px-4 sm:px-6 lg:px-8 py-12">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-4 lg:col-start-5">
+      <div class="card-glass-neon p-6">
+        <h3 class="text-lg font-medium text-[var(--color-text-primary)] mb-2">Verify your email</h3>
+        <p class="text-sm text-[var(--color-text-secondary)] mb-4">
+          Enter the verification code sent to your email. This page auto-checks every few seconds and will continue once your email is verified (even if an admin marks it verified).
+        </p>
+        <form method="post" class="space-y-4">
+          {% csrf_token %}
+          <input type="text" name="code" class="w-full border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-primary)] rounded-lg px-4 py-2.5 focus:border-[var(--primitive-cyan-500)] focus:ring-2 focus:ring-[var(--primitive-cyan-500)]/20 transition-all" placeholder="Verification code" />
+          <button type="submit" class="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-[var(--primitive-cyan-500)] to-[var(--primitive-cyan-600)] text-white font-medium hover:shadow-[0_0_20px_var(--primitive-cyan-500)] transition-shadow">Verify</button>
+        </form>
+        <div id="verify-status" class="text-xs text-[var(--color-text-muted)] mt-3" aria-live="polite"></div>
+      </div>
+    </div>
   </div>
 </div>
-<script>
+<script nonce="{{ request.csp_nonce }}">
 (function() {
   const statusEl = document.getElementById("verify-status");
   if (!statusEl) return;

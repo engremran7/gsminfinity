@@ -46,6 +46,8 @@ def render_seo_meta(context, obj):
         {"meta": meta, "schemas": schemas},
         request=context.get("request"),
     )
+    # SECURITY: render_to_string auto-escapes all variables in template
+    # Only meta.html content (which we control) becomes unescaped HTML
     return mark_safe(html)
 
 

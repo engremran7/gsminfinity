@@ -1,0 +1,462 @@
+/**
+ * Django Admin Customizations
+ * Enterprise admin interface enhancements
+ */
+
+/* ============================================================================
+   NOTIFICATION DASHBOARD WIDGET
+   ============================================================================ */
+
+.notification-dashboard-widget {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.notification-dashboard-widget h2 {
+    color: white;
+    margin: 0 0 10px 0;
+    font-size: 20px;
+}
+
+.notification-dashboard-widget p {
+    margin: 0 0 15px 0;
+    opacity: 0.9;
+}
+
+.notification-dashboard-widget .btn {
+    background: white;
+    color: #667eea;
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.notification-dashboard-widget .btn:hover {
+    background: #f8f8f8;
+}
+
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.quick-stat {
+    background: rgba(255,255,255,0.2);
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.quick-stat-value {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.quick-stat-label {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+/* ============================================================================
+   NOTIFICATION LIST CUSTOMIZATIONS
+   ============================================================================ */
+
+.notification-list-dashboard {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.notification-list-dashboard h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.notification-list-dashboard .stat-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.notification-list-dashboard .stat-item {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.notification-list-dashboard .stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.notification-list-dashboard .stat-label {
+    font-size: 12px;
+    color: #666;
+}
+
+/* ============================================================================
+   ADMIN TABLE ENHANCEMENTS
+   ============================================================================ */
+
+.admin-table-enhanced .results {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.admin-table-enhanced thead th {
+    background: #f0f4ff;
+}
+
+/* ============================================================================
+   TAG ADMIN CUSTOMIZATIONS
+   ============================================================================ */
+
+.tag-admin-dashboard {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.tag-admin-dashboard h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.tag-admin-dashboard .stat-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.tag-admin-dashboard .stat-item {
+    background: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tag-admin-dashboard .stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #22c55e;
+}
+
+.tag-admin-dashboard .stat-label {
+    font-size: 12px;
+    color: #666;
+}
+
+/* ============================================================================
+   USER ADMIN CUSTOMIZATIONS
+   ============================================================================ */
+
+.user-admin-dashboard {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.user-admin-dashboard h3 {
+    margin: 0 0 10px 0;
+    color: white;
+}
+
+.user-admin-dashboard .stat-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.user-admin-dashboard .stat-item {
+    background: rgba(255,255,255,0.15);
+    padding: 8px 12px;
+    border-radius: 4px;
+    min-width: 100px;
+}
+
+.user-admin-dashboard .stat-value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.user-admin-dashboard .stat-label {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* ============================================================================
+   SEO ADMIN CUSTOMIZATIONS
+   ============================================================================ */
+
+.seo-admin-dashboard {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.seo-admin-dashboard h3 {
+    margin: 0 0 10px 0;
+    color: white;
+}
+
+.seo-admin-dashboard .stat-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.seo-admin-dashboard .stat-item {
+    background: rgba(255,255,255,0.2);
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.seo-admin-dashboard .stat-value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.seo-admin-dashboard .stat-label {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* ============================================================================
+   SITE SETTINGS ADMIN
+   ============================================================================ */
+
+.site-settings-header {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.site-settings-header h2 {
+    margin: 0 0 5px 0;
+    color: white;
+}
+
+.site-settings-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+/* ============================================================================
+   I18N ADMIN CUSTOMIZATIONS
+   ============================================================================ */
+
+.i18n-admin-dashboard {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.i18n-admin-dashboard h3 {
+    margin: 0 0 10px 0;
+    color: #0369a1;
+}
+
+.i18n-admin-dashboard .stat-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.i18n-admin-dashboard .stat-item {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.i18n-admin-dashboard .stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #0284c7;
+}
+
+.i18n-admin-dashboard .stat-label {
+    font-size: 11px;
+    color: #64748b;
+}
+
+/* ============================================================================
+   APP REGISTRY ADMIN
+   ============================================================================ */
+
+.app-registry-dashboard {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.app-registry-dashboard h3 {
+    margin: 0 0 10px 0;
+    color: white;
+}
+
+.app-registry-dashboard p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+/* ============================================================================
+   CONSENT ADMIN CUSTOMIZATIONS
+   ============================================================================ */
+
+.consent-admin-dashboard {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.consent-admin-dashboard h3 {
+    margin: 0 0 10px 0;
+    color: #92400e;
+}
+
+.consent-admin-dashboard .stat-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.consent-admin-dashboard .stat-item {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.consent-admin-dashboard .stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #b45309;
+}
+
+.consent-admin-dashboard .stat-label {
+    font-size: 11px;
+    color: #78716c;
+}
+
+/* ============================================================================
+   COMMENT ADMIN CUSTOMIZATIONS
+   ============================================================================ */
+
+.comment-admin-dashboard {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.comment-admin-dashboard h3 {
+    margin: 0 0 10px 0;
+    color: #166534;
+}
+
+.comment-admin-dashboard .stat-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.comment-admin-dashboard .stat-item {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.comment-admin-dashboard .stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #16a34a;
+}
+
+.comment-admin-dashboard .stat-label {
+    font-size: 11px;
+    color: #64748b;
+}
+
+/* ============================================================================
+   BLOG ADMIN CUSTOMIZATIONS
+   ============================================================================ */
+
+.blog-admin-dashboard {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.blog-admin-dashboard h3 {
+    margin: 0 0 10px 0;
+    color: white;
+}
+
+.blog-admin-dashboard .stat-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.blog-admin-dashboard .stat-item {
+    background: rgba(255,255,255,0.15);
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.blog-admin-dashboard .stat-value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.blog-admin-dashboard .stat-label {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* ============================================================================
+   TOAST ANIMATIONS (from notifications.html)
+   ============================================================================ */
+
+@keyframes slide-in {
+    from { 
+        opacity: 0; 
+        transform: translateX(100%); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateX(0); 
+    }
+}
+
+.animate-slide-in { 
+    animation: slide-in 0.3s ease-out; 
+}

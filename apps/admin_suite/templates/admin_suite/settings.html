@@ -12,7 +12,7 @@
     <div class="border rounded-lg bg-white shadow-sm p-4">
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-lg font-semibold text-slate-900">Site settings</h2>
-        <a href="{% url 'admin_suite:admin_suite_settings_edit' %}" title="Edit branding, signup, maintenance" class="text-xs text-primary hover:underline">Edit</a>
+        <a href="{% url 'admin_suite:settings_edit' %}" title="Edit branding, signup, maintenance" class="text-xs text-primary hover:underline">Edit</a>
       </div>
       <dl class="text-sm text-slate-700 space-y-2">
         <div class="flex justify-between"><dt>Site name</dt><dd>{{ site_snapshot.site_name|default:"-" }}</dd></div>

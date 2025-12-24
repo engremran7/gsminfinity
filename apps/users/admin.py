@@ -164,7 +164,8 @@ class CustomUserAdmin(BaseAdminClass):
         ),
     )
 
-    def get_queryset(self, request: HttpRequest) -> QuerySet:
+    def get_queryset(self, request: HttpRequest) -> QuerySet[CustomUser]:
+        """Optimize user queryset with prefetch_related for groups."""
         qs = super().get_queryset(request)
         try:
             return qs.prefetch_related("groups")
@@ -176,7 +177,8 @@ class CustomUserAdmin(BaseAdminClass):
     # Admin action: mark selected users as email verified
     # ------------------------------------------------------------------
     @admin.action(description="Mark selected users as email verified (set now)")
-    def mark_email_verified(self, request: HttpRequest, queryset: QuerySet) -> None:
+    def mark_email_verified(self, request: HttpRequest, queryset: QuerySet[CustomUser]) -> None:
+        """Mark selected users as email verified with optional allauth sync."""
         updated = (
             queryset.filter(email_verified_at__isnull=True)
             .update(email_verified_at=timezone.now())
@@ -199,7 +201,8 @@ class CustomUserAdmin(BaseAdminClass):
             self.message_user(request, _("No users updated."), messages.INFO)
 
     @admin.action(description="Clear email verification (set to unverified)")
-    def clear_email_verification(self, request: HttpRequest, queryset: QuerySet) -> None:
+    def clear_email_verification(self, request: HttpRequest, queryset: QuerySet[CustomUser]) -> None:
+        """Remove email verification status from selected users."""
         count = queryset.update(email_verified_at=None, verification_code="")
         try:
             from allauth.account.models import EmailAddress
@@ -252,7 +255,8 @@ class NotificationAdmin(BaseAdminClass):
             or "Anonymous"
         )
 
-    def get_queryset(self, request: HttpRequest) -> QuerySet:
+    def get_queryset(self, request: HttpRequest) -> QuerySet[Notification]:
+        """Optimize notification queryset with recipient select_related."""
         qs = super().get_queryset(request)
         try:
             return qs.select_related("recipient")
@@ -260,7 +264,10 @@ class NotificationAdmin(BaseAdminClass):
             logger.debug("NotificationAdmin.get_queryset failed", exc_info=True)
             return qs
 
-    def mark_selected_read(self, request: HttpRequest, queryset: QuerySet):
+    def mark_selected_read(
+        self, request: HttpRequest, queryset: QuerySet[Notification]
+    ) -> None:
+        """Mark selected notifications as read."""
         try:
             updated = queryset.filter(is_read=False).update(is_read=True)
             self.message_user(request, _("%d notifications marked as read.") % updated)
@@ -272,7 +279,10 @@ class NotificationAdmin(BaseAdminClass):
                 level=messages.ERROR,
             )
 
-    def export_selected_as_csv(self, request: HttpRequest, queryset: QuerySet):
+    def export_selected_as_csv(
+        self, request: HttpRequest, queryset: QuerySet[Notification]
+    ) -> None:
+        """Provide export instructions to user."""
         self.message_user(
             request, _("Use the Export button above to export notifications.")
         )
@@ -346,9 +356,9 @@ class AnnouncementAdmin(BaseAdminClass):
 # ==========================================================================
 # Admin Branding
 # ==========================================================================
-admin.site.site_header = _("GSMInfinity Administration")
-admin.site.index_title = _("Enterprise Control Panel")
-admin.site.site_title = _("GSMInfinity Admin Portal")
+admin.site.site_header = _("Site Administration")
+admin.site.index_title = _("Control Panel")
+admin.site.site_title = _("Site Admin Portal")
 
 # Users app settings (singleton)
 try:

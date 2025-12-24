@@ -8,4 +8,5 @@ urlpatterns = [
     path("my/", views.my_devices, name="my_devices"),
     path("events/", views.device_events, name="device_events"),
     path("payload/", views.device_payload_view, name="device_payload"),
+    path("acknowledge/", views.acknowledge_new_device, name="acknowledge_new_device"),
 ]

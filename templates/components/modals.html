@@ -1,5 +1,5 @@
 
-{# Base modal + AI side panel anchor. Include once near end of body. #}
+{# Base modal + AI side panel anchor - Futuristic HUD Theme. Include once near end of body. #}
 <div
   id="app-modal"
   class="fixed inset-0 z-50 hidden items-center justify-center px-4"
@@ -7,22 +7,33 @@
   aria-modal="true"
   aria-labelledby="app-modal-title"
 >
-  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" data-modal-dismiss></div>
-  <div class="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-      <div class="flex items-center gap-2">
-        <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-rocket"></use></svg>
-        <h3 id="app-modal-title" class="text-base font-semibold text-slate-900">AI</h3>
+  <div class="absolute inset-0 bg-[var(--primitive-gray-900)]/80 backdrop-blur-md" data-modal-dismiss></div>
+  <div class="relative w-full max-w-2xl rounded-2xl bg-[var(--color-bg-glass-dark)] backdrop-blur-xl shadow-2xl border border-[var(--color-border-default)] overflow-hidden">
+    <!-- Decorative corner accents -->
+    <div class="absolute top-0 left-0 w-16 h-16 border-l-2 border-t-2 border-[var(--primitive-cyan-500)] rounded-tl-2xl"></div>
+    <div class="absolute top-0 right-0 w-16 h-16 border-r-2 border-t-2 border-[var(--primitive-cyan-500)] rounded-tr-2xl"></div>
+    <div class="absolute bottom-0 left-0 w-16 h-16 border-l-2 border-b-2 border-[var(--primitive-cyan-500)] rounded-bl-2xl"></div>
+    <div class="absolute bottom-0 right-0 w-16 h-16 border-r-2 border-b-2 border-[var(--primitive-cyan-500)] rounded-br-2xl"></div>
+    
+    <div class="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border-default)]">
+      <div class="flex items-center gap-3">
+        <div class="p-2 rounded-lg bg-[var(--primitive-cyan-500)]/20">
+          <svg class="icon w-5 h-5 text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-rocket"></use></svg>
+        </div>
+        <h3 id="app-modal-title" class="text-base font-semibold text-[var(--color-text-primary)]">AI</h3>
       </div>
-      <button type="button" class="text-slate-500 hover:text-slate-800" data-modal-dismiss aria-label="Close">
-        ✕
+      <button type="button" class="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-text-secondary)] hover:text-[var(--primitive-red-400)] hover:bg-[var(--primitive-red-500)]/10 transition-all" data-modal-dismiss aria-label="Close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
-    <div id="app-modal-body" class="p-5 space-y-3 text-sm text-slate-800">
-      <div class="text-slate-500">Loading...</div>
+    <div id="app-modal-body" class="p-6 space-y-4 text-sm text-[var(--color-text-secondary)]">
+      <div class="flex items-center gap-3">
+        <div class="w-5 h-5 rounded-full border-2 border-[var(--primitive-cyan-500)] border-t-transparent animate-spin"></div>
+        <span class="text-[var(--color-text-muted)]">Loading...</span>
+      </div>
     </div>
-    <div class="flex justify-end gap-2 px-5 py-4 border-t border-slate-200">
-      <button type="button" class="btn-outline" data-modal-dismiss>Close</button>
+    <div class="flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border-default)]">
+      <button type="button" class="px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--primitive-cyan-500)]/50 hover:text-[var(--primitive-cyan-400)] transition-all" data-modal-dismiss>Close</button>
     </div>
   </div>
   <div id="modal-sr-live" class="visually-hidden" aria-live="polite"></div>

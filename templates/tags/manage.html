@@ -1,181 +1,88 @@
 {% extends "base.html" %}
-{% block title %}Manage Tags - {{ site_settings.site_name|default:"Site" }}{% endblock %}
-{% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-  <div class="flex items-center justify-between flex-wrap gap-3">
-    <div>
-      <h1 class="text-2xl font-bold text-slate-900">Tag manager</h1>
-      <p class="text-sm text-slate-600">Curate tags, merge duplicates, and review AI keyword suggestions.</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <a href="{% url 'tags:list' %}" class="btn-outline px-3 py-2 rounded border border-slate-300 text-sm">View public tags</a>
-    </div>
-  </div>
+{% load static %}
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <section class="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-slate-800">Top tags</h2>
-        <span class="text-xs text-slate-500">{{ top_tags|length }} items</span>
-      </div>
-      <div class="grid sm:grid-cols-2 gap-3">
+{% block title %}Manage Tags | {{ site_settings.site_name|default:"GSM Infinity" }}{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-8">
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-neon-400)] bg-clip-text text-transparent">Manage Tags</h1>
+    <p class="text-[var(--color-text-secondary)] mt-2">Review and manage tags across the platform.</p>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {# Top Tags Section #}
+    <section class="card-glass p-6">
+      <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-[var(--primitive-cyan-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+        </svg>
+        Top Tags ({{ top_tags|length }})
+      </h2>
+      
+      {% if top_tags %}
+      <div class="space-y-2 max-h-96 overflow-y-auto">
         {% for tag in top_tags %}
-          <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 space-y-1">
-            <div class="flex items-center justify-between">
-              <span class="font-semibold text-slate-900">#{{ tag.name }}</span>
-              <span class="text-xs text-slate-500">{{ tag.usage_count }} uses</span>
-            </div>
-            {% if tag.synonyms %}<p class="text-xs text-slate-600">Synonyms: {{ tag.synonyms|join:', ' }}</p>{% endif %}
-            <div class="flex items-center gap-2 text-[11px] text-slate-600">
-              <span class="px-2 py-0.5 rounded-full {{ tag.is_curated|yesno:'bg-emerald-100 text-emerald-700,bg-slate-200 text-slate-700' }}">
-                {{ tag.is_curated|yesno:'Curated,User tag' }}
-              </span>
-              <a href="{% url 'tags:detail' slug=tag.slug %}" class="text-primary hover:underline">View</a>
-            </div>
+        <div class="flex items-center justify-between p-3 card-glass hover:bg-[var(--color-interactive-hover)] transition-colors">
+          <div class="flex items-center gap-3">
+            <a href="{% url 'tags:detail' tag.slug %}" class="font-medium text-[var(--color-text-primary)] hover:text-[var(--primitive-cyan-400)] transition-colors">
+              {{ tag.name }}
+            </a>
+            {% if tag.is_curated %}
+            <span class="px-2 py-0.5 text-xs font-medium bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)] rounded-full">Curated</span>
+            {% endif %}
           </div>
-        {% empty %}
-          <p class="text-sm text-slate-500">No tags found.</p>
+          <span class="text-sm text-[var(--color-text-muted)]">{{ tag.usage_count }} uses</span>
+        </div>
         {% endfor %}
       </div>
+      {% else %}
+      <p class="text-[var(--color-text-muted)] text-center py-8">No tags found.</p>
+      {% endif %}
     </section>
 
-    <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
-      <h2 class="text-lg font-semibold text-slate-800">Quick actions</h2>
-      <div class="space-y-3 text-sm text-slate-700">
-        <form method="post" action="{% url 'tags:merge' %}" class="space-y-2">
-          {% csrf_token %}
-          <p class="text-xs text-slate-500">Merge a source tag into a target tag.</p>
-          <input type="text" name="source" placeholder="source-slug" class="w-full border border-slate-200 rounded px-3 py-2 text-sm" required />
-          <input type="text" name="target" placeholder="target-slug" class="w-full border border-slate-200 rounded px-3 py-2 text-sm" required />
-          <button type="submit" class="btn-primary w-full py-2 rounded text-sm">Merge tags</button>
-        </form>
-        <div class="border-t border-slate-200 pt-2 space-y-2">
-          <a href="{% url 'tags:duplicates_review' %}" class="text-primary hover:underline">Review duplicates</a>
-          <p class="text-xs text-slate-500">Scan similar tags and merge safely.</p>
-        </div>
-        <div class="border-t border-slate-200 pt-2 space-y-2">
-          <a href="{% url 'tags:keyword_review' %}" class="text-primary hover:underline">AI keyword suggestions</a>
-          <p class="text-xs text-slate-500">Review provider suggestions and apply to tags.</p>
-        </div>
+    {# Curated Tags Section #}
+    <section class="card-glass p-6">
+      <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-[var(--primitive-amber-400)]" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+        Curated Tags ({{ curated_tags|length }})
+      </h2>
+      
+      {% if curated_tags %}
+      <div class="flex flex-wrap gap-2">
+        {% for tag in curated_tags %}
+        <a href="{% url 'tags:detail' tag.slug %}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-[var(--primitive-amber-500)]/20 text-[var(--primitive-amber-400)] rounded-full text-sm font-medium hover:bg-[var(--primitive-amber-500)]/30 transition-colors">
+          {{ tag.name }}
+          <span class="text-xs text-[var(--primitive-amber-500)]">({{ tag.usage_count }})</span>
+        </a>
+        {% endfor %}
       </div>
+      {% else %}
+      <p class="text-[var(--color-text-muted)] text-center py-8">No curated tags yet.</p>
+      {% endif %}
     </section>
   </div>
 
-  <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
-    <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-slate-800">Search & curate</h2>
-      <span class="text-xs text-slate-500">Search returns up to 20 matches</span>
+  {# Admin Actions #}
+  <section class="mt-8 card-glass p-6">
+    <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Admin Actions</h2>
+    <div class="flex flex-wrap gap-4">
+      <a href="{% url 'tags:admin_duplicates' %}" class="inline-flex items-center gap-2 px-4 py-2 card-glass text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-interactive-hover)] transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+        </svg>
+        Find Duplicates
+      </a>
+      <a href="{% url 'tags:keyword_review' %}" class="inline-flex items-center gap-2 px-4 py-2 card-glass text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-interactive-hover)] transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+        Keyword Review
+      </a>
     </div>
-    <div class="flex flex-col sm:flex-row gap-3">
-      <input id="tag-search" type="search" placeholder="Search tags..." class="w-full sm:w-80 border border-slate-200 rounded px-3 py-2 text-sm" />
-      <button type="button" id="tag-search-btn" class="btn-outline px-3 py-2 rounded border border-slate-300 text-sm">Search</button>
-    </div>
-    <div id="tag-search-results" class="grid sm:grid-cols-2 md:grid-cols-3 gap-3 text-sm text-slate-700"></div>
   </section>
-
-  <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
-    <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-slate-800">AI suggestions</h2>
-      <span class="text-xs text-slate-500">Uses /tags/suggest/ to propose tags.</span>
-    </div>
-    <textarea id="tag-ai-text" rows="3" class="w-full border border-slate-200 rounded px-3 py-2 text-sm" placeholder="Paste content to get suggested tags"></textarea>
-    <button type="button" id="tag-ai-btn" class="btn-primary px-4 py-2 rounded text-sm">Get suggestions</button>
-    <div id="tag-ai-results" class="flex flex-wrap gap-2 text-sm text-slate-700"></div>
-  </section>
-</div>
+</main>
 {% endblock %}
 
-{% block extra_scripts %}
-<script nonce="{{ request.csp_nonce }}">
-  (() => {
-    const results = document.getElementById("tag-search-results");
-    const input = document.getElementById("tag-search");
-    const btn = document.getElementById("tag-search-btn");
-    if (!results || !input || !btn) return;
-
-    async function searchTags() {
-      const q = input.value.trim();
-      if (!q || q.length < 2) {
-        results.innerHTML = "<p class='text-sm text-slate-500'>Enter 2+ characters to search.</p>";
-        return;
-      }
-      results.innerHTML = "<p class='text-sm text-slate-500'>Searching...</p>";
-      try {
-        const res = await fetch(`/tags/search/?q=${encodeURIComponent(q)}`, { headers: { "X-Requested-With": "XMLHttpRequest" } });
-        if (!res.ok) throw new Error("search_failed");
-        const data = await res.json();
-        const items = data.items || [];
-        if (!items.length) {
-          results.innerHTML = "<p class='text-sm text-slate-500'>No matches.</p>";
-          return;
-        }
-        results.innerHTML = items
-          .map(
-            (t) =>
-              `<div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 space-y-1">
-                <div class="flex items-center justify-between">
-                  <span class="font-semibold text-slate-900">#${t.name}</span>
-                  <span class="text-xs text-slate-500">${t.usage_count} uses</span>
-                </div>
-                <div class="flex items-center gap-2 text-[11px] text-slate-600">
-                  <span class="px-2 py-0.5 rounded-full ${t.is_curated ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-700"}">${t.is_curated ? "Curated" : "User tag"}</span>
-                  ${t.synonyms && t.synonyms.length ? `<span>Synonyms: ${t.synonyms.join(", ")}</span>` : ""}
-                </div>
-              </div>`
-          )
-          .join("");
-      } catch (err) {
-        results.innerHTML = "<p class='text-sm text-red-600'>Search failed.</p>";
-      }
-    }
-
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      searchTags();
-    });
-    input.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        searchTags();
-      }
-    });
-  })();
-
-  (() => {
-    const btn = document.getElementById("tag-ai-btn");
-    const input = document.getElementById("tag-ai-text");
-    const results = document.getElementById("tag-ai-results");
-    if (!btn || !input || !results) return;
-    btn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const text = input.value.trim();
-      if (!text) {
-        results.innerHTML = "<p class='text-sm text-slate-500'>Enter content first.</p>";
-        return;
-      }
-      results.innerHTML = "<p class='text-sm text-slate-500'>Requesting suggestions...</p>";
-      try {
-        const res = await fetch("/tags/suggest/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Requested-With": "XMLHttpRequest",
-            "X-CSRFToken": (document.querySelector('meta[name=\"csrf-token\"]')||{}).content || ""
-          },
-          body: JSON.stringify({ text })
-        });
-        if (!res.ok) throw new Error("suggest_failed");
-        const data = await res.json();
-        const items = data.suggestions || [];
-        if (!items.length) {
-          results.innerHTML = "<p class='text-sm text-slate-500'>No suggestions.</p>";
-          return;
-        }
-        results.innerHTML = items.map(t => `<span class="px-2 py-1 rounded-full bg-slate-100 border border-slate-200">${t}</span>`).join("");
-      } catch (err) {
-        results.innerHTML = "<p class='text-sm text-red-600'>Suggestion failed.</p>";
-      }
-    });
-  })();
-</script>
-{% endblock %}

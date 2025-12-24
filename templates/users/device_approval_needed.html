@@ -1,31 +1,35 @@
 {% extends "base.html" %}
 {% block title %}Device approval required{% endblock %}
-
+{% block sidebar_left %}{% endblock %}
 {% block content %}
-<div class="max-w-xl mx-auto px-4 py-12">
-  <div class="bg-white shadow rounded-lg p-6 space-y-4">
-    <h1 class="text-xl font-semibold text-slate-900">Device approval required</h1>
-    <p class="text-sm text-slate-600">
-      This device was stopped because it is new or high-risk. Approve it from a trusted, signed-in session to continue.
-    </p>
+<div class="w-full px-4 sm:px-6 lg:px-8 py-12">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-6 lg:col-start-4">
+      <div class="card-glass-neon p-6 space-y-4">
+        <h1 class="text-xl font-semibold text-[var(--color-text-primary)]">Device approval required</h1>
+        <p class="text-sm text-[var(--color-text-secondary)]">
+          This device was stopped because it is new or high-risk. Approve it from a trusted, signed-in session to continue.
+        </p>
 
-    {% if reason %}
-      <div class="text-xs text-slate-500">Reason: {{ reason }}</div>
-    {% endif %}
+        {% if reason %}
+          <div class="text-xs text-[var(--color-text-muted)]">Reason: {{ reason }}</div>
+        {% endif %}
 
-    {% if approval_url and token %}
-      <div class="border border-slate-200 rounded p-3 bg-slate-50">
-        <p class="text-sm text-slate-700 font-medium mb-2">Approval link</p>
-        <code class="block text-xs break-all text-slate-600">{{ approval_url }}</code>
-        <p class="text-xs text-slate-500 mt-2">Open this link on a trusted device where you're already signed in to approve and trust this device.</p>
+        {% if approval_url and token %}
+          <div class="card-glass border-l-4 border-[var(--primitive-cyan-500)] p-4">
+            <p class="text-sm text-[var(--color-text-primary)] font-medium mb-2">Approval link</p>
+            <code class="block text-xs break-all text-[var(--primitive-cyan-400)] font-mono bg-[var(--color-bg-base)] p-2 rounded">{{ approval_url }}</code>
+            <p class="text-xs text-[var(--color-text-muted)] mt-2">Open this link on a trusted device where you're already signed in to approve and trust this device.</p>
+          </div>
+        {% else %}
+          <p class="text-sm text-[var(--color-text-secondary)]">No approval token found. Try signing in again to generate a new link.</p>
+        {% endif %}
+
+        <div class="flex gap-4 text-sm">
+          <a href="{% url 'account_login' %}" class="text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors">Back to sign in</a>
+          <a href="{% url 'users:devices' %}" class="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors">Manage devices</a>
+        </div>
       </div>
-    {% else %}
-      <p class="text-sm text-slate-600">No approval token found. Try signing in again to generate a new link.</p>
-    {% endif %}
-
-    <div class="space-y-2 text-sm">
-      <a href="{% url 'account_login' %}" class="text-primary hover:underline">Back to sign in</a>
-      <a href="{% url 'users:devices' %}" class="text-slate-600 hover:underline">Manage devices</a>
     </div>
   </div>
 </div>

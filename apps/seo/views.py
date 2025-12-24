@@ -64,6 +64,18 @@ def _has_seo_consent(request: HttpRequest) -> bool:
 
 
 def _is_private_host(hostname: str) -> bool:
+    """
+    Check if hostname resolves to private/internal IP.
+    
+    Blocks:
+    - Private ranges (10.x, 172.16-31.x, 192.168.x)
+    - Loopback (127.x)
+    - Link-local (169.254.x)
+    - Reserved ranges
+    - Multicast
+    - AWS metadata (169.254.169.254)
+    - Carrier-grade NAT (100.64.x)
+    """
     if not hostname:
         return True
     try:
@@ -77,6 +89,8 @@ def _is_private_host(hostname: str) -> bool:
             ip_obj = ipaddress.ip_address(ip)
         except ValueError:
             continue
+        
+        # Check standard private/reserved ranges
         if (
             ip_obj.is_private
             or ip_obj.is_loopback
@@ -85,6 +99,16 @@ def _is_private_host(hostname: str) -> bool:
             or ip_obj.is_multicast
         ):
             return True
+        
+        # Additional checks for cloud metadata and CGN
+        ip_str = str(ip_obj)
+        if (
+            ip_str.startswith('169.254.169.')  # AWS/cloud metadata
+            or ip_str.startswith('100.64.')     # Carrier-grade NAT (RFC 6598)
+            or ip_str.startswith('0.')          # "This" network
+        ):
+            return True
+            
     return False
 
 

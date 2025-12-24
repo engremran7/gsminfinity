@@ -1,62 +1,55 @@
 {% extends "base.html" %}
-{% block title %}Devices - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
-
+{% block title %}Devices - {{ site_settings.site_name|default:"Site" }}{% endblock %}
+{% block sidebar_left %}{% endblock %}
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  <div class="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg p-4 mb-6 flex items-start gap-3">
-    <svg class="h-5 w-5 mt-0.5 text-slate-500" aria-hidden="true"><use href="#icon-info"></use></svg>
-    <div class="text-sm">
-      <p class="font-semibold">Device registration consent</p>
-      <p class="mt-1">We register devices to protect your downloads and account. You can manage consent in Privacy &amp; Data.</p>
-      <a href="{% url 'consent:privacy_center' %}" class="text-primary hover:underline">Go to Privacy &amp; Data</a>
-    </div>
-  </div>
-
-  <div class="flex items-center justify-between gap-4 mb-6">
-    <div>
-      <h1 class="text-2xl font-semibold text-slate-900">Your devices</h1>
-      <p class="text-sm text-slate-600 mt-1">
-        Review devices that have signed in to your account. Trust familiar ones, block or remove anything you do not recognize.
-      </p>
-    </div>
-    <a href="{% url 'users:dashboard' %}" class="text-sm text-primary hover:underline">Back to dashboard</a>
-  </div>
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-    <div class="bg-white shadow rounded-lg p-4 space-y-3">
-      <h2 class="text-sm font-semibold text-slate-900">Export device key</h2>
-      <p class="text-xs text-slate-600">Export your device key (encrypted) to reuse on another browser on this machine.</p>
-      <div class="space-y-2">
-        <input type="password" id="export-passphrase" class="w-full text-sm border rounded px-3 py-2" placeholder="Passphrase to encrypt export" />
-        <button type="button" id="export-key-btn" class="text-xs px-4 py-2 rounded bg-slate-900 text-white hover:bg-slate-800">Export key</button>
-        <textarea id="export-output" class="w-full text-xs border rounded px-3 py-2 h-24" readonly placeholder="Exported key blob will appear here"></textarea>
+<div class="w-full px-4 sm:px-6 lg:px-8 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-10 lg:col-start-2">
+      <div class="card-glass rounded-xl p-4 mb-6 flex items-start gap-3">
+        <svg class="h-5 w-5 mt-0.5 text-[var(--color-brand-primary)]" aria-hidden="true"><use href="#icon-info"></use></svg>
+        <div class="text-sm">
+          <p class="font-semibold text-[var(--color-text-primary)]">Device registration consent</p>
+          <p class="mt-1 text-[var(--color-text-secondary)]">We register devices to protect your downloads and account. You can manage consent in Privacy &amp; Data.</p>
+          <a href="{% url 'consent:privacy_center' %}" class="text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)] hover:underline transition-colors">Go to Privacy &amp; Data</a>
+        </div>
       </div>
-    </div>
-    <div class="bg-white shadow rounded-lg p-4 space-y-3">
-      <h2 class="text-sm font-semibold text-slate-900">Import device key</h2>
-      <p class="text-xs text-slate-600">Paste the exported blob and passphrase to reuse the same device ID on another browser.</p>
-      <div class="space-y-2">
-        <textarea id="import-blob" class="w-full text-xs border rounded px-3 py-2 h-24" placeholder='Paste JSON: {"blob":"...","salt":"...","iv":"..."}'></textarea>
-        <input type="password" id="import-passphrase" class="w-full text-sm border rounded px-3 py-2" placeholder="Passphrase used during export" />
-        <button type="button" id="import-key-btn" class="text-xs px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">Import & register</button>
-        <p id="import-status" class="text-xs text-slate-600"></p>
+
+      <div class="flex items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl font-semibold text-[var(--color-text-primary)]">Your devices</h1>
+          <p class="text-sm text-[var(--color-text-secondary)] mt-1">
+            Review devices that have signed in to your account.
+          </p>
+        </div>
+        <a href="{% url 'users:dashboard' %}" class="text-sm text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)] hover:underline transition-colors">Back to dashboard</a>
       </div>
-    </div>
-  </div>
+
+      {% if remaining_devices is not None %}
+      <div class="card-glass rounded-xl p-4 mb-6 flex items-center justify-between border-l-4 border-[var(--color-brand-primary)]">
+        <div>
+          <p class="font-semibold text-[var(--color-text-primary)]">Device Limit</p>
+          <p class="text-sm mt-1 text-[var(--color-text-secondary)]">You have used <span class="font-bold text-[var(--color-brand-primary)]">{{ current_device_count }}</span> of <span class="font-bold text-[var(--color-brand-primary)]">{{ max_devices }}</span> device slots.</p>
+        </div>
+        <div class="text-right">
+          <p class="text-2xl font-bold text-[var(--color-brand-primary)]">{{ remaining_devices }}</p>
+          <p class="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">Remaining</p>
+        </div>
+      </div>
+      {% endif %}
 
   {% if error %}
-  <div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-lg p-4 mb-4">
-    {{ error }}
+  <div class="card-glass rounded-xl p-4 mb-4 border-l-4 border-red-500 bg-red-500/10">
+    <p class="text-red-400">{{ error }}</p>
   </div>
   {% endif %}
 
   {% if pending_device %}
-  <div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg p-4 mb-4">
+  <div class="card-glass rounded-xl p-4 mb-4 border-l-4 border-amber-500 bg-amber-500/10">
     <div class="flex items-start gap-3">
-      <svg class="h-5 w-5 mt-0.5 text-amber-600" aria-hidden="true"><use href="#icon-alert"></use></svg>
+      <svg class="h-5 w-5 mt-0.5 text-amber-400" aria-hidden="true"><use href="#icon-alert"></use></svg>
       <div class="text-sm">
-        <p class="font-semibold">New device requires approval</p>
-        <p class="mt-1">
+        <p class="font-semibold text-amber-400">New device requires approval</p>
+        <p class="mt-1 text-[var(--color-text-secondary)]">
           {% if pending_device.reason == "untrusted_new_device" %}
             A new device was detected and must be trusted to continue.
           {% elif pending_device.reason == "mfa_required" or pending_device.reason == "mfa_required_risk" %}
@@ -66,10 +59,10 @@
           {% endif %}
         </p>
         <div class="mt-3 flex items-center gap-2">
-          <a href="{{ pending_device.approval_url }}" class="px-3 py-2 rounded bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700">
+          <a href="{{ pending_device.approval_url }}" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/25">
             Approve this device
           </a>
-          <a href="{% url 'users:device_eviction' %}" class="text-xs text-slate-700 hover:underline">Manage devices instead</a>
+          <a href="{% url 'users:device_eviction' %}" class="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-brand-primary)] hover:underline transition-colors">Manage devices instead</a>
         </div>
       </div>
     </div>
@@ -77,84 +70,93 @@
   {% endif %}
 
   {% if message %}
-  <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg p-4 mb-4">
-    {{ message }}
+  <div class="card-glass rounded-xl p-4 mb-4 border-l-4 border-emerald-500 bg-emerald-500/10">
+    <p class="text-emerald-400">{{ message }}</p>
   </div>
   {% endif %}
 
   {% if devices %}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       {% for device in devices %}
-      <div class="bg-white shadow rounded-lg p-4 flex flex-col gap-3">
+      <div class="card-glass rounded-xl p-5 flex flex-col gap-3 hover:shadow-lg hover:shadow-[var(--color-brand-primary)]/10 transition-all duration-300">
         <div class="flex items-start justify-between gap-3">
           <div>
-            <p class="text-sm font-semibold text-slate-900">
+            <p class="text-sm font-semibold text-[var(--color-text-primary)]">
               {{ device.display_name|default:"Device" }}
             </p>
-            <p class="text-xs text-slate-500 break-all">
+            <p class="text-xs text-[var(--color-text-muted)] break-all">
               ID: {{ device.os_fingerprint|default:"unknown" }}
             </p>
           </div>
           {% if device.is_blocked %}
-            <span class="text-xs px-2 py-1 rounded bg-rose-100 text-rose-700">Blocked</span>
+            <span class="text-xs px-3 py-1 rounded-full bg-red-500/20 text-red-400 font-medium">Blocked</span>
           {% elif device.is_trusted %}
-            <span class="text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">Trusted</span>
+            <span class="text-xs px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 font-medium">Trusted</span>
           {% else %}
-            <span class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-700">Normal</span>
+            <span class="text-xs px-3 py-1 rounded-full bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] font-medium">Normal</span>
           {% endif %}
         </div>
-        <div class="text-xs text-slate-600 space-y-1">
+        <div class="text-xs text-[var(--color-text-secondary)] space-y-1">
           <p>Browser: {{ device.browser_family|default:"-" }} · OS: {{ device.os_family|default:"-" }}</p>
           <p>First seen: {{ device.first_seen_at|default:"-" }}</p>
           <p>Last seen: {{ device.last_seen_at|default:"-" }}</p>
           <p>Risk score: {{ device.risk_score|default:"0" }}/100</p>
         </div>
-        <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
-          {% if request.user.is_staff %}
+        <div class="flex items-center gap-2 pt-3 border-t border-[var(--color-border-default)]">
+          {# DEVICE MANAGEMENT: Only superusers can trust/untrust/remove devices #}
+          {# Regular users and even other staff/admins cannot modify their own devices #}
+          {% if request.user.is_superuser %}
             <form method="post" class="inline">
               {% csrf_token %}
               <input type="hidden" name="device_id" value="{{ device.id }}">
               {% if device.is_trusted %}
                 <input type="hidden" name="action" value="untrust">
-                <button type="submit" class="text-xs px-3 py-2 rounded border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100">
+                <button type="submit" class="text-xs px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors">
                   Mark untrusted
                 </button>
               {% else %}
                 <input type="hidden" name="action" value="trust">
-                <button type="submit" class="text-xs px-3 py-2 rounded border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100">
+                <button type="submit" class="text-xs px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
                   Trust device
                 </button>
               {% endif %}
             </form>
-          {% else %}
-            <span class="text-xs text-slate-500">Only admins can trust/untrust devices. Contact support for changes.</span>
-          {% endif %}
 
-          {% if request.user.is_staff and not device.is_trusted %}
-            <form method="post" class="inline" onsubmit="return confirm('Remove this device? It will need to sign in again.');">
+            {% if not device.is_trusted %}
+            <form method="post" class="inline" data-confirm="Remove this device? It will need to sign in again.">
               {% csrf_token %}
               <input type="hidden" name="device_id" value="{{ device.id }}">
               <input type="hidden" name="action" value="delete">
-              <button type="submit" class="text-xs px-3 py-2 rounded border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100">
+              <button type="submit" class="text-xs px-3 py-2 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
                 Remove
               </button>
             </form>
-          {% elif request.user.is_staff and device.is_trusted %}
-            <span class="text-xs text-slate-500">Trusted devices must be untrusted before removal.</span>
+            {% else %}
+            <span class="text-xs text-[var(--color-text-muted)]">Trusted devices must be untrusted before removal.</span>
+            {% endif %}
           {% else %}
-            <span class="text-xs text-slate-500">Only admins can remove devices.</span>
+            {# Non-superusers cannot modify devices #}
+            <span class="text-xs text-[var(--color-text-muted)]">
+              {% if device.is_trusted %}
+                ✓ This device is registered and trusted.
+              {% else %}
+                This device is registered.
+              {% endif %}
+            </span>
           {% endif %}
         </div>
       </div>
       {% endfor %}
     </div>
   {% else %}
-    <div class="bg-white shadow rounded-lg p-6">
-      <p class="text-sm text-slate-700">No devices registered yet.</p>
-      <p class="text-xs text-slate-500 mt-1">
+    <div class="card-glass rounded-xl p-6">
+      <p class="text-sm text-[var(--color-text-secondary)]">No devices registered yet.</p>
+      <p class="text-xs text-[var(--color-text-muted)] mt-1">
         Sign in from a device to register it automatically. New devices may require approval depending on your security settings.
       </p>
     </div>
   {% endif %}
+    </div>
+  </div>
 </div>
 {% endblock %}

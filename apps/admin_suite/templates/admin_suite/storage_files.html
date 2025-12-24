@@ -1,0 +1,92 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Storage Files{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">File Management</h1>
+      <p class="text-sm text-slate-600">Browse and manage stored files across all drives.</p>
+    </div>
+    <a href="{% url 'admin_suite:storage' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">← Back to Storage</a>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <!-- Search -->
+  <form method="get" class="flex items-center gap-2">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search files..." class="border rounded px-3 py-2 text-sm w-64">
+    <button type="submit" class="px-3 py-2 text-sm rounded bg-primary text-white">Search</button>
+    {% if query %}
+      <a href="{% url 'admin_suite:storage_files' %}" class="text-sm text-primary hover:underline">Clear</a>
+    {% endif %}
+    <span class="text-sm text-slate-500 ml-4">{{ total_count }} files found</span>
+  </form>
+
+  <!-- Files Table -->
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Filename</th>
+            <th class="px-4 py-2">Size</th>
+            <th class="px-4 py-2">MIME Type</th>
+            <th class="px-4 py-2">Drive</th>
+            <th class="px-4 py-2">Downloads</th>
+            <th class="px-4 py-2">Created</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for f in files %}
+          <tr>
+            <td class="px-4 py-2 max-w-xs truncate" title="{{ f.original_filename }}">{{ f.original_filename }}</td>
+            <td class="px-4 py-2">
+              {% if f.file_size %}
+                {% widthratio f.file_size 1048576 1 as size_mb %}
+                {{ size_mb }} MB
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 font-mono text-xs">{{ f.mime_type|default:"-" }}</td>
+            <td class="px-4 py-2">{{ f.drive__name|default:"-" }}</td>
+            <td class="px-4 py-2">{{ f.download_count|default:0 }}</td>
+            <td class="px-4 py-2">{{ f.created_at|date:"Y-m-d H:i" }}</td>
+            <td class="px-4 py-2">
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_file">
+                <input type="hidden" name="file_id" value="{{ f.id }}">
+                <button type="submit" data-confirm="Delete this file?" class="text-xs text-red-600 hover:underline">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="px-4 py-3 text-slate-500">No files found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  {% if total_count > page_size %}
+  <div class="flex items-center justify-center gap-2">
+    {% if page > 1 %}
+    <a href="?q={{ query }}&page={{ page|add:'-1' }}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">← Previous</a>
+    {% endif %}
+    <span class="text-sm text-slate-600">Page {{ page }}</span>
+    {% if files|length >= page_size %}
+    <a href="?q={{ query }}&page={{ page|add:'1' }}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Next →</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,348 @@
+{
+  "summary": {
+    "config_files": 2,
+    "templates_scanned": 187,
+    "total_class_usages": 23078,
+    "unique_classes": 1153,
+    "issues_found": 25
+  },
+  "configs": [
+    {
+      "file": "D:\\GsmInfinity\\tailwind.config.js",
+      "content_paths": [
+        "./apps/**/templates/**/*.html",
+        "./templates/**/*.html",
+        "./static/**/*.js",
+        "./static/**/*.ts"
+      ],
+      "plugins": [
+        "@tailwindcss/forms",
+        "@tailwindcss/typography",
+        "@tailwindcss/line-clamp"
+      ],
+      "has_custom_colors": true,
+      "has_custom_utilities": true,
+      "file_size": 6872
+    },
+    {
+      "file": "D:\\GsmInfinity\\tailwind.config.enterprise.js",
+      "content_paths": [
+        "./templates/**/*.html",
+        "./apps/**/templates/**/*.html",
+        "./static/js/**/*.js"
+      ],
+      "plugins": [
+        "@tailwindcss/forms",
+        "@tailwindcss/typography",
+        "@tailwindcss/aspect-ratio"
+      ],
+      "has_custom_colors": true,
+      "has_custom_utilities": true,
+      "file_size": 10703
+    }
+  ],
+  "class_categories": {
+    "typography": 6129,
+    "other": 4451,
+    "padding": 3830,
+    "border": 1275,
+    "border-radius": 1146,
+    "background": 1024,
+    "flexbox": 768,
+    "margin": 667,
+    "interaction": 575,
+    "gap": 562,
+    "width": 458,
+    "dark-mode": 387,
+    "effects": 370,
+    "spacing": 335,
+    "responsive": 332,
+    "grid": 273,
+    "height": 219,
+    "sizing": 166,
+    "animation": 49,
+    "position": 48,
+    "z-index": 14
+  },
+  "most_used_classes": {
+    "text-sm": 1044,
+    "py-2": 911,
+    "px-4": 879,
+    "text-xs": 737,
+    "border": 710,
+    "flex": 631,
+    "items-center": 571,
+    "font-semibold": 522,
+    "text-slate-500": 485,
+    "rounded": 477,
+    "bg-white": 461,
+    "rounded-lg": 442,
+    "text-slate-900": 361,
+    "text-slate-600": 351,
+    "font-medium": 350,
+    "shadow-sm": 314,
+    "px-3": 310,
+    "gap-2": 279,
+    "px-2": 260,
+    "py-1": 245
+  },
+  "issues": [
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\components\\button.html",
+      "class_count": 26,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\components\\buttons.html",
+      "class_count": 16,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\components\\card.html",
+      "class_count": 21,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\includes\\new_device_popup.html",
+      "class_count": 16,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\partials\\notification_list.html",
+      "class_count": 21,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\users\\notifications\\details.html",
+      "class_count": 22,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\users\\notifications\\list.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\consent\\includes\\banner.html",
+      "class_count": 16,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\settings.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\settings.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\settings.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\settings.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\settings.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\settings.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\settings.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\storage.html",
+      "class_count": 19,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\storage.html",
+      "class_count": 19,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\storage_providers.html",
+      "class_count": 19,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\storage_provider_detail.html",
+      "class_count": 19,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\storage_provider_detail.html",
+      "class_count": 19,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\storage_provider_detail.html",
+      "class_count": 19,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\user_detail.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "COMPLEX_CLASS_STRING",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\user_detail.html",
+      "class_count": 17,
+      "message": "Consider extracting to a component"
+    },
+    {
+      "type": "UNKNOWN_CLASSES",
+      "severity": "info",
+      "classes": [
+        {
+          "class": "min-h-screen",
+          "count": 8
+        },
+        {
+          "class": "px-3",
+          "count": 310
+        },
+        {
+          "class": "py-4",
+          "count": 108
+        },
+        {
+          "class": "icon",
+          "count": 101
+        },
+        {
+          "class": "visually-hidden",
+          "count": 3
+        },
+        {
+          "class": "mb-2",
+          "count": 71
+        },
+        {
+          "class": "py-2",
+          "count": 911
+        },
+        {
+          "class": "alert",
+          "count": 3
+        },
+        {
+          "class": "if",
+          "count": 130
+        },
+        {
+          "class": "message.tags",
+          "count": 7
+        },
+        {
+          "class": "==",
+          "count": 70
+        },
+        {
+          "class": "max-w-md",
+          "count": 10
+        },
+        {
+          "class": "mx-auto",
+          "count": 38
+        },
+        {
+          "class": "py-12",
+          "count": 18
+        },
+        {
+          "class": "mb-3",
+          "count": 44
+        },
+        {
+          "class": "mb-4",
+          "count": 76
+        },
+        {
+          "class": "px-4",
+          "count": 879
+        },
+        {
+          "class": "form-check",
+          "count": 5
+        },
+        {
+          "class": "form-check-input",
+          "count": 5
+        },
+        {
+          "class": "form-check-label",
+          "count": 5
+        }
+      ],
+      "message": "Found 162 potentially non-Tailwind classes"
+    },
+    {
+      "type": "MULTIPLE_CONFIGS",
+      "severity": "warning",
+      "files": [
+        "D:\\GsmInfinity\\tailwind.config.js",
+        "D:\\GsmInfinity\\tailwind.config.enterprise.js"
+      ],
+      "message": "Multiple Tailwind configs found - potential drift risk"
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load ads_tags %}
+{% block title %}Manage posts - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+
+{% block sidebar_left %}{% endblock %}
+{% block sidebar_right %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+  <div class="flex items-center justify-between flex-wrap gap-3">
+    <div>
+      <p class="text-xs uppercase tracking-wide text-[var(--primitive-cyan-400)] font-semibold">Manage</p>
+      <h1 class="text-2xl font-bold text-[var(--color-text-primary)]">Drafts & Scheduled</h1>
+      <p class="text-sm text-[var(--color-text-secondary)]">Your unpublished posts. Staff sees all; authors see their own.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'blog:post_create' %}" class="px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primitive-cyan-500)] to-[var(--primitive-cyan-600)] text-white font-medium hover:shadow-[0_0_20px_var(--primitive-cyan-500)] transition-shadow inline-flex items-center gap-2">
+        <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-plus"></use></svg>
+        New post
+      </a>
+      <a href="{% url 'blog:post_list' %}" class="px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] hover:border-[var(--primitive-cyan-500)]/50 transition-all text-sm">Back to blog</a>
+      <a href="{% url 'account_logout' %}" class="px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--primitive-red-400)] hover:border-[var(--primitive-red-500)]/50 transition-all text-sm">Logout</a>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'blog:bulk_publish' %}">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Drafts Section -->
+      <section class="card-glass-neon rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Drafts</h2>
+            <p class="text-xs text-[var(--color-text-muted)]">Select and publish in bulk.</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <label class="flex items-center gap-1 text-[var(--color-text-secondary)]">
+              <input type="checkbox" class="h-4 w-4 rounded border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)]" data-select-all="drafts">
+              Select all
+            </label>
+            <button type="submit" class="px-3 py-2 rounded-lg bg-gradient-to-r from-[var(--primitive-cyan-500)] to-[var(--primitive-cyan-600)] text-white font-medium hover:shadow-[0_0_12px_var(--primitive-cyan-500)] transition-shadow text-sm">Publish selected</button>
+          </div>
+        </div>
+        {% if drafts %}
+          <div class="divide-y divide-[var(--color-border-subtle)]">
+            {% for post in drafts %}
+              <article class="py-3 space-y-1">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-3">
+                    <input type="checkbox" name="post_id" value="{{ post.id }}" aria-label="Select post" data-group="drafts" class="h-4 w-4 rounded border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--primitive-cyan-500)] focus:ring-[var(--primitive-cyan-500)]/50">
+                    <div>
+                      <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ post.title }}</p>
+                      <p class="text-xs text-[var(--color-text-muted)]">Updated {{ post.updated_at|date:"M j, Y H:i" }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs flex-wrap">
+                    <span class="px-2 py-0.5 rounded-full bg-[var(--color-bg-surface-tertiary)] text-[var(--color-text-secondary)]">{{ post.get_status_display }}</span>
+                    <span class="px-2 py-0.5 rounded-full {% if post.tags.all|length > 0 %}bg-[var(--primitive-green-500)]/20 text-[var(--primitive-green-400)]{% else %}bg-[var(--primitive-amber-500)]/20 text-[var(--primitive-amber-400)]{% endif %}">Tags {% if post.tags.all|length > 0 %}ready{% else %}missing{% endif %}</span>
+                    <span class="px-2 py-0.5 rounded-full {% if post.seo_title or post.seo_description %}bg-[var(--primitive-green-500)]/20 text-[var(--primitive-green-400)]{% else %}bg-[var(--primitive-amber-500)]/20 text-[var(--primitive-amber-400)]{% endif %}">SEO {% if post.seo_title or post.seo_description %}set{% else %}pending{% endif %}</span>
+                    {% if post.is_ai_generated %}
+                      <span class="px-2 py-0.5 rounded-full bg-[var(--primitive-purple-500)]/20 text-[var(--primitive-purple-400)]">AI</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 text-xs text-[var(--color-text-muted)] flex-wrap">
+                  <span>{{ post.category.name|default:"No category" }}</span>
+                  <span>•</span>
+                  <span>Tags: {{ post.tags.all|length }}</span>
+                  {% if post.publish_at %}<span>• Publishes {{ post.publish_at|date:"M j, Y H:i" }}</span>{% endif %}
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <a href="{% url 'blog:post_detail' slug=post.slug %}" class="px-2 py-1 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] hover:border-[var(--primitive-cyan-500)]/50 transition-all">Preview</a>
+                  <a href="{% url 'blog:post_create' %}?edit={{ post.slug }}" class="text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)]">Edit</a>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-sm text-[var(--color-text-muted)]">No drafts found.</p>
+        {% endif %}
+      </section>
+
+      <!-- Scheduled Section -->
+      <section class="card-glass-neon rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Scheduled</h2>
+          <div class="flex items-center gap-2 text-xs">
+            <label class="flex items-center gap-1 text-[var(--color-text-secondary)]">
+              <input type="checkbox" class="h-4 w-4 rounded border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)]" data-select-all="scheduled">
+              Select all
+            </label>
+            <span class="text-xs text-[var(--color-text-muted)]">{{ scheduled|length }} items</span>
+          </div>
+        </div>
+        {% if scheduled %}
+          <div class="divide-y divide-[var(--color-border-subtle)]">
+            {% for post in scheduled %}
+              <article class="py-3 space-y-1">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-3">
+                    <input type="checkbox" name="post_id" value="{{ post.id }}" id="post-{{ post.id }}" data-group="scheduled" class="h-4 w-4 rounded border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--primitive-cyan-500)] focus:ring-[var(--primitive-cyan-500)]/50" aria-label="Select {{ post.title }}">
+                    <div>
+                      <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ post.title }}</p>
+                      <p class="text-xs text-[var(--color-text-muted)]">Scheduled for {{ post.publish_at|date:"M j, Y H:i" }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs flex-wrap">
+                    <span class="px-2 py-0.5 rounded-full bg-[var(--primitive-amber-500)]/20 text-[var(--primitive-amber-400)]">{{ post.get_status_display }}</span>
+                    <span class="px-2 py-0.5 rounded-full {% if post.tags.all|length > 0 %}bg-[var(--primitive-green-500)]/20 text-[var(--primitive-green-400)]{% else %}bg-[var(--primitive-amber-500)]/20 text-[var(--primitive-amber-400)]{% endif %}">Tags {% if post.tags.all|length > 0 %}ready{% else %}missing{% endif %}</span>
+                    <span class="px-2 py-0.5 rounded-full {% if post.seo_title or post.seo_description %}bg-[var(--primitive-green-500)]/20 text-[var(--primitive-green-400)]{% else %}bg-[var(--primitive-amber-500)]/20 text-[var(--primitive-amber-400)]{% endif %}">SEO {% if post.seo_title or post.seo_description %}set{% else %}pending{% endif %}</span>
+                    {% if post.is_ai_generated %}
+                      <span class="px-2 py-0.5 rounded-full bg-[var(--primitive-purple-500)]/20 text-[var(--primitive-purple-400)]">AI</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-[var(--color-text-muted)] flex-wrap">
+                  <span>{{ post.category.name|default:"No category" }}</span>
+                  <span>•</span>
+                  <span>Tags: {{ post.tags.all|length }}</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <a href="{% url 'blog:post_detail' slug=post.slug %}" class="px-2 py-1 rounded border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] hover:border-[var(--primitive-cyan-500)]/50 transition-all">Preview</a>
+                  <a href="{% url 'blog:post_create' %}?edit={{ post.slug }}" class="text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)]">Edit</a>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-sm text-[var(--color-text-muted)]">No scheduled posts.</p>
+        {% endif %}
+      </section>
+    </div>
+  </form>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 space-y-4">
+      {% render_ad_slot "list-inline" %}
+    </div>
+    <div class="space-y-4">
+      {% render_ad_slot "sidebar-rect" %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script nonce="{{ request.csp_nonce }}">
+  (function(){
+    const selectGroups = document.querySelectorAll('[data-select-all]');
+    if(!selectGroups.length) return;
+    selectGroups.forEach(toggle => {
+      const group = toggle.getAttribute('data-select-all');
+      toggle.addEventListener('change', () => {
+        document.querySelectorAll(`input[type="checkbox"][data-group="${group}"]`).forEach(cb => {
+          cb.checked = toggle.checked;
+        });
+      });
+    });
+  })();
+</script>
+{% endblock %}

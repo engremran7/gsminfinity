@@ -150,11 +150,12 @@ def notify_mention(comment_id: int, user_id: int):
         )
         
         # Mark as notified
-        from apps.comments.models_enhanced import CommentMention
-        CommentMention.objects.filter(
-            comment=comment,
-            mentioned_user=mentioned_user
-        ).update(notified=True, notified_at=timezone.now())
+        # ARCHIVED: Enhanced models moved - see apps/core/versions/
+        # from apps.comments.models_enhanced import CommentMention
+        # CommentMention.objects.filter(
+        #     comment=comment,
+        #     mentioned_user=mentioned_user
+        # ).update(notified=True, notified_at=timezone.now())
         
     except Exception as e:
         logger.error(f"Failed to send mention notification: {e}")

@@ -4,36 +4,36 @@
 {% block title %}Tag Duplicates Review{% endblock %}
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 py-8 space-y-4">
-  <h1 class="text-2xl font-bold text-slate-900">Tag Duplicates Review</h1>
-  <p class="text-sm text-slate-600">Staff-only merge suggestions. Similarity is computed across normalized names.</p>
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50">
+  <h1 class="text-2xl font-bold bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-neon-400)] bg-clip-text text-transparent">Tag Duplicates Review</h1>
+  <p class="text-sm text-[var(--color-text-secondary)]">Staff-only merge suggestions. Similarity is computed across normalized names.</p>
+  <div class="overflow-x-auto card-glass">
+    <table class="min-w-full divide-y divide-[var(--color-border-default)] text-sm">
+      <thead class="bg-[var(--color-bg-surface-secondary)]">
         <tr>
-          <th class="px-3 py-2 text-left text-xs font-semibold text-slate-700">Score</th>
-          <th class="px-3 py-2 text-left text-xs font-semibold text-slate-700">Tag A</th>
-          <th class="px-3 py-2 text-left text-xs font-semibold text-slate-700">Tag B</th>
-          <th class="px-3 py-2 text-left text-xs font-semibold text-slate-700">Actions</th>
+          <th class="px-3 py-2 text-left text-xs font-semibold text-[var(--color-text-primary)]">Score</th>
+          <th class="px-3 py-2 text-left text-xs font-semibold text-[var(--color-text-primary)]">Tag A</th>
+          <th class="px-3 py-2 text-left text-xs font-semibold text-[var(--color-text-primary)]">Tag B</th>
+          <th class="px-3 py-2 text-left text-xs font-semibold text-[var(--color-text-primary)]">Actions</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody class="divide-y divide-[var(--color-border-default)]">
         {% for pair in pairs %}
-        <tr>
-          <td class="px-3 py-2 text-slate-700 font-semibold">{{ pair.score }}</td>
-          <td class="px-3 py-2 text-slate-800">{{ pair.a }}</td>
-          <td class="px-3 py-2 text-slate-800">{{ pair.b }}</td>
+        <tr class="hover:bg-[var(--color-interactive-hover)] transition-colors">
+          <td class="px-3 py-2 text-[var(--primitive-cyan-400)] font-semibold">{{ pair.score }}</td>
+          <td class="px-3 py-2 text-[var(--color-text-primary)]">{{ pair.a }}</td>
+          <td class="px-3 py-2 text-[var(--color-text-primary)]">{{ pair.b }}</td>
           <td class="px-3 py-2">
             <form method="post" action="{% url 'tags:merge' %}" class="flex items-center gap-2">
               {% csrf_token %}
               <input type="hidden" name="source" value="{{ pair.a_slug }}">
               <input type="hidden" name="target" value="{{ pair.b_slug }}">
-              <button type="submit" class="text-xs text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded">Merge A into B</button>
+              <button type="submit" class="text-xs text-white bg-gradient-to-r from-[var(--primitive-red-500)] to-[var(--primitive-red-600)] hover:shadow-[0_0_10px_var(--primitive-red-500)] px-3 py-1 rounded transition-all">Merge A into B</button>
             </form>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" class="px-3 py-4 text-slate-500 text-sm">No duplicate pairs found at this threshold.</td>
+          <td colspan="4" class="px-3 py-4 text-[var(--color-text-muted)] text-sm">No duplicate pairs found at this threshold.</td>
         </tr>
         {% endfor %}
       </tbody>

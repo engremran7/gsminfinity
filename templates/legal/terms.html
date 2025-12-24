@@ -1,13 +1,213 @@
 
-{% extends "base.html" %} {% load static %} {% block title %}Terms of Service —
-{{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %} {% block
-content %}
-<div class="container py-5">
-  <h2 class="mb-3">Terms of Service</h2>
-  <p>
-    By using {{ site_settings.site_name|default:"GSMInfinity" }}, you agree to
-    our terms and policies.
-  </p>
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Terms of Service — {{ site_settings.site_name|default:"Site" }}{% endblock %}
+{% block meta_description %}Read the terms and conditions for using {{ site_settings.site_name|default:"Site" }} services.{% endblock %}
+
+{% block sidebar_left %}{% endblock %}
+{% block sidebar_right %}{% endblock %}
+
+{% block content %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="lg:col-span-8 lg:col-start-3">
+      {# Header #}
+      <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-[var(--color-text-primary)] mb-2">Terms of Service</h1>
+        <p class="text-[var(--color-text-secondary)]">Last updated: {{ site_settings.legal_last_updated|default:"January 2025" }}</p>
+      </div>
+
+      {# Content Card #}
+      <article class="card-glass rounded-2xl overflow-hidden">
+        <div class="p-6 sm:p-8 prose prose-invert max-w-none prose-headings:text-[var(--color-text-primary)] prose-p:text-[var(--color-text-secondary)] prose-li:text-[var(--color-text-secondary)] prose-strong:text-[var(--color-text-primary)]">
+          
+          <section id="acceptance">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">1.</span> Acceptance of Terms
+            </h2>
+            <p>
+              By accessing or using {{ site_settings.site_name|default:"our services" }}, you agree to be bound by these 
+              Terms of Service and all applicable laws and regulations. If you do not agree with any of these terms, 
+              you are prohibited from using or accessing our services.
+            </p>
+          </section>
+
+          <section id="definitions">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">2.</span> Definitions
+            </h2>
+            <ul>
+              <li><strong>"Service"</strong> refers to the website, applications, and features provided by {{ site_settings.site_name|default:"us" }}</li>
+              <li><strong>"User"</strong> refers to any individual who accesses or uses the Service</li>
+              <li><strong>"Content"</strong> refers to text, images, videos, and other materials available through the Service</li>
+              <li><strong>"Account"</strong> refers to the registered user profile created to access certain features</li>
+            </ul>
+          </section>
+
+          <section id="user-accounts">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">3.</span> User Accounts
+            </h2>
+            <p>When creating an account, you agree to:</p>
+            <ul>
+              <li>Provide accurate, current, and complete information</li>
+              <li>Maintain and update your information to keep it accurate</li>
+              <li>Maintain the security of your password and accept all risks of unauthorized access</li>
+              <li>Notify us immediately of any unauthorized use of your account</li>
+              <li>Not share your account credentials with others</li>
+            </ul>
+            <p>
+              We reserve the right to suspend or terminate accounts that violate these terms or 
+              for any other reason at our sole discretion.
+            </p>
+          </section>
+
+          <section id="acceptable-use">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">4.</span> Acceptable Use
+            </h2>
+            <p>You agree NOT to:</p>
+            <ul>
+              <li>Use the Service for any unlawful purpose or to solicit illegal activities</li>
+              <li>Violate any laws, regulations, or third-party rights</li>
+              <li>Upload viruses, malware, or other malicious code</li>
+              <li>Interfere with or disrupt the Service or servers</li>
+              <li>Attempt to gain unauthorized access to any portion of the Service</li>
+              <li>Use automated systems (bots, scrapers) without prior written consent</li>
+              <li>Impersonate any person or entity</li>
+              <li>Harass, abuse, or harm another person</li>
+              <li>Post spam, advertisements, or unauthorized promotional material</li>
+            </ul>
+          </section>
+
+          <section id="intellectual-property">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">5.</span> Intellectual Property
+            </h2>
+            <p>
+              The Service and its original content, features, and functionality are owned by 
+              {{ site_settings.site_name|default:"us" }} and are protected by international copyright, trademark, 
+              patent, trade secret, and other intellectual property laws.
+            </p>
+            <p>
+              You may not reproduce, distribute, modify, create derivative works of, publicly display, 
+              or otherwise use any content without our prior written permission.
+            </p>
+          </section>
+
+          <section id="user-content">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">6.</span> User-Generated Content
+            </h2>
+            <p>
+              By posting content on our Service, you grant us a non-exclusive, worldwide, royalty-free 
+              license to use, modify, reproduce, and display such content in connection with the Service.
+            </p>
+            <p>
+              You are solely responsible for your content and represent that you have all necessary 
+              rights to post such content.
+            </p>
+          </section>
+
+          <section id="disclaimers">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">7.</span> Disclaimers
+            </h2>
+            <p>
+              THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, 
+              EXPRESS OR IMPLIED. WE DO NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, 
+              ERROR-FREE, OR COMPLETELY SECURE.
+            </p>
+            <p>
+              We are not responsible for any content, products, or services offered by third parties 
+              linked from our Service.
+            </p>
+          </section>
+
+          <section id="limitation">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">8.</span> Limitation of Liability
+            </h2>
+            <p>
+              IN NO EVENT SHALL {{ site_settings.site_name|default:"WE" }} BE LIABLE FOR ANY INDIRECT, INCIDENTAL, 
+              SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF PROFITS, 
+              DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES.
+            </p>
+          </section>
+
+          <section id="indemnification">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">9.</span> Indemnification
+            </h2>
+            <p>
+              You agree to defend, indemnify, and hold harmless {{ site_settings.site_name|default:"us" }} from any claims, 
+              damages, obligations, losses, or expenses arising from your use of the Service or violation 
+              of these Terms.
+            </p>
+          </section>
+
+          <section id="termination">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">10.</span> Termination
+            </h2>
+            <p>
+              We may terminate or suspend your access immediately, without prior notice, for any reason, 
+              including breach of these Terms. Upon termination, your right to use the Service will cease immediately.
+            </p>
+          </section>
+
+          <section id="governing-law">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">11.</span> Governing Law
+            </h2>
+            <p>
+              These Terms shall be governed by and construed in accordance with applicable laws, 
+              without regard to conflict of law provisions.
+            </p>
+          </section>
+
+          <section id="changes">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">12.</span> Changes to Terms
+            </h2>
+            <p>
+              We reserve the right to modify these Terms at any time. Changes will be effective immediately 
+              upon posting. Your continued use of the Service constitutes acceptance of the revised Terms.
+            </p>
+          </section>
+
+          <section id="contact">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--color-brand-primary)]">13.</span> Contact Us
+            </h2>
+            <p>If you have questions about these Terms, please contact us at:</p>
+            <div class="card-glass rounded-lg p-4 not-prose">
+              <p class="text-[var(--color-text-secondary)]">
+                <strong class="text-[var(--color-text-primary)]">{{ site_settings.site_name|default:"Site" }}</strong><br>
+                Email: <a href="mailto:{{ site_settings.contact_email|default:'legal@example.com' }}" class="text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)]">{{ site_settings.contact_email|default:"legal@example.com" }}</a>
+              </p>
+            </div>
+          </section>
+
+        </div>
+      </article>
+
+      {# Related Legal Documents #}
+      <nav class="mt-6 p-4 card-glass rounded-xl">
+        <h3 class="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">Related Documents</h3>
+        <div class="flex flex-wrap gap-3">
+          <a href="{% url 'pages:page' slug='privacy' %}" class="inline-flex items-center gap-1.5 text-sm text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)] transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            Privacy Policy
+          </a>
+          <a href="{% url 'pages:page' slug='cookies' %}" class="inline-flex items-center gap-1.5 text-sm text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)] transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Cookie Policy
+          </a>
+        </div>
+      </nav>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

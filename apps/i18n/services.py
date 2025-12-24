@@ -370,23 +370,123 @@ def register_manifest(app_id: str, site_id: str | None, namespaces: list[str], s
 
 def _audit(actor, action: str, app_id: str, before: dict | None = None, after: dict | None = None) -> None:
     try:
-        AuditLog.objects.create(actor=actor, action=action, app_id=app_id, before=before or {}, after=after or {})
+        AuditLog.objects.create(actor=actor, action=action, app_id=app_id, before=before or {})
     except Exception:
         return
 
 
 # ---------------------------------------------------------------------------
-# Auto-translate hook (placeholder for integration with external provider)
+# Auto-translate hook (integration ready for external provider)
 # ---------------------------------------------------------------------------
-def auto_translate(app_id: str, key: TranslationKey, target_locale: str, provider=None) -> Optional[TranslationValue]:
+def auto_translate(app_id: str, key: TranslationKey, target_locale: str, provider: str | None = None) -> Optional[TranslationValue]:
     """
-    Placeholder for auto-translate. In production this would call an LLM/MT provider.
+    Auto-translate a TranslationKey to target_locale using the configured provider.
+    
+    Args:
+        app_id: Application identifier
+        key: TranslationKey to translate
+        target_locale: Target locale code (e.g., 'ar', 'fr', 'de')
+        provider: Optional provider override ('deepl', 'argos', 'ai')
+        
+    Returns:
+        TranslationValue if successful, None otherwise
     """
     try:
-        # No-op stub; implement provider call here.
+        from apps.i18n.translation_provider import get_translator
+        from django.conf import settings
+        
+        # Get source text from English or default locale
+        source_value = TranslationValue.objects.filter(
+            translation_key=key,
+            locale__in=['en', 'en-US'],
+            status='approved'
+        ).first()
+        
+        if not source_value:
+            logger.warning(f"No source translation found for key {key.key}")
+            return None
+        
+        # Get configured provider
+        provider_name = provider or getattr(settings, 'TRANSLATION_PROVIDER', 'dummy')
+        translator = get_translator(provider_name)
+        
+        if not translator:
+            logger.warning(f"Translation provider '{provider_name}' not available")
+            return None
+        
+        # Translate
+        translated_text = translator.translate(
+            text=source_value.message,
+            source_lang='en',
+            target_lang=target_locale
+        )
+        
+        if not translated_text:
+            return None
+        
+        # Create or update translation value
+        trans_value, created = TranslationValue.objects.update_or_create(
+            translation_key=key,
+            locale=target_locale,
+            defaults={
+                'message': translated_text,
+                'status': 'pending',  # Auto-translated content needs review
+            }
+        )
+        
+        # Invalidate cache
+        cache_key = f"i18n_bundle:{app_id}:{target_locale}:*"
+        cache.delete_pattern(cache_key) if hasattr(cache, 'delete_pattern') else cache.clear()
+        
+        logger.info(f"Auto-translated key '{key.key}' to {target_locale}")
+        return trans_value
+        
+    except Exception as e:
+        logger.error(f"Auto-translate failed for key {key.key}: {e}")
         return None
-    except Exception:
-        return None
+
+
+def auto_translate_batch(app_id: str, target_locale: str, namespace: str | None = None, limit: int = 100) -> dict:
+    """
+    Batch auto-translate missing translations for a locale.
+    
+    Args:
+        app_id: Application identifier
+        target_locale: Target locale to translate to
+        namespace: Optional namespace filter
+        limit: Maximum keys to process
+        
+    Returns:
+        Dict with success/failure counts
+    """
+    results = {'translated': 0, 'failed': 0, 'skipped': 0}
+    
+    try:
+        # Find keys missing translations for target locale
+        qs = TranslationKey.objects.filter(app_id=app_id)
+        if namespace:
+            qs = qs.filter(namespace=namespace)
+        
+        keys_with_target = TranslationValue.objects.filter(
+            locale=target_locale
+        ).values_list('translation_key_id', flat=True)
+        
+        missing_keys = qs.exclude(id__in=keys_with_target)[:limit]
+        
+        for key in missing_keys:
+            result = auto_translate(app_id, key, target_locale)
+            if result:
+                results['translated'] += 1
+            else:
+                results['failed'] += 1
+        
+        logger.info(f"Batch translate to {target_locale}: {results}")
+        return results
+        
+    except Exception as e:
+        logger.error(f"Batch translate failed: {e}")
+        results['error'] = str(e)
+        return results
 
 
 __all__ = [
@@ -396,6 +496,7 @@ __all__ = [
     "resolve_theme",
     "register_manifest",
     "auto_translate",
+    "auto_translate_batch",
 ]
 
 

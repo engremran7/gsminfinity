@@ -4,8 +4,9 @@ from django.utils import timezone
 
 def seed_pages(apps, schema_editor):
     Page = apps.get_model("pages", "Page")
+    # Note: "home" page is NOT seeded because homepage is handled by
+    # home_landing view at root URL, not by pages app CMS
     defaults = [
-        ("home", "Home", "Welcome to our site."),
         ("privacy", "Privacy Policy", "Privacy policy content goes here."),
         ("terms", "Terms of Service", "Terms of service content goes here."),
         ("cookies", "Cookies Policy", "Cookies policy content goes here."),
@@ -27,7 +28,7 @@ def seed_pages(apps, schema_editor):
 
 def remove_seed(apps, schema_editor):
     Page = apps.get_model("pages", "Page")
-    Page.objects.filter(slug__in=["home", "privacy", "terms", "cookies"]).delete()
+    Page.objects.filter(slug__in=["privacy", "terms", "cookies"]).delete()
 
 
 class Migration(migrations.Migration):

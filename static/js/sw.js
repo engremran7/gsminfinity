@@ -1,187 +1,175 @@
-// Service Worker for Push Notifications
-// Version: 1.0.0
+/**
+ * GSM Infinity - Service Worker
+ * 
+ * Handles push notifications and basic caching for offline support.
+ * CSP-compliant, no eval().
+ */
 
-const CACHE_NAME = 'gsminfinity-v1';
-const urlsToCache = [
-  '/',
-  '/static/css/enterprise.css',
-  '/static/js/main.js'
+const CACHE_NAME = 'gsm-infinity-v1';
+const STATIC_CACHE = 'gsm-static-v1';
+
+// Assets to cache for offline support
+const STATIC_ASSETS = [
+  '/static/css/app.css',
+  '/static/js/htmx.min.js',
+  '/static/js/enterprise.js',
+  '/static/img/default-logo.svg',
+  '/static/img/default-favicon.svg'
 ];
 
-// Install service worker and cache resources
-self.addEventListener('install', event => {
+/**
+ * Install event - cache static assets
+ */
+self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing...');
+  
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('[Service Worker] Caching app shell');
-        return cache.addAll(urlsToCache);
+    caches.open(STATIC_CACHE)
+      .then((cache) => {
+        console.log('[Service Worker] Caching static assets');
+        return cache.addAll(STATIC_ASSETS);
       })
-      .catch(err => {
-        console.error('[Service Worker] Cache failed:', err);
+      .then(() => self.skipWaiting())
+      .catch((error) => {
+        console.log('[Service Worker] Cache failed:', error);
       })
   );
-  self.skipWaiting();
 });
 
-// Activate service worker and clean up old caches
-self.addEventListener('activate', event => {
+/**
+ * Activate event - clean up old caches
+ */
+self.addEventListener('activate', (event) => {
   console.log('[Service Worker] Activating...');
+  
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('[Service Worker] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((name) => name !== CACHE_NAME && name !== STATIC_CACHE)
+            .map((name) => {
+              console.log('[Service Worker] Deleting old cache:', name);
+              return caches.delete(name);
+            })
+        );
+      })
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Handle push notifications
-self.addEventListener('push', event => {
-  console.log('[Service Worker] Push received');
-  
-  let data = {
-    title: 'New Notification',
-    body: 'You have a new notification',
-    icon: '/static/img/logo.png',
-    badge: '/static/img/logo.png',
-    tag: 'notification',
-    url: '/users/notifications/'
-  };
-  
-  if (event.data) {
-    try {
-      data = event.data.json();
-    } catch (e) {
-      data.body = event.data.text();
-    }
+/**
+ * Fetch event - serve from cache, fallback to network
+ */
+self.addEventListener('fetch', (event) => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') {
+    return;
   }
-  
+
+  // Skip non-http(s) requests
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        return fetch(event.request)
+          .then((response) => {
+            // Don't cache non-successful responses
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Cache static assets
+            if (event.request.url.includes('/static/')) {
+              const responseToCache = response.clone();
+              caches.open(STATIC_CACHE)
+                .then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+            }
+
+            return response;
+          })
+          .catch(() => {
+            // Return offline fallback for navigation requests
+            if (event.request.mode === 'navigate') {
+              return caches.match('/offline.html');
+            }
+            return new Response('Offline', { status: 503 });
+          });
+      })
+  );
+});
+
+/**
+ * Push notification event
+ */
+self.addEventListener('push', (event) => {
+  console.log('[Service Worker] Push received');
+
+  let data = {
+    title: 'GSM Infinity',
+    body: 'You have a new notification',
+    icon: '/static/img/default-favicon.svg',
+    badge: '/static/img/default-favicon.svg',
+    tag: 'gsm-notification'
+  };
+
+  try {
+    if (event.data) {
+      const payload = event.data.json();
+      data = { ...data, ...payload };
+    }
+  } catch (e) {
+    console.log('[Service Worker] Error parsing push data:', e);
+  }
+
   const options = {
     body: data.body,
-    icon: data.icon || '/static/img/logo.png',
-    badge: data.badge || '/static/img/logo.png',
-    tag: data.tag || 'notification',
-    data: {
-      url: data.url || '/users/notifications/',
-      notificationId: data.notificationId
-    },
-    vibrate: [200, 100, 200],
-    requireInteraction: false,
-    actions: [
-      {
-        action: 'view',
-        title: 'View',
-        icon: '/static/img/view-icon.png'
-      },
-      {
-        action: 'dismiss',
-        title: 'Dismiss',
-        icon: '/static/img/close-icon.png'
-      }
-    ]
+    icon: data.icon,
+    badge: data.badge,
+    tag: data.tag,
+    data: data.data || {},
+    requireInteraction: data.requireInteraction || false,
+    actions: data.actions || []
   };
-  
+
   event.waitUntil(
     self.registration.showNotification(data.title, options)
   );
 });
 
-// Handle notification clicks
-self.addEventListener('notificationclick', event => {
+/**
+ * Notification click event
+ */
+self.addEventListener('notificationclick', (event) => {
   console.log('[Service Worker] Notification clicked');
   
   event.notification.close();
-  
-  if (event.action === 'dismiss') {
-    return;
-  }
-  
-  const urlToOpen = event.notification.data?.url || '/users/notifications/';
-  const notificationId = event.notification.data?.notificationId;
-  
+
+  const urlToOpen = event.notification.data?.url || '/';
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then(clientList => {
-        // Check if there's already a window open
-        for (let i = 0; i < clientList.length; i++) {
-          const client = clientList[i];
-          if (client.url.includes(urlToOpen) && 'focus' in client) {
+      .then((clientList) => {
+        // Focus existing window if available
+        for (const client of clientList) {
+          if (client.url === urlToOpen && 'focus' in client) {
             return client.focus();
           }
         }
-        
-        // If no window found, open a new one
+        // Open new window
         if (clients.openWindow) {
-          return clients.openWindow(urlToOpen).then(client => {
-            // Mark notification as read
-            if (notificationId) {
-              markNotificationAsRead(notificationId);
-            }
-            return client;
-          });
+          return clients.openWindow(urlToOpen);
         }
       })
   );
 });
 
-// Handle notification close
-self.addEventListener('notificationclose', event => {
-  console.log('[Service Worker] Notification closed', event.notification.data);
-});
-
-// Helper function to mark notification as read
-async function markNotificationAsRead(notificationId) {
-  try {
-    const response = await fetch(`/users/notifications/${notificationId}/mark-read/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.ok) {
-      console.log('[Service Worker] Notification marked as read');
-    }
-  } catch (error) {
-    console.error('[Service Worker] Failed to mark notification as read:', error);
-  }
-}
-
-// Handle background sync (for offline notification actions)
-self.addEventListener('sync', event => {
-  console.log('[Service Worker] Background sync:', event.tag);
-  
-  if (event.tag === 'sync-notifications') {
-    event.waitUntil(syncNotifications());
-  }
-});
-
-async function syncNotifications() {
-  try {
-    const response = await fetch('/users/notifications/unread-count/');
-    if (response.ok) {
-      const data = await response.json();
-      console.log('[Service Worker] Synced notification count:', data.count);
-    }
-  } catch (error) {
-    console.error('[Service Worker] Sync failed:', error);
-  }
-}
-
-// Handle messages from clients
-self.addEventListener('message', event => {
-  console.log('[Service Worker] Message received:', event.data);
-  
-  if (event.data.action === 'skipWaiting') {
-    self.skipWaiting();
-  }
-});
-
-console.log('[Service Worker] Loaded successfully');

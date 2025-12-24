@@ -124,158 +124,34 @@ def discover_tag_relationships():
     logger.info(f"Discovered {relationships_created} tag relationships")
 
 
-def notify_suggestion_approved(suggestion_id: int):
-    """
-    Notify user their tag suggestion was approved.
-    """
-    from apps.tags.models_enhanced import TagSuggestion
-    
-    try:
-        suggestion = TagSuggestion.objects.select_related(
-            "suggested_by", "created_tag"
-        ).get(id=suggestion_id)
-    except TagSuggestion.DoesNotExist:
-        return
-    
-    if not suggestion.created_tag:
-        return
-    
-    subject = f"Your tag suggestion was approved!"
-    message = f"""Congratulations! Your tag suggestion '{suggestion.suggested_name}' has been approved and is now live.
+# ARCHIVED: Enhanced tag functionality - see apps/core/versions/
+# The following functions depend on enhanced models that have been archived.
+# Keep them for reference but they won't execute until models are restored.
 
-You can view it here: [Tag URL]
+# def notify_suggestion_approved(suggestion_id: int):
+#     """
+#     Notify user their tag suggestion was approved.
+#     """
+#     from apps.tags.models_enhanced import TagSuggestion
+#     ...
 
-Thank you for contributing to the community!
-"""
-    
-    try:
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [suggestion.suggested_by.email],
-            fail_silently=True
-        )
-    except Exception as e:
-        logger.error(f"Failed to send suggestion approval notification: {e}")
+# def send_tag_subscription_digest(user_id: int, frequency: str = "daily"):
+#     """
+#     Send digest of new content for subscribed tags.
+#     """
+#     from apps.tags.models_enhanced import TagSubscription
+#     ...
 
+# def send_daily_tag_digests():
+#     """
+#     Send daily digests to all users with daily subscriptions.
+#     """
+#     from apps.tags.models_enhanced import TagSubscription
+#     ...
 
-def send_tag_subscription_digest(user_id: int, frequency: str = "daily"):
-    """
-    Send digest of new content for subscribed tags.
-    
-    Args:
-        user_id: User ID
-        frequency: daily or weekly
-    """
-    from apps.tags.models_enhanced import TagSubscription
-    from apps.tags.models_tagged_item import TaggedItem
-    from datetime import timedelta
-    
-    try:
-        user = User.objects.get(id=user_id)
-    except User.DoesNotExist:
-        return
-    
-    # Get user's subscriptions
-    subscriptions = TagSubscription.objects.filter(
-        user=user,
-        is_active=True,
-        notification_frequency=frequency
-    ).select_related("tag")
-    
-    if not subscriptions:
-        return
-    
-    # Calculate time window
-    now = timezone.now()
-    if frequency == "daily":
-        since = now - timedelta(days=1)
-    elif frequency == "weekly":
-        since = now - timedelta(days=7)
-    else:
-        return
-    
-    # Collect new content for each subscribed tag
-    digest_data = []
-    
-    for subscription in subscriptions:
-        # Get recent tagged items
-        new_items = TaggedItem.objects.filter(
-            tag=subscription.tag,
-            created_at__gte=since
-        ).select_related("content_type")[:5]
-        
-        if new_items:
-            digest_data.append({
-                "tag": subscription.tag,
-                "items": new_items
-            })
-    
-    if not digest_data:
-        return  # No new content
-    
-    # Build email
-    subject = f"Your {frequency} tag digest"
-    message = f"New content for your subscribed tags:\n\n"
-    
-    for data in digest_data:
-        message += f"Tag: {data['tag'].name}\n"
-        for item in data['items']:
-            message += f"  - New {item.content_type.model}\n"
-        message += "\n"
-    
-    try:
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=True
-        )
-    except Exception as e:
-        logger.error(f"Failed to send tag digest: {e}")
-
-
-def send_daily_tag_digests():
-    """
-    Send daily digests to all users with daily subscriptions.
-    Run once per day via cron/celery beat.
-    """
-    from apps.tags.models_enhanced import TagSubscription
-    
-    # Get all users with daily subscriptions
-    user_ids = TagSubscription.objects.filter(
-        is_active=True,
-        notification_frequency="daily"
-    ).values_list("user_id", flat=True).distinct()
-    
-    for user_id in user_ids:
-        try:
-            send_tag_subscription_digest(user_id, "daily")
-        except Exception as e:
-            logger.error(f"Failed to send daily digest to user {user_id}: {e}")
-    
-    logger.info(f"Sent daily digests to {len(user_ids)} users")
-
-
-def send_weekly_tag_digests():
-    """
-    Send weekly digests to all users with weekly subscriptions.
-    Run once per week via cron/celery beat.
-    """
-    from apps.tags.models_enhanced import TagSubscription
-    
-    # Get all users with weekly subscriptions
-    user_ids = TagSubscription.objects.filter(
-        is_active=True,
-        notification_frequency="weekly"
-    ).values_list("user_id", flat=True).distinct()
-    
-    for user_id in user_ids:
-        try:
-            send_tag_subscription_digest(user_id, "weekly")
-        except Exception as e:
-            logger.error(f"Failed to send weekly digest to user {user_id}: {e}")
-    
-    logger.info(f"Sent weekly digests to {len(user_ids)} users")
+# def send_weekly_tag_digests():
+#     """
+#     Send weekly digests to all users with weekly subscriptions.
+#     """
+#     from apps.tags.models_enhanced import TagSubscription
+#     ...

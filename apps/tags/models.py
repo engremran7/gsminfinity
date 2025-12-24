@@ -7,12 +7,13 @@ from solo.models import SingletonModel
 
 from apps.core.models import SoftDeleteModel, TimestampedModel
 
-# Import enhanced models for migrations
-from apps.tags.models_enhanced import (
-    TagCategory, TagRelationship, TagTrending, TagAnalytics,
-    TagSubscription, TagSuggestion, TagBlacklist, TagMerge,
-    TagCollection, TagCollectionItem, TagAlias
-)
+# Legacy enhanced models removed - archived in apps/core/versions/
+# Keeping import placeholder for historical migration compatibility
+# from apps.tags.models_enhanced import (
+#     TagCategory, TagRelationship, TagTrending, TagAnalytics,
+#     TagSubscription, TagSuggestion, TagBlacklist, TagMerge,
+#     TagCollection, TagCollectionItem, TagAlias
+# )
 
 
 class Tag(TimestampedModel, SoftDeleteModel):
@@ -103,3 +104,7 @@ class TagsSettings(SingletonModel):
         return "Tags Settings"
 
 
+# Import TaggedItem to register it with Django's model system
+from apps.tags.models_tagged_item import TaggedItem
+
+__all__ = ["Tag", "TagsSettings", "TaggedItem"]

@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("distribution", "0002_distribution_settings_fields"),
+        ("distribution", "0001_initial"),
     ]
 
     operations = [

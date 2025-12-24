@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Traffic Report | {{ site_settings.site_name|default:"GSM Infinity" }}{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-8">
+  <header class="mb-8 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Traffic Report</h1>
+      <p class="text-slate-600 dark:text-slate-400 mt-2">Page views, traffic sources, and referrers.</p>
+    </div>
+    <a href="{% url 'analytics:dashboard' %}" class="text-sm text-primary-600 hover:text-primary-700">← Back to Dashboard</a>
+  </header>
+
+  {# Summary Stats #}
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.total_views|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Total Page Views</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.unique_visitors|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Unique Visitors</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.bounce_rate|default:"0%" }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Bounce Rate</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.avg_duration|default:"0m" }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Avg. Duration</div>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {# Top Referrers #}
+    <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Top Referrers</h2>
+      {% if referrers %}
+      <div class="space-y-3">
+        {% for ref in referrers %}
+        <div class="flex items-center justify-between">
+          <span class="text-slate-900 dark:text-white truncate max-w-xs">{{ ref.source|default:"Direct" }}</span>
+          <span class="text-sm text-slate-600 dark:text-slate-400">{{ ref.visits }} visits</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-slate-500 dark:text-slate-400 text-center py-4">No referrer data available.</p>
+      {% endif %}
+    </section>
+
+    {# Traffic Sources #}
+    <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Traffic Sources</h2>
+      {% if sources %}
+      <div class="space-y-3">
+        {% for source in sources %}
+        <div class="flex items-center justify-between">
+          <span class="text-slate-900 dark:text-white">{{ source.name }}</span>
+          <div class="flex items-center gap-2">
+            <div class="w-24 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+              <div class="bg-primary-600 h-2 rounded-full" style="width: {{ source.percentage }}%"></div>
+            </div>
+            <span class="text-sm text-slate-600 dark:text-slate-400">{{ source.percentage }}%</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-slate-500 dark:text-slate-400 text-center py-4">No source data available.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {# Top Pages #}
+  <section class="mt-8 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+    <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Top Pages</h2>
+    {% if top_pages %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+          <tr>
+            <th class="pb-3 font-medium">Page</th>
+            <th class="pb-3 font-medium">Views</th>
+            <th class="pb-3 font-medium">Unique</th>
+            <th class="pb-3 font-medium">Avg. Time</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+          {% for page in top_pages %}
+          <tr>
+            <td class="py-3 text-slate-900 dark:text-white truncate max-w-xs">{{ page.path }}</td>
+            <td class="py-3 text-slate-600 dark:text-slate-400">{{ page.views }}</td>
+            <td class="py-3 text-slate-600 dark:text-slate-400">{{ page.unique }}</td>
+            <td class="py-3 text-slate-600 dark:text-slate-400">{{ page.avg_time }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-slate-500 dark:text-slate-400 text-center py-4">No page data available.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}
+

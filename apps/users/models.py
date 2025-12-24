@@ -113,11 +113,28 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     username_last_changed_at = models.DateTimeField(null=True, blank=True)
     full_name = models.CharField(max_length=150, blank=True, default="")
 
-    # Profile
+    # Profile with enhanced location/phone
     bio = models.TextField(max_length=500, blank=True, default="", help_text="Short biography")
-    country = models.CharField(max_length=100, blank=True)
+    country = models.CharField(
+        max_length=2,
+        blank=True,
+        default="",
+        help_text="ISO 3166-1 alpha-2 country code (auto-detected from IP)"
+    )
+    country_detected_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the country was auto-detected from IP"
+    )
+    phone_country_code = models.CharField(
+        max_length=5,
+        blank=True,
+        default="",
+        help_text="Phone country code (e.g., +1, +44, +966)"
+    )
     phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
     currency = models.CharField(max_length=10, null=True, blank=True)
+    
     class Roles(models.TextChoices):
         ADMIN = "admin", "Admin"
         EDITOR = "editor", "Editor"
@@ -187,9 +204,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
             self.phone = normalized
 
     def save(self, *args, **kwargs) -> None:
-        """
-        Persist user with normalization. Referral codes are deprecated and no longer auto-assigned.
-        """
+        """Persist user with normalization."""
         try:
             self.clean()
         except Exception:
@@ -584,6 +599,149 @@ class SecurityQuestion(models.Model):
 
     def check_answer(self, raw_answer: str) -> bool:
         return check_password((raw_answer or "").strip(), self.answer_hash)
+
+
+# --------------------------------------------------------------------------
+# MFA Device (TOTP Authenticator)
+# --------------------------------------------------------------------------
+class MFADevice(models.Model):
+    """
+    Stores user MFA device enrollment for TOTP-based 2FA.
+    Secret is encrypted at rest using Fernet.
+    """
+    
+    DEVICE_TYPE_CHOICES = [
+        ('totp', 'TOTP Authenticator App'),
+        ('backup', 'Backup Codes'),
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='mfa_devices'
+    )
+    device_type = models.CharField(max_length=16, choices=DEVICE_TYPE_CHOICES, default='totp')
+    name = models.CharField(max_length=64, default='Authenticator App')
+    
+    # Encrypted TOTP secret (base32 encoded)
+    secret_encrypted = models.CharField(max_length=512, blank=True, default='')
+    
+    # Backup codes (JSON list of hashed codes) - only for device_type='backup'
+    backup_codes_hash = models.JSONField(default=list, blank=True)
+    
+    is_primary = models.BooleanField(default=False, help_text="Primary MFA device")
+    is_active = models.BooleanField(default=True)
+    
+    # Tracking
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "MFA Device"
+        verbose_name_plural = "MFA Devices"
+        indexes = [
+            models.Index(fields=['user', 'is_active'], name='mfa_user_active_idx'),
+        ]
+    
+    def __str__(self) -> str:
+        return f"MFA {self.get_device_type_display()} for {self.user.email}"
+    
+    @classmethod
+    def get_fernet(cls):
+        """
+        Get Fernet instance for MFA secret encryption/decryption.
+        
+        Uses dedicated MFA_ENCRYPTION_KEY if available, falls back to SECRET_KEY.
+        Having a separate key allows SECRET_KEY rotation without invalidating MFA.
+        """
+        from cryptography.fernet import Fernet
+        from django.conf import settings
+        import base64
+        import hashlib
+        import warnings
+        
+        # Use dedicated MFA key if available, fallback to SECRET_KEY
+        mfa_key = getattr(settings, 'MFA_ENCRYPTION_KEY', None)
+        if not mfa_key:
+            # Fallback for backwards compatibility
+            if not settings.DEBUG:
+                warnings.warn(
+                    "MFA_ENCRYPTION_KEY not configured. Using SECRET_KEY as fallback. "
+                    "Set MFA_ENCRYPTION_KEY in production for key rotation safety.",
+                    UserWarning
+                )
+            mfa_key = settings.SECRET_KEY
+        
+        # Derive a Fernet key from the source key
+        key = hashlib.sha256(mfa_key.encode()).digest()
+        fernet_key = base64.urlsafe_b64encode(key)
+        return Fernet(fernet_key)
+    
+    def set_secret(self, raw_secret: str) -> None:
+        """Encrypt and store the TOTP secret."""
+        if not raw_secret:
+            self.secret_encrypted = ''
+            return
+        try:
+            fernet = self.get_fernet()
+            self.secret_encrypted = fernet.encrypt(raw_secret.encode()).decode()
+        except Exception as e:
+            logger.error(f"Failed to encrypt MFA secret: {e}")
+            raise ValueError("Failed to encrypt MFA secret")
+    
+    def get_secret(self) -> Optional[str]:
+        """Decrypt and return the TOTP secret."""
+        if not self.secret_encrypted:
+            return None
+        try:
+            fernet = self.get_fernet()
+            return fernet.decrypt(self.secret_encrypted.encode()).decode()
+        except Exception as e:
+            logger.error(f"Failed to decrypt MFA secret: {e}")
+            return None
+    
+    def verify_code(self, code: str) -> bool:
+        """Verify a TOTP code against this device."""
+        from apps.users.mfa import TOTPService
+        
+        secret = self.get_secret()
+        if not secret:
+            return False
+        
+        is_valid = TOTPService.verify(secret, code)
+        if is_valid:
+            self.last_used_at = timezone.now()
+            self.save(update_fields=['last_used_at'])
+        return is_valid
+    
+    def generate_backup_codes(self, count: int = 10) -> list:
+        """Generate and store backup codes. Returns unhashed codes for user."""
+        codes = []
+        hashed_codes = []
+        
+        for _ in range(count):
+            code = secrets.token_hex(4).upper()  # 8-char hex code
+            codes.append(code)
+            hashed_codes.append(make_password(code))
+        
+        self.backup_codes_hash = hashed_codes
+        self.device_type = 'backup'
+        self.save(update_fields=['backup_codes_hash', 'device_type'])
+        return codes
+    
+    def verify_backup_code(self, code: str) -> bool:
+        """Verify and consume a backup code."""
+        code = (code or '').strip().upper()
+        
+        for i, hashed in enumerate(self.backup_codes_hash):
+            if check_password(code, hashed):
+                # Remove used code
+                self.backup_codes_hash.pop(i)
+                self.last_used_at = timezone.now()
+                self.save(update_fields=['backup_codes_hash', 'last_used_at'])
+                return True
+        return False
 
 
 # --------------------------------------------------------------------------

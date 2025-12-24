@@ -1,0 +1,72 @@
+{# Ad network header scripts - include in base.html <head> #}
+{% if render %}
+  {# Google Consent Mode v2 #}
+  {% if consent_required %}
+  <script nonce="{{ request.csp_nonce }}">
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('consent', 'default', {
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied',
+      'analytics_storage': 'denied'
+    });
+  </script>
+  {% endif %}
+
+  {# Lazy loading configuration #}
+  {% if lazy_load %}
+  <script nonce="{{ request.csp_nonce }}">
+    window.adsLazyLoad = true;
+    window.adsLoaded = false;
+    
+    // Lazy load ads when user scrolls near them
+    if ('IntersectionObserver' in window) {
+      window.adObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const slot = entry.target;
+            if (!slot.dataset.loaded) {
+              slot.dataset.loaded = 'true';
+              // Trigger ad loading for this slot
+              window.loadAdSlot && window.loadAdSlot(slot);
+            }
+          }
+        });
+      }, { rootMargin: '200px' });
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.ad-slot').forEach(slot => {
+        if (window.adObserver) {
+          window.adObserver.observe(slot);
+        }
+      });
+    });
+  </script>
+  {% endif %}
+
+  {# Network-specific scripts #}
+  {% for network in networks %}
+    {# Output network script directly - already marked safe in the tag #}
+    {{ network.script|safe }}
+  {% endfor %}
+  
+  {# Header bidding (Prebid.js) #}
+  {% if settings.header_bidding_enabled %}
+  <script async src="https://cdn.jsdelivr.net/npm/prebid.js@latest/dist/prebid.min.js"></script>
+  <script nonce="{{ request.csp_nonce }}">
+    var pbjs = pbjs || {};
+    pbjs.que = pbjs.que || [];
+    
+    pbjs.que.push(function() {
+      pbjs.setConfig({
+        priceGranularity: 'dense',
+        enableSendAllBids: true,
+        bidderTimeout: {{ settings.prebid_timeout_ms|default:1000 }},
+        useBidCache: true,
+      });
+    });
+  </script>
+  {% endif %}
+{% endif %}

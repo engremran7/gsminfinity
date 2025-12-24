@@ -81,9 +81,11 @@ class SecurityHeadersMiddleware:
             ],
             getattr(settings, "SECURITY_STYLE_SRC_EXTRA", ()),
         )
-        # Explicitly apply the same sources to style-src-attr/elem to avoid inline allowances
-        style_attr_hosts = list(style_hosts)
-        style_elem_hosts = list(style_hosts)
+        # style-src-attr/elem use 'unsafe-inline' WITHOUT nonce to allow HTMX dynamic styles
+        # Per CSP Level 3: when nonce is present, browsers ignore 'unsafe-inline'
+        # HTMX sets element.style properties which requires 'unsafe-inline' to work
+        style_attr_hosts = ["'self'", "'unsafe-inline'"]
+        style_elem_hosts = ["'self'", "'unsafe-inline'"]
         connect_hosts = self._merge_sources(
             ["'self'", "ws:", "wss:"],
             getattr(settings, "SECURITY_CONNECT_SRC_EXTRA", ()),

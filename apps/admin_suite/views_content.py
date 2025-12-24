@@ -256,6 +256,74 @@ def admin_suite_blog(request: HttpRequest) -> HttpResponse:
     )
 
 
+@csrf_protect
+@staff_member_required
+def admin_suite_blog_categories(request: HttpRequest) -> HttpResponse:
+    """
+    Blog category management inside Admin Suite.
+    """
+    if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
+        raise _ADMIN_DISABLED
+
+    try:
+        from apps.blog.models import Category
+    except Exception:
+        raise Http404("Blog module not installed")
+
+    class CategoryForm(forms.ModelForm):
+        class Meta:
+            model = Category
+            fields = ["name", "slug", "parent"]
+            widgets = {
+                "name": forms.TextInput(attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}),
+                "slug": forms.TextInput(attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}),
+                "parent": forms.Select(attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}),
+            }
+
+    message = ""
+    edit_category = None
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        category_id = request.POST.get("category_id")
+        
+        if action == "delete" and category_id:
+            try:
+                Category.objects.get(pk=category_id).delete()
+                message = "Category deleted."
+            except Exception as exc:
+                message = f"Delete failed: {exc}"
+        elif action == "save":
+            instance = Category.objects.filter(pk=category_id).first() if category_id else None
+            form = CategoryForm(request.POST, instance=instance)
+            if form.is_valid():
+                form.save()
+                message = "Category saved."
+            else:
+                edit_category = instance
+                message = "Please correct errors."
+
+    if request.method == "GET" and request.GET.get("category_id"):
+        edit_category = Category.objects.filter(pk=request.GET.get("category_id")).first()
+
+    form = CategoryForm(instance=edit_category)
+    categories = list(Category.objects.order_by("name"))
+
+    return _render_admin(
+        request,
+        "admin_suite/blog_categories.html",
+        {
+            "categories": categories,
+            "form": form,
+            "edit_category": edit_category,
+            "message": message,
+        },
+        nav_active="blog",
+        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Blog", "admin_suite:admin_suite_blog"), ("Categories", None)),
+        subtitle="Blog categories",
+    )
+
+
 @staff_member_required
 def admin_suite_content(request: HttpRequest) -> HttpResponse:
     """Content/SEO overview (read-only)."""
@@ -729,10 +797,10 @@ def admin_suite_tags(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            import bleach
+            import nh3
             from apps.tags.models import Tag
 
-            name = bleach.clean(request.POST.get("name", ""), strip=True)
+            name = nh3.clean(request.POST.get("name", ""), tags=set())
             if action == "create" and name:
                 Tag.objects.create(name=name)
                 message = "Tag created."
@@ -1029,11 +1097,75 @@ def admin_suite_comments(request: HttpRequest) -> HttpResponse:
         nav_active="comments",
         breadcrumb=_make_breadcrumb(
             ("Admin Home", "admin_suite:admin_suite"),
-            ("Content", "admin_suite:admin_suite_content"),
+            ("Content", "admin_suite:content"),
             ("Comments", None),
         ),
         subtitle="Moderate pending comments",
     )
+
+
+@csrf_protect
+@staff_member_required
+def admin_suite_pending_approval(request: HttpRequest) -> HttpResponse:
+    """Items pending admin approval (users, comments, posts, etc.)."""
+    if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
+        raise _ADMIN_DISABLED
+
+    pending_items = {
+        "users": [],
+        "comments": [],
+        "posts": [],
+    }
+
+    # Pending user approvals
+    try:
+        pending_items["users"] = list(
+            User.objects.filter(is_active=False, email_verified=False)
+            .order_by("-date_joined")[:20]
+            .values("id", "email", "first_name", "last_name", "date_joined")
+        )
+    except Exception as exc:
+        logger.debug("Failed to fetch pending users: %s", exc)
+
+    # Pending comments
+    try:
+        from apps.comments.models import Comment
+        pending_items["comments"] = list(
+            Comment.objects.filter(is_approved=False, is_spam=False)
+            .order_by("-created_at")[:20]
+            .values("id", "user_id", "body", "created_at", "post_id")
+        )
+    except Exception as exc:
+        logger.debug("Failed to fetch pending comments: %s", exc)
+
+    # Pending blog posts
+    try:
+        from apps.blog.models import Post
+        pending_items["posts"] = list(
+            Post.objects.filter(status="pending")
+            .order_by("-created_at")[:20]
+            .values("id", "title", "slug", "created_at", "author_id")
+        )
+    except Exception as exc:
+        logger.debug("Failed to fetch pending posts: %s", exc)
+
+    total_pending = sum(len(v) for v in pending_items.values())
+
+    return _render_admin(
+        request,
+        "admin_suite/pending_approval.html",
+        {
+            "pending_items": pending_items,
+            "total_pending": total_pending,
+        },
+        nav_active="dashboard",
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"),
+            ("Pending Approval", None),
+        ),
+        subtitle=f"{total_pending} item(s) pending approval",
+    )
+
 
 __all__ = [
     'admin_suite_pages',
@@ -1046,6 +1178,7 @@ __all__ = [
     'admin_suite_seo',
     'admin_suite_registry',
     'admin_suite_comments',
+    'admin_suite_pending_approval',
     'PageForm',
 ]
 

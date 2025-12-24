@@ -1,13 +1,269 @@
 
-{% extends "base.html" %} {% load static %} {% block title %}Cookies Policy — {{
-site_settings.site_name|default:"GSMInfinity" }}{% endblock %} {% block content
-%}
-<div class="container py-5">
-  <h2 class="mb-3">Cookies Policy</h2>
-  <p>
-    This site uses cookies to improve your experience. You may disable cookies
-    in your browser settings.
-  </p>
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Cookie Policy — {{ site_settings.site_name|default:"Site" }}{% endblock %}
+{% block meta_description %}Learn how {{ site_settings.site_name|default:"Site" }} uses cookies and similar technologies.{% endblock %}
+
+{% block sidebar_left %}{% endblock %}
+{% block sidebar_right %}{% endblock %}
+
+{% block content %}
+<div class="w-full px-4 sm:px-6 lg:px-8 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="lg:col-span-8 lg:col-start-3">
+      {# Header #}
+      <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-purple-400)] bg-clip-text text-transparent mb-2">Cookie Policy</h1>
+        <p class="text-[var(--color-text-secondary)]">Last updated: {{ site_settings.legal_last_updated|default:"January 2025" }}</p>
+      </div>
+
+      {# Content Card #}
+      <article class="card-glass overflow-hidden">
+        <div class="p-6 sm:p-8 prose prose-invert max-w-none">
+          
+          <section id="what-are-cookies">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--primitive-purple-400)]">1.</span> What Are Cookies?
+            </h2>
+            <p>
+              Cookies are small text files that are placed on your computer or mobile device when you visit 
+              a website. They are widely used to make websites work more efficiently and provide information 
+              to the site owners.
+            </p>
+            <p>
+              Cookies can be "persistent" (remain on your device until deleted) or "session" cookies 
+              (deleted when you close your browser).
+            </p>
+          </section>
+
+          <section id="how-we-use">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--primitive-purple-400)]">2.</span> How We Use Cookies
+            </h2>
+            <p>{{ site_settings.site_name|default:"We" }} use cookies for the following purposes:</p>
+            
+            <h3>2.1 Essential Cookies</h3>
+            <p>
+              These cookies are necessary for the website to function properly. They enable core functionality 
+              such as security, network management, and accessibility.
+            </p>
+            <div class="overflow-x-auto not-prose mb-6">
+              <table class="min-w-full text-sm">
+                <thead class="bg-[var(--color-bg-surface-secondary)]">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-medium text-[var(--color-text-primary)]">Cookie</th>
+                    <th class="px-4 py-2 text-left font-medium text-[var(--color-text-primary)]">Purpose</th>
+                    <th class="px-4 py-2 text-left font-medium text-[var(--color-text-primary)]">Duration</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border-default)]">
+                  <tr>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]"><code class="text-[var(--primitive-cyan-400)]">csrftoken</code></td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">Security - Prevents cross-site request forgery</td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">1 year</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]"><code class="text-[var(--primitive-cyan-400)]">sessionid</code></td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">Session management for logged-in users</td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">2 weeks</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]"><code class="text-[var(--primitive-cyan-400)]">cookie_consent</code></td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">Stores your cookie preferences</td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">1 year</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3>2.2 Analytics Cookies</h3>
+            <p>
+              These cookies help us understand how visitors interact with our website by collecting 
+              and reporting information anonymously.
+            </p>
+            <div class="overflow-x-auto not-prose mb-6">
+              <table class="min-w-full text-sm">
+                <thead class="bg-[var(--color-bg-surface-secondary)]">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-medium text-[var(--color-text-primary)]">Cookie</th>
+                    <th class="px-4 py-2 text-left font-medium text-[var(--color-text-primary)]">Purpose</th>
+                    <th class="px-4 py-2 text-left font-medium text-[var(--color-text-primary)]">Duration</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border-default)]">
+                  <tr>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]"><code class="text-[var(--primitive-cyan-400)]">_ga</code></td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">Google Analytics - Distinguishes users</td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">2 years</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]"><code class="text-[var(--primitive-cyan-400)]">_gid</code></td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">Google Analytics - Distinguishes users</td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">24 hours</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3>2.3 Functionality Cookies</h3>
+            <p>
+              These cookies enable personalized features such as remembering your preferences, 
+              language settings, and dark mode selection.
+            </p>
+            <div class="overflow-x-auto not-prose mb-6">
+              <table class="min-w-full text-sm">
+                <thead class="bg-[var(--color-bg-surface-secondary)]">
+                  <tr>
+                    <th class="px-4 py-2 text-left font-medium text-[var(--color-text-primary)]">Cookie</th>
+                    <th class="px-4 py-2 text-left font-medium text-[var(--color-text-primary)]">Purpose</th>
+                    <th class="px-4 py-2 text-left font-medium text-[var(--color-text-primary)]">Duration</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border-default)]">
+                  <tr>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]"><code class="text-[var(--primitive-cyan-400)]">theme</code></td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">Remembers dark/light mode preference</td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">1 year</td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]"><code class="text-[var(--primitive-cyan-400)]">lang</code></td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">Stores language preference</td>
+                    <td class="px-4 py-2 text-[var(--color-text-secondary)]">1 year</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h3>2.4 Advertising Cookies</h3>
+            <p>
+              If enabled, these cookies may be used to deliver relevant advertisements and track 
+              campaign performance. You can opt out of personalized advertising.
+            </p>
+          </section>
+
+          <section id="third-party">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--primitive-purple-400)]">3.</span> Third-Party Cookies
+            </h2>
+            <p>
+              Some cookies are placed by third-party services that appear on our pages. We do not 
+              control these cookies. Third parties include:
+            </p>
+            <ul>
+              <li>Google (Analytics, Ads)</li>
+              <li>Social media platforms (for sharing features)</li>
+              <li>Payment processors</li>
+              <li>Content delivery networks</li>
+            </ul>
+          </section>
+
+          <section id="managing-cookies">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--primitive-purple-400)]">4.</span> Managing Cookies
+            </h2>
+            <p>
+              You can control and manage cookies in several ways:
+            </p>
+            
+            <h3>4.1 Browser Settings</h3>
+            <p>
+              Most browsers allow you to refuse or delete cookies. The methods vary by browser:
+            </p>
+            <ul>
+              <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer">Google Chrome</a></li>
+              <li><a href="https://support.mozilla.org/kb/delete-cookies-remove-info-websites-stored" target="_blank" rel="noopener noreferrer">Mozilla Firefox</a></li>
+              <li><a href="https://support.apple.com/guide/safari/manage-cookies-sfri11471/mac" target="_blank" rel="noopener noreferrer">Apple Safari</a></li>
+              <li><a href="https://support.microsoft.com/microsoft-edge/delete-cookies" target="_blank" rel="noopener noreferrer">Microsoft Edge</a></li>
+            </ul>
+
+            <h3>4.2 Cookie Consent Tool</h3>
+            <p>
+              Use our cookie consent banner to manage your preferences when you first visit our site, 
+              or update your preferences at any time using the link in the footer.
+            </p>
+
+            <div class="card-glass border-l-4 border-[var(--primitive-amber-500)] p-4 not-prose">
+              <div class="flex gap-3">
+                <svg class="w-5 h-5 text-[var(--primitive-amber-400)] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <p class="text-sm text-[var(--color-text-secondary)]">
+                  <strong class="text-[var(--primitive-amber-400)]">Note:</strong> Blocking essential cookies may affect the functionality of our website.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="similar-technologies">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--primitive-purple-400)]">5.</span> Similar Technologies
+            </h2>
+            <p>In addition to cookies, we may use:</p>
+            <ul>
+              <li><strong>Local Storage:</strong> For storing data in your browser that persists after closing</li>
+              <li><strong>Session Storage:</strong> For temporary data during your browsing session</li>
+              <li><strong>Web Beacons:</strong> Small graphics used in emails to track opens and clicks</li>
+            </ul>
+          </section>
+
+          <section id="updates">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--primitive-purple-400)]">6.</span> Updates to This Policy
+            </h2>
+            <p>
+              We may update this Cookie Policy from time to time. Any changes will be posted on this page 
+              with an updated revision date.
+            </p>
+          </section>
+
+          <section id="contact">
+            <h2 class="flex items-center gap-2">
+              <span class="text-[var(--primitive-purple-400)]">7.</span> Contact Us
+            </h2>
+            <p>If you have questions about our use of cookies, please contact us at:</p>
+            <div class="card-glass p-4 not-prose">
+              <p class="text-[var(--color-text-secondary)]">
+                <strong class="text-[var(--color-text-primary)]">{{ site_settings.site_name|default:"Site" }}</strong><br>
+                Email: <a href="mailto:{{ site_settings.contact_email|default:'privacy@example.com' }}" class="text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)]">{{ site_settings.contact_email|default:"privacy@example.com" }}</a>
+              </p>
+            </div>
+          </section>
+
+        </div>
+      </article>
+
+      {# Cookie Settings Button #}
+      <div class="mt-6 p-4 card-glass border-l-4 border-[var(--primitive-cyan-500)] text-center">
+        <p class="text-sm text-[var(--color-text-secondary)] mb-3">
+          Want to change your cookie preferences?
+        </p>
+        <button type="button" 
+                data-cookie-consent
+                class="btn btn-primary">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Manage Cookie Preferences
+        </button>
+      </div>
+
+      {# Related Legal Documents #}
+      <nav class="mt-6 p-4 card-glass">
+        <h3 class="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Related Documents</h3>
+        <div class="flex flex-wrap gap-3">
+          <a href="{% url 'pages:page' slug='privacy' %}" class="inline-flex items-center gap-1.5 text-sm text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            Privacy Policy
+          </a>
+          <a href="{% url 'pages:page' slug='terms' %}" class="inline-flex items-center gap-1.5 text-sm text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            Terms of Service
+          </a>
+        </div>
+      </nav>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

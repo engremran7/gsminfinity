@@ -1,0 +1,86 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - User Sessions{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">User Sessions</h1>
+      <p class="text-sm text-slate-600">Active user sessions across the platform.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:users' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white text-primary hover:bg-slate-50">
+        ← Back to Users
+      </a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Total Active Sessions</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ sessions|length }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Unique Users</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ unique_users }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Staff Sessions</div>
+      <div class="text-2xl font-semibold text-amber-600">{{ staff_sessions }}</div>
+    </div>
+  </div>
+
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-900">Active Sessions</h2>
+      <span class="text-xs text-slate-500">Recent activity</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">User</th>
+            <th class="px-4 py-2">Session Key</th>
+            <th class="px-4 py-2">Expires</th>
+            <th class="px-4 py-2">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for session in sessions %}
+          <tr>
+            <td class="px-4 py-2">
+              {% if session.user_email %}
+                <a href="{% url 'admin_suite:user_detail' session.user_id %}" class="text-primary hover:underline">{{ session.user_email }}</a>
+              {% else %}
+                <span class="text-slate-400">Anonymous</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 font-mono text-xs">{{ session.session_key|truncatechars:20 }}</td>
+            <td class="px-4 py-2">{{ session.expire_date|date:"Y-m-d H:i" }}</td>
+            <td class="px-4 py-2">
+              {% if session.is_active %}
+                <span class="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-2 py-0.5 text-xs font-semibold">Active</span>
+              {% else %}
+                <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-600 px-2 py-0.5 text-xs">Expired</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="px-4 py-8 text-center text-slate-500">
+              <div class="flex flex-col items-center gap-2">
+                <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                <span>No active sessions found</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

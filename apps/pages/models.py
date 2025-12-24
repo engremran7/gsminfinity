@@ -2,10 +2,15 @@ from __future__ import annotations
 
 from django.conf import settings
 from django.db import models
+from django.urls import reverse
 from django.utils import timezone
 
 
 class Page(models.Model):
+    """
+    CMS Page model for static content with SEO, scheduling, and access control.
+    Enterprise-grade with full sitemap integration.
+    """
     STATUS_CHOICES = [
         ("draft", "Draft"),
         ("published", "Published"),
@@ -71,9 +76,15 @@ class Page(models.Model):
 
     class Meta:
         ordering = ["slug"]
+        verbose_name = "Page"
+        verbose_name_plural = "Pages"
 
     def __str__(self) -> str:
         return self.title or self.slug
+
+    def get_absolute_url(self) -> str:
+        """Return canonical URL for this page."""
+        return reverse("pages:page", kwargs={"slug": self.slug})
 
     @property
     def is_published(self) -> bool:
@@ -85,3 +96,19 @@ class Page(models.Model):
         if self.unpublish_at and self.unpublish_at <= now:
             return False
         return True
+
+    @property
+    def effective_seo_title(self) -> str:
+        """Return SEO title with fallback to page title."""
+        return self.seo_title or self.title
+
+    @property
+    def effective_seo_description(self) -> str:
+        """Return SEO description with fallback to truncated content."""
+        if self.seo_description:
+            return self.seo_description
+        # Strip HTML/markdown and truncate
+        import re
+        plain = re.sub(r'<[^>]+>', '', self.content)
+        plain = re.sub(r'[#*_`\[\]()]', '', plain)
+        return plain[:160].strip() + ('...' if len(plain) > 160 else '')

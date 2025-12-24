@@ -7,9 +7,9 @@ from typing import Any, Iterable
 from django.utils.text import slugify as django_slugify
 
 try:
-    import bleach  # type: ignore
+    import nh3  # type: ignore
 except Exception:  # pragma: no cover
-    bleach = None
+    nh3 = None
 
 
 def slugify(value: str, allow_unicode: bool = False, max_length: int | None = None) -> str:
@@ -27,10 +27,10 @@ def sanitize_html(
 ) -> str:
     if not html:
         return ""
-    if bleach is None:
+    if nh3 is None:
         # fallback: strip tags by regex
         return re.sub(r"<[^>]+>", "", html)
-    tags = allowed_tags or [
+    tags = set(allowed_tags or [
         "p",
         "br",
         "strong",
@@ -45,30 +45,25 @@ def sanitize_html(
         "h4",
         "h5",
         "iframe",
-    ]
-    attrs = allowed_attrs or {
+    ])
+    
+    # Convert attrs to nh3 format (dict of sets)
+    raw_attrs = allowed_attrs or {
         "a": ["href", "title", "rel", "target"],
         "iframe": ["src", "width", "height", "frameborder", "allow", "allowfullscreen", "class", "title"],
     }
-    cleaned = bleach.clean(html, tags=tags, attributes=attrs, strip=True, protocols=["http", "https", "mailto"])
-    # Harden links: drop javascript/data schemes that might slip through, and enforce rel on target _blank
-    def _sanitize_anchor(attrs, new=False):
-        href = attrs.get("href", "")
-        if href and not href.startswith(("http://", "https://", "mailto:")):
-            attrs.pop("href", None)
-        if attrs.get("target") == "_blank":
-            attrs["rel"] = "nofollow noopener noreferrer"
-        return attrs
-
-    result = bleach.clean(
-        cleaned,
-        tags=tags,
-        attributes=attrs,
-        strip=True,
-        protocols=["http", "https", "mailto"],
-        filters=[bleach.sanitizer.AttributeFilter(_sanitize_anchor)],
+    attrs = {k: set(v) for k, v in raw_attrs.items()}
+    
+    cleaned = nh3.clean(
+        html, 
+        tags=tags, 
+        attributes=attrs, 
+        strip_comments=True, 
+        url_schemes={"http", "https", "mailto"}
     )
+    
     # Drop iframes not on the allowed prefix list
+    result = cleaned
     if "iframe" in tags:
         prefixes = tuple(
             allowed_iframe_prefixes

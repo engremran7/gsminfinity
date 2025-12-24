@@ -1,0 +1,143 @@
+{
+  "summary": {
+    "total_url_refs": 331,
+    "valid_refs": 317,
+    "invalid_refs": 14,
+    "hardcoded_urls": 3,
+    "unique_url_names": 128
+  },
+  "invalid_references": [
+    {
+      "file": "D:\\GsmInfinity\\templates\\blog\\post_detail.html",
+      "line": 69,
+      "url_name": "admin:blog_post_change",
+      "issue": "URL name 'admin:blog_post_change' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\templates\\partials\\notification_list.html",
+      "line": 13,
+      "url_name": "users_notifications:mark_all",
+      "issue": "URL name 'users_notifications:mark_all' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\templates\\partials\\notification_list.html",
+      "line": 54,
+      "url_name": "users_notifications:mark_read",
+      "issue": "URL name 'users_notifications:mark_read' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\templates\\site_settings\\consent_manage.html",
+      "line": 17,
+      "url_name": "consent:consent_accept",
+      "issue": "URL name 'consent:consent_accept' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\templates\\tags\\manage.html",
+      "line": 72,
+      "url_name": "tags:admin_duplicates",
+      "issue": "URL name 'tags:admin_duplicates' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\templates\\admin\\users\\notification_dashboard.html",
+      "line": 26,
+      "url_name": "admin:users_notificationpreferences_changelist",
+      "issue": "URL name 'admin:users_notificationpreferences_changelist' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\templates\\admin\\users\\notification_dashboard.html",
+      "line": 29,
+      "url_name": "admin:users_pushsubscription_changelist",
+      "issue": "URL name 'admin:users_pushsubscription_changelist' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\templates\\admin\\users\\notification_dashboard.html",
+      "line": 32,
+      "url_name": "admin:users_notification_changelist",
+      "issue": "URL name 'admin:users_notification_changelist' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\templates\\admin\\users\\notification_dashboard.html",
+      "line": 35,
+      "url_name": "admin:users_userssettings_change",
+      "issue": "URL name 'admin:users_userssettings_change' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\blog_posts.html",
+      "line": 39,
+      "url_name": "admin:blog_post_add",
+      "issue": "URL name 'admin:blog_post_add' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\blog_posts.html",
+      "line": 92,
+      "url_name": "admin:blog_post_change",
+      "issue": "URL name 'admin:blog_post_change' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\blog\\templates\\admin\\blog\\post\\change_list.html",
+      "line": 19,
+      "url_name": "admin:blog_post_add",
+      "issue": "URL name 'admin:blog_post_add' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\blog\\templates\\admin\\blog\\post\\change_list.html",
+      "line": 20,
+      "url_name": "admin:blog_category_changelist",
+      "issue": "URL name 'admin:blog_category_changelist' not found in URL configuration"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\blog\\templates\\admin\\blog\\post\\change_list.html",
+      "line": 22,
+      "url_name": "admin:tags_tag_changelist",
+      "issue": "URL name 'admin:tags_tag_changelist' not found in URL configuration"
+    }
+  ],
+  "hardcoded_urls": [
+    {
+      "type": "HARDCODED_URL",
+      "severity": "warning",
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\blog.html",
+      "line": 121,
+      "url_fragment": "href=\"/blog/",
+      "message": "Hardcoded URL found - should use {% url %} tag"
+    },
+    {
+      "type": "HARDCODED_URL",
+      "severity": "warning",
+      "file": "D:\\GsmInfinity\\apps\\blog\\templates\\admin\\blog\\post\\change_list.html",
+      "line": 21,
+      "url_fragment": "href=\"/blog/",
+      "message": "Hardcoded URL found - should use {% url %} tag"
+    },
+    {
+      "type": "HARDCODED_URL",
+      "severity": "warning",
+      "file": "D:\\GsmInfinity\\apps\\seo\\templates\\admin\\seo\\seomodel\\change_list.html",
+      "line": 18,
+      "url_fragment": "href=\"/seo/",
+      "message": "Hardcoded URL found - should use {% url %} tag"
+    }
+  ],
+  "url_usage": {
+    "blog:post_list": 14,
+    "account_login": 12,
+    "blog:post_detail": 10,
+    "users:dashboard": 9,
+    "pages:page": 9,
+    "admin_suite:storage_providers": 8,
+    "admin_suite:ads": 8,
+    "users:profile": 8,
+    "account_signup": 7,
+    "tags:detail": 7,
+    "home": 7,
+    "admin_suite:blog": 6,
+    "admin_suite:user_detail": 6,
+    "users:devices": 6,
+    "admin_suite:users": 6,
+    "admin_suite:marketing": 5,
+    "account_reset_password": 5,
+    "admin_suite:firmwares": 5,
+    "admin_suite:settings": 5,
+    "blog:post_create": 5
+  }
+}

@@ -1,0 +1,4027 @@
+{
+  "summary": {
+    "total_js_files": 21,
+    "total_functions": 819,
+    "exact_duplicates": 2,
+    "similar_functions": 111,
+    "total_size_kb": 383.8
+  },
+  "code_patterns": {
+    "event_listeners": 134,
+    "fetch_calls": 23,
+    "dom_queries": 203,
+    "jquery_usage": 19,
+    "async_functions": 23,
+    "arrow_functions": 248,
+    "class_definitions": 41
+  },
+  "file_sizes": {
+    "js\\summernote\\summernote-lite.min.js": 163197,
+    "js\\htmx.min.js": 47755,
+    "js\\enterprise.js": 26015,
+    "admin\\js\\enterprise-extended.js": 21878,
+    "admin\\js\\enterprise.js": 21431,
+    "js\\consent-banner-loader.js": 18195,
+    "js\\browser-compatibility.js": 11092,
+    "js\\csp-handlers.js": 10935,
+    "shared\\js\\utilities.js": 10189,
+    "js\\blog.js": 8848
+  },
+  "exact_duplicates": [
+    {
+      "type": "EXACT_DUPLICATE",
+      "severity": "warning",
+      "functions": [
+        {
+          "name": "e",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "d",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ee",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "o",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "te",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "u",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "re",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "c",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "L",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ne",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "h",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "A",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "a",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "N",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "l",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ie",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "I",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "k",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "P",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ae",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "M",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "oe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "X",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "se",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "D",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "le",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "E",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "U",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "B",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "F",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "V",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "j",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "C",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "f",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "_",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "z",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "n",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "W",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "v",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "s",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "G",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "J",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Z",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ue",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "g",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ve",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "de",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ge",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "pe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "xe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ye",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "be",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "we",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Se",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ee",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ce",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Re",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Te",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Oe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "qe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "m",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "He",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Le",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ae",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ne",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "p",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ie",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ke",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Pe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Me",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Xe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "De",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ue",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Be",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Fe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ve",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "je",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "_e",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ye",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Qe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "et",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "y",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "tt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "nt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "it",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "at",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ot",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "st",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "lt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ut",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ft",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ct",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ht",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "gt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "mt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "pt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "xt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "yt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "bt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "wt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "St",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Et",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ct",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Rt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Tt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ot",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "qt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ht",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Lt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "At",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Nt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "It",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "kt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Pt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Mt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Xt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Dt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ut",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Bt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ft",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Vt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "jt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "_t",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "zt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Wt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "fe",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Gt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "R",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "b",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ce",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Zt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Kt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Yt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Qt",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "er",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "tr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "rr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "nr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ir",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ar",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "or",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "sr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "lr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "ur",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "fr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "cr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "hr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "vr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "dr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "gr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "mr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "pr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "xr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "yr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "br",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "wr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Sr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Er",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "T",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Cr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Rr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Tr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Or",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "qr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Hr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Lr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ar",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "O",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Nr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ir",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "kr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "he",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Pr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Mr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Dr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Ur",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Br",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Fr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "jr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "_r",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "zr",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "K",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "Y",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "i",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "u",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "a",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "i",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "a",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "D",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "w",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "y",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "s",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "values",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "createEventSource",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "createWebSocket",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "init",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "onEvent",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "transformResponse",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "isInlineSwap",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "handleSwap",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "name": "encodeParameters",
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        }
+      ],
+      "message": "Function 'e' appears 202 times with identical content"
+    },
+    {
+      "type": "EXACT_DUPLICATE",
+      "severity": "warning",
+      "functions": [
+        {
+          "name": "n",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "r",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "a",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "s",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "b",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "k",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "y",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "w",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "S",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "T",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "E",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "N",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "A",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "F",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "H",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "z",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "U",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "W",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "K",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "V",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "q",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "_",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "G",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Y",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Z",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "X",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Q",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "J",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "tt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "et",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "nt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ot",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "it",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "rt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "at",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "st",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "lt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ct",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ut",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "dt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ft",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "o",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "mt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "gt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "bt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "kt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "St",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Et",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Nt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Pt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Lt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "l",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "c",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "u",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "d",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "h",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "f",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "p",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Dt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Bt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Mt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "jt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Ut",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Wt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Vt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "_t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Yt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Xt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "te",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ne",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ie",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ae",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "le",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ue",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "he",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "pe",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ve",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "be",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ye",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Ce",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Se",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Ee",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "a",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "l",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "d",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "t",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "s",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "vt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "yt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "e",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Tt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "It",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Rt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Ft",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Ht",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "zt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Ot",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Kt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "qt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Gt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Zt",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ee",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "oe",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "re",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "se",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "e",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ce",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "de",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "fe",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "me",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ge",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ke",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "we",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "xe",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "Te",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "s",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "c",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "h",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "0",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "1",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "create",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "2",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "3",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isFontInstalled",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "eq",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "eq2",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "peq2",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "ok",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "fail",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "self",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "not",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "and",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "invoke",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "resetUniqueId",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "uniqueId",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "rect2bnd",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "invertObject",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "namespaceToCamel",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "debounce",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isValidUrl",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "initial",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "prev",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "next",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "find",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "all",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "sum",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "from",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isEmpty",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "clusterBy",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "compact",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "unique",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isControlSizing",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isElement",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isPurePara",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isHeading",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isBodyInline",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isParaInline",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "deepestChildIsEmpty",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isClosestSibling",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "withClosestSiblings",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isLeftEdgePointOf",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isRightEdgePointOf",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isVisiblePoint",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "prevPointUntil",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "nextPointUntil",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isCharPoint",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isSpacePoint",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "walkPoint",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "singleChildAncestor",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "lastAncestor",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "listPrev",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "listDescendant",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "commonAncestor",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "wrap",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "makeOffsetPath",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "fromOffsetPath",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "splitPoint",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "createText",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "removeWhile",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "replace",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "html",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "posFromPlaceholder",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "attachEvents",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "detachEvents",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isCustomStyleTag",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "summernote",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "create",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "createFromBodyElement",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "createFromSelection",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "createFromNode",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "createFromNodeBefore",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "createFromNodeAfter",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "createFromBookmark",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "createFromParaBookmark",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isEdit",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isMove",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "isNavigation",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "onload",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "onerror",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "n",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "e",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "s",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "n",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "e",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "f",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "click",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "callback",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "callback",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "click",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "template",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "template",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "callback",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "callback",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "callback",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "51",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "value",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "callback",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "callback",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "callback",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "click",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "toggleBtn",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "toggleBtnActive",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "check",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "onDialogShown",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "onDialogHidden",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "showDialog",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "hideDialog",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "getPopoverContent",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "getDialogBody",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "createLayout",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "removeLayout",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "name": "6",
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'n' appears 517 times with identical content"
+    }
+  ],
+  "similar_functions": [
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "getCookie",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\consent-banner-loader.js",
+          "line": 62
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\device_identity.js",
+          "line": 21
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\main.js",
+          "line": 21
+        }
+      ],
+      "message": "Function 'getCookie' has 3 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "showToast",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\consent-banner-loader.js",
+          "line": 324
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\consent.js",
+          "line": 137
+        }
+      ],
+      "message": "Function 'showToast' has 2 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "debounce",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+          "line": 32
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+          "line": 66
+        }
+      ],
+      "message": "Function 'debounce' has 3 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "executedFunction",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+          "line": 35
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\shared\\js\\utilities.js",
+          "line": 122
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\shared\\js\\utilities.js",
+          "line": 140
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+          "line": 69
+        }
+      ],
+      "message": "Function 'executedFunction' has 4 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "throttle",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+          "line": 45
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+          "line": 79
+        }
+      ],
+      "message": "Function 'throttle' has 2 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "later",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+          "line": 36
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\shared\\js\\utilities.js",
+          "line": 123
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+          "line": 70
+        }
+      ],
+      "message": "Function 'later' has 3 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "e",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'e' has 5 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "d",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'd' has 3 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "ee",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'ee' has 2 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "o",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'o' has 2 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "te",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'te' has 2 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "u",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'u' has 3 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "re",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 're' has 2 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "c",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'c' has 3 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "ne",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'ne' has 2 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "h",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'h' has 3 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "A",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'A' has 2 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "a",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'a' has 5 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "N",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'N' has 2 different implementations"
+    },
+    {
+      "type": "SAME_NAME_DIFFERENT_IMPL",
+      "severity": "warning",
+      "function_name": "l",
+      "locations": [
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\htmx.min.js",
+          "line": 1
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        },
+        {
+          "file": "D:\\GsmInfinity\\static\\js\\summernote\\summernote-lite.min.js",
+          "line": 2
+        }
+      ],
+      "message": "Function 'l' has 3 different implementations"
+    }
+  ]
+}

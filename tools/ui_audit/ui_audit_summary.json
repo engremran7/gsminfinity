@@ -1,0 +1,119 @@
+{
+  "meta": {
+    "generated_at": "2025-12-23T20:40:55.739096",
+    "project_root": "D:\\GsmInfinity",
+    "audit_version": "1.0.0"
+  },
+  "overall": {
+    "total_audits": 9,
+    "passed": 3,
+    "failed": 5,
+    "errors": 1,
+    "health_score": 33.3
+  },
+  "audit_results": [
+    {
+      "name": "URL Mapping Audit",
+      "status": "failed",
+      "exit_code": 1
+    },
+    {
+      "name": "Template Render Map",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "Template Link Integrity",
+      "status": "failed",
+      "exit_code": 1
+    },
+    {
+      "name": "Static Files Integrity",
+      "status": "failed",
+      "exit_code": 1
+    },
+    {
+      "name": "Template Duplicates",
+      "status": "timeout",
+      "exit_code": -1
+    },
+    {
+      "name": "Tailwind CSS Audit",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "HTMX Audit",
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "CSP Compliance Audit",
+      "status": "failed",
+      "exit_code": 1
+    },
+    {
+      "name": "JavaScript Duplication",
+      "status": "failed",
+      "exit_code": 1
+    }
+  ],
+  "individual_summaries": {
+    "url_map": {
+      "total_urls": 274,
+      "with_templates": 59,
+      "api_endpoints": 48,
+      "with_issues": 136
+    },
+    "template_render": {
+      "total_render_calls": 22,
+      "unique_views": 12,
+      "unique_templates": 19,
+      "issues_found": 4
+    },
+    "link_integrity": {
+      "total_url_refs": 331,
+      "valid_refs": 317,
+      "invalid_refs": 14,
+      "hardcoded_urls": 3,
+      "unique_url_names": 128
+    },
+    "static_integrity": {
+      "total_static_refs": 62,
+      "valid_refs": 47,
+      "missing_refs": 15,
+      "total_static_files": 540,
+      "unused_files": 511,
+      "duplicate_warnings": 4
+    },
+    "tailwind": {
+      "config_files": 2,
+      "templates_scanned": 187,
+      "total_class_usages": 23078,
+      "unique_classes": 1153,
+      "issues_found": 25
+    },
+    "htmx": {
+      "htmx_included": true,
+      "total_usages": 5,
+      "unique_endpoints": 2,
+      "partial_templates": 26,
+      "issues_found": 3
+    },
+    "csp": {
+      "total_violations": 42,
+      "errors": 4,
+      "warnings": 0,
+      "info": 38,
+      "templates_checked": 187,
+      "js_files_checked": 21
+    },
+    "js_duplication": {
+      "total_js_files": 21,
+      "total_functions": 819,
+      "exact_duplicates": 2,
+      "similar_functions": 111,
+      "total_size_kb": 383.8
+    }
+  }
+}

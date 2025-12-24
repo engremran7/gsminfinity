@@ -319,14 +319,39 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     # Fill stats per placement / creative
     placement_stats = {}
     creative_stats = {}
+    # OPTIMIZED: Single query with aggregation for placement stats
+    from django.db.models import Count, Q
+    placement_ids = [p.id for p in placements]
+    placement_aggregates = AdEvent.objects.filter(
+        placement_id__in=placement_ids
+    ).values('placement_id').annotate(
+        impressions=Count('id', filter=Q(event_type='impression')),
+        clicks=Count('id', filter=Q(event_type='click'))
+    )
+    placement_lookup = {stat['placement_id']: stat for stat in placement_aggregates}
+    
     for p in placements:
-        imp = AdEvent.objects.filter(placement=p, event_type="impression").count()
-        clk = AdEvent.objects.filter(placement=p, event_type="click").count()
+        stats = placement_lookup.get(p.id, {'impressions': 0, 'clicks': 0})
+        imp = stats['impressions']
+        clk = stats['clicks']
         ctr_local = (clk / imp * 100) if imp else 0
         placement_stats[p.id] = {"impressions": imp, "clicks": clk, "ctr": round(ctr_local, 2)}
-    for c in AdCreative.objects.all()[:50]:
-        imp = AdEvent.objects.filter(creative=c, event_type="impression").count()
-        clk = AdEvent.objects.filter(creative=c, event_type="click").count()
+    # OPTIMIZED: Single query with aggregation instead of N+1
+    from django.db.models import Count, Q
+    all_creatives = AdCreative.objects.all()[:50]
+    creative_ids = [c.id for c in all_creatives]
+    creative_aggregates = AdEvent.objects.filter(
+        creative_id__in=creative_ids
+    ).values('creative_id').annotate(
+        impressions=Count('id', filter=Q(event_type='impression')),
+        clicks=Count('id', filter=Q(event_type='click'))
+    )
+    creative_lookup = {stat['creative_id']: stat for stat in creative_aggregates}
+    
+    for c in all_creatives:
+        stats = creative_lookup.get(c.id, {'impressions': 0, 'clicks': 0})
+        imp = stats['impressions']
+        clk = stats['clicks']
         ctr_local = (clk / imp * 100) if imp else 0
         creative_stats[c.id] = {"impressions": imp, "clicks": clk, "ctr": round(ctr_local, 2)}
     assignments = (
@@ -411,5 +436,116 @@ def toggle_settings(request: HttpRequest) -> HttpResponse:
         campaign=str(campaign_id or ""),
     )
     return redirect("ads:dashboard")
+
+
+# ==================== AFFILIATE PRODUCTS ====================
+
+@csrf_protect
+@require_POST
+def track_affiliate_click(request: HttpRequest) -> JsonResponse:
+    """
+    Track affiliate product click for analytics.
+    Called via beacon or AJAX when user clicks an affiliate product link.
+    """
+    import json
+    
+    try:
+        # Parse JSON body or form data
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+        else:
+            data = request.POST
+        
+        product_id = data.get('product_id')
+        if not product_id:
+            return JsonResponse({'ok': False, 'error': 'missing_product_id'}, status=400)
+        
+        # Rate limit per IP
+        rl_key = f"affiliate:click:{get_client_ip(request) or 'anon'}"
+        try:
+            count = cache.get(rl_key, 0)
+            if count and int(count) >= 100:
+                return JsonResponse({'ok': False, 'error': 'rate_limited'}, status=429)
+            cache.set(rl_key, int(count) + 1, timeout=60)
+        except Exception:
+            pass
+        
+        # Track the click
+        from apps.ads.api import track_affiliate_click_sync
+        
+        result = track_affiliate_click_sync(
+            product_id=int(product_id),
+            user_id=request.user.id if request.user.is_authenticated else None,
+            page_url=data.get('page_url', '')[:500],
+            referrer_type=data.get('referrer_type', '')[:20],
+            referrer_id=data.get('referrer_id'),
+            ip_address=get_client_ip(request) or '',
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+            session_id=request.session.session_key or '',
+        )
+        
+        if result.get('status') == 'success':
+            return JsonResponse({'ok': True, 'click_id': result.get('click_id')})
+        else:
+            return JsonResponse({'ok': False, 'error': result.get('status')}, status=400)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'invalid_json'}, status=400)
+    except Exception as exc:
+        logger.error(f"Affiliate click tracking failed: {exc}")
+        return JsonResponse({'ok': False, 'error': 'server_error'}, status=500)
+
+
+@require_GET
+def get_affiliate_products(request: HttpRequest) -> JsonResponse:
+    """
+    Get affiliate products for a given context.
+    Used for client-side lazy loading of products.
+    """
+    from apps.ads.api import get_contextual_products, get_affiliate_products_settings
+    
+    settings = get_affiliate_products_settings()
+    if not settings.get('enabled'):
+        return JsonResponse({'ok': False, 'products': []})
+    
+    # Get context parameters
+    brand_id = request.GET.get('brand_id')
+    model_id = request.GET.get('model_id')
+    variant_id = request.GET.get('variant_id')
+    post_id = request.GET.get('post_id')
+    max_products = int(request.GET.get('max', 4))
+    
+    # Get the actual model instances
+    brand = model = variant = post = None
+    
+    try:
+        if brand_id:
+            from apps.firmwares.models import Brand
+            brand = Brand.objects.filter(id=brand_id).first()
+        if model_id:
+            from apps.firmwares.models import Model
+            model = Model.objects.filter(id=model_id).first()
+        if variant_id:
+            from apps.firmwares.models import Variant
+            variant = Variant.objects.filter(id=variant_id).first()
+        if post_id:
+            from apps.blog.models import Post
+            post = Post.objects.filter(id=post_id).first()
+    except Exception as exc:
+        logger.warning(f"Failed to get context objects: {exc}")
+    
+    products = get_contextual_products(
+        brand=brand,
+        model=model,
+        variant=variant,
+        blog_post=post,
+        max_products=max_products
+    )
+    
+    return JsonResponse({
+        'ok': True,
+        'products': products,
+        'count': len(products),
+    })
 
 

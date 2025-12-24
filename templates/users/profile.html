@@ -1,32 +1,50 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Profile - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block title %}Profile - {{ site_settings.site_name|default:"Site" }}{% endblock %}
+
+{% block sidebar_left %}{% endblock %}
+{% block sidebar_right %}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-  <!-- Header -->
-  <div class="bg-white border-b border-gray-200">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div class="min-h-screen bg-[var(--color-bg-page)]">
+  {# Header with Glassmorphism #}
+  <header class="relative py-10 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    
+    <div class="relative max-w-4xl mx-auto">
       <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-900">Profile Settings</h1>
-          <p class="mt-1 text-sm text-gray-600">Manage your account information</p>
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primitive-cyan-500)] to-[var(--primitive-purple-500)] p-0.5">
+              <div class="w-full h-full rounded-2xl bg-[var(--color-bg-surface)] flex items-center justify-center overflow-hidden">
+                {% if user.avatar %}
+                  <img src="{{ user.avatar.url }}" alt="{{ user.username }}" class="w-full h-full object-cover">
+                {% else %}
+                  <span class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-[var(--primitive-cyan-400)] to-[var(--primitive-purple-400)]">{{ user.username|first|upper }}</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[var(--primitive-green-400)] border-2 border-[var(--color-bg-page)]"></div>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-[var(--color-text-primary)]">Profile Settings</h1>
+            <p class="text-sm text-[var(--color-text-secondary)]">Manage your account information</p>
+          </div>
         </div>
-        <a href="{% url 'users:dashboard' %}" class="btn btn-light">
+        <a href="{% url 'users:dashboard' %}" class="btn btn-ghost glass-hover px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 text-[var(--color-text-secondary)]">
           <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
-          Back to Dashboard
+          Dashboard
         </a>
       </div>
     </div>
-  </div>
+  </header>
 
-  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Messages -->
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    {# Messages #}
     {% if messages %}
       <div class="mb-6 space-y-3">
         {% for message in messages %}
-          <div class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-800{% elif message.tags == 'success' %}bg-green-50 border border-green-200 text-green-800{% else %}bg-blue-50 border border-blue-200 text-blue-800{% endif %}">
+          <div class="p-4 rounded-xl backdrop-blur-sm {% if message.tags == 'error' %}bg-[var(--color-danger-subtle)] border border-[var(--primitive-red-400)]/30 text-[var(--primitive-red-400)]{% elif message.tags == 'success' %}bg-[var(--color-success-subtle)] border border-[var(--primitive-green-400)]/30 text-[var(--primitive-green-400)]{% else %}bg-[var(--color-info-subtle)] border border-[var(--primitive-cyan-500)]/30 text-[var(--primitive-cyan-400)]{% endif %}">
             <p class="text-sm">{{ message }}</p>
           </div>
         {% endfor %}
@@ -34,23 +52,30 @@
     {% endif %}
 
     <div class="space-y-6">
-      <!-- Profile Picture -->
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Profile Picture</h3>
+      {# Profile Picture Card #}
+      <div class="card-glass-neon rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border-default)]">
+          <h3 class="text-base font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
+            <svg class="w-5 h-5 text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-user"></use></svg>
+            Profile Picture
+          </h3>
         </div>
-        <div class="card-body">
+        <div class="p-6">
           <div class="flex items-center gap-6">
-            <div class="avatar avatar-xl">
-              {% if user.avatar %}
-                <img src="{{ user.avatar.url }}" alt="{{ user.username }}">
-              {% else %}
-                {{ user.username|first|upper }}
-              {% endif %}
+            <div class="relative group">
+              <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--primitive-cyan-500)] to-[var(--primitive-purple-500)] p-0.5 transition-transform group-hover:scale-105">
+                <div class="w-full h-full rounded-2xl bg-[var(--color-bg-surface)] flex items-center justify-center overflow-hidden">
+                  {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="{{ user.username }}" class="w-full h-full object-cover">
+                  {% else %}
+                    <span class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-br from-[var(--primitive-cyan-400)] to-[var(--primitive-purple-400)]">{{ user.username|first|upper }}</span>
+                  {% endif %}
+                </div>
+              </div>
             </div>
             <div class="flex-1">
-              <p class="text-sm text-gray-600 mb-3">Upload a profile picture to personalize your account</p>
-              <button type="button" class="btn btn-primary">
+              <p class="text-sm text-[var(--color-text-secondary)] mb-3">Upload a profile picture to personalize your account</p>
+              <button type="button" class="btn px-4 py-2.5 rounded-lg text-sm font-medium bg-[var(--primitive-cyan-500)] text-[var(--color-text-on-primary)] hover:bg-[var(--primitive-cyan-400)] micro-press inline-flex items-center gap-2">
                 <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-upload"></use></svg>
                 Upload Photo
               </button>
@@ -59,104 +84,110 @@
         </div>
       </div>
 
-      <!-- Full Name -->
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Full Name</h3>
+      {# Full Name Card #}
+      <div class="card-glass rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border-default)]">
+          <h3 class="text-base font-semibold text-[var(--color-text-primary)]">Full Name</h3>
         </div>
-        <div class="card-body">
+        <div class="p-6">
           <form method="post" action="{% url 'users:profile' %}" class="space-y-4">
             {% csrf_token %}
             <input type="hidden" name="action" value="update_full_name">
             <div>
-              <label for="full_name" class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="full_name" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                 Full Name
               </label>
               <input type="text" name="full_name" id="full_name" 
                      value="{{ user.full_name|default:'' }}"
-                     class="form-input w-full"
+                     class="w-full rounded-lg bg-[var(--color-bg-surface-secondary)] border border-[var(--color-border-default)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--primitive-cyan-500)] focus:ring-2 focus:ring-[var(--primitive-cyan-500)]/20 transition-all"
                      placeholder="Enter your full name">
             </div>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn px-4 py-2.5 rounded-lg text-sm font-medium bg-[var(--primitive-cyan-500)] text-[var(--color-text-on-primary)] hover:bg-[var(--primitive-cyan-400)] micro-press">
               Save Changes
             </button>
           </form>
         </div>
       </div>
 
-      <!-- Bio -->
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Bio</h3>
+      {# Bio Card #}
+      <div class="card-glass rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border-default)]">
+          <h3 class="text-base font-semibold text-[var(--color-text-primary)]">Bio</h3>
         </div>
-        <div class="card-body">
+        <div class="p-6">
           <form method="post" action="{% url 'users:profile' %}" class="space-y-4">
             {% csrf_token %}
             <input type="hidden" name="action" value="update_bio">
             <div>
-              <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="bio" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                 Short Biography
               </label>
               <textarea name="bio" id="bio" rows="4"
-                        class="form-input w-full"
+                        class="w-full rounded-lg bg-[var(--color-bg-surface-secondary)] border border-[var(--color-border-default)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--primitive-cyan-500)] focus:ring-2 focus:ring-[var(--primitive-cyan-500)]/20 transition-all resize-none"
                         placeholder="Tell us about yourself..."
                         maxlength="500">{{ user.bio|default:'' }}</textarea>
-              <p class="mt-1 text-xs text-gray-500">Maximum 500 characters</p>
+              <p class="mt-1 text-xs text-[var(--color-text-muted)]">Maximum 500 characters</p>
             </div>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn px-4 py-2.5 rounded-lg text-sm font-medium bg-[var(--primitive-cyan-500)] text-[var(--color-text-on-primary)] hover:bg-[var(--primitive-cyan-400)] micro-press">
               Save Changes
             </button>
           </form>
         </div>
       </div>
 
-      <!-- Username -->
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Username</h3>
+      {# Username Card #}
+      <div class="card-glass rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border-default)]">
+          <h3 class="text-base font-semibold text-[var(--color-text-primary)]">Username</h3>
         </div>
-        <div class="card-body">
+        <div class="p-6">
           <form method="post" action="{% url 'users:change_username' %}" id="username-form" class="space-y-4">
             {% csrf_token %}
             <div>
-              <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+              <label for="username" class="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                 Username
               </label>
               <div class="flex items-center gap-3">
                 <input type="text" name="username" id="username-input" 
                        value="{{ user.username|default:'' }}"
-                       class="form-input flex-1"
+                       class="flex-1 rounded-lg bg-[var(--color-bg-surface-secondary)] border border-[var(--color-border-default)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] focus:border-[var(--primitive-cyan-500)] focus:ring-2 focus:ring-[var(--primitive-cyan-500)]/20 transition-all"
                        placeholder="Choose a username">
                 <span id="username-status" class="text-sm"></span>
               </div>
-              <p class="mt-1 text-xs text-gray-500">3-32 characters, letters/numbers/._- (max 2 changes per year)</p>
+              <p class="mt-1 text-xs text-[var(--color-text-muted)]">3-32 characters, letters/numbers/._- (max 2 changes per year)</p>
             </div>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn px-4 py-2.5 rounded-lg text-sm font-medium bg-[var(--primitive-cyan-500)] text-[var(--color-text-on-primary)] hover:bg-[var(--primitive-cyan-400)] micro-press">
               Change Username
             </button>
           </form>
         </div>
       </div>
 
-      <!-- Email -->
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Email Address</h3>
+      {# Email Card #}
+      <div class="card-glass rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border-default)]">
+          <h3 class="text-base font-semibold text-[var(--color-text-primary)]">Email Address</h3>
         </div>
-        <div class="card-body">
+        <div class="p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-900">{{ user.email }}</p>
-              <p class="text-xs text-gray-500 mt-1">
+              <p class="text-sm font-medium text-[var(--color-text-primary)]">{{ user.email }}</p>
+              <p class="text-xs mt-1">
                 {% if user.email_verified_at %}
-                  <span class="text-green-600">✓ Verified</span>
+                  <span class="inline-flex items-center gap-1 text-[var(--primitive-green-400)]">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="#icon-check-circle"></use></svg>
+                    Verified
+                  </span>
                 {% else %}
-                  <span class="text-amber-600">Not verified</span>
+                  <span class="inline-flex items-center gap-1 text-[var(--primitive-amber-400)]">
+                    <svg class="w-3.5 h-3.5" aria-hidden="true"><use href="#icon-alert-circle"></use></svg>
+                    Not verified
+                  </span>
                 {% endif %}
               </p>
             </div>
             {% if not user.email_verified_at %}
-              <button type="button" class="btn btn-light">
+              <button type="button" class="btn btn-ghost glass-hover px-4 py-2 rounded-lg text-sm font-medium text-[var(--color-text-secondary)]">
                 Verify Email
               </button>
             {% endif %}
@@ -164,32 +195,35 @@
         </div>
       </div>
 
-      <!-- Password -->
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Password</h3>
+      {# Password Card #}
+      <div class="card-glass rounded-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border-default)]">
+          <h3 class="text-base font-semibold text-[var(--color-text-primary)]">Password</h3>
         </div>
-        <div class="card-body">
-          <p class="text-sm text-gray-600 mb-4">Change your password using the secure flow</p>
-          <a href="{% url 'account_change_password' %}" class="btn btn-primary">
+        <div class="p-6">
+          <p class="text-sm text-[var(--color-text-secondary)] mb-4">Change your password using the secure flow</p>
+          <a href="{% url 'account_change_password' %}" class="btn px-4 py-2.5 rounded-lg text-sm font-medium bg-[var(--primitive-purple-500)] text-white hover:bg-[var(--primitive-purple-400)] micro-press inline-flex items-center gap-2">
             <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-lock"></use></svg>
             Change Password
           </a>
         </div>
       </div>
 
-      <!-- Danger Zone -->
-      <div class="card border-red-200">
-        <div class="card-header bg-red-50">
-          <h3 class="card-title text-red-900">Danger Zone</h3>
+      {# Danger Zone Card #}
+      <div class="rounded-2xl overflow-hidden border border-[var(--primitive-red-400)]/30 bg-[var(--color-danger-subtle)]">
+        <div class="px-6 py-4 border-b border-[var(--primitive-red-400)]/20 bg-[var(--primitive-red-400)]/10">
+          <h3 class="text-base font-semibold text-[var(--primitive-red-400)] flex items-center gap-2">
+            <svg class="w-5 h-5" aria-hidden="true"><use href="#icon-alert-triangle"></use></svg>
+            Danger Zone
+          </h3>
         </div>
-        <div class="card-body">
+        <div class="p-6">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-gray-900">Delete Account</p>
-              <p class="text-xs text-gray-600 mt-1">Once you delete your account, there is no going back</p>
+              <p class="text-sm font-medium text-[var(--color-text-primary)]">Delete Account</p>
+              <p class="text-xs text-[var(--color-text-secondary)] mt-1">Once you delete your account, there is no going back</p>
             </div>
-            <button type="button" class="btn bg-red-600 text-white hover:bg-red-700">
+            <button type="button" class="btn px-4 py-2.5 rounded-lg text-sm font-medium bg-[var(--primitive-red-500)] text-white hover:bg-[var(--primitive-red-400)] micro-press">
               Delete Account
             </button>
           </div>
@@ -217,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   async function checkUsername(value) {
     if (!value || value.length < 3) {
-      setStatus("Too short", "text-red-600");
+      setStatus("Too short", "text-[var(--primitive-red-400)]");
       return;
     }
     
@@ -234,16 +268,16 @@ document.addEventListener('DOMContentLoaded', function() {
       const data = await resp.json();
       if (data.ok) {
         if (data.limit_reached) {
-          setStatus("Change limit reached", "text-red-600");
+          setStatus("Change limit reached", "text-[var(--primitive-red-400)]");
         } else {
-          setStatus("✓ Available", "text-green-600");
+          setStatus("✓ Available", "text-[var(--primitive-green-400)]");
         }
       } else if (data.error === "taken") {
-        setStatus("✗ Taken", "text-red-600");
+        setStatus("✗ Taken", "text-[var(--primitive-red-400)]");
       } else if (data.error === "limit_reached") {
-        setStatus("Change limit reached", "text-red-600");
+        setStatus("Change limit reached", "text-[var(--primitive-red-400)]");
       } else {
-        setStatus("Invalid", "text-red-600");
+        setStatus("Invalid", "text-[var(--primitive-red-400)]");
       }
     } catch (err) {
       console.error("Username check failed:", err);
@@ -254,10 +288,10 @@ document.addEventListener('DOMContentLoaded', function() {
     clearTimeout(timer);
     const val = this.value.trim();
     if (val === "{{ user.username }}") {
-      setStatus("Current username", "text-gray-500");
+      setStatus("Current username", "text-[var(--color-text-muted)]");
       return;
     }
-    setStatus("Checking...", "text-gray-500");
+    setStatus("Checking...", "text-[var(--color-text-muted)]");
     timer = setTimeout(() => checkUsername(val), 500);
   });
 });

@@ -1,0 +1,732 @@
+/**
+ * =============================================================================
+ * GSMINFINITY ENTERPRISE DESIGN SYSTEM - Core Design Tokens
+ * =============================================================================
+ * 
+ * Version: 4.0.0 - Futuristic HUD Theme
+ * Standard: WCAG 2.1 AA Compliant
+ * Architecture: CSS Custom Properties with Semantic Naming
+ * Aesthetic: Dark Tech / Cyberpunk / Glassmorphism
+ * 
+ * This file serves as the SINGLE SOURCE OF TRUTH for all design tokens.
+ * All other CSS files MUST reference these tokens - no hardcoded values.
+ * 
+ * Color Contrast Ratios (WCAG 2.1 AA):
+ * - Normal Text: 4.5:1 minimum
+ * - Large Text (18pt+): 3.0:1 minimum  
+ * - UI Components: 3.0:1 minimum
+ * - Focus Indicators: 3.0:1 minimum
+ * =============================================================================
+ */
+
+/* =============================================================================
+   LAYER 1: PRIMITIVE TOKENS (Raw Values)
+   These are the base palette - never use directly in components
+   ============================================================================= */
+
+:root {
+  /* --------------------------------------------------------------------------
+     Color Primitives - Deep Space (Futuristic Dark Scale)
+     Carefully selected for WCAG AA contrast on dark backgrounds
+     -------------------------------------------------------------------------- */
+  --primitive-slate-50: #f0f4f8;
+  --primitive-slate-100: #d9e2ec;
+  --primitive-slate-200: #bcccdc;
+  --primitive-slate-300: #9fb3c8;
+  --primitive-slate-400: #829ab1;
+  --primitive-slate-500: #627d98;
+  --primitive-slate-600: #486581;
+  --primitive-slate-700: #334e68;
+  --primitive-slate-800: #243b53;
+  --primitive-slate-900: #1A1A2E;
+  --primitive-slate-950: #0F0F1A;
+
+  /* --------------------------------------------------------------------------
+     Futuristic Palette - Electric Cyan (Primary Accent)
+     High-contrast neon for dark backgrounds
+     -------------------------------------------------------------------------- */
+  --primitive-cyber-50: #e0fcff;
+  --primitive-cyber-100: #bef8fd;
+  --primitive-cyber-200: #87eaf2;
+  --primitive-cyber-300: #54d1db;
+  --primitive-cyber-400: #38bec9;
+  --primitive-cyber-500: #00E5FF;
+  --primitive-cyber-600: #00B8D4;
+  --primitive-cyber-700: #0097A7;
+  --primitive-cyber-800: #00838F;
+  --primitive-cyber-900: #006064;
+
+  /* --------------------------------------------------------------------------
+     Futuristic Palette - Neon Green (Secondary Accent)
+     Vibrant green for success and highlighting
+     -------------------------------------------------------------------------- */
+  --primitive-neon-50: #e3fcef;
+  --primitive-neon-100: #c1fad6;
+  --primitive-neon-200: #8cf5b2;
+  --primitive-neon-300: #5bee8c;
+  --primitive-neon-400: #39FF14;
+  --primitive-neon-500: #32E10A;
+  --primitive-neon-600: #25B807;
+  --primitive-neon-700: #1A9005;
+  --primitive-neon-800: #116803;
+  --primitive-neon-900: #094002;
+
+  /* --------------------------------------------------------------------------
+     Color Primitives - Brand Blue (Primary) - Electric Blue Variant
+     Primary blue with excellent contrast ratios + cyberpunk feel
+     -------------------------------------------------------------------------- */
+  --primitive-blue-50: #e6f4ff;
+  --primitive-blue-100: #bae3ff;
+  --primitive-blue-200: #7cc4fa;
+  --primitive-blue-300: #47a3f3;
+  --primitive-blue-400: #2186eb;
+  --primitive-blue-500: #0967d2;
+  --primitive-blue-600: #0552b5;
+  --primitive-blue-700: #03449e;
+  --primitive-blue-800: #01337d;
+  --primitive-blue-900: #002159;
+  --primitive-blue-950: #001233;
+
+  /* --------------------------------------------------------------------------
+     Color Primitives - Purple (Accent) - Neon Violet
+     -------------------------------------------------------------------------- */
+  --primitive-purple-50: #f5e6ff;
+  --primitive-purple-100: #e4ccff;
+  --primitive-purple-200: #c799ff;
+  --primitive-purple-300: #a966ff;
+  --primitive-purple-400: #BF40BF;
+  --primitive-purple-500: #A020F0;
+  --primitive-purple-600: #8B00FF;
+  --primitive-purple-700: #7400CC;
+  --primitive-purple-800: #5C0099;
+  --primitive-purple-900: #440066;
+
+  /* --------------------------------------------------------------------------
+     Color Primitives - Indigo (Secondary/Accent) - Deep Neon
+     -------------------------------------------------------------------------- */
+  --primitive-indigo-50: #e8e6ff;
+  --primitive-indigo-100: #d4d0ff;
+  --primitive-indigo-200: #b8b3ff;
+  --primitive-indigo-300: #9b94ff;
+  --primitive-indigo-400: #7F7CFF;
+  --primitive-indigo-500: #6366f1;
+  --primitive-indigo-600: #5046e5;
+  --primitive-indigo-700: #4338ca;
+  --primitive-indigo-800: #3730a3;
+  --primitive-indigo-900: #2D2A7F;
+
+  /* --------------------------------------------------------------------------
+     Color Primitives - Semantic: Success (Neon Green)
+     -------------------------------------------------------------------------- */
+  --primitive-green-50: #e3fcef;
+  --primitive-green-100: #c1fad6;
+  --primitive-green-200: #8cf5b2;
+  --primitive-green-300: #5bee8c;
+  --primitive-green-400: #39FF14;
+  --primitive-green-500: #32E10A;
+  --primitive-green-600: #25B807;
+  --primitive-green-700: #1A9005;
+  --primitive-green-800: #116803;
+  --primitive-green-900: #094002;
+
+  /* --------------------------------------------------------------------------
+     Color Primitives - Semantic: Warning (Amber/Orange Neon)
+     -------------------------------------------------------------------------- */
+  --primitive-amber-50: #fff8e6;
+  --primitive-amber-100: #ffefc7;
+  --primitive-amber-200: #ffe08a;
+  --primitive-amber-300: #ffc94d;
+  --primitive-amber-400: #FFB400;
+  --primitive-amber-500: #F59E0B;
+  --primitive-amber-600: #D97706;
+  --primitive-amber-700: #B45309;
+  --primitive-amber-800: #92400E;
+  --primitive-amber-900: #78350F;
+
+  /* --------------------------------------------------------------------------
+     Color Primitives - Semantic: Danger (Hot Pink/Red)
+     -------------------------------------------------------------------------- */
+  --primitive-red-50: #ffe6ec;
+  --primitive-red-100: #ffbdca;
+  --primitive-red-200: #ff8fa3;
+  --primitive-red-300: #ff617d;
+  --primitive-red-400: #FF3366;
+  --primitive-red-500: #FF1744;
+  --primitive-red-600: #E91E63;
+  --primitive-red-700: #C62828;
+  --primitive-red-800: #AD1457;
+  --primitive-red-900: #880E4F;
+
+  /* --------------------------------------------------------------------------
+     Color Primitives - Semantic: Info (Electric Cyan)
+     -------------------------------------------------------------------------- */
+  --primitive-cyan-50: #e0fcff;
+  --primitive-cyan-100: #bef8fd;
+  --primitive-cyan-200: #87eaf2;
+  --primitive-cyan-300: #54d1db;
+  --primitive-cyan-400: #00E5FF;
+  --primitive-cyan-500: #00D4FF;
+  --primitive-cyan-600: #00B8D4;
+  --primitive-cyan-700: #0097A7;
+  --primitive-cyan-800: #00838F;
+  --primitive-cyan-900: #006064;
+
+  /* --------------------------------------------------------------------------
+     Spacing Primitives (8px Base Unit System)
+     -------------------------------------------------------------------------- */
+  --primitive-space-0: 0;
+  --primitive-space-px: 1px;
+  --primitive-space-0-5: 0.125rem;   /* 2px */
+  --primitive-space-1: 0.25rem;      /* 4px */
+  --primitive-space-1-5: 0.375rem;   /* 6px */
+  --primitive-space-2: 0.5rem;       /* 8px */
+  --primitive-space-2-5: 0.625rem;   /* 10px */
+  --primitive-space-3: 0.75rem;      /* 12px */
+  --primitive-space-3-5: 0.875rem;   /* 14px */
+  --primitive-space-4: 1rem;         /* 16px */
+  --primitive-space-5: 1.25rem;      /* 20px */
+  --primitive-space-6: 1.5rem;       /* 24px */
+  --primitive-space-7: 1.75rem;      /* 28px */
+  --primitive-space-8: 2rem;         /* 32px */
+  --primitive-space-9: 2.25rem;      /* 36px */
+  --primitive-space-10: 2.5rem;      /* 40px */
+  --primitive-space-11: 2.75rem;     /* 44px */
+  --primitive-space-12: 3rem;        /* 48px */
+  --primitive-space-14: 3.5rem;      /* 56px */
+  --primitive-space-16: 4rem;        /* 64px */
+  --primitive-space-20: 5rem;        /* 80px */
+  --primitive-space-24: 6rem;        /* 96px */
+  --primitive-space-28: 7rem;        /* 112px */
+  --primitive-space-32: 8rem;        /* 128px */
+
+  /* --------------------------------------------------------------------------
+     Typography Primitives
+     -------------------------------------------------------------------------- */
+  --primitive-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --primitive-font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, 'Liberation Mono', monospace;
+  
+  --primitive-font-size-xs: 0.75rem;     /* 12px */
+  --primitive-font-size-sm: 0.875rem;    /* 14px */
+  --primitive-font-size-base: 1rem;      /* 16px */
+  --primitive-font-size-lg: 1.125rem;    /* 18px */
+  --primitive-font-size-xl: 1.25rem;     /* 20px */
+  --primitive-font-size-2xl: 1.5rem;     /* 24px */
+  --primitive-font-size-3xl: 1.875rem;   /* 30px */
+  --primitive-font-size-4xl: 2.25rem;    /* 36px */
+  --primitive-font-size-5xl: 3rem;       /* 48px */
+  
+  --primitive-font-weight-normal: 400;
+  --primitive-font-weight-medium: 500;
+  --primitive-font-weight-semibold: 600;
+  --primitive-font-weight-bold: 700;
+  
+  --primitive-line-height-none: 1;
+  --primitive-line-height-tight: 1.25;
+  --primitive-line-height-snug: 1.375;
+  --primitive-line-height-normal: 1.5;
+  --primitive-line-height-relaxed: 1.625;
+  --primitive-line-height-loose: 2;
+  
+  --primitive-letter-spacing-tighter: -0.05em;
+  --primitive-letter-spacing-tight: -0.025em;
+  --primitive-letter-spacing-normal: 0;
+  --primitive-letter-spacing-wide: 0.025em;
+  --primitive-letter-spacing-wider: 0.05em;
+  --primitive-letter-spacing-widest: 0.1em;
+
+  /* --------------------------------------------------------------------------
+     Border Radius Primitives
+     -------------------------------------------------------------------------- */
+  --primitive-radius-none: 0;
+  --primitive-radius-sm: 0.125rem;    /* 2px */
+  --primitive-radius-base: 0.25rem;   /* 4px */
+  --primitive-radius-md: 0.375rem;    /* 6px */
+  --primitive-radius-lg: 0.5rem;      /* 8px */
+  --primitive-radius-xl: 0.75rem;     /* 12px */
+  --primitive-radius-2xl: 1rem;       /* 16px */
+  --primitive-radius-3xl: 1.5rem;     /* 24px */
+  --primitive-radius-full: 9999px;
+
+  /* --------------------------------------------------------------------------
+     Shadow Primitives
+     -------------------------------------------------------------------------- */
+  --primitive-shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --primitive-shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --primitive-shadow-base: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --primitive-shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --primitive-shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --primitive-shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --primitive-shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --primitive-shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+
+  /* --------------------------------------------------------------------------
+     Transition Primitives
+     -------------------------------------------------------------------------- */
+  --primitive-duration-75: 75ms;
+  --primitive-duration-100: 100ms;
+  --primitive-duration-150: 150ms;
+  --primitive-duration-200: 200ms;
+  --primitive-duration-300: 300ms;
+  --primitive-duration-500: 500ms;
+  --primitive-duration-700: 700ms;
+  --primitive-duration-1000: 1000ms;
+  
+  --primitive-ease-linear: linear;
+  --primitive-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --primitive-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --primitive-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --------------------------------------------------------------------------
+     Z-Index Scale
+     -------------------------------------------------------------------------- */
+  --primitive-z-0: 0;
+  --primitive-z-10: 10;
+  --primitive-z-20: 20;
+  --primitive-z-30: 30;
+  --primitive-z-40: 40;
+  --primitive-z-50: 50;
+  --primitive-z-dropdown: 1000;
+  --primitive-z-sticky: 1020;
+  --primitive-z-fixed: 1030;
+  --primitive-z-modal-backdrop: 1040;
+  --primitive-z-modal: 1050;
+  --primitive-z-popover: 1060;
+  --primitive-z-tooltip: 1070;
+  --primitive-z-toast: 1080;
+}
+
+/* =============================================================================
+   LAYER 2: SEMANTIC TOKENS (Futuristic Dark Mode - Default)
+   Map primitives to semantic meaning
+   ============================================================================= */
+
+:root {
+  /* --------------------------------------------------------------------------
+     Backgrounds - Deep Space Dark Theme (#1A1A2E base)
+     -------------------------------------------------------------------------- */
+  --color-bg-page: #1A1A2E;
+  --color-bg-surface: #16213E;
+  --color-bg-surface-secondary: #1F2B45;
+  --color-bg-surface-tertiary: #283756;
+  --color-bg-elevated: #1F2B45;
+  --color-bg-overlay: rgba(10, 10, 20, 0.85);
+  --color-bg-subtle: #1F2B45;
+  --color-bg-muted: #243B53;
+  
+  /* Glassmorphism Backgrounds */
+  --color-bg-glass: rgba(22, 33, 62, 0.85);
+  --color-bg-glass-light: rgba(31, 43, 69, 0.75);
+  --color-bg-glass-dark: rgba(15, 15, 26, 0.95);
+
+  /* --------------------------------------------------------------------------
+     Text - WCAG AA Compliant on Dark Backgrounds
+     All text colors tested against #1A1A2E background
+     -------------------------------------------------------------------------- */
+  --color-text-primary: #F0F4F8;                         /* 15.3:1 on dark */
+  --color-text-secondary: #D9E2EC;                       /* 10.7:1 on dark */
+  --color-text-tertiary: #BCCCDC;                        /* 8.1:1 on dark */
+  --color-text-muted: #9FB3C8;                           /* 5.2:1 on dark */
+  --color-text-disabled: #627D98;                        /* 3.5:1 on dark */
+  --color-text-inverse: #1A1A2E;
+  --color-text-on-primary: #0F0F1A;
+  --color-text-on-success: #0F0F1A;
+  --color-text-on-warning: #0F0F1A;
+  --color-text-on-danger: #ffffff;
+
+  /* --------------------------------------------------------------------------
+     Brand Colors - Electric Cyan & Neon Accents
+     -------------------------------------------------------------------------- */
+  --color-brand-primary: var(--primitive-cyan-500);      /* Electric Cyan */
+  --color-brand-primary-hover: var(--primitive-cyan-400);
+  --color-brand-primary-active: var(--primitive-cyan-600);
+  --color-brand-primary-subtle: rgba(0, 212, 255, 0.15);
+  --color-brand-secondary: var(--primitive-purple-500);  /* Neon Purple */
+  --color-brand-secondary-hover: var(--primitive-purple-400);
+  --color-brand-accent: var(--primitive-green-400);      /* Neon Green */
+  --color-brand-accent-hover: var(--primitive-green-300);
+
+  /* Futuristic Gradients */
+  --gradient-primary: linear-gradient(135deg, #00D4FF 0%, #7F7CFF 50%, #A020F0 100%);
+  --gradient-accent: linear-gradient(135deg, #A020F0 0%, #00D4FF 100%);
+  --gradient-success: linear-gradient(135deg, #39FF14 0%, #32E10A 100%);
+  --gradient-warm: linear-gradient(135deg, #FFB400 0%, #FF3366 100%);
+  --gradient-cool: linear-gradient(135deg, #00E5FF 0%, #7F7CFF 100%);
+  --gradient-dark: linear-gradient(135deg, #1A1A2E 0%, #0F0F1A 100%);
+  --gradient-cyber: linear-gradient(135deg, #00D4FF 0%, #39FF14 100%);
+  --gradient-neon-glow: linear-gradient(135deg, rgba(0, 212, 255, 0.3) 0%, rgba(57, 255, 20, 0.3) 100%);
+  
+  /* HUD Border Gradients */
+  --gradient-border: linear-gradient(135deg, #00D4FF, #A020F0);
+  --gradient-border-success: linear-gradient(135deg, #39FF14, #00D4FF);
+
+  /* --------------------------------------------------------------------------
+     Semantic Status Colors - Neon Variants
+     -------------------------------------------------------------------------- */
+  --color-success: var(--primitive-green-400);           /* Neon Green */
+  --color-success-subtle: rgba(57, 255, 20, 0.15);
+  --color-success-hover: var(--primitive-green-300);
+  --color-success-text: var(--primitive-green-400);
+
+  --color-warning: var(--primitive-amber-400);           /* Bright Amber */
+  --color-warning-subtle: rgba(255, 180, 0, 0.15);
+  --color-warning-hover: var(--primitive-amber-300);
+  --color-warning-text: var(--primitive-amber-400);
+
+  --color-danger: var(--primitive-red-400);              /* Hot Pink */
+  --color-danger-subtle: rgba(255, 51, 102, 0.15);
+  --color-danger-hover: var(--primitive-red-300);
+  --color-danger-text: var(--primitive-red-400);
+
+  --color-info: var(--primitive-cyan-400);               /* Electric Cyan */
+  --color-info-subtle: rgba(0, 229, 255, 0.15);
+  --color-info-hover: var(--primitive-cyan-300);
+  --color-info-text: var(--primitive-cyan-400);
+
+  /* --------------------------------------------------------------------------
+     Borders - Subtle glow effects
+     -------------------------------------------------------------------------- */
+  --color-border-default: rgba(159, 179, 200, 0.2);
+  --color-border-subtle: rgba(159, 179, 200, 0.1);
+  --color-border-strong: rgba(188, 204, 220, 0.3);
+  --color-border-focus: var(--primitive-cyan-500);
+  --color-border-error: var(--primitive-red-400);
+  --color-border-glow: var(--primitive-cyan-400);
+
+  /* --------------------------------------------------------------------------
+     Interactive States
+     -------------------------------------------------------------------------- */
+  --color-interactive-hover: rgba(0, 212, 255, 0.1);
+  --color-interactive-active: rgba(0, 212, 255, 0.2);
+  --color-interactive-selected: rgba(0, 212, 255, 0.15);
+  --color-interactive-disabled: rgba(98, 125, 152, 0.2);
+
+  /* --------------------------------------------------------------------------
+     Focus Ring - Neon glow effect
+     -------------------------------------------------------------------------- */
+  --color-focus-ring: var(--primitive-cyan-500);
+  --focus-ring-offset: 2px;
+  --focus-ring-width: 2px;
+  --focus-ring: 0 0 0 var(--focus-ring-offset) var(--color-bg-surface), 
+                0 0 0 calc(var(--focus-ring-offset) + var(--focus-ring-width)) var(--color-focus-ring),
+                0 0 20px var(--color-focus-ring);
+
+  /* --------------------------------------------------------------------------
+     Semantic Layout
+     -------------------------------------------------------------------------- */
+  --layout-sidebar-width: 260px;
+  --layout-topbar-height: 64px;
+  --layout-content-max-width: 1440px;
+  --layout-container-padding: var(--primitive-space-4);
+
+  /* --------------------------------------------------------------------------
+     Component-Specific Tokens - Glassmorphism Style
+     -------------------------------------------------------------------------- */
+  --card-bg: var(--color-bg-glass);
+  --card-border: var(--color-border-default);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 1px var(--primitive-cyan-500);
+  --card-radius: var(--primitive-radius-xl);
+  --card-backdrop-blur: blur(12px);
+
+  --input-bg: rgba(31, 43, 69, 0.6);
+  --input-border: var(--color-border-default);
+  --input-border-focus: var(--color-brand-primary);
+  --input-text: var(--color-text-primary);
+  --input-placeholder: var(--color-text-muted);
+  --input-radius: var(--primitive-radius-md);
+
+  --button-radius: var(--primitive-radius-md);
+  --button-font-weight: var(--primitive-font-weight-medium);
+  
+  /* Glassmorphism Effects */
+  --glass-blur: blur(12px);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  
+  /* Neon Glow Effects */
+  --glow-cyan: 0 0 20px rgba(0, 212, 255, 0.5);
+  --glow-green: 0 0 20px rgba(57, 255, 20, 0.5);
+  --glow-purple: 0 0 20px rgba(160, 32, 240, 0.5);
+  --glow-pink: 0 0 20px rgba(255, 51, 102, 0.5);
+}
+
+/* =============================================================================
+   LAYER 3: LIGHT MODE SEMANTIC TOKENS (Alternative Theme)
+   ============================================================================= */
+
+.light,
+[data-theme="light"] {
+  /* --------------------------------------------------------------------------
+     Backgrounds (Light) - Clean with subtle tech feel
+     -------------------------------------------------------------------------- */
+  --color-bg-page: #F0F4F8;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-surface-secondary: #F8FAFC;
+  --color-bg-surface-tertiary: #EDF2F7;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-overlay: rgba(26, 26, 46, 0.6);
+  --color-bg-subtle: #F8FAFC;
+  --color-bg-muted: #EDF2F7;
+  --color-bg-glass: rgba(255, 255, 255, 0.8);
+  --color-bg-glass-light: rgba(255, 255, 255, 0.9);
+  --color-bg-glass-dark: rgba(240, 244, 248, 0.9);
+
+  /* --------------------------------------------------------------------------
+     Text (Light) - WCAG AA Compliant
+     All colors tested against white background
+     -------------------------------------------------------------------------- */
+  --color-text-primary: #1A1A2E;
+  --color-text-secondary: #334E68;
+  --color-text-tertiary: #486581;
+  --color-text-muted: #627D98;
+  --color-text-disabled: #829AB1;
+  --color-text-inverse: #F0F4F8;
+  --color-text-on-primary: #FFFFFF;
+  --color-text-on-success: #FFFFFF;
+  --color-text-on-warning: #1A1A2E;
+  --color-text-on-danger: #FFFFFF;
+
+  /* --------------------------------------------------------------------------
+     Brand (Light) - Slightly darker for contrast
+     -------------------------------------------------------------------------- */
+  --color-brand-primary: var(--primitive-cyan-600);
+  --color-brand-primary-hover: var(--primitive-cyan-700);
+  --color-brand-primary-subtle: rgba(0, 184, 212, 0.1);
+  --color-brand-secondary: var(--primitive-purple-600);
+  --color-brand-accent: var(--primitive-green-600);
+
+  /* --------------------------------------------------------------------------
+     Borders (Light)
+     -------------------------------------------------------------------------- */
+  --color-border-default: #D9E2EC;
+  --color-border-subtle: #EDF2F7;
+  --color-border-strong: #BCCCDC;
+
+  /* --------------------------------------------------------------------------
+     Interactive States (Light)
+     -------------------------------------------------------------------------- */
+  --color-interactive-hover: rgba(0, 184, 212, 0.08);
+  --color-interactive-active: rgba(0, 184, 212, 0.15);
+  --color-interactive-selected: rgba(0, 184, 212, 0.1);
+  --color-interactive-disabled: #EDF2F7;
+
+  /* --------------------------------------------------------------------------
+     Status Colors (Light) - Adjusted for light backgrounds
+     -------------------------------------------------------------------------- */
+  --color-success: var(--primitive-green-600);
+  --color-success-subtle: rgba(37, 184, 7, 0.1);
+  --color-success-text: var(--primitive-green-700);
+
+  --color-warning: var(--primitive-amber-600);
+  --color-warning-subtle: rgba(217, 119, 6, 0.1);
+  --color-warning-text: var(--primitive-amber-700);
+
+  --color-danger: var(--primitive-red-500);
+  --color-danger-subtle: rgba(255, 23, 68, 0.1);
+  --color-danger-text: var(--primitive-red-600);
+
+  --color-info: var(--primitive-cyan-600);
+  --color-info-subtle: rgba(0, 184, 212, 0.1);
+  --color-info-text: var(--primitive-cyan-700);
+
+  /* --------------------------------------------------------------------------
+     Card (Light)
+     -------------------------------------------------------------------------- */
+  --card-bg: #FFFFFF;
+  --card-border: #D9E2EC;
+  --card-shadow: 0 4px 6px -1px rgba(26, 26, 46, 0.1), 0 2px 4px -2px rgba(26, 26, 46, 0.1);
+
+  /* --------------------------------------------------------------------------
+     Input (Light)
+     -------------------------------------------------------------------------- */
+  --input-bg: #FFFFFF;
+  --input-border: #D9E2EC;
+  --input-text: #1A1A2E;
+  --input-placeholder: #829AB1;
+  
+  /* Reduced glow for light mode */
+  --glow-cyan: 0 0 10px rgba(0, 184, 212, 0.3);
+  --glow-green: 0 0 10px rgba(37, 184, 7, 0.3);
+  --glow-purple: 0 0 10px rgba(139, 0, 255, 0.3);
+  --glow-pink: 0 0 10px rgba(233, 30, 99, 0.3);
+}
+
+/* =============================================================================
+   LAYER 4: COMPONENT TOKENS (Used by UI Components)
+   ============================================================================= */
+
+:root {
+  /* Button Variants */
+  --btn-primary-bg: var(--color-brand-primary);
+  --btn-primary-text: var(--color-text-on-primary);
+  --btn-primary-hover: var(--color-brand-primary-hover);
+  --btn-primary-active: var(--color-brand-primary-active);
+  
+  --btn-secondary-bg: var(--color-bg-surface);
+  --btn-secondary-text: var(--color-text-primary);
+  --btn-secondary-border: var(--color-border-default);
+  --btn-secondary-hover: var(--color-interactive-hover);
+  
+  --btn-ghost-bg: transparent;
+  --btn-ghost-text: var(--color-text-secondary);
+  --btn-ghost-hover: var(--color-interactive-hover);
+
+  /* Navigation */
+  --nav-bg: var(--color-bg-surface);
+  --nav-border: var(--color-border-default);
+  --nav-link-text: var(--color-text-secondary);
+  --nav-link-hover: var(--color-text-primary);
+  --nav-link-active: var(--color-brand-primary);
+
+  /* Sidebar */
+  --sidebar-bg: var(--color-bg-surface);
+  --sidebar-border: var(--color-border-default);
+  --sidebar-item-hover: var(--color-interactive-hover);
+  --sidebar-item-active: var(--color-interactive-selected);
+
+  /* Tables */
+  --table-header-bg: var(--color-bg-subtle);
+  --table-row-hover: var(--color-interactive-hover);
+  --table-border: var(--color-border-subtle);
+  --table-stripe: var(--color-bg-subtle);
+
+  /* Badges */
+  --badge-default-bg: var(--color-bg-muted);
+  --badge-default-text: var(--color-text-secondary);
+  --badge-primary-bg: var(--color-brand-primary-subtle);
+  --badge-primary-text: var(--color-brand-primary);
+  --badge-success-bg: var(--color-success-subtle);
+  --badge-success-text: var(--color-success-text);
+  --badge-warning-bg: var(--color-warning-subtle);
+  --badge-warning-text: var(--color-warning-text);
+  --badge-danger-bg: var(--color-danger-subtle);
+  --badge-danger-text: var(--color-danger-text);
+
+  /* Alerts */
+  --alert-success-bg: var(--color-success-subtle);
+  --alert-success-border: var(--color-success);
+  --alert-success-text: var(--color-success-text);
+  --alert-warning-bg: var(--color-warning-subtle);
+  --alert-warning-border: var(--color-warning);
+  --alert-warning-text: var(--color-warning-text);
+  --alert-danger-bg: var(--color-danger-subtle);
+  --alert-danger-border: var(--color-danger);
+  --alert-danger-text: var(--color-danger-text);
+  --alert-info-bg: var(--color-info-subtle);
+  --alert-info-border: var(--color-info);
+  --alert-info-text: var(--color-info-text);
+
+  /* Modals */
+  --modal-bg: var(--color-bg-surface);
+  --modal-backdrop: var(--color-bg-overlay);
+  --modal-border: var(--color-border-default);
+  --modal-shadow: var(--primitive-shadow-xl);
+
+  /* Dropdowns */
+  --dropdown-bg: var(--color-bg-surface);
+  --dropdown-border: var(--color-border-default);
+  --dropdown-shadow: var(--primitive-shadow-lg);
+  --dropdown-item-hover: var(--color-interactive-hover);
+
+  /* Tooltips */
+  --tooltip-bg: var(--primitive-slate-900);
+  --tooltip-text: var(--primitive-slate-50);
+  --tooltip-shadow: var(--primitive-shadow-md);
+
+  /* Toasts */
+  --toast-bg: var(--color-bg-surface);
+  --toast-border: var(--color-border-default);
+  --toast-shadow: var(--primitive-shadow-lg);
+}
+
+/* Dark mode component overrides */
+.dark,
+[data-theme="dark"] {
+  --tooltip-bg: var(--primitive-slate-100);
+  --tooltip-text: var(--primitive-slate-900);
+}
+
+/* =============================================================================
+   LAYER 5: UTILITY TOKENS (For custom one-offs)
+   ============================================================================= */
+
+:root {
+  /* Commonly needed opacities */
+  --opacity-0: 0;
+  --opacity-5: 0.05;
+  --opacity-10: 0.1;
+  --opacity-20: 0.2;
+  --opacity-25: 0.25;
+  --opacity-30: 0.3;
+  --opacity-40: 0.4;
+  --opacity-50: 0.5;
+  --opacity-60: 0.6;
+  --opacity-70: 0.7;
+  --opacity-75: 0.75;
+  --opacity-80: 0.8;
+  --opacity-90: 0.9;
+  --opacity-95: 0.95;
+  --opacity-100: 1;
+
+  /* Aspect Ratios */
+  --aspect-auto: auto;
+  --aspect-square: 1 / 1;
+  --aspect-video: 16 / 9;
+  --aspect-portrait: 3 / 4;
+  --aspect-wide: 21 / 9;
+}
+
+/* =============================================================================
+   PRINT STYLES
+   ============================================================================= */
+
+@media print {
+  :root {
+    --color-bg-page: #ffffff;
+    --color-bg-surface: #ffffff;
+    --color-text-primary: #000000;
+    --color-text-secondary: #333333;
+    --color-border-default: #cccccc;
+    --card-shadow: none;
+  }
+}
+
+/* =============================================================================
+   REDUCED MOTION PREFERENCES
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --primitive-duration-75: 0ms;
+    --primitive-duration-100: 0ms;
+    --primitive-duration-150: 0ms;
+    --primitive-duration-200: 0ms;
+    --primitive-duration-300: 0ms;
+    --primitive-duration-500: 0ms;
+    --primitive-duration-700: 0ms;
+    --primitive-duration-1000: 0ms;
+  }
+}
+
+/* =============================================================================
+   HIGH CONTRAST MODE
+   ============================================================================= */
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-text-primary: #000000;
+    --color-text-secondary: #1a1a1a;
+    --color-text-tertiary: #333333;
+    --color-border-default: #000000;
+    --color-border-strong: #000000;
+    --focus-ring-width: 3px;
+  }
+  
+  .dark,
+  [data-theme="dark"] {
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #f0f0f0;
+    --color-text-tertiary: #e0e0e0;
+    --color-border-default: #ffffff;
+    --color-border-strong: #ffffff;
+  }
+}

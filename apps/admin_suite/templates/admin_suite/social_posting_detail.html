@@ -1,0 +1,423 @@
+{% extends "admin_suite/base.html" %}
+{% load static %}
+
+{% block title %}{{ account.get_platform_display }} - {{ account.account_name }} - Admin Suite{% endblock %}
+
+{% block content %}
+<div class="admin-content-header">
+    <div class="admin-content-header-title">
+        <h1>
+            {% if account.platform == 'facebook' %}📘
+            {% elif account.platform == 'twitter' %}🐦
+            {% elif account.platform == 'linkedin' %}💼
+            {% elif account.platform == 'telegram' %}✈️
+            {% elif account.platform == 'whatsapp' %}💬
+            {% elif account.platform == 'instagram' %}📷
+            {% elif account.platform == 'discord' %}🎮
+            {% elif account.platform == 'reddit' %}🔴
+            {% elif account.platform == 'pinterest' %}📌
+            {% elif account.platform == 'medium' %}📝
+            {% else %}📣{% endif %}
+            {{ account.get_platform_display }} - {{ account.account_name }}
+        </h1>
+        <p class="text-secondary">Configure posting settings and credentials</p>
+    </div>
+    <div class="admin-content-header-actions">
+        <a href="{% url 'admin_suite:social_posting' %}" class="btn btn-secondary">← Back to Accounts</a>
+    </div>
+</div>
+
+{% if message %}
+<div class="p-4 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 mb-4">{{ message }}</div>
+{% endif %}
+
+<!-- Status Card -->
+<div class="admin-card mb-4">
+    <div class="admin-card-body">
+        <div class="grid md:grid-cols-4 gap-4 items-center">
+            <div>
+                <h5>Status</h5>
+                {% if account.status == 'active' %}
+                <span class="px-2 py-1 text-xs font-medium rounded bg-emerald-100 text-emerald-800">Active</span>
+                {% elif account.status == 'pending_oauth' %}
+                <span class="px-2 py-1 text-xs font-medium rounded bg-amber-100 text-amber-800">Pending OAuth</span>
+                {% elif account.status == 'token_expired' %}
+                <span class="px-2 py-1 text-xs font-medium rounded bg-red-100 text-red-800">Token Expired</span>
+                {% elif account.status == 'error' %}
+                <span class="px-2 py-1 text-xs font-medium rounded bg-red-100 text-red-800">Error</span>
+                {% elif account.status == 'disabled' %}
+                <span class="px-2 py-1 text-xs font-medium rounded bg-slate-100 text-slate-800">Disabled</span>
+                {% else %}
+                <span class="px-2 py-1 text-xs font-medium rounded bg-slate-100 text-slate-800">{{ account.get_status_display }}</span>
+                {% endif %}
+            </div>
+            <div>
+                <h5>Posts Today</h5>
+                <span class="text-xl">{{ account.posts_today }} / {{ account.daily_post_limit }}</span>
+            </div>
+            <div>
+                <h5>Success Rate</h5>
+                {% if account.total_posts > 0 %}
+                <span class="text-xl">{{ account.successful_posts|floatformat:0 }}%</span>
+                {% else %}
+                <span class="text-muted">No posts yet</span>
+                {% endif %}
+            </div>
+            <div class="text-right">
+                {% if account.requires_oauth and account.status != 'active' %}
+                <form method="post" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="start_oauth">
+                    <button type="submit" class="btn btn-primary btn-lg">🔐 Connect Account</button>
+                </form>
+                {% else %}
+                <form method="post" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="test_connection">
+                    <button type="submit" class="btn btn-secondary">🔍 Test Connection</button>
+                </form>
+                <form method="post" class="inline ml-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="send_test_post">
+                    <button type="submit" class="btn btn-success" {% if account.status != 'active' %}disabled{% endif %}>
+                        📤 Send Test Post
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% if account.last_error %}
+        <div class="p-4 rounded-lg bg-red-50 text-red-800 border border-red-200 mt-3 mb-0">
+            <strong>Last Error:</strong> {{ account.last_error }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
+    <!-- Credentials Section -->
+    <div>
+        <div class="admin-card mb-4">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title">🔑 Credentials</h3>
+            </div>
+            <div class="admin-card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_credentials">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Account Name</label>
+                        <input type="text" name="account_name" class="form-control" value="{{ account.account_name }}" title="Account Name">
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="form-label">Destination Type</label>
+                            <select name="destination_type" class="form-select" title="Select destination type">
+                                {% for key, name in destination_choices %}
+                                <option value="{{ key }}" {% if account.destination_type == key %}selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Destination ID</label>
+                            <input type="text" name="destination_id" class="form-control" value="{{ account.destination_id }}" 
+                                   placeholder="Page ID, Channel ID, etc.">
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="form-label">Destination Name</label>
+                            <input type="text" name="destination_name" class="form-control" value="{{ account.destination_name }}"
+                                   placeholder="Human-readable name">
+                        </div>
+                        <div>
+                            <label class="form-label">Destination URL</label>
+                            <input type="url" name="destination_url" class="form-control" value="{{ account.destination_url }}"
+                                   placeholder="https://...">
+                        </div>
+                    </div>
+                    
+                    {% if account.auth_type == 'api_token' %}
+                    <!-- Telegram Bot Token -->
+                    <div class="mb-3">
+                        <label class="form-label">Bot Token</label>
+                        <input type="password" name="bot_token" class="form-control" placeholder="Enter new token to update">
+                        <small class="text-muted">
+                            {% if account.has_credentials %}✓ Token configured{% else %}⚠️ Not configured{% endif %}
+                        </small>
+                    </div>
+                    
+                    {% elif account.auth_type == 'webhook' %}
+                    <!-- Discord Webhook -->
+                    <div class="mb-3">
+                        <label class="form-label">Webhook URL</label>
+                        <input type="url" name="webhook_url" class="form-control" placeholder="Enter new webhook URL to update">
+                        <small class="text-muted">
+                            {% if account.has_credentials %}✓ Webhook configured{% else %}⚠️ Not configured{% endif %}
+                        </small>
+                    </div>
+                    
+                    {% elif account.auth_type == 'access_token' %}
+                    <!-- Medium Token -->
+                    <div class="mb-3">
+                        <label class="form-label">Integration Token</label>
+                        <input type="password" name="access_token" class="form-control" placeholder="Enter new token to update">
+                        <small class="text-muted">
+                            {% if account.has_credentials %}✓ Token configured{% else %}⚠️ Not configured{% endif %}
+                        </small>
+                    </div>
+                    
+                    {% elif account.auth_type == 'oauth2' or account.auth_type == 'api_key_secret' %}
+                    <!-- OAuth platforms -->
+                    <div class="mb-3">
+                        <label class="form-label">API Key / Client ID</label>
+                        <input type="text" name="api_key" class="form-control" placeholder="Enter new key to update">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">API Secret / Client Secret</label>
+                        <input type="password" name="api_secret" class="form-control" placeholder="Enter new secret to update">
+                    </div>
+                    
+                    {% if account.requires_oauth %}
+                    <div class="p-4 rounded-lg bg-blue-50 text-blue-800 border border-blue-200">
+                        <strong>OAuth Status:</strong>
+                        {% if account.has_credentials %}
+                        ✓ Access token acquired
+                        {% if account.token_expiry %}
+                        (expires: {{ account.token_expiry|date:"M d, Y H:i" }})
+                        {% endif %}
+                        {% else %}
+                        ⚠️ Not authorized - click "Connect Account" above
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary">Update Credentials</button>
+                    
+                    {% if auth_info.setup_url %}
+                    <a href="{{ auth_info.setup_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary ml-2">
+                        Developer Console →
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Posting Settings -->
+    <div>
+        <div class="admin-card mb-4">
+            <div class="admin-card-header">
+                <h3 class="admin-card-title">📝 Posting Settings</h3>
+            </div>
+            <div class="admin-card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_posting_settings">
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" name="auto_post_enabled" class="form-check-input" 
+                                   id="autoPostEnabled" {% if account.auto_post_enabled %}checked{% endif %}>
+                            <label class="form-check-label" for="autoPostEnabled">
+                                <strong>Enable Auto-Posting</strong>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Content Types</label>
+                        <select name="post_content_types" class="form-select" title="Select content types for posting">
+                            {% for key, name in content_type_choices %}
+                            <option value="{{ key }}" {% if account.post_content_types == key %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <div class="form-check">
+                                <input type="checkbox" name="include_image" class="form-check-input" 
+                                       id="includeImage" {% if account.include_image %}checked{% endif %}>
+                                <label class="form-check-label" for="includeImage">Include Featured Image</label>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="form-check">
+                                <input type="checkbox" name="include_link" class="form-check-input" 
+                                       id="includeLink" {% if account.include_link %}checked{% endif %}>
+                                <label class="form-check-label" for="includeLink">Include Content Link</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Default Hashtags</label>
+                        <input type="text" name="hashtags" class="form-control" value="{{ account.hashtags }}"
+                               placeholder="#gsm, #firmware, #android">
+                        <small class="text-muted">Comma-separated hashtags to add to every post</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Post Template</label>
+                        <textarea name="post_template" class="form-control" rows="4" 
+                                  placeholder="Leave empty for default template">{{ account.post_template }}</textarea>
+                        <small class="text-muted">
+                            Placeholders: <code>{title}</code>, <code>{excerpt}</code>, <code>{url}</code>, <code>{tags}</code>
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted">Default Template:</label>
+                        <pre class="bg-light p-2 rounded small">{{ default_template }}</pre>
+                    </div>
+                    
+                    <hr>
+                    <h5>Rate Limiting</h5>
+                    
+                    <div class="grid md:grid-cols-2 gap-3 mb-3">
+                        <div>
+                            <label class="form-label">Min Interval (minutes)</label>
+                            <input type="number" name="min_post_interval" class="form-control" 
+                                   value="{{ account.min_post_interval_minutes }}" min="1" title="Minimum post interval in minutes">
+                        </div>
+                        <div>
+                            <label class="form-label">Daily Post Limit</label>
+                            <input type="number" name="daily_post_limit" class="form-control" 
+                                   value="{{ account.daily_post_limit }}" min="1" title="Daily post limit">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-control" rows="2" title="Notes">{{ account.notes }}</textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats & History -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">📊 Statistics</h3>
+        <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reset_counters">
+            <button type="submit" class="btn btn-sm btn-secondary">Reset Daily Counter</button>
+        </form>
+    </div>
+    <div class="admin-card-body">
+        <div class="grid md:grid-cols-6 gap-4">
+            <div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold">{{ account.total_posts }}</div>
+                    <div class="text-muted">Total Posts</div>
+                </div>
+            </div>
+            <div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-success">{{ account.successful_posts }}</div>
+                    <div class="text-muted">Successful</div>
+                </div>
+            </div>
+            <div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-danger">{{ account.failed_posts }}</div>
+                    <div class="text-muted">Failed</div>
+                </div>
+            </div>
+            <div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold">{{ account.posts_today }}</div>
+                    <div class="text-muted">Today</div>
+                </div>
+            </div>
+            <div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold {% if account.consecutive_failures > 0 %}text-danger{% endif %}">
+                        {{ account.consecutive_failures }}
+                    </div>
+                    <div class="text-muted">Consecutive Failures</div>
+                </div>
+            </div>
+            <div>
+                <div class="text-center">
+                    {% if account.last_post_at %}
+                    <div class="text-lg">{{ account.last_post_at|date:"M d, H:i" }}</div>
+                    {% else %}
+                    <div class="text-muted">Never</div>
+                    {% endif %}
+                    <div class="text-muted">Last Post</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Metadata -->
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h3 class="admin-card-title">ℹ️ Account Info</h3>
+    </div>
+    <div class="admin-card-body">
+        <div class="grid md:grid-cols-2 gap-4">
+            <div>
+                <table class="table table-sm">
+                    <tr>
+                        <td class="text-muted">Platform:</td>
+                        <td>{{ account.get_platform_display }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Auth Type:</td>
+                        <td>{{ account.get_auth_type_display }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Account ID:</td>
+                        <td>{{ account.account_id|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Username:</td>
+                        <td>{{ account.account_username|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Followers:</td>
+                        <td>{{ account.followers_count|default:0 }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div>
+                <table class="table table-sm">
+                    <tr>
+                        <td class="text-muted">Created:</td>
+                        <td>{{ account.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Created By:</td>
+                        <td>{{ account.created_by|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Last Updated:</td>
+                        <td>{{ account.updated_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Last Tested:</td>
+                        <td>{{ account.last_tested_at|date:"M d, Y H:i"|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Token Expiry:</td>
+                        <td>{{ account.token_expiry|date:"M d, Y H:i"|default:"N/A" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

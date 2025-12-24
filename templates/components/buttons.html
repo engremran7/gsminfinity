@@ -1,5 +1,5 @@
 
-{# Reusable button variants. Usage:
+{# Reusable button variants - Futuristic HUD Theme. Usage:
    {% include "components/buttons.html" with variant="primary" label="Save" icon="check" type="submit" %}
    icon refers to symbol id in includes/icon_sprite.html (optional).
    Additional classes can be passed via class. #}
@@ -12,13 +12,14 @@
 <button
   type="{{ btn_type }}"
   class="
-    inline-flex items-center justify-center gap-2 font-semibold transition
+    inline-flex items-center justify-center gap-2 font-semibold transition-all
     {% if block %}w-full{% endif %}
-    {% if v == 'primary' %}px-4 py-2 rounded-md text-white bg-primary hover:bg-primary-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary{% endif %}
-    {% if v == 'secondary' %}px-4 py-2 rounded-md text-slate-800 bg-slate-100 hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400{% endif %}
-    {% if v == 'ghost' %}px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-300{% endif %}
-    {% if v == 'outline' %}px-4 py-2 rounded-md border border-slate-300 text-slate-800 hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary{% endif %}
-    {% if v == 'destructive' %}px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500{% endif %}
+    {% if v == 'primary' %}px-4 py-2 rounded-lg text-white bg-gradient-to-r from-[var(--primitive-cyan-500)] to-[var(--primitive-cyan-600)] hover:shadow-[0_0_20px_var(--primitive-cyan-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primitive-cyan-500)]{% endif %}
+    {% if v == 'secondary' %}px-4 py-2 rounded-lg text-[var(--color-text-primary)] bg-[var(--color-bg-surface-secondary)] hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primitive-cyan-500)]{% endif %}
+    {% if v == 'ghost' %}px-3 py-2 rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] hover:text-[var(--primitive-cyan-400)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primitive-cyan-500)]{% endif %}
+    {% if v == 'outline' %}px-4 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:border-[var(--primitive-cyan-500)]/50 hover:text-[var(--primitive-cyan-400)] hover:bg-[var(--primitive-cyan-500)]/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primitive-cyan-500)]{% endif %}
+    {% if v == 'destructive' %}px-4 py-2 rounded-lg text-white bg-gradient-to-r from-[var(--primitive-red-500)] to-[var(--primitive-red-600)] hover:shadow-[0_0_20px_var(--primitive-red-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primitive-red-500)]{% endif %}
+    {% if v == 'neon' %}px-4 py-2 rounded-lg text-[var(--primitive-neon-400)] bg-[var(--primitive-neon-500)]/10 border border-[var(--primitive-neon-500)]/30 hover:bg-[var(--primitive-neon-500)]/20 hover:shadow-[0_0_20px_var(--primitive-neon-500)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primitive-neon-500)]{% endif %}
     {{ class|default:"" }}
   "
   {% if aria_label %}aria-label="{{ aria_label }}"{% endif %}

@@ -11,7 +11,7 @@
       <div class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded inline-block mt-2">Tip: drafts are hidden from sitemap and feeds until published.</div>
     </div>
     <div class="flex gap-2">
-      <a href="{% url 'admin_suite:admin_suite_comments' %}" title="Go to comment moderation" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Moderate comments</a>
+      <a href="{% url 'admin_suite:comments' %}" title="Go to comment moderation" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Moderate comments</a>
       <a href="#" title="Create new post (coming soon)" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white text-slate-400 cursor-not-allowed">New post (soon)</a>
     </div>
   </div>
@@ -51,7 +51,7 @@
     <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
       <div class="px-4 py-3 border-b flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-900">Recent published posts</h2>
-        <a href="{% url 'admin_suite:admin_suite_content' %}" title="Refresh list" class="text-xs text-primary hover:underline">Refresh</a>
+        <a href="{% url 'admin_suite:content' %}" title="Refresh list" class="text-xs text-primary hover:underline">Refresh</a>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200">
@@ -82,7 +82,7 @@
     <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
       <div class="px-4 py-3 border-b flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-900">Pending comments</h2>
-        <a href="{% url 'admin_suite:admin_suite_comments' %}" title="Open comment moderation" class="text-xs text-primary hover:underline">Moderate</a>
+        <a href="{% url 'admin_suite:comments' %}" title="Open comment moderation" class="text-xs text-primary hover:underline">Moderate</a>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-slate-200">

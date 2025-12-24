@@ -36,21 +36,82 @@ class DeviceEnforcementMiddleware:
             pass
 
         # Skip for trust/untrust endpoints to avoid consent/fp prompts
-        if request.path.startswith(reverse("users:device_approval_needed")):
+        # CRITICAL: Must include the actual approval action URL, otherwise we get an infinite loop
+        # because the approval view itself triggers the "untrusted device" check before it can run.
+        if (
+            request.path.startswith(reverse("users:device_approval_needed"))
+            or request.path.startswith(reverse("users:approve_device"))
+            or request.path.startswith(reverse("users:device_mfa_challenge"))
+            or request.path.startswith(reverse("devices:acknowledge_new_device"))
+        ):
             return self.get_response(request)
 
         try:
-            ok, ctx = enforce_device_policy_for_service(request, request.user, service_name="request")
-            request.device = ctx.get("device")
-            request.device_new = ctx.get("is_new", False)
+            ok, result = enforce_device_policy_for_service(request, request.user, service_name="request")
+            request.device = result.get("device")
+            request.device_new = result.get("is_new", False)
+            inner_ctx = result.get("context", {})
+
             response = self.get_response(request)
-            attach_device_cookie(response, ctx.get("device"))
-            if ctx.get("is_new"):
+            attach_device_cookie(response, result.get("device"))
+            
+            # Update popup data if it exists (to ensure counts are fresh)
+            if request.session.get("new_device_popup"):
                 try:
-                    request.session["pending_device_prompt_uuid"] = getattr(ctx.get("device"), "os_fingerprint", None)
+                    device_obj = result.get("device")
+                    # Force raw fingerprint update
+                    dev_name_update = getattr(device_obj, "display_name", "") or getattr(device_obj, "os_fingerprint", "New Device")
+                    
+                    request.session["new_device_popup"].update({
+                        "device_name": dev_name_update,
+                        "remaining_devices": inner_ctx.get("remaining_devices"),
+                        "current_count": inner_ctx.get("current_device_count"),
+                        "max_devices": inner_ctx.get("max_devices"),
+                        "quota_reset_days": inner_ctx.get("quota_reset_days"),
+                    })
+                    request.session.modified = True
                 except Exception:
                     pass
-                messages.info(request, "New device registered. Approve/trust it to continue using this browser.")
+
+            # Only show popup for NEW devices that are NOT already trusted
+            # This prevents the popup from reappearing after user acknowledges
+            device = result.get("device")
+            device_fp = getattr(device, "os_fingerprint", "") if device else ""
+
+            # Track which devices have been shown the popup to prevent re-showing
+            # after user dismisses it (even if they didn't accept)
+            shown_devices = set(request.session.get("devices_popup_shown", []))
+
+            if result.get("is_new") and device_fp:
+                # Check if device is already trusted - if so, don't show popup
+                if device and getattr(device, "is_trusted", False):
+                    # Device is trusted, clear any stale popup data
+                    if "new_device_popup" in request.session:
+                        del request.session["new_device_popup"]
+                    if "pending_device_prompt_uuid" in request.session:
+                        del request.session["pending_device_prompt_uuid"]
+                    # Mark this device as having been shown
+                    shown_devices.add(device_fp)
+                    request.session["devices_popup_shown"] = list(shown_devices)
+                    request.session.modified = True
+                elif device_fp not in shown_devices:
+                    # Only show popup if we haven't shown it for this device before
+                    try:
+                        # Use raw fingerprint as requested
+                        dev_name = getattr(device, "display_name", "") or getattr(device, "os_fingerprint", "New Device")
+
+                        # Store data for the new device popup
+                        request.session["new_device_popup"] = {
+                            "device_name": dev_name,
+                            "os_fingerprint": device_fp,
+                            "remaining_devices": inner_ctx.get("remaining_devices"),
+                            "current_count": inner_ctx.get("current_device_count"),
+                            "max_devices": inner_ctx.get("max_devices"),
+                            "quota_reset_days": inner_ctx.get("quota_reset_days"),
+                        }
+                        request.session["pending_device_prompt_uuid"] = device_fp
+                    except Exception:
+                        pass
             return response
         except DevicePolicyError as exc:
             reason = exc.reason
@@ -73,14 +134,31 @@ class DeviceEnforcementMiddleware:
 class DevicePayloadMiddleware:
     """
     Attach device payload captured via JS to the request for downstream fingerprinting.
+    Reads from session first, then falls back to cookie.
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        try:
-            request.device_payload = request.session.get("device_payload")
-        except Exception:
-            request.device_payload = None
+        import json
+        import urllib.parse
+
+        # 1. Try session
+        payload = request.session.get("device_payload")
+
+        # 2. Fallback to cookie if session is empty
+        if not payload:
+            cookie_val = request.COOKIES.get("device_payload")
+            if cookie_val:
+                try:
+                    # Cookie is URI encoded in JS
+                    decoded = urllib.parse.unquote(cookie_val)
+                    payload = json.loads(decoded)
+                    # Optional: Promote to session for faster access next time
+                    # request.session["device_payload"] = payload
+                except Exception:
+                    payload = None
+
+        request.device_payload = payload
         return self.get_response(request)

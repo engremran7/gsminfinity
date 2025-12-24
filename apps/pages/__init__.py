@@ -1,1 +1,1 @@
-default_app_config = "apps.pages.apps.PagesConfig"
+"""Pages app - static CMS pages."""

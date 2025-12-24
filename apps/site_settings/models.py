@@ -95,6 +95,15 @@ class SiteSettings(SingletonModel):
     default_language = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=50, default="UTC")
     enable_localization = models.BooleanField(default=False)
+    
+    # Featured languages shown in header dropdown (comma-separated codes)
+    # Example: "en,ar,fr,de,es,zh,ja,ko,ru,pt"
+    featured_languages = models.CharField(
+        max_length=200,
+        blank=True,
+        default="en,ar,fr,de,es,zh-hans,ja,ko,ru,pt",
+        help_text="Comma-separated language codes to show in header (max 10). Other languages remain available via full selector.",
+    )
 
     # ------------------------------------------------------------------
     # Core Ops

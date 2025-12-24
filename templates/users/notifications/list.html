@@ -1,246 +1,102 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Notifications - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block title %}Notifications - {{ site_settings.site_name|default:"Site" }}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-  <!-- Header -->
-  <div class="bg-white border-b border-gray-200">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <a href="{% url 'users:dashboard' %}" class="btn btn-light btn-sm">
-            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
-            Back
-          </a>
-          <div>
-            <h1 class="text-3xl font-bold text-gray-900">Notifications</h1>
-            <p class="mt-1 text-sm text-gray-600">Stay updated with your activity</p>
+<div class="min-h-screen">
+  {# Hero Header #}
+  <div class="relative overflow-hidden border-b border-[var(--color-border-default)]">
+    <div class="absolute inset-0 bg-gradient-to-r from-[var(--color-brand-primary)]/10 via-transparent to-[var(--color-brand-secondary)]/10"></div>
+    <div class="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%2300D4FF\" fill-opacity=\"0.03\"%3E%3Cpath d=\"M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
+    <div class="relative w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-2">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--color-brand-primary)] to-[var(--color-brand-secondary)] flex items-center justify-center shadow-lg shadow-[var(--color-brand-primary)]/25">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+              </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-[var(--color-text-primary)]">Notifications</h1>
           </div>
+          <p class="text-[var(--color-text-secondary)]">Stay updated with your activity.</p>
         </div>
-        {% if unread_count > 0 %}
+        <div class="flex items-center gap-2 flex-wrap">
+          {% if notifications and scope != 'unread' %}
           <form method="post" action="{% url 'users:notification_mark_all' %}">
             {% csrf_token %}
-            <button type="submit" class="btn btn-primary btn-sm">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-check"></use></svg>
-              Mark all as read
-            </button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-sm font-medium bg-[var(--color-bg-glass)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)] hover:text-[var(--color-brand-primary)] transition-all">Mark all read</button>
           </form>
-        {% endif %}
+          {% endif %}
+          <a href="?scope=all" class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if scope == 'all' %}bg-gradient-to-r from-[var(--color-brand-primary)] to-[var(--color-brand-secondary)] text-white shadow-lg shadow-[var(--color-brand-primary)]/25{% else %}bg-[var(--color-bg-glass)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)]{% endif %}">All</a>
+          <a href="?scope=unread" class="px-4 py-2 rounded-xl text-sm font-medium transition-all {% if scope == 'unread' %}bg-gradient-to-r from-[var(--color-brand-primary)] to-[var(--color-brand-secondary)] text-white shadow-lg shadow-[var(--color-brand-primary)]/25{% else %}bg-[var(--color-bg-glass)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-interactive-hover)]{% endif %}">Unread</a>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    {% if notifications %}
-      <!-- Filter Tabs -->
-      <div class="card mb-6">
-        <div class="flex items-center gap-4 px-6 py-4 border-b border-gray-200">
-          <button class="tab-btn active" data-filter="all">
-            All
-            <span class="ml-2 badge badge-sm">{{ notifications.count }}</span>
-          </button>
-          <button class="tab-btn" data-filter="unread">
-            Unread
-            <span class="ml-2 badge badge-sm badge-primary">{{ unread_count|default:0 }}</span>
-          </button>
-          <button class="tab-btn" data-filter="comment">
-            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-comment"></use></svg>
-            Comments
-          </button>
-          <button class="tab-btn" data-filter="reaction">
-            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-heart"></use></svg>
-            Reactions
-          </button>
-          <button class="tab-btn" data-filter="security">
-            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-shield"></use></svg>
-            Security
-          </button>
-        </div>
-      </div>
-
-      <!-- Notifications List -->
-      <div class="space-y-3">
-        {% for notification in notifications %}
-          <div class="card notification-item {% if not notification.is_read %}bg-blue-50 border-blue-200{% endif %}" 
-               data-type="{{ notification.action_type }}" 
-               data-read="{{ notification.is_read|yesno:'true,false' }}">
-            <div class="flex items-start gap-4 p-4">
-              <!-- Icon -->
-              <div class="flex-shrink-0">
-                {% if notification.actor %}
-                  <div class="avatar">
-                    {% if notification.actor.avatar %}
-                      <img src="{{ notification.actor.avatar.url }}" alt="{{ notification.actor.get_full_name }}">
-                    {% else %}
-                      {{ notification.actor.get_full_name|first|upper }}
-                    {% endif %}
-                  </div>
-                {% else %}
-                  <div class="p-3 rounded-lg {% if notification.priority == 'critical' %}bg-red-100{% elif notification.priority == 'warning' %}bg-amber-100{% else %}bg-blue-100{% endif %}">
-                    <svg class="icon w-5 h-5 {% if notification.priority == 'critical' %}text-red-600{% elif notification.priority == 'warning' %}text-amber-600{% else %}text-blue-600{% endif %}" aria-hidden="true">
-                      <use href="#icon-{{ notification.icon|default:'bell' }}"></use>
-                    </svg>
-                  </div>
-                {% endif %}
+  <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-3xl mx-auto space-y-4">
+      {% for notification in notifications %}
+        <div class="card-glass rounded-2xl {% if not notification.is_read %}ring-2 ring-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/5{% endif %} p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[var(--color-brand-primary)]/10 hover:-translate-y-0.5">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+              {% if notification.icon == 'comment' %}
+                <span class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-blue-500/20 text-blue-400 shadow-lg shadow-blue-500/20">
+                  <svg class="icon w-5 h-5"><use href="#icon-message-circle"></use></svg>
+                </span>
+              {% elif notification.icon == 'award' %}
+                <span class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-amber-500/20 text-amber-400 shadow-lg shadow-amber-500/20">
+                  <svg class="icon w-5 h-5"><use href="#icon-award"></use></svg>
+                </span>
+              {% elif notification.priority == 'warning' %}
+                <span class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-red-500/20 text-red-400 shadow-lg shadow-red-500/20">
+                  <svg class="icon w-5 h-5"><use href="#icon-alert-triangle"></use></svg>
+                </span>
+              {% elif notification.action_type == 'post' %}
+                <span class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-purple-500/20 text-purple-400 shadow-lg shadow-purple-500/20">
+                  <svg class="icon w-5 h-5"><use href="#icon-rss"></use></svg>
+                </span>
+              {% else %}
+                <span class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-[var(--color-brand-primary)]/20 text-[var(--color-brand-primary)] shadow-lg shadow-[var(--color-brand-primary)]/20">
+                  <svg class="icon w-5 h-5"><use href="#icon-bell"></use></svg>
+                </span>
+              {% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">
+                  {% if notification.url %}
+                    <a href="{{ notification.url }}" class="hover:text-[var(--color-brand-primary)] transition-colors">{{ notification.title }}</a>
+                  {% else %}
+                    {{ notification.title }}
+                  {% endif %}
+                </h3>
+                <span class="text-xs text-[var(--color-text-muted)] whitespace-nowrap">{{ notification.created_at|timesince }} ago</span>
               </div>
-
-              <!-- Content -->
-              <div class="flex-1 min-w-0">
-                <div class="flex items-start justify-between gap-4">
-                  <div class="flex-1">
-                    <h3 class="text-sm font-semibold text-gray-900">
-                      {{ notification.title }}
-                      {% if not notification.is_read %}
-                        <span class="ml-2 inline-block w-2 h-2 bg-primary rounded-full"></span>
-                      {% endif %}
-                    </h3>
-                    <p class="mt-1 text-sm text-gray-600">{{ notification.message }}</p>
-                    <div class="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                      <span class="flex items-center gap-1">
-                        <svg class="icon w-3 h-3" aria-hidden="true"><use href="#icon-clock"></use></svg>
-                        {{ notification.created_at|timesince }} ago
-                      </span>
-                      {% if notification.action_type %}
-                        <span class="badge badge-sm badge-light">{{ notification.get_action_type_display }}</span>
-                      {% endif %}
-                      {% if notification.priority != 'info' %}
-                        <span class="badge badge-sm {% if notification.priority == 'critical' %}badge-danger{% elif notification.priority == 'warning' %}badge-warning{% endif %}">
-                          {{ notification.get_priority_display }}
-                        </span>
-                      {% endif %}
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    {% if notification.url %}
-                      <a href="{{ notification.url }}" class="btn btn-light btn-sm">
-                        View
-                      </a>
-                    {% endif %}
-                    {% if not notification.is_read %}
-                      <form method="post" action="{% url 'users:notification_detail' notification.pk %}" class="inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="mark_read">
-                        <button type="submit" class="btn btn-light btn-sm" title="Mark as read">
-                          <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-check"></use></svg>
-                        </button>
-                      </form>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
+              <p class="mt-1 text-sm text-[var(--color-text-secondary)]">{{ notification.message }}</p>
+              {% if not notification.is_read %}
+                <form method="post" action="{% url 'users:notification_mark_read' pk=notification.pk %}" class="mt-3">
+                  {% csrf_token %}
+                  <button type="submit" class="text-xs font-semibold text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)] transition-colors">Mark as read</button>
+                </form>
+              {% endif %}
             </div>
           </div>
-        {% endfor %}
-      </div>
-
-      <!-- Pagination -->
-      {% if is_paginated %}
-        <div class="mt-8 flex justify-center">
-          <nav class="flex items-center gap-2">
-            {% if page_obj.has_previous %}
-              <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-light btn-sm">
-                <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-chevron-left"></use></svg>
-                Previous
-              </a>
-            {% endif %}
-            
-            <span class="text-sm text-gray-600 px-4">
-              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-            </span>
-            
-            {% if page_obj.has_next %}
-              <a href="?page={{ page_obj.next_page_number }}" class="btn btn-light btn-sm">
-                Next
-                <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
-              </a>
-            {% endif %}
-          </nav>
         </div>
-      {% endif %}
-
-    {% else %}
-      <!-- Empty State -->
-      <div class="card p-12 text-center">
-        <div class="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-          <svg class="icon w-8 h-8 text-gray-400" aria-hidden="true"><use href="#icon-bell"></use></svg>
+      {% empty %}
+        <div class="text-center py-16 card-glass rounded-2xl border-2 border-dashed border-[var(--color-border-default)]">
+          <div class="w-16 h-16 rounded-2xl bg-[var(--color-brand-primary)]/10 flex items-center justify-center mx-auto mb-4">
+            <svg class="h-8 w-8 text-[var(--color-brand-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">No notifications</h3>
+          <p class="mt-1 text-sm text-[var(--color-text-muted)]">You're all caught up!</p>
         </div>
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">No notifications yet</h3>
-        <p class="text-sm text-gray-600 mb-6">
-          Security and activity alerts will appear here when they arrive
-        </p>
-        <a href="{% url 'users:dashboard' %}" class="btn btn-primary">
-          Go to Dashboard
-        </a>
-      </div>
-    {% endif %}
+      {% endfor %}
+    </div>
   </div>
 </div>
-
-<script nonce="{{ request.csp_nonce }}">
-document.addEventListener('DOMContentLoaded', function() {
-  const tabs = document.querySelectorAll('.tab-btn');
-  const notifications = document.querySelectorAll('.notification-item');
-  
-  tabs.forEach(tab => {
-    tab.addEventListener('click', function() {
-      const filter = this.dataset.filter;
-      
-      // Update active tab
-      tabs.forEach(t => t.classList.remove('active'));
-      this.classList.add('active');
-      
-      // Filter notifications
-      notifications.forEach(notification => {
-        const type = notification.dataset.type;
-        const isRead = notification.dataset.read === 'true';
-        
-        if (filter === 'all') {
-          notification.style.display = 'block';
-        } else if (filter === 'unread') {
-          notification.style.display = !isRead ? 'block' : 'none';
-        } else {
-          notification.style.display = type === filter ? 'block' : 'none';
-        }
-      });
-    });
-  });
-});
-</script>
-
-<style nonce="{{ request.csp_nonce }}">
-.tab-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.tab-btn:hover {
-  background: #f3f4f6;
-  color: #111827;
-}
-
-.tab-btn.active {
-  background: #3b82f6;
-  color: white;
-}
-
-.notification-item {
-  transition: all 0.15s ease;
-}
-
-.notification-item:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-</style>
 {% endblock %}

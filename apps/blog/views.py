@@ -20,7 +20,7 @@ import logging
 
 from apps.core.views import _get_site_settings_snapshot
 from apps.core.app_service import AppService
-from .forms import PostForm
+from .forms import PostForm, CategoryForm
 from .models import Post, PostStatus, Category, PostDraft, PostRevision
 from apps.tags.models import Tag
 from apps.tags import services as tag_services
@@ -34,9 +34,11 @@ from apps.core.utils.logging import log_event
 from apps.i18n.services import resolve_locale
 from apps.blog.models import PostTranslation, CategoryTranslation, TagTranslation
 
+from django.db.models import QuerySet
+
 logger = logging.getLogger(__name__)
 
-def _sync_tag_usage(tags_qs):
+def _sync_tag_usage(tags_qs: QuerySet) -> None:
     for tag in tags_qs:
         try:
             count = tag.posts.filter(
@@ -49,10 +51,12 @@ def _sync_tag_usage(tags_qs):
             continue
 
 
-def _apply_translations_to_posts(posts, locale: str | None):
+def _apply_translations_to_posts(posts: list | QuerySet, locale: str | None) -> list | QuerySet:
     """
     Apply translations to a list/queryset of posts for the given locale.
     Mutates objects in place for display purposes.
+    
+    NOTE: Ensure posts queryset has .prefetch_related('tags') for optimal performance.
     """
     if not locale:
         return posts
@@ -69,13 +73,20 @@ def _apply_translations_to_posts(posts, locale: str | None):
         for ct in CategoryTranslation.objects.filter(category_id__in=categories, language=locale)
     } if categories else {}
 
+    # Collect tag IDs efficiently (assumes tags are prefetched)
     tag_ids = set()
+    post_tags_map = {}  # Cache tags per post to avoid second iteration
     for p in posts:
         try:
-            for t in p.tags.all():
+            # Use list() to cache prefetched tags
+            post_tags = list(p.tags.all())
+            post_tags_map[p.id] = post_tags
+            for t in post_tags:
                 tag_ids.add(t.id)
         except Exception:
+            post_tags_map[p.id] = []
             continue
+    
     tag_translations = {
         tt.tag_id: tt
         for tt in TagTranslation.objects.filter(tag_id__in=tag_ids, language=locale)
@@ -94,13 +105,11 @@ def _apply_translations_to_posts(posts, locale: str | None):
                 p.category.name = cat_translations[p.category_id].name or p.category.name
             except Exception:
                 pass
-        try:
-            for t in p.tags.all():
-                tt = tag_translations.get(t.id)
-                if tt:
-                    t.name = tt.name or t.name
-        except Exception:
-            pass
+        # Use cached tags instead of hitting p.tags.all() again
+        for t in post_tags_map.get(p.id, []):
+            tt = tag_translations.get(t.id)
+            if tt:
+                t.name = tt.name or t.name
     return posts
 
 
@@ -164,6 +173,7 @@ def _ensure_post_seo(post: Post, request: HttpRequest | None = None):
         return
 
 
+@require_GET
 def post_list(request: HttpRequest) -> HttpResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
@@ -337,9 +347,10 @@ def post_list(request: HttpRequest) -> HttpResponse:
             ("title", "Title A-Z"),
         ],
     }
-    return render(request, "blog/post_list_enhanced.html", context)
+    return render(request, "blog/post_list.html", context)
 
 
+@require_GET
 def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
@@ -353,14 +364,19 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
         raise Http404("Blog is disabled.")
     allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
 
-    base_qs = Post.objects.select_related("author", "category").prefetch_related("tags")
+    base_qs = Post.objects.select_related("author", "category").prefetch_related(
+        "tags",
+        "tags__translations",  # Fix N+1: prefetch for tag translation lookups
+    )
     post = get_object_or_404(base_qs, slug__iexact=slug)
     # Non-staff users must only see live posts
     if not (request.user.is_staff or request.user == post.author):
         if not post.is_live:
             raise Http404("Post not published.")
+    # Fix N+1: Use tag PKs instead of evaluating queryset
+    tag_ids = list(post.tags.values_list('id', flat=True))
     related = Post.objects.filter(
-        tags__in=post.tags.all(),
+        tags__id__in=tag_ids,
         status=PostStatus.PUBLISHED,
         publish_at__lte=timezone.now(),
     ).exclude(pk=post.pk).distinct().order_by("-published_at")[:4]
@@ -371,12 +387,14 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
     trending_posts = list(
         Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=timezone.now())
         .select_related("author")
+        .prefetch_related("tags")
         .order_by("-featured", "-published_at")[:5]
     )
     if not trending_posts:
         trending_posts = list(
             Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=timezone.now())
             .select_related("author")
+            .prefetch_related("tags")
             .order_by("-published_at")[:5]
         )
     _ensure_post_seo(post, request)
@@ -456,7 +474,7 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
     
     return render(
         request,
-        "blog/post_detail_enhanced.html",
+        "blog/post_detail.html",
         {
             "post": post,
             "comments": comments,
@@ -480,7 +498,7 @@ def post_archive_year(request: HttpRequest, year: int) -> HttpResponse:
         status=PostStatus.PUBLISHED,
         publish_at__year=year,
         publish_at__lte=timezone.now(),
-    ).select_related("author", "category")
+    ).select_related("author", "category").prefetch_related("tags")
     current_locale = resolve_locale(request, "blog")
     _apply_translations_to_posts(posts, current_locale)
     return render(
@@ -497,7 +515,7 @@ def post_archive_month(request: HttpRequest, year: int, month: int) -> HttpRespo
         publish_at__year=year,
         publish_at__month=month,
         publish_at__lte=timezone.now(),
-    ).select_related("author", "category")
+    ).select_related("author", "category").prefetch_related("tags")
     current_locale = resolve_locale(request, "blog")
     _apply_translations_to_posts(posts, current_locale)
     return render(
@@ -670,6 +688,47 @@ def post_create(request: HttpRequest) -> HttpResponse:
     else:
         form = PostForm(instance=instance)
     return render(request, "blog/post_form.html", {"form": form, "editing": bool(instance), "editing_post": instance})
+
+
+def category_create(request: HttpRequest) -> HttpResponse:
+    """
+    Allow authorized users (staff or if allow_user_posts is on) to create categories.
+    """
+    settings_snapshot = _get_site_settings_snapshot()
+    try:
+        blog_api = AppService.get("blog")
+        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+    except Exception:
+        blog_api = None
+        blog_settings = {}
+    
+    blog_enabled = blog_settings.get("enable_blog", False if blog_api is None else settings_snapshot.get("enable_blog", True))
+    if not blog_enabled and not (request.user.is_staff or request.user.is_superuser):
+        raise Http404("Blog is disabled.")
+
+    allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
+    
+    # RBAC: allow staff, editors, authors; optionally allow authenticated users if toggle enabled.
+    allowed = (
+        request.user.is_staff
+        or request.user.is_superuser
+        or getattr(request.user, "has_role", lambda *r: False)(
+            CustomUser.Roles.EDITOR, CustomUser.Roles.AUTHOR
+        )
+    )
+    if not allowed and not (allow_user_posts and request.user.is_authenticated):
+        raise Http404()
+
+    if request.method == "POST":
+        form = CategoryForm(request.POST)
+        if form.is_valid():
+            cat = form.save()
+            messages.success(request, f"Category '{cat.name}' created.")
+            return redirect("blog:post_list")
+    else:
+        form = CategoryForm()
+
+    return render(request, "blog/category_form.html", {"form": form})
 
 
 def api_posts(request: HttpRequest) -> JsonResponse:

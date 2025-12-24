@@ -1,52 +1,52 @@
 
-<article class="blog-card relative rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
-  <div class="absolute top-4 right-4 flex items-center gap-2">
+<article class="blog-card card-glass relative rounded-2xl p-5 group hover:shadow-[0_0_30px_var(--primitive-cyan-500)/15] transition-all">
+  <div class="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
     {% if url %}
       <div class="flex items-center gap-1">
-        <a href="https://twitter.com/intent/tweet?url={{ url|urlencode }}&text={{ title|urlencode }}" class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 bg-white hover:bg-primary/10" aria-label="Share on X">
-          <svg class="icon w-4 h-4 text-slate-600" aria-hidden="true"><use href="#icon-x"></use></svg>
+        <a href="https://twitter.com/intent/tweet?url={{ url|urlencode }}&text={{ title|urlencode }}" class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-glass)] hover:bg-[var(--primitive-cyan-500)]/20 hover:border-[var(--primitive-cyan-500)]/50 transition-all" aria-label="Share on X">
+          <svg class="icon w-4 h-4 text-[var(--color-text-secondary)] group-hover:text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-x"></use></svg>
         </a>
-        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ url|urlencode }}" class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 bg-white hover:bg-primary/10" aria-label="Share on LinkedIn">
-          <svg class="icon w-4 h-4 text-slate-600" aria-hidden="true"><use href="#icon-linkedin"></use></svg>
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ url|urlencode }}" class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-glass)] hover:bg-[var(--primitive-cyan-500)]/20 hover:border-[var(--primitive-cyan-500)]/50 transition-all" aria-label="Share on LinkedIn">
+          <svg class="icon w-4 h-4 text-[var(--color-text-secondary)]" aria-hidden="true"><use href="#icon-linkedin"></use></svg>
         </a>
-        <a href="mailto:?subject={{ title|urlencode }}&body={{ url|urlencode }}" class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-slate-200 bg-white hover:bg-primary/10" aria-label="Share via email">
-          <svg class="icon w-4 h-4 text-slate-600" aria-hidden="true"><use href="#icon-mail"></use></svg>
+        <a href="mailto:?subject={{ title|urlencode }}&body={{ url|urlencode }}" class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[var(--color-border-default)] bg-[var(--color-bg-glass)] hover:bg-[var(--primitive-cyan-500)]/20 hover:border-[var(--primitive-cyan-500)]/50 transition-all" aria-label="Share via email">
+          <svg class="icon w-4 h-4 text-[var(--color-text-secondary)]" aria-hidden="true"><use href="#icon-mail"></use></svg>
         </a>
       </div>
     {% endif %}
   </div>
   <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
     <div class="space-y-2 w-full">
-      {% if category %}<span class="text-[11px] text-primary font-semibold uppercase tracking-wide">{{ category }}</span>{% endif %}
-      <h2 class="text-xl font-semibold text-slate-900">
-        {% if url %}<a href="{{ url }}" class="hover:text-primary">{{ title }}</a>{% else %}{{ title }}{% endif %}
+      {% if category %}<span class="text-[11px] text-[var(--primitive-cyan-400)] font-semibold uppercase tracking-wide">{{ category }}</span>{% endif %}
+      <h2 class="text-xl font-semibold text-[var(--color-text-primary)]">
+        {% if url %}<a href="{{ url }}" class="hover:text-[var(--primitive-cyan-400)] transition-colors">{{ title }}</a>{% else %}{{ title }}{% endif %}
       </h2>
-    {% if meta %}<p class="text-xs text-slate-500">{{ meta }}</p>{% endif %}
-    <div class="flex flex-wrap gap-2 text-[11px] text-slate-600">
-      <span class="badge badge-soft">
+    {% if meta %}<p class="text-xs text-[var(--color-text-muted)]">{{ meta }}</p>{% endif %}
+    <div class="flex flex-wrap gap-2 text-[11px]">
+      <span class="inline-flex items-center px-2 py-1 rounded-full bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]">
         {{ published_at|default:"" }}
       </span>
       {% if reading_time %}
-        <span class="badge badge-soft">{{ reading_time }} min read</span>
+        <span class="inline-flex items-center px-2 py-1 rounded-full bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] border border-[var(--color-border-subtle)]">{{ reading_time }} min read</span>
       {% endif %}
-      <span class="badge {% if tags %}badge-success{% else %}badge-warn{% endif %}">
+      <span class="inline-flex items-center px-2 py-1 rounded-full {% if tags %}bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)] border border-[var(--primitive-neon-500)]/30{% else %}bg-[var(--primitive-amber-500)]/20 text-[var(--primitive-amber-400)] border border-[var(--primitive-amber-500)]/30{% endif %}">
         Tags {% if tags %}ready{% else %}missing{% endif %}
       </span>
-      <span class="badge {% if seo_ready %}badge-success{% else %}badge-warn{% endif %}">
+      <span class="inline-flex items-center px-2 py-1 rounded-full {% if seo_ready %}bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)] border border-[var(--primitive-neon-500)]/30{% else %}bg-[var(--primitive-amber-500)]/20 text-[var(--primitive-amber-400)] border border-[var(--primitive-amber-500)]/30{% endif %}">
         SEO {% if seo_ready %}set{% else %}pending{% endif %}
       </span>
     </div>
-    {% if excerpt %}<p class="text-sm text-slate-700 line-clamp-3">{{ excerpt }}</p>{% endif %}
+    {% if excerpt %}<p class="text-sm text-[var(--color-text-secondary)] line-clamp-3">{{ excerpt }}</p>{% endif %}
     {% if tags %}
-      <div class="flex flex-wrap gap-2 text-xs text-slate-600" aria-label="Tags">
+      <div class="flex flex-wrap gap-2 text-xs" aria-label="Tags">
         {% for tag in tags %}
-          <span class="inline-flex items-center px-2 py-1 rounded-full bg-slate-100 text-slate-700">#{{ tag }}</span>
+          <span class="inline-flex items-center px-2 py-1 rounded-full bg-[var(--primitive-cyan-500)]/10 text-[var(--primitive-cyan-400)] border border-[var(--primitive-cyan-500)]/30 hover:bg-[var(--primitive-cyan-500)]/20 transition-colors">#{{ tag }}</span>
         {% endfor %}
       </div>
     {% endif %}
   </div>
   {% if thumbnail %}
-    <div class="w-full sm:w-28 h-32 sm:h-20 rounded-lg overflow-hidden border border-slate-200">
+    <div class="w-full sm:w-28 h-32 sm:h-20 rounded-lg overflow-hidden border border-[var(--color-border-default)] group-hover:border-[var(--primitive-cyan-500)]/50 transition-colors">
       <img src="{{ thumbnail }}" alt="" class="w-full h-full object-cover" />
     </div>
   {% endif %}

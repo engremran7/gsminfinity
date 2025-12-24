@@ -1,0 +1,85 @@
+{% if product %}
+<a href="{{ product.affiliate_url|default:product.product_url }}" 
+   target="_blank" 
+   rel="noopener sponsored"
+   class="affiliate-product-card group block bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg overflow-hidden hover:border-[var(--primitive-cyan-600)] hover:shadow-lg transition-all duration-200 {% if size == 'small' %}max-w-[140px]{% elif size == 'large' %}max-w-[280px]{% else %}max-w-[200px]{% endif %}"
+   data-product-id="{{ product.id }}"
+   data-provider="{{ product.provider.name }}">
+    
+    {# Product Image #}
+    <div class="{% if size == 'small' %}aspect-square p-2{% elif size == 'large' %}aspect-[4/3] p-6{% else %}aspect-square p-4{% endif %} bg-white relative overflow-hidden">
+        {% if product.sale_price and product.sale_price < product.price %}
+        <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+            -{{ product.get_discount_percent }}%
+        </span>
+        {% endif %}
+        <img src="{{ product.thumbnail_url|default:product.image_url }}" 
+             alt="{{ product.name }}"
+             class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+             loading="lazy">
+    </div>
+    
+    {# Product Info #}
+    <div class="{% if size == 'small' %}p-2{% elif size == 'large' %}p-4{% else %}p-3{% endif %}">
+        <h4 class="{% if size == 'small' %}text-xs{% elif size == 'large' %}text-base{% else %}text-sm{% endif %} font-medium text-[var(--color-text-default)] line-clamp-2 mb-2 group-hover:text-[var(--primitive-cyan-400)]">
+            {{ product.name }}
+        </h4>
+        
+        {# Rating (hidden on small) #}
+        {% if size != 'small' and product.rating > 0 %}
+        <div class="flex items-center gap-1 mb-2">
+            <div class="flex text-amber-400 text-xs">
+                {% for _ in "12345" %}
+                {% if forloop.counter <= product.rating|floatformat:0|add:0 %}
+                <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                {% else %}
+                <svg class="w-3 h-3 fill-current opacity-30" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                {% endif %}
+                {% endfor %}
+            </div>
+            <span class="text-xs text-[var(--color-text-muted)]">({{ product.review_count|default:"0" }})</span>
+        </div>
+        {% endif %}
+        
+        {# Price #}
+        <div class="flex items-center gap-2 flex-wrap">
+            {% if product.sale_price and product.sale_price < product.price %}
+            <span class="{% if size == 'small' %}text-[10px]{% else %}text-sm{% endif %} line-through text-[var(--color-text-muted)]">
+                {{ product.currency }} {{ product.price }}
+            </span>
+            <span class="{% if size == 'small' %}text-sm{% elif size == 'large' %}text-lg{% else %}text-base{% endif %} font-bold text-green-500">
+                {{ product.currency }} {{ product.sale_price }}
+            </span>
+            {% else %}
+            <span class="{% if size == 'small' %}text-sm{% elif size == 'large' %}text-lg{% else %}text-base{% endif %} font-bold text-[var(--color-text-default)]">
+                {{ product.currency }} {{ product.price }}
+            </span>
+            {% endif %}
+        </div>
+        
+        {# Provider Badge #}
+        {% if size != 'small' %}
+        <div class="mt-2 flex items-center gap-1">
+            <span class="text-[10px] text-[var(--color-text-muted)]">via</span>
+            <span class="text-[10px] font-medium text-[var(--primitive-cyan-400)]">{{ product.provider.name }}</span>
+        </div>
+        {% endif %}
+        
+        {# Description on large #}
+        {% if size == 'large' and product.description %}
+        <p class="mt-2 text-xs text-[var(--color-text-muted)] line-clamp-2">
+            {{ product.description }}
+        </p>
+        {% endif %}
+    </div>
+    
+    {# View Button on large #}
+    {% if size == 'large' %}
+    <div class="px-4 pb-4">
+        <span class="block w-full text-center py-2 bg-[var(--primitive-cyan-600)] hover:bg-[var(--primitive-cyan-700)] text-white text-sm font-medium rounded-lg transition-colors">
+            View on {{ product.provider.name }}
+        </span>
+    </div>
+    {% endif %}
+</a>
+{% endif %}

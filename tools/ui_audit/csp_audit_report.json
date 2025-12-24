@@ -1,0 +1,318 @@
+{
+  "summary": {
+    "total_violations": 36,
+    "errors": 0,
+    "warnings": 0,
+    "info": 36,
+    "templates_checked": 187,
+    "js_files_checked": 21
+  },
+  "middleware": {
+    "csp_middleware_found": true,
+    "nonce_generation": true,
+    "security_headers_middleware": true,
+    "csp_directives": [
+      "style-src",
+      "script-src",
+      "style-src",
+      "style-src",
+      "style-src",
+      "img-src",
+      "connect-src",
+      "frame-src"
+    ]
+  },
+  "by_violation_type": {
+    "INNERHTML_USAGE": 36
+  },
+  "violations": [
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\ads.js",
+      "line": 102,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "slotElement.innerHTML = data.html;",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\blog.js",
+      "line": 174,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "lightbox.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\blog.js",
+      "line": 223,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "const original = button.innerHTML;",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\blog.js",
+      "line": 224,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "button.innerHTML = '\u2713 Copied!';",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\blog.js",
+      "line": 225,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "setTimeout(() => button.innerHTML = original, 2000);",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\consent-banner-loader.js",
+      "line": 278,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "template.innerHTML = html.trim();",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+      "line": 269,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "toast.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+      "line": 606,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "strengthContainer.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+      "line": 658,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "resultsContainer.innerHTML = '';",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+      "line": 678,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "container.innerHTML = '<p class=\"text-sm text-slate-500 p-4\">No results found</p>';",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+      "line": 682,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "container.innerHTML = data.results.map(result => `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+      "line": 699,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "previewContainer.innerHTML = '';",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+      "line": 708,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "preview.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\enterprise.js",
+      "line": 713,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "preview.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\main.js",
+      "line": 80,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "list.innerHTML =",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\main.js",
+      "line": 101,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "list.innerHTML = \"\";",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\main.js",
+      "line": 103,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "list.innerHTML =",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\js\\main.js",
+      "line": 111,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "el.innerHTML =",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\enduser\\js\\notifications.js",
+      "line": 126,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "this.elements.list.innerHTML = '<div class=\"p-4 text-center text-sm text-red-500\">Failed to load not",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\enduser\\js\\notifications.js",
+      "line": 132,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "this.elements.list.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\enduser\\js\\notifications.js",
+      "line": 164,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "this.elements.list.innerHTML = html + `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise-extended.js",
+      "line": 353,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "listElement.innerHTML = files.map((file, index) => `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise-extended.js",
+      "line": 559,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "userMsg.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise-extended.js",
+      "line": 571,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "loadingMsg.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise-extended.js",
+      "line": 602,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "botMsg.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise-extended.js",
+      "line": 614,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "errorMsg.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise-extended.js",
+      "line": 652,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "menu.innerHTML = items.map(item => {",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+      "line": 163,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "toast.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+      "line": 248,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "modal.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+      "line": 367,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "drawer.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+      "line": 459,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "palette.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+      "line": 540,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "resultsContainer.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+      "line": 553,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "resultsContainer.innerHTML = `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\enterprise.js",
+      "line": 561,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "resultsContainer.innerHTML = this.results.map((cmd, index) => `",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\htmx-offline.js",
+      "line": 116,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "element.innerHTML = html;",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    },
+    {
+      "file": "D:\\GsmInfinity\\static\\admin\\js\\htmx-offline.js",
+      "line": 140,
+      "type": "INNERHTML_USAGE",
+      "severity": "info",
+      "snippet": "element.innerHTML = html;",
+      "recommendation": "Ensure innerHTML content is sanitized or use textContent"
+    }
+  ]
+}

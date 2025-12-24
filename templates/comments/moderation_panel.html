@@ -1,13 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Comments Moderation{% endblock %}
+{% block sidebar_left %}{% endblock %}
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
-  <div>
-    <h1 class="text-2xl font-bold text-slate-900">Comments Moderation</h1>
-    <p class="text-sm text-slate-600">Review spam/unsafe flags, edit history, and approve or reject.</p>
-  </div>
-  <div id="mod-table" class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
-    <table class="w-full text-sm">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-10 lg:col-start-2 space-y-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">Comments Moderation</h1>
+        <p class="text-sm text-slate-600">Review spam/unsafe flags, edit history, and approve or reject.</p>
+      </div>
+      <div id="mod-table" class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
+        <table class="w-full text-sm">
       <thead class="text-xs text-slate-500 border-b border-slate-100">
         <tr>
           <th class="px-3 py-2 text-left">Comment</th>
@@ -61,6 +64,8 @@
         {% endfor %}
       </tbody>
     </table>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

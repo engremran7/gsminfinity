@@ -22,7 +22,7 @@ class EventBus:
         # Subscribing to events
         @event_bus.subscribe('blog.post_published')
         def on_post_published(data):
-            print(f"Post {data['post_id']} was published!")
+            logger.info(f"Post {data['post_id']} was published!")
     """
     
     _instance = None

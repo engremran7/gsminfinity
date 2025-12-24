@@ -8,6 +8,12 @@ class TagsConfig(AppConfig):
     verbose_name = "Tags"
 
     def ready(self):
+        # Register signal handlers for cross-app communication
+        try:
+            from . import signal_handlers  # noqa: F401
+        except Exception:
+            pass
+        
         # Register tag sitemap with the shared sitemap registry (soft-fail to avoid startup errors)
         try:
             from apps.pages.sitemap_registry import register_sitemap

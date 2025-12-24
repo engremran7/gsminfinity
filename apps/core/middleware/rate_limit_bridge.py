@@ -2,17 +2,30 @@
 """
 apps.core.middleware.rate_limit_bridge
 --------------------------------------
-Bridges Django requests to apps.users.services.rate_limit.allow_action().
+Bridges Django requests to rate limiting functionality.
 Prevents brute-force login/signup attempts globally.
 """
 
 import logging
+from typing import Callable, Optional
 
-from apps.users.services import rate_limit
 from django.http import JsonResponse, HttpResponse
+from django.apps import apps
 from apps.core.utils.ip import get_client_ip
 
 logger = logging.getLogger(__name__)
+
+
+def get_rate_limit_service() -> Optional[Callable]:
+    """Lazy load rate limit service to avoid circular imports"""
+    try:
+        # Dynamic import to avoid circular dependency
+        from apps.users import services
+        if hasattr(services, 'rate_limit'):
+            return services.rate_limit
+    except Exception as exc:
+        logger.warning("Failed to load rate limit service: %s", exc)
+    return None
 
 
 class RateLimitBridgeMiddleware:
@@ -49,7 +62,9 @@ class RateLimitBridgeMiddleware:
 
             allowed = True
             try:
-                allowed = rate_limit.allow_action(key, max_attempts=max_attempts, window_seconds=window_seconds)
+                rate_limit_service = get_rate_limit_service()
+                if rate_limit_service:
+                    allowed = rate_limit_service.allow_action(key, max_attempts=max_attempts, window_seconds=window_seconds)
             except Exception as exc:
                 logger.warning("Rate limiting failed for %s: %s", path, exc)
                 # Fail closed only for high-risk paths

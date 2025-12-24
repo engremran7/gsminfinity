@@ -589,7 +589,7 @@ def admin_suite_security_devices(request: HttpRequest) -> HttpResponse:
     """Legacy route: redirect to consolidated security tab with anchor."""
     if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
         raise _ADMIN_DISABLED
-    return redirect(f"{reverse('admin_suite:admin_suite_security')}#devices")
+    return redirect(f"{reverse('admin_suite:security')}#devices")
 
 
 @csrf_protect
@@ -598,7 +598,7 @@ def admin_suite_security_crawlers(request: HttpRequest) -> HttpResponse:
     """Legacy route: redirect to consolidated security tab with anchor."""
     if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
         raise _ADMIN_DISABLED
-    return redirect(f"{reverse('admin_suite:admin_suite_security')}#crawlers")
+    return redirect(f"{reverse('admin_suite:security')}#crawlers")
 
 
 @csrf_protect
@@ -607,9 +607,40 @@ def admin_suite_security_risk(request: HttpRequest) -> HttpResponse:
     """Legacy route: redirect to consolidated security tab with anchor."""
     if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
         raise _ADMIN_DISABLED
-    return redirect(f"{reverse('admin_suite:admin_suite_security')}#risk")
+    return redirect(f"{reverse('admin_suite:security')}#risk")
 
 
+@csrf_protect
+@staff_member_required
+def admin_suite_security_events(request: HttpRequest) -> HttpResponse:
+    """Security events audit log."""
+    if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
+        raise _ADMIN_DISABLED
 
-__all__ = ['admin_suite_command_search', 'admin_suite', 'admin_suite_security', 'admin_suite_security_devices', 'admin_suite_security_crawlers', 'admin_suite_security_risk']
+    events = []
+    try:
+        from apps.security_events.models import SecurityEvent
+        events = list(
+            SecurityEvent.objects.select_related("user")
+            .order_by("-created_at")[:100]
+            .values("id", "event_type", "severity", "ip_address", "user_agent", "created_at", "user__email")
+        )
+    except Exception as exc:
+        logger.warning("Failed to load security events: %s", exc)
+
+    return _render_admin(
+        request,
+        "admin_suite/security_events.html",
+        {"events": events},
+        nav_active="security",
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"),
+            ("Security", "admin_suite:security"),
+            ("Events", None),
+        ),
+        subtitle="Security event audit log",
+    )
+
+
+__all__ = ['admin_suite_command_search', 'admin_suite', 'admin_suite_security', 'admin_suite_security_devices', 'admin_suite_security_crawlers', 'admin_suite_security_risk', 'admin_suite_security_events']
 

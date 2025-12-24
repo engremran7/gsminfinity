@@ -1,0 +1,307 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - {{ provider.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">{{ provider.name }}</h1>
+      <p class="text-sm text-slate-600">
+        {% if provider.provider == 'google_drive' %}📁 Google Drive
+        {% elif provider.provider == 'google_shared_drive' %}📁 Google Shared Drive
+        {% elif provider.provider == 'onedrive' %}☁️ OneDrive
+        {% elif provider.provider == 'dropbox' %}📦 Dropbox
+        {% elif provider.provider == 'mega' %}🔒 MEGA
+        {% elif provider.provider == 's3' %}🪣 Amazon S3
+        {% elif provider.provider == 'wasabi' %}🪣 Wasabi
+        {% elif provider.provider == 'backblaze' %}🪣 Backblaze B2
+        {% else %}{{ provider.get_provider_display }}
+        {% endif %}
+        {% if provider.account_email %} • {{ provider.account_email }}{% endif %}
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:storage_providers' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">← All Providers</a>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  {% if error %}
+  <div class="text-sm text-red-700 bg-red-50 border border-red-100 px-3 py-2 rounded">
+    {{ error }}
+  </div>
+  {% else %}
+
+  <!-- Provider Overview -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="border rounded-lg bg-white shadow-sm p-4">
+      <div class="text-sm text-slate-500">Status</div>
+      <div class="mt-1">
+        {% if provider.status == 'active' %}
+          <span class="px-2 py-1 text-sm rounded bg-emerald-100 text-emerald-700">Active</span>
+        {% elif provider.status == 'pending' %}
+          <span class="px-2 py-1 text-sm rounded bg-amber-100 text-amber-700">Pending Setup</span>
+        {% elif provider.status == 'error' %}
+          <span class="px-2 py-1 text-sm rounded bg-red-100 text-red-700">Error</span>
+        {% else %}
+          <span class="px-2 py-1 text-sm rounded bg-slate-100 text-slate-700">{{ provider.status }}</span>
+        {% endif %}
+        {% if not provider.is_active %}
+          <span class="ml-2 px-2 py-1 text-sm rounded bg-slate-200 text-slate-600">Disabled</span>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="border rounded-lg bg-white shadow-sm p-4">
+      <div class="text-sm text-slate-500">Storage Usage</div>
+      {% if provider.total_space_bytes > 0 %}
+        <div class="text-2xl font-semibold text-slate-900">{{ provider.usage_percent|floatformat:1 }}%</div>
+        <div class="mt-2 w-full progress-bar-container progress-bar-container--md">
+          <div class="progress-bar {% if provider.usage_percent > 90 %}progress-bar--danger{% elif provider.usage_percent > 75 %}progress-bar--warning{% else %}progress-bar--success{% endif %} progress-w-{{ provider.usage_percent|floatformat:0 }}"></div>
+        </div>
+        <div class="text-xs text-slate-500 mt-1">{{ provider.available_space_gb|floatformat:2 }} GB available</div>
+      {% else %}
+        <div class="text-slate-400">Not configured</div>
+      {% endif %}
+    </div>
+    
+    <div class="border rounded-lg bg-white shadow-sm p-4">
+      <div class="text-sm text-slate-500">Daily Transfer</div>
+      {% if provider.daily_transfer_limit_gb > 0 %}
+        {% widthratio provider.used_transfer_today_gb provider.daily_transfer_limit_gb 100 as transfer_pct %}
+        <div class="text-2xl font-semibold text-slate-900">{{ provider.used_transfer_today_gb|floatformat:1 }} GB</div>
+        <div class="text-xs text-slate-500">of {{ provider.daily_transfer_limit_gb }} GB limit</div>
+      {% else %}
+        <div class="text-slate-400">Unlimited</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Error Display -->
+  {% if provider.last_error %}
+  <div class="border border-red-200 rounded-lg bg-red-50 p-4">
+    <h3 class="text-sm font-semibold text-red-900">Last Error</h3>
+    <p class="text-sm text-red-700 mt-1">{{ provider.last_error }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Provider Details -->
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Provider Configuration</h2>
+    </div>
+    <div class="p-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <span class="text-sm text-slate-500">Provider Type</span>
+          <p class="text-sm font-medium text-slate-900">{{ provider.get_provider_display }}</p>
+        </div>
+        <div>
+          <span class="text-sm text-slate-500">Auth Type</span>
+          <p class="text-sm font-medium text-slate-900">{{ provider.get_auth_type_display }}</p>
+        </div>
+        <div>
+          <span class="text-sm text-slate-500">Account Email</span>
+          <p class="text-sm font-medium text-slate-900">{{ provider.account_email|default:"-" }}</p>
+        </div>
+        <div>
+          <span class="text-sm text-slate-500">Account ID</span>
+          <p class="text-sm font-medium text-slate-900 font-mono">{{ provider.account_id|default:"-" }}</p>
+        </div>
+        {% if provider.bucket_name %}
+        <div>
+          <span class="text-sm text-slate-500">Bucket Name</span>
+          <p class="text-sm font-medium text-slate-900">{{ provider.bucket_name }}</p>
+        </div>
+        {% endif %}
+        {% if provider.region %}
+        <div>
+          <span class="text-sm text-slate-500">Region</span>
+          <p class="text-sm font-medium text-slate-900">{{ provider.region }}</p>
+        </div>
+        {% endif %}
+        {% if provider.endpoint_url %}
+        <div class="md:col-span-2">
+          <span class="text-sm text-slate-500">Custom Endpoint</span>
+          <p class="text-sm font-medium text-slate-900 font-mono">{{ provider.endpoint_url }}</p>
+        </div>
+        {% endif %}
+        <div>
+          <span class="text-sm text-slate-500">Created</span>
+          <p class="text-sm font-medium text-slate-900">{{ provider.created_at|date:"M d, Y H:i" }}</p>
+        </div>
+        <div>
+          <span class="text-sm text-slate-500">Last Sync</span>
+          <p class="text-sm font-medium text-slate-900">{{ provider.last_sync_at|date:"M d, Y H:i"|default:"Never" }}</p>
+        </div>
+        <div>
+          <span class="text-sm text-slate-500">Priority</span>
+          <p class="text-sm font-medium text-slate-900">{{ provider.priority }}</p>
+        </div>
+        <div>
+          <span class="text-sm text-slate-500">Max Service Accounts</span>
+          <p class="text-sm font-medium text-slate-900">{{ provider.max_service_accounts }}</p>
+        </div>
+      </div>
+      
+      {% if provider.notes %}
+      <div class="mt-4 pt-4 border-t">
+        <h3 class="text-sm text-slate-500">Notes</h3>
+        <p class="text-sm text-slate-700 mt-1">{{ provider.notes }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Shared Drives -->
+  {% if shared_drives %}
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Shared Drives ({{ shared_drives|length }})</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Drive ID</th>
+            <th class="px-4 py-2">Files</th>
+            <th class="px-4 py-2">Size</th>
+            <th class="px-4 py-2">Health</th>
+            <th class="px-4 py-2">Active</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for drive in shared_drives %}
+          <tr>
+            <td class="px-4 py-2 font-medium">{{ drive.name }}</td>
+            <td class="px-4 py-2 font-mono text-xs">{{ drive.drive_id|truncatechars:24 }}</td>
+            <td class="px-4 py-2">
+              {{ drive.current_file_count|default:0 }} / {{ drive.max_files }}
+              {% widthratio drive.current_file_count drive.max_files 100 as file_pct %}
+              <div class="mt-1 w-20 progress-bar-container progress-bar-container--xs">
+                <div class="progress-bar {% if file_pct > 90 %}progress-bar--danger{% elif file_pct > 75 %}progress-bar--warning{% else %}progress-bar--success{% endif %} progress-w-{{ file_pct|floatformat:0 }}"></div>
+              </div>
+            </td>
+            <td class="px-4 py-2">{{ drive.total_size_gb|floatformat:2 }} GB</td>
+            <td class="px-4 py-2">
+              {% if drive.health_status == 'healthy' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700">Healthy</span>
+              {% elif drive.health_status == 'warning' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700">Warning</span>
+              {% elif drive.health_status == 'critical' or drive.health_status == 'full' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700">{{ drive.health_status|title }}</span>
+              {% else %}
+                <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">{{ drive.health_status }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">{{ drive.is_active|yesno:"Yes,No" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Service Accounts -->
+  {% if service_accounts %}
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Service Accounts ({{ service_accounts|length }})</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Quota Used</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Last Used</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for sa in service_accounts %}
+          <tr>
+            <td class="px-4 py-2 font-medium">{{ sa.name }}</td>
+            <td class="px-4 py-2 font-mono text-xs">{{ sa.email }}</td>
+            <td class="px-4 py-2">
+              {{ sa.used_quota_today_gb|floatformat:1 }} / {{ sa.daily_quota_gb }} GB
+              {% widthratio sa.used_quota_today_gb sa.daily_quota_gb 100 as quota_pct %}
+              <div class="mt-1 w-20 progress-bar-container progress-bar-container--xs">
+                <div class="progress-bar {% if quota_pct > 90 %}progress-bar--danger{% elif quota_pct > 75 %}progress-bar--warning{% else %}progress-bar--success{% endif %} progress-w-{{ quota_pct|floatformat:0 }}"></div>
+              </div>
+            </td>
+            <td class="px-4 py-2">
+              {% if sa.is_banned %}
+                <span class="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700">Banned</span>
+              {% elif sa.is_active %}
+                <span class="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700">Active</span>
+              {% else %}
+                <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">Inactive</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-xs text-slate-500">{{ sa.last_used_at|date:"M d, H:i"|default:"Never" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Quick Actions -->
+  <div class="border rounded-lg bg-slate-50 p-4">
+    <h3 class="text-sm font-semibold text-slate-700 mb-3">Quick Actions</h3>
+    <div class="flex flex-wrap gap-2">
+      <form method="post" action="{% url 'admin_suite:storage_providers' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="validate_connection">
+        <input type="hidden" name="provider_id" value="{{ provider.id }}">
+        <button type="submit" class="px-3 py-1.5 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50">
+          Test Connection
+        </button>
+      </form>
+      
+      {% if provider.provider == 'google_drive' or provider.provider == 'google_shared_drive' %}
+      <form method="post" action="{% url 'admin_suite:storage_providers' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="fetch_shared_drives">
+        <input type="hidden" name="provider_id" value="{{ provider.id }}">
+        <button type="submit" class="px-3 py-1.5 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50">
+          Fetch Shared Drives
+        </button>
+      </form>
+      {% endif %}
+      
+      <form method="post" action="{% url 'admin_suite:storage_providers' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle_provider">
+        <input type="hidden" name="provider_id" value="{{ provider.id }}">
+        <button type="submit" class="px-3 py-1.5 text-sm rounded border border-slate-300 bg-white hover:bg-slate-50">
+          {% if provider.is_active %}Disable Provider{% else %}Enable Provider{% endif %}
+        </button>
+      </form>
+      
+      <form method="post" action="{% url 'admin_suite:storage_providers' %}" 
+            data-confirm="Are you sure you want to delete this provider?">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_provider">
+        <input type="hidden" name="provider_id" value="{{ provider.id }}">
+        <button type="submit" class="px-3 py-1.5 text-sm rounded border border-red-300 bg-white text-red-600 hover:bg-red-50">
+          Delete Provider
+        </button>
+      </form>
+    </div>
+  </div>
+  
+  {% endif %}
+</div>
+{% endblock %}

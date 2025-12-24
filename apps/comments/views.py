@@ -119,7 +119,10 @@ def list_comments(request: HttpRequest, slug: str) -> JsonResponse:
         status=Comment.Status.APPROVED,
         is_deleted=False,
         parent__isnull=True,
-    ).prefetch_related("children")
+    ).prefetch_related(
+        "children",
+        "children__user",  # Fix N+1 query in recursive serialize()
+    )
     if sort == "old":
         qs = qs.order_by("created_at")
     elif sort == "top":

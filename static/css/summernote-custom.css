@@ -1,0 +1,14 @@
+/* Summernote custom styles for blog post forms */
+.note-editor.note-frame {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+}
+
+.note-toolbar {
+  background-color: #f8f9fa !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.note-editable {
+  min-height: 300px;
+}

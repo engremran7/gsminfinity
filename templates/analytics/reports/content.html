@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Content Report | {{ site_settings.site_name|default:"GSM Infinity" }}{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-8">
+  <header class="mb-8 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Content Report</h1>
+      <p class="text-slate-600 dark:text-slate-400 mt-2">Top performing content, downloads, and posts.</p>
+    </div>
+    <a href="{% url 'analytics:dashboard' %}" class="text-sm text-primary-600 hover:text-primary-700">← Back to Dashboard</a>
+  </header>
+
+  {# Summary Stats #}
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.total_content|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Total Content</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-green-600">{{ stats.total_downloads|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Total Downloads</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-blue-600">{{ stats.total_posts|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Blog Posts</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-purple-600">{{ stats.total_firmwares|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Firmwares</div>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {# Top Downloads #}
+    <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Top Downloads</h2>
+      {% if top_downloads %}
+      <div class="space-y-3">
+        {% for item in top_downloads %}
+        <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+          <span class="text-slate-900 dark:text-white truncate max-w-xs">{{ item.title }}</span>
+          <span class="text-sm font-medium text-green-600">{{ item.downloads }} downloads</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-slate-500 dark:text-slate-400 text-center py-4">No download data available.</p>
+      {% endif %}
+    </section>
+
+    {# Top Posts #}
+    <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Top Blog Posts</h2>
+      {% if top_posts %}
+      <div class="space-y-3">
+        {% for post in top_posts %}
+        <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+          <span class="text-slate-900 dark:text-white truncate max-w-xs">{{ post.title }}</span>
+          <span class="text-sm font-medium text-blue-600">{{ post.views }} views</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-slate-500 dark:text-slate-400 text-center py-4">No post data available.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {# Top Firmwares #}
+  <section class="mt-8 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+    <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Top Firmwares</h2>
+    {% if top_firmwares %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+          <tr>
+            <th class="pb-3 font-medium">Firmware</th>
+            <th class="pb-3 font-medium">Brand</th>
+            <th class="pb-3 font-medium">Model</th>
+            <th class="pb-3 font-medium">Downloads</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+          {% for fw in top_firmwares %}
+          <tr>
+            <td class="py-3 text-slate-900 dark:text-white">{{ fw.title }}</td>
+            <td class="py-3 text-slate-600 dark:text-slate-400">{{ fw.brand }}</td>
+            <td class="py-3 text-slate-600 dark:text-slate-400">{{ fw.model }}</td>
+            <td class="py-3 font-medium text-green-600">{{ fw.downloads }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-slate-500 dark:text-slate-400 text-center py-4">No firmware data available.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}
+

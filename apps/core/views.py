@@ -240,19 +240,19 @@ def home(request: HttpRequest) -> HttpResponse:
             status=503,
         )
 
-    # Query factories
+    # Query factories with lazy imports
     def _u():
         try:
-            from apps.users.models import CustomUser  # type: ignore
-
+            from django.apps import apps
+            CustomUser = apps.get_model('users', 'CustomUser')
             return CustomUser.objects.all()
         except Exception:
             return []
 
     def _n():
         try:
-            from apps.users.models import Notification  # type: ignore
-
+            from django.apps import apps
+            Notification = apps.get_model('users', 'Notification')
             if request.user.is_authenticated:
                 return Notification.objects.filter(recipient=request.user, is_read=False)
             return Notification.objects.none()
@@ -261,8 +261,8 @@ def home(request: HttpRequest) -> HttpResponse:
 
     def _a():
         try:
-            from apps.users.models import Announcement  # type: ignore
-
+            from django.apps import apps
+            Announcement = apps.get_model('users', 'Announcement')
             return Announcement.objects.filter(is_active=True)
         except Exception:
             return []

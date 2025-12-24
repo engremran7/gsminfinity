@@ -6,7 +6,7 @@ import json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.http import JsonResponse
 
 from apps.consent.models import ConsentPolicy, ConsentDecision, ConsentEvent
@@ -14,6 +14,7 @@ from apps.consent.utils import hash_ip, hash_ua, resolve_policy_url, set_consent
 from apps.core.utils.ip import get_client_ip
 
 
+@require_GET
 def privacy_center(request):
     active_policy = ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
     decisions = ConsentDecision.objects.none()
@@ -178,10 +179,29 @@ def banner(request: HttpRequest) -> HttpResponse:
         if not policy.is_active:
             policy.is_active = True
             policy.save(update_fields=["is_active"])
+    
+    # Format categories for template with proper structure
+    categories_snapshot = policy.categories_snapshot or {}
+    formatted_categories = {}
+    for slug, meta in categories_snapshot.items():
+        if isinstance(meta, dict):
+            formatted_categories[slug] = {
+                "name": meta.get("label", slug.replace("_", " ").title()),
+                "required": meta.get("required", False),
+                "checked": meta.get("required", False),  # Required categories checked by default
+            }
+        else:
+            formatted_categories[slug] = {
+                "name": slug.replace("_", " ").title(),
+                "required": False,
+                "checked": False,
+            }
+    
     ctx = {
         "policy": policy,
-        "categories": policy.categories_snapshot or {},
+        "consent_categories": formatted_categories,
         "consent_text": policy.banner_text or "We use cookies to improve your browsing experience.",
+        "consent_version": policy.version,
     }
     return render(request, "consent/includes/banner.html", ctx)
 

@@ -1,0 +1,189 @@
+/**
+ * =============================================================================
+ * GSM INFINITY - UNIFIED CSS ENTRY POINT
+ * =============================================================================
+ * 
+ * Version: 3.0.0
+ * Date: 2025-12-22
+ * 
+ * Single source of truth for all application styles.
+ * Replaces 40+ individual CSS files with modular design system.
+ * 
+ * Architecture:
+ * 1. Design System Foundation (tokens, base, typography)
+ * 2. Layout System (grid, flex, spacing utilities)
+ * 3. UI Components (buttons, cards, forms, tables)
+ * 4. Motion System (animations, transitions)
+ * 5. Third-party Overrides (Summernote)
+ * 
+ * Production Build:
+ * - Minify with PostCSS/cssnano
+ * - Purge unused styles with PurgeCSS
+ * - Compress with gzip/brotli
+ * 
+ * =============================================================================
+ */
+
+/* =============================================================================
+   DESIGN SYSTEM FOUNDATION
+   ============================================================================= */
+
+/* CSS Custom Properties (Design Tokens) */
+@import url('./design-system/tokens.css');
+
+/* Base Styles (Reset + Normalize) */
+@import url('./design-system/base.css');
+
+/* Typography System */
+@import url('./design-system/typography.css');
+
+/* =============================================================================
+   LAYOUT SYSTEM
+   ============================================================================= */
+
+/* Grid, Flexbox, Spacing Utilities */
+@import url('./design-system/layout.css');
+
+/* =============================================================================
+   UI COMPONENTS
+   ============================================================================= */
+
+/* Buttons, Cards, Badges, Alerts, etc. */
+@import url('./design-system/components.css');
+
+/* =============================================================================
+   MOTION SYSTEM
+   ============================================================================= */
+
+/* Animations, Transitions, Transforms */
+@import url('./design-system/motion.css');
+
+/* Modern Enhancements (Glassmorphism, Gradients, Effects) */
+@import url('./design-system/modern-enhancements.css');
+
+/* =============================================================================
+   THIRD-PARTY OVERRIDES
+   ============================================================================= */
+
+/* Summernote WYSIWYG Editor Customizations */
+@import url('./summernote-overrides.css');
+
+/* =============================================================================
+   UTILITY CLASSES (Tailwind-inspired)
+   ============================================================================= */
+
+/* Additional utility classes not covered by design system */
+
+/* Visibility */
+.hidden { display: none !important; }
+.invisible { visibility: hidden !important; }
+.visible { visibility: visible !important; }
+
+/* Text Alignment */
+.text-left { text-align: left !important; }
+.text-center { text-align: center !important; }
+.text-right { text-align: right !important; }
+.text-justify { text-align: justify !important; }
+
+/* Display */
+.block { display: block !important; }
+.inline-block { display: inline-block !important; }
+.inline { display: inline !important; }
+.flex { display: flex !important; }
+.inline-flex { display: inline-flex !important; }
+.grid { display: grid !important; }
+
+/* Flexbox Utilities */
+.flex-row { flex-direction: row !important; }
+.flex-col { flex-direction: column !important; }
+.flex-wrap { flex-wrap: wrap !important; }
+.flex-nowrap { flex-wrap: nowrap !important; }
+.items-start { align-items: flex-start !important; }
+.items-center { align-items: center !important; }
+.items-end { align-items: flex-end !important; }
+.justify-start { justify-content: flex-start !important; }
+.justify-center { justify-content: center !important; }
+.justify-end { justify-content: flex-end !important; }
+.justify-between { justify-content: space-between !important; }
+.justify-around { justify-content: space-around !important; }
+
+/* Spacing Utilities (if not in design-system) */
+.gap-1 { gap: 0.25rem !important; }
+.gap-2 { gap: 0.5rem !important; }
+.gap-3 { gap: 0.75rem !important; }
+.gap-4 { gap: 1rem !important; }
+.gap-6 { gap: 1.5rem !important; }
+.gap-8 { gap: 2rem !important; }
+
+/* Width Utilities */
+.w-full { width: 100% !important; }
+.w-auto { width: auto !important; }
+.w-screen { width: 100vw !important; }
+
+/* Height Utilities */
+.h-full { height: 100% !important; }
+.h-auto { height: auto !important; }
+.h-screen { height: 100vh !important; }
+
+/* Cursor */
+.cursor-pointer { cursor: pointer !important; }
+.cursor-not-allowed { cursor: not-allowed !important; }
+
+/* Overflow */
+.overflow-hidden { overflow: hidden !important; }
+.overflow-auto { overflow: auto !important; }
+.overflow-scroll { overflow: scroll !important; }
+
+/* Position */
+.relative { position: relative !important; }
+.absolute { position: absolute !important; }
+.fixed { position: fixed !important; }
+.sticky { position: sticky !important; }
+
+/* Z-Index */
+.z-0 { z-index: 0 !important; }
+.z-10 { z-index: 10 !important; }
+.z-20 { z-index: 20 !important; }
+.z-30 { z-index: 30 !important; }
+.z-40 { z-index: 40 !important; }
+.z-50 { z-index: 50 !important; }
+
+/* Opacity */
+.opacity-0 { opacity: 0 !important; }
+.opacity-50 { opacity: 0.5 !important; }
+.opacity-75 { opacity: 0.75 !important; }
+.opacity-100 { opacity: 1 !important; }
+
+/* =============================================================================
+   PRINT STYLES
+   ============================================================================= */
+
+@media print {
+  /* Hide non-essential elements when printing */
+  .no-print,
+  nav,
+  aside,
+  footer,
+  .modal,
+  .dropdown,
+  .toast {
+    display: none !important;
+  }
+  
+  /* Optimize for print */
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    background: #fff;
+  }
+  
+  a {
+    text-decoration: underline;
+  }
+  
+  /* Show URLs after links */
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+}

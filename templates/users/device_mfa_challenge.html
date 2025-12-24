@@ -1,30 +1,34 @@
 {% extends "base.html" %}
 {% block title %}MFA required for this device{% endblock %}
-
+{% block sidebar_left %}{% endblock %}
 {% block content %}
-<div class="max-w-md mx-auto px-4 py-12">
-  <div class="bg-white shadow rounded-lg p-6 space-y-4">
-    <h1 class="text-xl font-semibold text-slate-900">Verify to trust this device</h1>
-    <p class="text-sm text-slate-600">
-      This device was flagged as new or high-risk. Complete MFA to trust it and continue.
-    </p>
+<div class="w-full px-4 sm:px-6 lg:px-8 py-12">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-4 lg:col-start-5">
+      <div class="card-glass-neon p-6 space-y-4">
+        <h1 class="text-xl font-semibold text-[var(--color-text-primary)]">Verify to trust this device</h1>
+        <p class="text-sm text-[var(--color-text-secondary)]">
+          This device was flagged as new or high-risk. Complete MFA to trust it and continue.
+        </p>
 
-    {% if messages %}
-      {% for message in messages %}
-        <div class="text-sm {% if message.tags %}text-{{ message.tags }}-700{% else %}text-slate-700{% endif %}">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
+        {% if messages %}
+          {% for message in messages %}
+            <div class="text-sm text-[var(--color-text-primary)] card-glass p-2 border-l-4 {% if message.tags == 'error' %}border-[var(--primitive-red-500)]{% elif message.tags == 'success' %}border-[var(--primitive-neon-500)]{% else %}border-[var(--primitive-cyan-500)]{% endif %}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
 
-    <form method="post" class="space-y-3">
-      {% csrf_token %}
-      <label class="block">
-        <span class="text-sm text-slate-700">One-time code</span>
-        <input type="text" name="code" class="w-full border rounded px-3 py-2" autocomplete="one-time-code" inputmode="numeric" required>
-      </label>
-      <button type="submit" class="btn-primary w-full rounded px-4 py-2">Verify</button>
-    </form>
+        <form method="post" class="space-y-3">
+          {% csrf_token %}
+          <label class="block">
+            <span class="text-sm text-[var(--color-text-secondary)]">One-time code</span>
+            <input type="text" name="code" class="w-full px-4 py-2.5 rounded-lg bg-[var(--color-bg-surface-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] focus:border-[var(--primitive-cyan-500)] focus:ring-2 focus:ring-[var(--primitive-cyan-500)]/20 transition-all" autocomplete="one-time-code" inputmode="numeric" required>
+          </label>
+          <button type="submit" class="btn btn-primary w-full">Verify</button>
+        </form>
 
-    <p class="text-xs text-slate-500">Use your existing MFA method. After success, this device will be marked trusted.</p>
+        <p class="text-xs text-[var(--color-text-muted)]">Use your existing MFA method. After success, this device will be marked trusted.</p>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

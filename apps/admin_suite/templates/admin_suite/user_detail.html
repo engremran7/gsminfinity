@@ -60,21 +60,21 @@
           Invalidate sessions
         </button>
       </form>
-      <form method="post" class="inline" onsubmit="return confirm('Ban user? This sets the account inactive.');">
+      <form method="post" class="inline" data-confirm="Ban user? This sets the account inactive.">
         {% csrf_token %}
         <input type="hidden" name="action" value="ban_user">
         <button type="submit" class="px-3 py-1 rounded border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100" title="Ban user (set inactive)">
           Ban user
         </button>
       </form>
-      <form method="post" class="inline" onsubmit="return confirm('Soft-delete user? Email will be anonymized.');">
+      <form method="post" class="inline" data-confirm="Soft-delete user? Email will be anonymized.">
         {% csrf_token %}
         <input type="hidden" name="action" value="delete_user">
         <button type="submit" class="px-3 py-1 rounded border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100" title="Soft-delete and anonymize user">
           Delete (soft)
         </button>
       </form>
-      <form method="post" class="inline" onsubmit="return confirm('Hard delete? This cannot be undone.');">
+      <form method="post" class="inline" data-confirm="Hard delete? This cannot be undone.">
         {% csrf_token %}
         <input type="hidden" name="action" value="hard_delete_user">
         <button type="submit" class="px-3 py-1 rounded border border-red-300 bg-red-50 text-red-700 hover:bg-red-100" title="Permanently delete user record">
@@ -138,7 +138,7 @@
     <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
       <div class="px-4 py-3 border-b flex items-center justify-between">
         <h2 class="text-lg font-semibold text-slate-900">Devices</h2>
-        <form method="post" class="inline" onsubmit="return confirm('Reset this user\\'s device quota window?');">
+        <form method="post" class="inline" data-confirm="Reset this user's device quota window?">
           {% csrf_token %}
           <input type="hidden" name="action" value="reset_device_quota">
           <button type="submit" class="text-xs px-3 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50">Reset quota</button>

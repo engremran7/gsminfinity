@@ -74,6 +74,12 @@ class TaggingService:
             defaults={'created_by': created_by}
         )
         
+        # Update the tag's usage_count if a new TaggedItem was created
+        if created:
+            from django.db.models import F
+            self.Tag.objects.filter(pk=tag.pk).update(usage_count=F('usage_count') + 1)
+            tag.refresh_from_db()
+        
         return tagged_item
     
     def untag_object(self, obj: Any, tag_name: str) -> bool:
@@ -99,6 +105,13 @@ class TaggingService:
                 content_type=content_type,
                 object_id=obj.pk
             ).delete()
+            
+            # Update the tag's usage_count if items were deleted
+            if deleted_count > 0:
+                from django.db.models import F
+                self.Tag.objects.filter(pk=tag.pk).update(
+                    usage_count=models.functions.Greatest(F('usage_count') - deleted_count, 0)
+                )
             
             return deleted_count > 0
         except self.Tag.DoesNotExist:
@@ -274,7 +287,7 @@ class TaggingService:
             >>> popular_blog = service.get_popular_tags(5, Post)
         """
         queryset = self.Tag.objects.annotate(
-            usage_count=models.Count('tagged_items')
+            computed_usage_count=models.Count('tagged_items')
         )
         
         if model_class:
@@ -283,7 +296,7 @@ class TaggingService:
                 tagged_items__content_type=content_type
             )
         
-        return queryset.order_by('-usage_count')[:limit]
+        return queryset.order_by('-computed_usage_count')[:limit]
     
     def get_related_tags(
         self,
@@ -364,26 +377,42 @@ class TaggingService:
             >>> for item in cloud_data:
             ...     print(f"{item['tag']}: {item['weight']}")
         """
-        queryset = self.get_popular_tags(100, model_class)
+        # Build base queryset
+        queryset = self.Tag.objects.all()
         
-        tags_data = list(queryset.values('name', 'slug').annotate(
-            count=models.Count('tagged_items')
-        ).filter(count__gte=min_count))
+        # Apply model filter first, then annotate with distinct count
+        if model_class:
+            content_type = ContentType.objects.get_for_model(model_class)
+            queryset = queryset.filter(
+                tagged_items__content_type=content_type
+            ).annotate(
+                computed_usage_count=models.Count('tagged_items', distinct=True)
+            )
+        else:
+            queryset = queryset.annotate(
+                computed_usage_count=models.Count('tagged_items', distinct=True)
+            )
+        
+        # Filter by min_count and get top 100
+        tags_data = list(queryset.filter(
+            computed_usage_count__gte=min_count
+        ).order_by('-computed_usage_count')[:100].values('name', 'slug', 'computed_usage_count'))
         
         if not tags_data:
             return []
         
         # Calculate weights (1-5 scale for font sizing)
-        counts = [item['count'] for item in tags_data]
-        min_count = min(counts)
-        max_count = max(counts)
+        counts = [item['computed_usage_count'] for item in tags_data]
+        min_cnt = min(counts)
+        max_cnt = max(counts)
         
         for item in tags_data:
-            if max_count == min_count:
+            if max_cnt == min_cnt:
                 weight = 3
             else:
-                weight = 1 + int(4 * (item['count'] - min_count) / (max_count - min_count))
+                weight = 1 + int(4 * (item['computed_usage_count'] - min_cnt) / (max_cnt - min_cnt))
             item['weight'] = weight
             item['tag'] = item['name']
+            item['count'] = item['computed_usage_count']
         
         return tags_data

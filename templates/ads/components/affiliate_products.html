@@ -1,0 +1,261 @@
+{% if render and products %}
+<div class="affiliate-products-widget my-8" data-affiliate-widget>
+    {% if title %}
+    <div class="flex items-center gap-3 mb-4">
+        <h3 class="text-lg font-semibold text-[var(--color-text-default)]">{{ title }}</h3>
+        <span class="text-xs text-[var(--color-text-muted)] bg-[var(--color-bg-surface-secondary)] px-2 py-0.5 rounded">
+            Sponsored
+        </span>
+    </div>
+    {% endif %}
+    
+    {% if layout == "grid" %}
+    {# Grid Layout #}
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {% for product in products %}
+        <a href="{{ product.affiliate_url|default:product.product_url }}" 
+           target="_blank" 
+           rel="noopener sponsored"
+           class="affiliate-product-card group block bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg overflow-hidden hover:border-[var(--primitive-cyan-600)] hover:shadow-lg transition-all duration-200"
+           data-product-id="{{ product.id }}"
+           data-provider="{{ product.provider.name }}">
+            
+            {# Product Image #}
+            <div class="aspect-square bg-white p-4 relative overflow-hidden">
+                {% if product.sale_price and product.sale_price < product.price %}
+                <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                    -{{ product.get_discount_percent }}%
+                </span>
+                {% endif %}
+                <img src="{{ product.thumbnail_url|default:product.image_url }}" 
+                     alt="{{ product.name }}"
+                     class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                     loading="lazy"
+                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%23f3f4f6%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2250%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%239ca3af%22 font-size=%2212%22>No Image</text></svg>'">
+            </div>
+            
+            {# Product Info #}
+            <div class="p-3">
+                <h4 class="text-sm font-medium text-[var(--color-text-default)] line-clamp-2 mb-2 group-hover:text-[var(--primitive-cyan-400)]">
+                    {{ product.name }}
+                </h4>
+                
+                {# Rating #}
+                {% if product.rating > 0 %}
+                <div class="flex items-center gap-1 mb-2">
+                    <div class="flex text-amber-400 text-xs">
+                        {% for _ in "12345" %}
+                        {% if forloop.counter <= product.rating|floatformat:0|add:0 %}
+                        <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                        {% else %}
+                        <svg class="w-3 h-3 fill-current opacity-30" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <span class="text-xs text-[var(--color-text-muted)]">({{ product.review_count|default:"0" }})</span>
+                </div>
+                {% endif %}
+                
+                {# Price #}
+                <div class="flex items-center gap-2">
+                    {% if product.sale_price and product.sale_price < product.price %}
+                    <span class="text-sm line-through text-[var(--color-text-muted)]">
+                        {{ product.currency }} {{ product.price }}
+                    </span>
+                    <span class="text-base font-bold text-green-500">
+                        {{ product.currency }} {{ product.sale_price }}
+                    </span>
+                    {% else %}
+                    <span class="text-base font-bold text-[var(--color-text-default)]">
+                        {{ product.currency }} {{ product.price }}
+                    </span>
+                    {% endif %}
+                </div>
+                
+                {# Provider Badge #}
+                <div class="mt-2 flex items-center gap-1">
+                    <span class="text-[10px] text-[var(--color-text-muted)]">via</span>
+                    <span class="text-[10px] font-medium text-[var(--primitive-cyan-400)]">{{ product.provider.name }}</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    
+    {% elif layout == "carousel" %}
+    {# Carousel Layout #}
+    <div class="relative">
+        <div class="affiliate-carousel flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-[var(--color-border-default)] scrollbar-track-transparent">
+            {% for product in products %}
+            <a href="{{ product.affiliate_url|default:product.product_url }}" 
+               target="_blank" 
+               rel="noopener sponsored"
+               class="affiliate-product-card snap-start flex-shrink-0 w-48 group block bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg overflow-hidden hover:border-[var(--primitive-cyan-600)] hover:shadow-lg transition-all duration-200"
+               data-product-id="{{ product.id }}"
+               data-provider="{{ product.provider.name }}">
+                
+                <div class="aspect-square bg-white p-3 relative overflow-hidden">
+                    {% if product.sale_price and product.sale_price < product.price %}
+                    <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded">
+                        -{{ product.get_discount_percent }}%
+                    </span>
+                    {% endif %}
+                    <img src="{{ product.thumbnail_url|default:product.image_url }}" 
+                         alt="{{ product.name }}"
+                         class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                         loading="lazy">
+                </div>
+                
+                <div class="p-3">
+                    <h4 class="text-sm font-medium text-[var(--color-text-default)] line-clamp-2 mb-2 group-hover:text-[var(--primitive-cyan-400)]">
+                        {{ product.name }}
+                    </h4>
+                    
+                    <div class="flex items-center gap-2">
+                        {% if product.sale_price and product.sale_price < product.price %}
+                        <span class="text-base font-bold text-green-500">
+                            {{ product.currency }} {{ product.sale_price }}
+                        </span>
+                        {% else %}
+                        <span class="text-base font-bold text-[var(--color-text-default)]">
+                            {{ product.currency }} {{ product.price }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    
+    {% elif layout == "list" %}
+    {# List Layout #}
+    <div class="space-y-3">
+        {% for product in products %}
+        <a href="{{ product.affiliate_url|default:product.product_url }}" 
+           target="_blank" 
+           rel="noopener sponsored"
+           class="affiliate-product-card group flex gap-4 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg p-3 hover:border-[var(--primitive-cyan-600)] hover:shadow-lg transition-all duration-200"
+           data-product-id="{{ product.id }}"
+           data-provider="{{ product.provider.name }}">
+            
+            <div class="w-20 h-20 flex-shrink-0 bg-white rounded-lg p-2 relative overflow-hidden">
+                {% if product.sale_price and product.sale_price < product.price %}
+                <span class="absolute top-0 left-0 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-br">
+                    -{{ product.get_discount_percent }}%
+                </span>
+                {% endif %}
+                <img src="{{ product.thumbnail_url|default:product.image_url }}" 
+                     alt="{{ product.name }}"
+                     class="w-full h-full object-contain"
+                     loading="lazy">
+            </div>
+            
+            <div class="flex-1 min-w-0">
+                <h4 class="text-sm font-medium text-[var(--color-text-default)] line-clamp-2 mb-1 group-hover:text-[var(--primitive-cyan-400)]">
+                    {{ product.name }}
+                </h4>
+                
+                {% if product.rating > 0 %}
+                <div class="flex items-center gap-1 mb-1">
+                    <div class="flex text-amber-400 text-xs">
+                        {% for _ in "12345" %}
+                        {% if forloop.counter <= product.rating|floatformat:0|add:0 %}
+                        <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                        {% else %}
+                        <svg class="w-3 h-3 fill-current opacity-30" viewBox="0 0 20 20"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <span class="text-xs text-[var(--color-text-muted)]">({{ product.review_count|default:"0" }})</span>
+                </div>
+                {% endif %}
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        {% if product.sale_price and product.sale_price < product.price %}
+                        <span class="text-xs line-through text-[var(--color-text-muted)]">
+                            {{ product.currency }} {{ product.price }}
+                        </span>
+                        <span class="text-sm font-bold text-green-500">
+                            {{ product.currency }} {{ product.sale_price }}
+                        </span>
+                        {% else %}
+                        <span class="text-sm font-bold text-[var(--color-text-default)]">
+                            {{ product.currency }} {{ product.price }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <span class="text-[10px] text-[var(--primitive-cyan-400)]">{{ product.provider.name }}</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    
+    {% elif layout == "compact" %}
+    {# Compact/Sidebar Layout #}
+    <div class="space-y-2">
+        {% for product in products %}
+        <a href="{{ product.affiliate_url|default:product.product_url }}" 
+           target="_blank" 
+           rel="noopener sponsored"
+           class="affiliate-product-card group flex gap-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg p-2 hover:border-[var(--primitive-cyan-600)] transition-all duration-200"
+           data-product-id="{{ product.id }}">
+            
+            <div class="w-12 h-12 flex-shrink-0 bg-white rounded p-1">
+                <img src="{{ product.thumbnail_url|default:product.image_url }}" 
+                     alt="{{ product.name }}"
+                     class="w-full h-full object-contain"
+                     loading="lazy">
+            </div>
+            
+            <div class="flex-1 min-w-0">
+                <h4 class="text-xs font-medium text-[var(--color-text-default)] line-clamp-1 group-hover:text-[var(--primitive-cyan-400)]">
+                    {{ product.name }}
+                </h4>
+                <div class="flex items-center gap-1 mt-0.5">
+                    {% if product.sale_price and product.sale_price < product.price %}
+                    <span class="text-xs font-bold text-green-500">{{ product.currency }} {{ product.sale_price }}</span>
+                    {% else %}
+                    <span class="text-xs font-bold text-[var(--color-text-default)]">{{ product.currency }} {{ product.price }}</span>
+                    {% endif %}
+                    {% if product.rating > 0 %}
+                    <span class="text-amber-400 text-[10px]">★ {{ product.rating }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {# Disclosure #}
+    <p class="mt-3 text-[10px] text-[var(--color-text-muted)] opacity-60">
+        As an affiliate, we may earn a commission from qualifying purchases at no extra cost to you.
+    </p>
+</div>
+
+{# Click Tracking Script #}
+<script>
+(function() {
+    document.querySelectorAll('[data-affiliate-widget] .affiliate-product-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+            var productId = this.dataset.productId;
+            var provider = this.dataset.provider;
+            
+            // Send tracking beacon
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon('/api/ads/affiliate-click/', JSON.stringify({
+                    product_id: productId,
+                    provider: provider,
+                    page_url: window.location.href,
+                    referrer: document.referrer
+                }));
+            }
+        });
+    });
+})();
+</script>
+{% endif %}

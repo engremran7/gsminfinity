@@ -12,7 +12,7 @@
     <div class="flex gap-2">
       <a href="#redirects" title="Jump to redirects" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Redirects</a>
       <a href="#sitemap" title="Jump to sitemap entries" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Sitemap</a>
-      <a href="{% url 'admin_suite:admin_suite_marketing' %}" title="Return to marketing overview" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Marketing overview</a>
+      <a href="{% url 'admin_suite:marketing' %}" title="Return to marketing overview" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Marketing overview</a>
     </div>
   </div>
 
@@ -26,7 +26,7 @@
     <input type="text" name="q" value="{{ q }}" placeholder="Search redirects/sitemap" class="border rounded px-3 py-2 text-sm w-64">
     <button type="submit" class="px-3 py-2 text-sm rounded bg-primary text-white">Search</button>
     {% if q %}
-      <a href="{% url 'admin_suite:admin_suite_seo' %}" class="text-sm text-primary hover:underline">Clear</a>
+      <a href="{% url 'admin_suite:seo' %}" class="text-sm text-primary hover:underline">Clear</a>
     {% endif %}
   </form>
 

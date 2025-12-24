@@ -1,17 +1,21 @@
 
 {# templates/site_settings/consent_manage.html #} {% extends "base.html" %} {%
 load static %} {% block title %} Cookie preferences — {{
-site_settings.site_name|default:"GSMInfinity" }} {% endblock %} {% block content
+site_settings.site_name|default:"Site" }} {% endblock %} 
+{% block sidebar_left %}{% endblock %}
+{% block content
 %}
-<div class="max-w-3xl mx-auto py-12">
-  <div class="bg-white shadow-md rounded-lg p-6 border border-slate-200">
-    <h3 class="text-lg font-semibold mb-4">Cookie Preferences</h3>
+<div class="w-full px-4 sm:px-6 lg:px-8 py-12">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-6 lg:col-start-4">
+      <div class="card-glass-neon rounded-2xl p-6">
+        <h3 class="text-lg font-semibold mb-4 text-[var(--color-text-primary)]">Cookie Preferences</h3>
 
-    <form
-      id="consent-manage-form"
-      method="post"
-      action="{% url 'consent:consent_accept' %}"
-    >
+        <form
+          id="consent-manage-form"
+          method="post"
+          action="{% url 'consent:consent_accept' %}"
+        >
       {% csrf_token %}
       <input
         type="hidden"
@@ -26,7 +30,7 @@ site_settings.site_name|default:"GSMInfinity" }} {% endblock %} {% block content
             id="c-{{ c.slug }}"
             name="{{ c.slug }}"
             type="checkbox"
-            class="h-4 w-4 rounded border-slate-400"
+            class="h-4 w-4 rounded border-[var(--color-border-default)]"
             {%
             if
             c.required
@@ -39,36 +43,38 @@ site_settings.site_name|default:"GSMInfinity" }} {% endblock %} {% block content
           />
 
           <div>
-            <label for="c-{{ c.slug }}" class="font-medium">
+            <label for="c-{{ c.slug }}" class="font-medium text-[var(--color-text-primary)]">
               {{ c.name }} {% if c.required %}
-              <span class="text-xs text-red-600 ml-1">(Required)</span>
+              <span class="text-xs text-[var(--primitive-red-400)] ml-1">(Required)</span>
               {% endif %}
             </label>
-            <p class="text-sm text-slate-600 leading-snug">
+            <p class="text-sm text-[var(--color-text-secondary)] leading-snug">
               {{ c.description|default:"No description available." }}
             </p>
           </div>
         </div>
         {% endfor %} {% else %}
-        <p class="text-slate-600 text-sm">
+        <p class="text-[var(--color-text-secondary)] text-sm">
           No cookie categories are configured.
         </p>
         {% endif %}
       </div>
 
       <div class="mt-8 flex items-center space-x-3">
-        <button type="submit" class="btn btn-primary px-4 py-2 rounded">
+        <button type="submit" class="btn btn-primary px-4 py-2 rounded-lg">
           Save preferences
         </button>
 
         <a
           href="{{ request.GET.next|default:'/' }}"
-          class="btn btn-link px-3 py-2 text-slate-600"
+          class="btn btn-ghost px-3 py-2 text-[var(--color-text-secondary)]"
         >
           Cancel
         </a>
       </div>
     </form>
+      </div>
+    </div>
   </div>
 </div>
 

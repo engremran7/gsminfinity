@@ -27,7 +27,7 @@
 {% endif %}
 {% for s in schemas %}
   {% if s.payload %}
-    <script type="application/ld+json">{{ s.payload|as_json_ld }}</script>
+    <script type="application/ld+json" nonce="{{ request.csp_nonce }}">{{ s.payload|as_json_ld }}</script>
   {% endif %}
 {% endfor %}
 

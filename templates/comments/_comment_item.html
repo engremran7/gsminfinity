@@ -51,7 +51,8 @@
           <button 
             type="button" 
             class="btn-icon btn-icon-sm hover:bg-green-50 hover:text-green-600 transition-colors {% if comment.user_vote == 'upvote' %}active text-green-600{% endif %}"
-            onclick="voteComment({{ comment.id }}, 'upvote')"
+            data-vote-comment="{{ comment.id }}"
+            data-vote-type="upvote"
             data-comment-id="{{ comment.id }}"
             data-vote="upvote"
             title="Upvote"
@@ -68,7 +69,8 @@
           <button 
             type="button" 
             class="btn-icon btn-icon-sm hover:bg-red-50 hover:text-red-600 transition-colors {% if comment.user_vote == 'downvote' %}active text-red-600{% endif %}"
-            onclick="voteComment({{ comment.id }}, 'downvote')"
+            data-vote-comment="{{ comment.id }}"
+            data-vote-type="downvote"
             data-comment-id="{{ comment.id }}"
             data-vote="downvote"
             title="Downvote"
@@ -85,7 +87,8 @@
             <button 
               type="button"
               class="btn-icon btn-icon-sm hover:scale-110 transition-transform {% if comment.user_reaction == reaction_type %}active{% endif %}"
-              onclick="reactToComment({{ comment.id }}, '{{ reaction_type }}')"
+              data-react-comment="{{ comment.id }}"
+              data-reaction-type="{{ reaction_type }}"
               data-comment-id="{{ comment.id }}"
               data-reaction="{{ reaction_type }}"
               title="{{ reaction_type|title }}"
@@ -103,7 +106,8 @@
           <button 
             type="button" 
             class="btn btn-ghost btn-sm"
-            onclick="replyToComment({{ comment.id }}, '{{ comment.author.username }}')"
+            data-reply-comment="{{ comment.id }}"
+            data-reply-author="{{ comment.author.username }}"
           >
             <svg class="icon w-4 h-4" aria-hidden="true">
               <use href="#icon-reply"></use>
@@ -117,7 +121,6 @@
           <button 
             type="button" 
             class="btn-icon btn-icon-sm {% if comment.is_bookmarked %}active text-yellow-600{% endif %}"
-            onclick="bookmarkComment({{ comment.id }})"
             data-bookmark-comment="{{ comment.id }}"
             title="Bookmark"
           >
@@ -132,7 +135,7 @@
           <button 
             type="button" 
             class="btn-icon btn-icon-sm text-gray-500 hover:text-red-600"
-            onclick="flagComment({{ comment.id }})"
+            data-flag-comment="{{ comment.id }}"
             title="Report"
           >
             <svg class="icon w-4 h-4" aria-hidden="true">
@@ -186,7 +189,7 @@
         <button 
           type="button" 
           class="btn btn-ghost btn-sm mt-2"
-          onclick="loadReplies({{ comment.id }})"
+          data-load-replies="{{ comment.id }}"
           id="load-replies-{{ comment.id }}"
         >
           <svg class="icon w-4 h-4" aria-hidden="true">
@@ -198,59 +201,3 @@
     </div>
   </div>
 </div>
-
-<style>
-.comment-item {
-  padding: 1rem;
-  border-radius: 0.5rem;
-  transition: background-color 0.15s ease;
-}
-
-.comment-item:hover {
-  background-color: #f9fafb;
-}
-
-.comment-replies .comment-item {
-  padding: 0.75rem;
-}
-
-.btn-icon {
-  padding: 0.375rem;
-  border-radius: 0.375rem;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-}
-
-.btn-icon:hover {
-  background-color: #f3f4f6;
-}
-
-.btn-icon.active {
-  background-color: #dbeafe;
-}
-
-.btn-ghost {
-  background: transparent;
-  border: none;
-  color: #6b7280;
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all 0.15s ease;
-}
-
-.btn-ghost:hover {
-  background-color: #f3f4f6;
-  color: #111827;
-}
-</style>

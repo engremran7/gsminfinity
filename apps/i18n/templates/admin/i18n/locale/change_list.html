@@ -3,63 +3,7 @@
 
 {% block extrastyle %}
 {{ block.super }}
-<style>
-.i18n-admin-header {
-    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-}
-.i18n-admin-header h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.i18n-admin-header p {
-    margin: 0;
-    opacity: 0.9;
-    font-size: 0.875rem;
-}
-.i18n-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-.i18n-stat {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-}
-.i18n-stat .label {
-    font-size: 0.75rem;
-    color: #6c757d;
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-}
-.i18n-stat .value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #ec4899;
-}
-.i18n-info-box {
-    background: #fce7f3;
-    border-left: 4px solid #ec4899;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    border-radius: 4px;
-}
-.i18n-info-box p {
-    margin: 0;
-    color: #831843;
-    font-size: 0.875rem;
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/admin/django-admin-custom.css' %}">
 {% endblock %}
 
 {% block content %}

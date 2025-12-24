@@ -1,0 +1,2924 @@
+{
+  "summary": {
+    "total_urls": 274,
+    "with_templates": 59,
+    "api_endpoints": 48,
+    "with_issues": 136
+  },
+  "by_app": {
+    "admin_suite": [
+      {
+        "pattern": "login/",
+        "name": "admin_suite:blog_categories",
+        "view": "admin_views.AdminSuiteLoginView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "login/security-question/",
+        "name": "admin_suite_security_question",
+        "view": "admin_views.admin_suite_security_question",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "login/security-question/setup/",
+        "name": "admin_suite_security_question_setup",
+        "view": "admin_views.admin_suite_security_question_setup",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "login/security-question/reset/",
+        "name": "admin_suite_password_reset",
+        "view": "admin_views.admin_suite_password_reset",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "",
+        "name": "admin_suite",
+        "view": "admin_views.admin_suite",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "dashboard/",
+        "name": "dashboard",
+        "view": "admin_views.admin_suite",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "command-search/",
+        "name": "command_search",
+        "view": "admin_views.admin_suite_command_search",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "security/",
+        "name": "security",
+        "view": "admin_views.admin_suite_security",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "security/devices/",
+        "name": "devices",
+        "view": "admin_views.admin_suite_security_devices",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "security/crawlers/",
+        "name": "crawlers",
+        "view": "admin_views.admin_suite_security_crawlers",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "security/risk/",
+        "name": "risk_insights",
+        "view": "admin_views.admin_suite_security_risk",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "security/events/",
+        "name": "security_events",
+        "view": "admin_views.admin_suite_security_events",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "users/",
+        "name": "users",
+        "view": "admin_views.admin_suite_users",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "users/sessions/",
+        "name": "user_sessions",
+        "view": "admin_views.admin_suite_user_sessions",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "users/staff/",
+        "name": "staff_users",
+        "view": "admin_views.admin_suite_staff_users",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "users/social-providers/",
+        "name": "social_providers",
+        "view": "views_users.admin_suite_social_providers",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "users/social-providers/<str:provider_id>/",
+        "name": "social_provider_detail",
+        "view": "views_users.admin_suite_social_provider_detail",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "users/<str:user_id>/",
+        "name": "user_detail",
+        "view": "admin_views.admin_suite_user_detail",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "pages/",
+        "name": "pages",
+        "view": "admin_views.admin_suite_pages",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "blog/",
+        "name": "blog",
+        "view": "admin_views.admin_suite_blog",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "blog/categories/",
+        "name": "blog_categories",
+        "view": "admin_views.admin_suite_blog_categories",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "content/",
+        "name": "content",
+        "view": "admin_views.admin_suite_content",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "content/pending/",
+        "name": "pending_approval",
+        "view": "admin_views.admin_suite_pending_approval",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "comments/",
+        "name": "comments",
+        "view": "admin_views.admin_suite_comments",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "seo/",
+        "name": "seo",
+        "view": "admin_views.admin_suite_seo",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "tags/",
+        "name": "tags",
+        "view": "admin_views.admin_suite_tags",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "marketing/",
+        "name": "marketing",
+        "view": "admin_views.admin_suite_marketing",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ads/",
+        "name": "ads",
+        "view": "admin_views.admin_suite_ads",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ads/campaigns/",
+        "name": "ads_campaigns",
+        "view": "views_infrastructure.admin_suite_ads_campaigns",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ads/placements/",
+        "name": "ads_placements",
+        "view": "views_infrastructure.admin_suite_ads_placements",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ads/creatives/",
+        "name": "ads_creatives",
+        "view": "views_infrastructure.admin_suite_ads_creatives",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ads/analytics/",
+        "name": "ads_analytics",
+        "view": "views_infrastructure.admin_suite_ads_analytics",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "distribution/",
+        "name": "distribution",
+        "view": "admin_views.admin_suite_distribution",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "distribution/social-posting/",
+        "name": "social_posting",
+        "view": "views_distribution.admin_suite_social_posting",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "distribution/social-posting/<str:account_id>/",
+        "name": "social_posting_detail",
+        "view": "views_distribution.admin_suite_social_posting_detail",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "distribution/social-posting/oauth/callback/<str:platform>/",
+        "name": "social_posting_oauth_callback",
+        "view": "views_distribution.admin_suite_social_posting_oauth_callback",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "storage/",
+        "name": "storage",
+        "view": "views_infrastructure.admin_suite_storage",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "storage/files/",
+        "name": "storage_files",
+        "view": "views_infrastructure.admin_suite_storage_files",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "storage/providers/",
+        "name": "storage_providers",
+        "view": "views_infrastructure.admin_suite_storage_providers",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "storage/providers/<str:provider_id>/",
+        "name": "storage_provider_detail",
+        "view": "views_infrastructure.admin_suite_storage_provider_detail",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "firmwares/",
+        "name": "firmwares",
+        "view": "views_infrastructure.admin_suite_firmwares",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "firmwares/brands/",
+        "name": "firmwares_brands",
+        "view": "views_infrastructure.admin_suite_firmwares_brands",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "firmwares/models/",
+        "name": "firmwares_models",
+        "view": "views_infrastructure.admin_suite_firmwares_models",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "settings/",
+        "name": "settings",
+        "view": "admin_views.admin_suite_settings",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "settings/edit/",
+        "name": "settings_edit",
+        "view": "admin_views.admin_suite_settings_edit",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "settings/email/",
+        "name": "email_settings",
+        "view": "admin_views.admin_suite_email_settings",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "settings/ai/",
+        "name": "ai_settings",
+        "view": "admin_views.admin_suite_ai",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "consent/",
+        "name": "consent",
+        "view": "admin_views.admin_suite_consent",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "registry/",
+        "name": "app_registry",
+        "view": "admin_views.admin_suite_registry",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "i18n/",
+        "name": "i18n",
+        "view": "views_extended.admin_suite_i18n",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "i18n/translations/",
+        "name": "i18n_translations",
+        "view": "views_extended.admin_suite_i18n_translations",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "devices/settings/",
+        "name": "devices_settings",
+        "view": "views_extended.admin_suite_devices_settings",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ai/endpoints/",
+        "name": "ai_endpoints",
+        "view": "views_extended.admin_suite_ai_endpoints",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ai/knowledge/",
+        "name": "ai_knowledge",
+        "view": "views_extended.admin_suite_ai_knowledge",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ai/workflows/",
+        "name": "ai_workflows",
+        "view": "views_extended.admin_suite_ai_workflows",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "features/",
+        "name": "features",
+        "view": "views_extended.admin_suite_features",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "blog/posts/",
+        "name": "blog_posts",
+        "view": "views_extended.admin_suite_blog_posts",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "security/crawler-rules/",
+        "name": "crawler_rules",
+        "view": "views_extended.admin_suite_crawler_rules",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ai/",
+        "name": "admin_suite_ai",
+        "view": "admin_views.admin_suite_ai",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "security/devices-legacy/",
+        "name": "admin_suite_security_devices",
+        "view": "admin_views.admin_suite_security_devices",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "security/crawlers-legacy/",
+        "name": "admin_suite_security_crawlers",
+        "view": "admin_views.admin_suite_security_crawlers",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "security/risk-legacy/",
+        "name": "admin_suite_security_risk",
+        "view": "admin_views.admin_suite_security_risk",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "consent-legacy/",
+        "name": "admin_suite_consent",
+        "view": "admin_views.admin_suite_consent",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "pages-legacy/",
+        "name": "admin_suite_pages",
+        "view": "admin_views.admin_suite_pages",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "blog-legacy/",
+        "name": "admin_suite_blog",
+        "view": "admin_views.admin_suite_blog",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "blog/categories-legacy/",
+        "name": "admin_suite_blog_categories",
+        "view": "admin_views.admin_suite_blog_categories",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "content-legacy/",
+        "name": "admin_suite_content",
+        "view": "admin_views.admin_suite_content",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "marketing-legacy/",
+        "name": "admin_suite_marketing",
+        "view": "admin_views.admin_suite_marketing",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "distribution-legacy/",
+        "name": "admin_suite_distribution",
+        "view": "admin_views.admin_suite_distribution",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ads-legacy/",
+        "name": "admin_suite_ads",
+        "view": "admin_views.admin_suite_ads",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "tags-legacy/",
+        "name": "admin_suite_tags",
+        "view": "admin_views.admin_suite_tags",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "seo-legacy/",
+        "name": "admin_suite_seo",
+        "view": "admin_views.admin_suite_seo",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "registry-legacy/",
+        "name": "admin_suite_registry",
+        "view": "admin_views.admin_suite_registry",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "comments-legacy/",
+        "name": "admin_suite_comments",
+        "view": "admin_views.admin_suite_comments",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "users-legacy/",
+        "name": "admin_suite_users",
+        "view": "admin_views.admin_suite_users",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "users-legacy/<str:user_id>/",
+        "name": "admin_suite_user_detail",
+        "view": "admin_views.admin_suite_user_detail",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "settings-legacy/",
+        "name": "admin_suite_settings",
+        "view": "admin_views.admin_suite_settings",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "settings/edit-legacy/",
+        "name": "admin_suite_settings_edit",
+        "view": "admin_views.admin_suite_settings_edit",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "settings/email-legacy/",
+        "name": "admin_suite_email_settings",
+        "view": "admin_views.admin_suite_email_settings",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "ads": [
+      {
+        "pattern": "api/placements/",
+        "name": "list_placements",
+        "view": "views.list_placements",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/events/",
+        "name": "record_event",
+        "view": "views.record_event",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/fill/",
+        "name": "fill_ad",
+        "view": "views.fill_ad",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/click/",
+        "name": "record_click",
+        "view": "views.record_click",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "dashboard/",
+        "name": "dashboard",
+        "view": "views.dashboard",
+        "template": "ads/dashboard.html",
+        "is_api": false
+      },
+      {
+        "pattern": "dashboard/toggles/",
+        "name": "toggle_settings",
+        "view": "views.toggle_settings",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "ai": [
+      {
+        "pattern": "",
+        "name": "models",
+        "view": "views.models_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "execute/",
+        "name": "execute",
+        "view": "views.execute_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "settings/",
+        "name": "settings",
+        "view": "views.settings_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ops/",
+        "name": "ops",
+        "view": "services_view.ops_dashboard",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "analytics": [
+      {
+        "pattern": "dashboard/",
+        "name": "dashboard",
+        "view": "views.analytics_dashboard",
+        "template": "analytics/dashboard.html",
+        "is_api": false
+      },
+      {
+        "pattern": "dashboard/realtime/",
+        "name": "realtime_dashboard",
+        "view": "views.realtime_dashboard",
+        "template": "analytics/realtime_dashboard.html",
+        "is_api": false
+      },
+      {
+        "pattern": "api/track/pageview/",
+        "name": "track_pageview",
+        "view": "views.track_pageview",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/track/event/",
+        "name": "track_event",
+        "view": "views.track_event",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/metrics/daily/",
+        "name": "daily_metrics",
+        "view": "views.daily_metrics",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/metrics/realtime/",
+        "name": "realtime_metrics",
+        "view": "views.realtime_metrics",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/user/analytics/",
+        "name": "user_analytics",
+        "view": "views.user_analytics",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "reports/traffic/",
+        "name": "traffic_report",
+        "view": "views.traffic_report",
+        "template": "analytics/reports/traffic.html",
+        "is_api": false
+      },
+      {
+        "pattern": "reports/engagement/",
+        "name": "engagement_report",
+        "view": "views.engagement_report",
+        "template": "analytics/reports/engagement.html",
+        "is_api": false
+      },
+      {
+        "pattern": "reports/content/",
+        "name": "content_report",
+        "view": "views.content_report",
+        "template": "analytics/reports/content.html",
+        "is_api": false
+      },
+      {
+        "pattern": "",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "app_registry": [
+      {
+        "pattern": "",
+        "name": "registry_list",
+        "view": "views.registry_list",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "<str:app_id>/",
+        "name": "registry_detail",
+        "view": "views.registry_detail",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "blog": [
+      {
+        "pattern": "",
+        "name": "post_list",
+        "view": "views.post_list",
+        "template": "blog/post_list.html",
+        "is_api": false
+      },
+      {
+        "pattern": "manage/",
+        "name": "manage_posts",
+        "view": "views.manage_posts",
+        "template": "blog/manage.html",
+        "is_api": false
+      },
+      {
+        "pattern": "manage/bulk_publish/",
+        "name": "bulk_publish",
+        "view": "views.bulk_publish",
+        "template": "blog/post_form.html",
+        "is_api": false
+      },
+      {
+        "pattern": "create/",
+        "name": "post_create",
+        "view": "views.post_create",
+        "template": "blog/post_form.html",
+        "is_api": false
+      },
+      {
+        "pattern": "category/create/",
+        "name": "category_create",
+        "view": "views.category_create",
+        "template": "blog/category_form.html",
+        "is_api": false
+      },
+      {
+        "pattern": "archives/<int:year>/",
+        "name": "post_archive_year",
+        "view": "views.post_archive_year",
+        "template": "blog/archive_year.html",
+        "is_api": false
+      },
+      {
+        "pattern": "archives/<int:year>/<int:month>/",
+        "name": "post_archive_month",
+        "view": "views.post_archive_month",
+        "template": "blog/archive_month.html",
+        "is_api": false
+      },
+      {
+        "pattern": "feed/rss/",
+        "name": "feed_json",
+        "view": "feeds.LatestRssFeed",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "feed/atom/",
+        "name": "api_ai_assist",
+        "view": "feeds.LatestAtomFeed",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "feed/json/",
+        "name": "api_similar_posts",
+        "view": "feeds.json_feed",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/ai/assist/",
+        "name": "api_workflow",
+        "view": "views.api_ai_assist",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/similar/",
+        "name": "api_posts",
+        "view": "views.api_similar_posts",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/workflow/<slug:slug>/",
+        "name": "api_related",
+        "view": "views.api_workflow",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/posts/",
+        "name": "post_autosave",
+        "view": "views.api_posts",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/posts/<slug:slug>/related/",
+        "name": "post_preview",
+        "view": "views.api_related",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/autosave/",
+        "name": "widget_trending_tags",
+        "view": "views.post_autosave",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/preview/",
+        "name": "widget_latest_posts",
+        "view": "views.post_preview",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/widgets/trending-tags/",
+        "name": "widget_top_posts",
+        "view": "views.widget_trending_tags",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/widgets/latest/",
+        "name": "posts_api_public",
+        "view": "views.widget_latest_posts",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/widgets/top/",
+        "name": "post_like",
+        "view": "views.widget_top_posts",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/posts/public/",
+        "name": "post_bookmark",
+        "view": "views.posts_api_public",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "post/<int:pk>/like/",
+        "name": "post_detail",
+        "view": "views.post_like",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "post/<int:pk>/bookmark/",
+        "name": "unnamed",
+        "view": "views.post_bookmark",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "<slug:slug>/",
+        "name": "unnamed",
+        "view": "views.post_detail",
+        "template": "blog/post_detail.html",
+        "is_api": false
+      }
+    ],
+    "comments": [
+      {
+        "pattern": "<slug:slug>/add/",
+        "name": "add_comment",
+        "view": "views.add_comment",
+        "template": "comments/moderation_panel.html",
+        "is_api": false
+      },
+      {
+        "pattern": "<slug:slug>/add.json",
+        "name": "add_comment_json",
+        "view": "views.add_comment_json",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "<slug:slug>/list.json",
+        "name": "list_comments",
+        "view": "views.list_comments",
+        "template": "comments/moderation_panel.html",
+        "is_api": false
+      },
+      {
+        "pattern": "upvote/<int:comment_id>/",
+        "name": "upvote_comment",
+        "view": "views.upvote_comment",
+        "template": "comments/moderation_panel.html",
+        "is_api": false
+      },
+      {
+        "pattern": "report/<int:comment_id>/",
+        "name": "report_comment",
+        "view": "views.report_comment",
+        "template": "comments/moderation_panel.html",
+        "is_api": false
+      },
+      {
+        "pattern": "edit/<int:comment_id>/",
+        "name": "edit_comment",
+        "view": "views.edit_comment",
+        "template": "comments/moderation_panel.html",
+        "is_api": false
+      },
+      {
+        "pattern": "moderation/",
+        "name": "moderation_queue",
+        "view": "views.moderation_queue",
+        "template": "comments/moderation_panel.html",
+        "is_api": false
+      },
+      {
+        "pattern": "moderation/action/",
+        "name": "moderation_action",
+        "view": "views.moderation_action",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "consent": [
+      {
+        "pattern": "privacy/",
+        "name": "privacy_center",
+        "view": "views.privacy_center",
+        "template": "consent/privacy_center.html",
+        "is_api": false
+      },
+      {
+        "pattern": "banner/",
+        "name": "banner",
+        "view": "views.banner",
+        "template": "consent/includes/banner.html",
+        "is_api": false
+      },
+      {
+        "pattern": "accept_all/",
+        "name": "accept_all",
+        "view": "views.accept_all",
+        "template": "consent/includes/banner.html",
+        "is_api": false
+      },
+      {
+        "pattern": "reject_all/",
+        "name": "reject_all",
+        "view": "views.reject_all",
+        "template": "consent/includes/banner.html",
+        "is_api": false
+      },
+      {
+        "pattern": "accept/",
+        "name": "accept",
+        "view": "views.accept",
+        "template": "consent/includes/banner.html",
+        "is_api": false
+      }
+    ],
+    "core": [
+      {
+        "pattern": "privacy/",
+        "name": "unnamed",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "terms/",
+        "name": "unnamed",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "cookies/",
+        "name": "unnamed",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "devices": [
+      {
+        "pattern": "my/",
+        "name": "my_devices",
+        "view": "views.my_devices",
+        "template": "devices/my_devices.html",
+        "is_api": false
+      },
+      {
+        "pattern": "events/",
+        "name": "device_events",
+        "view": "views.device_events",
+        "template": "devices/events.html",
+        "is_api": false
+      },
+      {
+        "pattern": "payload/",
+        "name": "device_payload",
+        "view": "views.device_payload_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "acknowledge/",
+        "name": "acknowledge_new_device",
+        "view": "views.acknowledge_new_device",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "distribution": [
+      {
+        "pattern": "api/test/<slug:slug>/",
+        "name": "api_send_test",
+        "view": "api.api_send_test",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "dashboard/",
+        "name": "dashboard",
+        "view": "views.dashboard",
+        "template": "distribution/dashboard.html",
+        "is_api": false
+      }
+    ],
+    "firmwares": [
+      {
+        "pattern": "upload/",
+        "name": "autofill-brand",
+        "view": "FirmwareUploadView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "moderate/<uuid:pk>/",
+        "name": "autofill-model",
+        "view": "ModerationView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "brand/<int:brand_id>/autofill/",
+        "name": "autofill-variant",
+        "view": "autofill_brand",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "model/<int:model_id>/autofill/",
+        "name": "unnamed",
+        "view": "autofill_model",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "variant/<int:variant_id>/autofill/",
+        "name": "unnamed",
+        "view": "autofill_variant",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "i18n": [
+      {
+        "pattern": "bundle/",
+        "name": "bundle",
+        "view": "views.bundle_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "theme/",
+        "name": "theme",
+        "view": "views.theme_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "manifest/",
+        "name": "manifest",
+        "view": "views.manifest_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "switch/",
+        "name": "switch",
+        "view": "views_switcher.switch_locale",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "api/translate/",
+        "name": "translate_texts",
+        "view": "views.translate_texts",
+        "template": null,
+        "is_api": true
+      }
+    ],
+    "pages": [
+      {
+        "pattern": "robots.txt",
+        "name": "robots",
+        "view": "views.robots_txt",
+        "template": "robots.txt",
+        "is_api": false
+      },
+      {
+        "pattern": "sitemap.xml",
+        "name": "sitemap",
+        "view": "sitemap_all_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "sitemap_index.xml",
+        "name": "sitemap_index",
+        "view": "sitemap_index_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "sitemap-<section>.xml",
+        "name": "sitemap_section",
+        "view": "sitemap_section_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "<slug:slug>/",
+        "name": "page",
+        "view": "views.page_detail",
+        "template": "pages/home_landing.html",
+        "is_api": false
+      }
+    ],
+    "security_suite": [
+      {
+        "pattern": "status/",
+        "name": "security_status",
+        "view": "views.security_status",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "seo": [
+      {
+        "pattern": "api/metadata/",
+        "name": "metadata",
+        "view": "views.metadata_view",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/metadata/regenerate/",
+        "name": "regenerate_metadata",
+        "view": "views.regenerate_metadata",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/metadata/controls/",
+        "name": "update_metadata_controls",
+        "view": "views.update_metadata_controls",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/links/apply/",
+        "name": "apply_link_suggestion",
+        "view": "views.apply_link_suggestion",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/inspect/",
+        "name": "inspect_url",
+        "view": "views.inspect_url_view",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "redirects/manage/",
+        "name": "manage_redirect",
+        "view": "views.manage_redirect",
+        "template": "seo/dashboard.html",
+        "is_api": false
+      },
+      {
+        "pattern": "dashboard/",
+        "name": "dashboard",
+        "view": "views.dashboard",
+        "template": "seo/dashboard.html",
+        "is_api": false
+      }
+    ],
+    "site_settings": [
+      {
+        "pattern": "",
+        "name": "site_settings",
+        "view": "views.site_settings_view",
+        "template": "site_settings/detail.html",
+        "is_api": false
+      },
+      {
+        "pattern": "info/",
+        "name": "settings_info",
+        "view": "views.settings_info",
+        "template": "site_settings/detail.html",
+        "is_api": false
+      },
+      {
+        "pattern": "verification/<str:filename>/",
+        "name": "verification_file",
+        "view": "views.verification_file",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "privacy/",
+        "name": "privacy_policy",
+        "view": "views.legacy_privacy_redirect",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "terms/",
+        "name": "terms_of_service",
+        "view": "views.legacy_terms_redirect",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "cookies/",
+        "name": "cookies_policy",
+        "view": "views.legacy_cookies_redirect",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "storage": [
+      {
+        "pattern": "download/initiate/",
+        "name": "unnamed",
+        "view": "InitiateFirmwareDownloadView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "download/session/<uuid:session_id>/",
+        "name": "unnamed",
+        "view": "DownloadSessionStatusView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "download/link/<uuid:session_id>/",
+        "name": "unnamed",
+        "view": "DownloadLinkView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "quota/",
+        "name": "unnamed",
+        "view": "QuotaStatusView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "admin/balance/",
+        "name": "unnamed",
+        "view": "DriveBalanceReportView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "admin/brand-distribution/",
+        "name": "unnamed",
+        "view": "BrandDistributionView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      }
+    ],
+    "tags": [
+      {
+        "pattern": "search/",
+        "name": "search",
+        "view": "views.search",
+        "template": "tags/list.html",
+        "is_api": false
+      },
+      {
+        "pattern": "suggest/",
+        "name": "suggest",
+        "view": "views.suggest_tags",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "merge/",
+        "name": "merge",
+        "view": "views.merge_tags",
+        "template": "tags/admin_duplicates.html",
+        "is_api": false
+      },
+      {
+        "pattern": "manage/",
+        "name": "manage",
+        "view": "views.manage_tags",
+        "template": "tags/manage.html",
+        "is_api": false
+      },
+      {
+        "pattern": "analytics/",
+        "name": "analytics",
+        "view": "views.tag_analytics",
+        "template": "tags/admin_duplicates.html",
+        "is_api": false
+      },
+      {
+        "pattern": "duplicates/",
+        "name": "duplicates",
+        "view": "views.search_duplicates",
+        "template": "tags/admin_duplicates.html",
+        "is_api": false
+      },
+      {
+        "pattern": "duplicates/review/",
+        "name": "duplicates_review",
+        "view": "views.duplicates_review",
+        "template": "tags/admin_duplicates.html",
+        "is_api": false
+      },
+      {
+        "pattern": "keywords/review/",
+        "name": "keyword_review",
+        "view": "views.keyword_review",
+        "template": "tags/admin_keyword_review.html",
+        "is_api": false
+      },
+      {
+        "pattern": "keywords/apply/",
+        "name": "apply_keyword",
+        "view": "views.apply_keyword",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "",
+        "name": "list",
+        "view": "views.tag_list",
+        "template": "tags/list.html",
+        "is_api": false
+      },
+      {
+        "pattern": "<slug:slug>/",
+        "name": "detail",
+        "view": "views.tag_detail",
+        "template": "tags/detail.html",
+        "is_api": false
+      }
+    ],
+    "users": [
+      {
+        "pattern": "auth/",
+        "name": "auth_hub",
+        "view": "auth_hub_view",
+        "template": "account/hub.html",
+        "is_api": false
+      },
+      {
+        "pattern": "login/",
+        "name": "dashboard",
+        "view": "EnterpriseLoginView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "signup/",
+        "name": "profile",
+        "view": "EnterpriseSignupView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "logout/",
+        "name": "devices",
+        "view": "LogoutView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "dashboard/",
+        "name": "device_approval_needed",
+        "view": "dashboard_view",
+        "template": "users/dashboard.html",
+        "is_api": false
+      },
+      {
+        "pattern": "profile/",
+        "name": "approve_device",
+        "view": "profile_view",
+        "template": "users/profile.html",
+        "is_api": false
+      },
+      {
+        "pattern": "devices/",
+        "name": "device_eviction",
+        "view": "devices_view",
+        "template": "users/devices.html",
+        "is_api": false
+      },
+      {
+        "pattern": "devices/approval/",
+        "name": "device_mfa_challenge",
+        "view": "device_approval_needed",
+        "template": "users/device_approval_needed.html",
+        "is_api": false
+      },
+      {
+        "pattern": "devices/approve/",
+        "name": "verify_email",
+        "view": "approve_device",
+        "template": "users/device_eviction.html",
+        "is_api": false
+      },
+      {
+        "pattern": "devices/evict/",
+        "name": "verify_email_status",
+        "view": "device_eviction",
+        "template": "users/device_eviction.html",
+        "is_api": false
+      },
+      {
+        "pattern": "devices/mfa/",
+        "name": "verify_email_required",
+        "view": "device_mfa_challenge",
+        "template": "users/device_mfa_challenge.html",
+        "is_api": false
+      },
+      {
+        "pattern": "verify-email/",
+        "name": "tell_us_about_you",
+        "view": "verify_email_view",
+        "template": "users/verify_email.html",
+        "is_api": false
+      },
+      {
+        "pattern": "verify-email/status/",
+        "name": "resend_verification",
+        "view": "verify_email_status",
+        "template": "users/verify_email_required.html",
+        "is_api": false
+      },
+      {
+        "pattern": "verify-email/required/",
+        "name": "change_username",
+        "view": "verify_email_required",
+        "template": "users/verify_email_required.html",
+        "is_api": false
+      },
+      {
+        "pattern": "tell-us-about-you/",
+        "name": "check_username",
+        "view": "tell_us_about_you",
+        "template": "users/tell_us_about_you.html",
+        "is_api": false
+      },
+      {
+        "pattern": "accounts/resend-verification/",
+        "name": "notifications_unread_json",
+        "view": "resend_verification",
+        "template": "users/notification_settings.html",
+        "is_api": false
+      },
+      {
+        "pattern": "accounts/change-username/",
+        "name": "notification_unread_count",
+        "view": "change_username",
+        "template": "users/notification_settings.html",
+        "is_api": false
+      },
+      {
+        "pattern": "accounts/check-username/",
+        "name": "notifications",
+        "view": "check_username",
+        "template": "users/notification_settings.html",
+        "is_api": false
+      },
+      {
+        "pattern": "notifications/unread.json",
+        "name": "notification_detail",
+        "view": "api.notifications_unread_json",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "notifications/count/unread/",
+        "name": "notification_mark_read",
+        "view": "views_notifications.notification_unread_count",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "notifications/",
+        "name": "notification_mark_all",
+        "view": "views_notifications.notification_list",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "notifications/<int:pk>/",
+        "name": "notification_settings",
+        "view": "views_notifications.notification_detail",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "notifications/mark/<int:pk>/",
+        "name": "push_subscription",
+        "view": "views_notifications.notification_mark_read",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "notifications/mark-all/",
+        "name": "unsubscribe_push",
+        "view": "views_notifications.notification_mark_all_read",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "notifications/settings/",
+        "name": "notification_dashboard",
+        "view": "notification_settings",
+        "template": "users/notification_settings.html",
+        "is_api": false
+      },
+      {
+        "pattern": "notifications/push/subscribe/",
+        "name": "password_reset_verify",
+        "view": "push_subscription",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "notifications/push/unsubscribe/",
+        "name": "notification_stats_api",
+        "view": "unsubscribe_push",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "admin/notification-dashboard/",
+        "name": "social_providers_api",
+        "view": "admin_views.notification_dashboard",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "api/password-reset/verify/",
+        "name": "social_provider_create_api",
+        "view": "api.password_reset_verify",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "admin/users/notification/stats/",
+        "name": "social_provider_detail_api",
+        "view": "api.notification_stats",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "api/social-providers/",
+        "name": "social_provider_test_api",
+        "view": "api_social.social_providers_list",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-providers/create/",
+        "name": "social_provider_sync_api",
+        "view": "api_social.social_provider_create",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-providers/<str:provider_id>/",
+        "name": "social_posting_api",
+        "view": "api_social.social_provider_detail",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-providers/<str:provider_id>/test/",
+        "name": "social_posting_create_api",
+        "view": "api_social.social_provider_test",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-providers/<str:provider_id>/sync/",
+        "name": "social_posting_detail_api",
+        "view": "api_social.social_provider_sync",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-posting/",
+        "name": "social_posting_test_api",
+        "view": "api_social.social_posting_list",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-posting/create/",
+        "name": "social_posting_send_test_api",
+        "view": "api_social.social_posting_create",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-posting/<str:account_id>/",
+        "name": "social_providers_info_api",
+        "view": "api_social.social_posting_detail",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-posting/<str:account_id>/test/",
+        "name": "social_platforms_info_api",
+        "view": "api_social.social_posting_test",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-posting/<str:account_id>/send-test/",
+        "name": "unnamed",
+        "view": "api_social.social_posting_send_test",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-providers/info/",
+        "name": "unnamed",
+        "view": "api_social.social_providers_info",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/social-platforms/info/",
+        "name": "unnamed",
+        "view": "api_social.social_platforms_info",
+        "template": null,
+        "is_api": true
+      }
+    ],
+    "root": [
+      {
+        "pattern": "admin/",
+        "name": "home",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "admin-suite/",
+        "name": "home",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "django-admin/",
+        "name": "api_ai_ask",
+        "view": "admin.site.urls",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "admin/blog/",
+        "name": "home",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "admin/blog/post/<int:pk>/change/",
+        "name": "unnamed",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "i18n/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "summernote/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "accounts/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "users/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "notifications/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "consent/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "site_settings/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ads/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "analytics/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "distribution/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "devices/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "i18n/app/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "tags/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "blog/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "comments/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "api/comments/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/tags/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/storage/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "api/firmwares/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "security/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "ai/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "apps/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "core/",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "pages/",
+        "name": "unnamed",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "pages/<slug:slug>/",
+        "name": "unnamed",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "",
+        "name": "unnamed",
+        "view": "pages_views.home_landing",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "",
+        "name": "unnamed",
+        "view": "include",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "home/",
+        "name": "unnamed",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": ".well-known/health",
+        "name": "unnamed",
+        "view": "lazy_view",
+        "template": null,
+        "is_api": false
+      },
+      {
+        "pattern": "api/ai/ask",
+        "name": "unnamed",
+        "view": "core_views.ai_assistant_view",
+        "template": null,
+        "is_api": true
+      },
+      {
+        "pattern": "index/",
+        "name": "unnamed",
+        "view": "RedirectView.as_view",
+        "template": null,
+        "is_api": false
+      }
+    ]
+  },
+  "issues": [
+    {
+      "app": "admin_suite",
+      "url": "admin_suite:blog_categories",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_security_question",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_security_question_setup",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_password_reset",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "dashboard",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "command_search",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "security",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "devices",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "crawlers",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "risk_insights",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "security_events",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "users",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "user_sessions",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "staff_users",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "social_providers",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "social_provider_detail",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "user_detail",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "pages",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "blog",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "blog_categories",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "content",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "pending_approval",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "comments",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "seo",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "tags",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "marketing",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "ads",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "ads_campaigns",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "ads_placements",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "ads_creatives",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "ads_analytics",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "distribution",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "social_posting",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "social_posting_detail",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "social_posting_oauth_callback",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "storage",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "storage_files",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "storage_providers",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "storage_provider_detail",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "firmwares",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "firmwares_brands",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "firmwares_models",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "settings",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "settings_edit",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "email_settings",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "ai_settings",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "consent",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "app_registry",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "i18n",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "i18n_translations",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "devices_settings",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "ai_endpoints",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "ai_knowledge",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "ai_workflows",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "features",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "blog_posts",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "crawler_rules",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_ai",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_security_devices",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_security_crawlers",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_security_risk",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_consent",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_pages",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_blog",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_blog_categories",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_content",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_marketing",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_distribution",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_ads",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_tags",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_seo",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_registry",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_comments",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_users",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_user_detail",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_settings",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_settings_edit",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "admin_suite",
+      "url": "admin_suite_email_settings",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "ads",
+      "url": "toggle_settings",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "ai",
+      "url": "models",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "ai",
+      "url": "execute",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "ai",
+      "url": "settings",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "ai",
+      "url": "ops",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "analytics",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "app_registry",
+      "url": "registry_list",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "app_registry",
+      "url": "registry_detail",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "blog",
+      "url": "feed_json",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "blog",
+      "url": "api_ai_assist",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "blog",
+      "url": "post_detail",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "blog",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "comments",
+      "url": "moderation_action",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "core",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "core",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "core",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "devices",
+      "url": "device_payload",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "devices",
+      "url": "acknowledge_new_device",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "firmwares",
+      "url": "autofill-brand",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "firmwares",
+      "url": "autofill-model",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "firmwares",
+      "url": "autofill-variant",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "firmwares",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "firmwares",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "firmwares",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "i18n",
+      "url": "bundle",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "i18n",
+      "url": "theme",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "i18n",
+      "url": "manifest",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "i18n",
+      "url": "switch",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "pages",
+      "url": "sitemap",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "pages",
+      "url": "sitemap_index",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "pages",
+      "url": "sitemap_section",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "security_suite",
+      "url": "security_status",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "site_settings",
+      "url": "verification_file",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "site_settings",
+      "url": "privacy_policy",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "site_settings",
+      "url": "terms_of_service",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "site_settings",
+      "url": "cookies_policy",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "storage",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "storage",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "storage",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "storage",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "storage",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "storage",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "storage",
+      "url": "unnamed",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "tags",
+      "url": "suggest",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "tags",
+      "url": "apply_keyword",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "dashboard",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "profile",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "devices",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "notification_mark_read",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "notification_mark_all",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "notification_settings",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "push_subscription",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "unsubscribe_push",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "password_reset_verify",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "notification_stats_api",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "social_providers_api",
+      "issues": [
+        "No template found for view"
+      ]
+    },
+    {
+      "app": "users",
+      "url": "social_provider_detail_api",
+      "issues": [
+        "No template found for view"
+      ]
+    }
+  ]
+}

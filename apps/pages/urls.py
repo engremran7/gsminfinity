@@ -15,6 +15,6 @@ urlpatterns = [
     path("sitemap.xml", sitemap_all_view, name="sitemap"),
     path("sitemap_index.xml", sitemap_index_view, name="sitemap_index"),
     path("sitemap-<section>.xml", sitemap_section_view, name="sitemap_section"),
-    path("", views.page_detail, name="home"),
+    # CMS pages (slug-based only, home is handled in main urls.py)
     path("<slug:slug>/", views.page_detail, name="page"),
 ]

@@ -1,21 +1,21 @@
 {% if request.session.pending_device_prompt_uuid %}
-<div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center px-4">
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 p-6 relative">
+<div class="fixed inset-0 flex items-center justify-center px-4 z-50 bg-[var(--primitive-gray-900)]/80 backdrop-blur-md">
+  <div class="card-glass-neon w-full max-w-md p-6 relative">
     <div class="flex items-start gap-3">
-      <svg class="w-6 h-6 text-amber-500 mt-0.5" aria-hidden="true"><use href="#icon-alert"></use></svg>
+      <svg width="24" height="24" class="flex-shrink-0 text-[var(--primitive-amber-400)] mt-0.5" aria-hidden="true"><use href="#icon-alert"></use></svg>
       <div class="flex-1">
-        <p class="text-base font-semibold text-slate-900">New device detected</p>
-        <p class="text-sm text-slate-600 mt-1">Approve or trust this device to continue using it without interruptions.</p>
-        <p class="text-xs text-slate-500 mt-2 break-all">ID: {{ request.session.pending_device_prompt_uuid }}</p>
+        <p class="text-base font-semibold text-[var(--color-text-primary)]">New device detected</p>
+        <p class="text-sm text-[var(--color-text-secondary)] mt-1">Approve or trust this device to continue using it without interruptions.</p>
+        <p class="text-xs text-[var(--color-text-muted)] mt-2 break-all font-mono">ID: {{ request.session.pending_device_prompt_uuid }}</p>
         <div class="flex items-center gap-2 mt-4">
-          <a href="{% url 'users:device_approval_needed' %}" class="text-xs px-4 py-2 rounded bg-amber-600 text-white hover:bg-amber-700">Approve</a>
-          <a href="{% url 'users:devices' %}" class="text-xs px-4 py-2 rounded border border-slate-200 text-slate-700 hover:bg-slate-50">Manage devices</a>
+          <a href="{% url 'users:device_approval_needed' %}" class="btn btn-primary btn-sm">Approve</a>
+          <a href="{% url 'users:devices' %}" class="text-xs px-4 py-2 rounded card-glass text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-interactive-hover)] transition-colors">Manage devices</a>
         </div>
       </div>
       <form method="post" action="{% url 'users:devices' %}">
         {% csrf_token %}
         <input type="hidden" name="action" value="clear_device_prompt">
-        <button type="submit" class="text-slate-400 hover:text-slate-700" aria-label="Dismiss">
+        <button type="submit" class="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors" aria-label="Dismiss">
           <svg class="w-4 h-4" aria-hidden="true"><use href="#icon-close"></use></svg>
         </button>
       </form>

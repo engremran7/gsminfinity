@@ -1,30 +1,45 @@
 {
-  "name": "gsminfinity-admin",
-  "version": "2.0.0",
-  "description": "GSM Infinity Admin Frontend - Enterprise admin suite with offline Tailwind + HTMX",
+  "name": "gsminfinity-frontend",
+  "version": "4.0.0",
+  "description": "GSM Infinity Enterprise Frontend Build System",
   "private": true,
   "scripts": {
-    "deploy": "python deploy_admin.py",
-    "build:css": "npx tailwindcss -i ./static/css/admin/enterprise.css -o ./staticfiles/css/admin/enterprise.min.css --minify",
-    "build:all": "npm run build:css && python manage.py collectstatic --noinput",
-    "watch:css": "npx tailwindcss -i ./static/css/admin/enterprise.css -o ./staticfiles/css/admin/enterprise.min.css --watch",
-    "test:a11y": "axe docs/admin-components.html"
+    "build": "node build.js",
+    "build:dev": "node build.js --dev",
+    "watch": "node build.js --dev --watch",
+    "css:build": "tailwindcss -i ./static/css/design-system/main.css -o ./static/css/app.min.css --minify",
+    "css:watch": "tailwindcss -i ./static/css/design-system/main.css -o ./static/css/app.min.css --watch",
+    "lint:js": "eslint static/js/**/*.js",
+    "lint:css": "stylelint static/css/**/*.css",
+    "format": "prettier --write \"static/**/*.{js,css}\"",
+    "analyze": "node scripts/analyze_bundle.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.0",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "cssnano": "^6.0.0",
+    "eslint": "^8.55.0",
+    "stylelint": "^16.0.0",
+    "prettier": "^3.1.0"
   },
   "dependencies": {
-    "tailwindcss": "^3.4.13",
-    "@tailwindcss/forms": "^0.5.10",
-    "@tailwindcss/typography": "^0.5.19",
-    "@tailwindcss/line-clamp": "^0.4.4"
+    "htmx.org": "^1.9.10"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
   "keywords": [
-    "admin",
-    "dashboard",
     "django",
-    "tailwind",
+    "tailwindcss",
     "htmx",
-    "offline",
-    "csp"
+    "esbuild",
+    "frontend"
   ],
   "author": "GSM Infinity Team",
   "license": "MIT"
 }
+

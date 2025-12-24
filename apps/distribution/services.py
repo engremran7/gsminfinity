@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, TYPE_CHECKING
 
+from django.apps import apps
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from apps.core import ai_client
 from apps.core.utils.logging import log_event
-from apps.blog.models import Post, PostStatus
 from apps.core.app_service import AppService
 from .models import (
     Channel,
@@ -20,6 +20,10 @@ from .models import (
     ShareTemplate,
     SocialAccount,
 )
+
+# Lazy imports for modularity - blog app is optional
+if TYPE_CHECKING:
+    from apps.blog.models import Post
 
 logger = logging.getLogger(__name__)
 
@@ -48,35 +52,46 @@ def _default_template(channel: str) -> ShareTemplate | None:
 
 def _ensure_variants(post: Post, channels: Iterable[str]) -> Dict[str, Dict[str, Any]]:
     variants: Dict[str, Dict[str, Any]] = {}
+    
+    # Generate AI content once if possible
+    ai_summary = post.summary
+    ai_title = post.title
+    ai_hashtags = []
+
+    try:
+        from apps.ai.services import test_completion
+        import json
+        
+        prompt = f"""
+        Analyze this blog post and provide distribution content.
+        Return ONLY a valid JSON object with the following keys:
+        - summary: A short, engaging summary for social media (max 280 chars)
+        - title: A catchy, click-worthy title
+        - hashtags: A list of 5 relevant hashtags (strings, no #)
+        
+        Post Title: {post.title}
+        Post Summary: {post.summary}
+        Post Body (excerpt): {post.body[:1000]}
+        """
+        
+        resp = test_completion(prompt)
+        text = resp.get("text", "")
+        if text.startswith("```"):
+             text = text.split("```")[1].replace("json", "").strip()
+        
+        data = json.loads(text)
+        ai_summary = data.get("summary") or post.summary
+        ai_title = data.get("title") or post.title
+        ai_hashtags = data.get("hashtags") or []
+        
+    except Exception as e:
+        logger.warning(f"AI distribution content generation failed: {e}")
+
     for ch in channels:
-        try:
-            summary = (
-                ai_client.summarize_text(post.summary or post.body, None)
-                if hasattr(ai_client, "summarize_text")
-                else post.summary
-            )
-        except Exception:
-            summary = post.summary
-        try:
-            title = (
-                ai_client.generate_title(post.title, None)
-                if hasattr(ai_client, "generate_title")
-                else post.title
-            )
-        except Exception:
-            title = post.title
-        try:
-            hashtags = (
-                ai_client.generate_tags(post.summary or post.body, None)
-                if hasattr(ai_client, "generate_tags")
-                else []
-            )
-        except Exception:
-            hashtags = []
         variant_payload = {
-            "title": title or post.title,
-            "summary": summary or post.summary,
-            "hashtags": hashtags or [],
+            "title": ai_title,
+            "summary": ai_summary,
+            "hashtags": ai_hashtags,
             "url": post.get_absolute_url(),
         }
         variants[ch] = variant_payload
@@ -116,7 +131,8 @@ def _build_payload(post: Post, channel: str, template: ShareTemplate | None, var
 
 
 @transaction.atomic
-def create_plan_for_post(post: Post, *, channels: Iterable[str] | None = None, schedule_at=None, created_by=None) -> SharePlan:
+def create_plan_for_post(post: "Post", *, channels: Iterable[str] | None = None, schedule_at=None, created_by=None) -> SharePlan:
+    """Create a distribution plan for a blog post."""
     channels = list(channels or _enabled_channels())
     if not channels:
         return None
@@ -157,11 +173,21 @@ def create_plan_for_post(post: Post, *, channels: Iterable[str] | None = None, s
     return plan
 
 
-def should_fanout(post: Post) -> bool:
-    return post.status == PostStatus.PUBLISHED and post.publish_at and post.publish_at <= timezone.now()
+def should_fanout(post: "Post") -> bool:
+    """Check if post should be fanned out - requires blog app."""
+    if not apps.is_installed('apps.blog'):
+        return False
+    try:
+        from apps.blog.models import PostStatus
+        return post.status == PostStatus.PUBLISHED and post.publish_at and post.publish_at <= timezone.now()
+    except Exception:
+        return False
 
 
-def fanout_post_publish(post: Post, *, created_by=None) -> SharePlan | None:
+def fanout_post_publish(post: "Post", *, created_by=None) -> SharePlan | None:
+    """Fan out published post to distribution channels. Requires blog app."""
+    if not apps.is_installed('apps.blog'):
+        return None
     if not should_fanout(post):
         return None
     try:

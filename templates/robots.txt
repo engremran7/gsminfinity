@@ -1,0 +1,22 @@
+# robots.txt for {{ site_settings.site_name|default:"GSM Infinity" }}
+# Generated dynamically by Django
+
+User-agent: *
+Allow: /
+
+# Disallow admin and sensitive paths
+Disallow: /admin/
+Disallow: /django-admin/
+Disallow: /api/
+Disallow: /accounts/
+Disallow: /users/
+Disallow: /consent/
+Disallow: /notifications/
+Disallow: /security/
+
+# Allow static assets
+Allow: /static/
+
+# Sitemap location
+Sitemap: {{ request.scheme }}://{{ request.get_host }}/sitemap.xml
+

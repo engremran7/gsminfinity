@@ -1,0 +1,144 @@
+{# Device Registration Popup - Shows for ALL users (including staff/admin) when a new device is detected #}
+{# Only superuser (id=1) is exempt from device limits, but still sees the popup for awareness #}
+{% if request.session.new_device_popup %}
+<div id="new-device-modal" class="fixed bottom-4 right-4 z-50 max-w-md w-full mx-4 animate-slide-up">
+    <div class="card-glass-neon overflow-hidden">
+        <!-- Header -->
+        <div class="px-5 py-3 flex items-center justify-between bg-gradient-to-r from-[var(--color-bg-surface-secondary)] to-[var(--color-bg-glass)]">
+            <h3 class="text-base font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                <svg class="w-5 h-5 text-[var(--primitive-cyan-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                New Device Detected
+            </h3>
+            <button type="button" id="close-device-modal" class="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors" title="Dismiss (device will remain unregistered)">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-5 space-y-3">
+            <div class="card-glass border-l-4 border-[var(--primitive-cyan-500)] p-3">
+                <p class="text-sm text-[var(--color-text-primary)] font-medium">
+                    Please confirm registration to continue using this device.
+                </p>
+            </div>
+
+            <div class="space-y-2 text-sm text-[var(--color-text-secondary)]">
+                <div class="flex justify-between items-center border-b border-[var(--color-border-default)] pb-2">
+                    <span class="font-medium text-[var(--color-text-muted)]">Device:</span>
+                    <span class="text-[var(--color-text-primary)] font-semibold truncate max-w-[200px]" title="{{ request.session.new_device_popup.device_name }}">{{ request.session.new_device_popup.device_name|truncatechars:30 }}</span>
+                </div>
+
+                <div class="flex justify-between items-center border-b border-[var(--color-border-default)] pb-2">
+                    <span class="font-medium text-[var(--color-text-muted)]">Registered:</span>
+                    <span class="text-[var(--color-text-primary)] font-semibold">{{ request.session.new_device_popup.current_count }} / {{ request.session.new_device_popup.max_devices }}</span>
+                </div>
+
+                <div class="flex justify-between items-center border-b border-[var(--color-border-default)] pb-2">
+                    <span class="font-medium text-[var(--color-text-muted)]">Remaining:</span>
+                    <span class="text-[var(--primitive-neon-400)] font-bold">{{ request.session.new_device_popup.remaining_devices }}</span>
+                </div>
+
+                {% if request.session.new_device_popup.quota_reset_days %}
+                <div class="flex justify-between items-center">
+                    <span class="font-medium text-[var(--color-text-muted)]">Resets In:</span>
+                    <span class="text-[var(--primitive-cyan-400)] font-semibold">{{ request.session.new_device_popup.quota_reset_days }} days</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <p class="text-xs text-[var(--color-text-muted)]">
+                This device will be linked to your account. You cannot remove it yourself.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-[var(--color-bg-surface-secondary)] px-5 py-3 flex justify-end gap-2">
+            <button type="button" id="accept-device-btn" class="btn btn-primary">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Accept & Register
+            </button>
+        </div>
+    </div>
+</div>
+
+<style nonce="{{ request.csp_nonce }}">
+@keyframes slide-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slide-up 0.3s ease-out; }
+</style>
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('accept-device-btn');
+    const closeBtn = document.getElementById('close-device-modal');
+    const modal = document.getElementById('new-device-modal');
+
+    function closeModal(markAsShown = false) {
+        if (modal) {
+            modal.style.opacity = '0';
+            modal.style.transform = 'translateY(20px)';
+            modal.style.transition = 'opacity 0.3s, transform 0.3s';
+            setTimeout(() => modal.remove(), 300);
+        }
+        // If user dismisses popup, tell backend to mark as shown so it doesn't reappear
+        if (markAsShown) {
+            fetch('{% url "devices:acknowledge_new_device" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    os_fingerprint: '{{ request.session.new_device_popup.os_fingerprint|default:"" }}',
+                    dismiss_only: true
+                })
+            }).catch(() => {}); // Silently ignore errors
+        }
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => closeModal(true));
+    }
+
+    if (btn && modal) {
+        btn.addEventListener('click', function() {
+            btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Registering...';
+
+            const url = '{% url "devices:acknowledge_new_device" %}';
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    os_fingerprint: '{{ request.session.new_device_popup.os_fingerprint|default:"" }}'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    closeModal();
+                    // Show success toast if available
+                    if (window.AppUI && window.AppUI.toast) {
+                        window.AppUI.toast('Device registered successfully', 'success');
+                    }
+                } else {
+                    console.error('Device registration failed:', data.error || 'Unknown error');
+                    closeModal();
+                }
+            })
+            .catch(err => {
+                console.error('Error acknowledging device:', err);
+                closeModal();
+            });
+        });
+    }
+});
+</script>
+{% endif %}

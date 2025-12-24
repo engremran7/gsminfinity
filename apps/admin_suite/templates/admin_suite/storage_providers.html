@@ -1,0 +1,356 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Cloud Storage Providers{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Cloud Storage Providers</h1>
+      <p class="text-sm text-slate-600">Configure and manage cloud storage accounts with automatic service account provisioning.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:storage' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">← Back to Storage</a>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <!-- Add New Provider Form -->
+  <div class="border rounded-lg bg-white shadow-sm p-4">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Add Cloud Storage Provider</h2>
+    <form method="post" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_provider">
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Provider Name</label>
+        <input type="text" name="name" placeholder="e.g., Main Google Drive" class="w-full border rounded px-3 py-2" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Provider Type</label>
+        <select name="provider_type" class="w-full border rounded px-3 py-2" required title="Select storage provider type">
+          {% for value, label in provider_choices %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">Account Email</label>
+        <input type="email" name="account_email" placeholder="account@domain.com" class="w-full border rounded px-3 py-2">
+      </div>
+      <div class="flex items-end">
+        <button type="submit" class="w-full px-4 py-2 rounded bg-primary text-white hover:bg-primary/90">Add Provider</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Providers List -->
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Configured Providers ({{ providers|length }})</h2>
+    </div>
+    
+    {% for p in providers %}
+    <div class="border-b last:border-b-0 p-4 hover:bg-slate-50">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-3">
+            <h3 class="text-lg font-medium text-slate-900">
+              <a href="{% url 'admin_suite:storage_provider_detail' p.id %}" class="hover:text-primary">{{ p.name }}</a>
+            </h3>
+            {% if p.status == 'active' %}
+              <span class="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700">Active</span>
+            {% elif p.status == 'pending' %}
+              <span class="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700">Pending Setup</span>
+            {% elif p.status == 'configuring' %}
+              <span class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700">Configuring</span>
+            {% elif p.status == 'error' %}
+              <span class="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700">Error</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">{{ p.status }}</span>
+            {% endif %}
+            {% if not p.is_active %}
+              <span class="px-2 py-0.5 text-xs rounded bg-slate-200 text-slate-600">Disabled</span>
+            {% endif %}
+          </div>
+          <div class="mt-1 text-sm text-slate-600">
+            <span class="font-medium">
+              {% if p.provider == 'google_drive' %}📁 Google Drive
+              {% elif p.provider == 'google_shared_drive' %}📁 Google Shared Drive
+              {% elif p.provider == 'onedrive' %}☁️ OneDrive
+              {% elif p.provider == 'dropbox' %}📦 Dropbox
+              {% elif p.provider == 'mega' %}🔒 MEGA
+              {% elif p.provider == 's3' %}🪣 Amazon S3
+              {% elif p.provider == 'wasabi' %}🪣 Wasabi
+              {% elif p.provider == 'backblaze' %}🪣 Backblaze B2
+              {% elif p.provider == 'azure_blob' %}☁️ Azure Blob
+              {% elif p.provider == 'ftp' %}📂 FTP/SFTP
+              {% elif p.provider == 'webdav' %}🌐 WebDAV
+              {% else %}{{ p.provider }}
+              {% endif %}
+            </span>
+            {% if p.account_email %} • {{ p.account_email }}{% endif %}
+            {% if p.last_sync_at %} • Last sync: {{ p.last_sync_at|date:"M d, H:i" }}{% endif %}
+          </div>
+          {% if p.last_error %}
+          <div class="mt-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+            Error: {{ p.last_error|truncatechars:100 }}
+          </div>
+          {% endif %}
+          
+          <!-- Storage Usage -->
+          {% if p.total_space_bytes > 0 %}
+          <div class="mt-2 flex items-center gap-2 text-sm">
+            {% widthratio p.used_space_bytes p.total_space_bytes 100 as pct %}
+            <div class="w-32 progress-bar-container progress-bar-container--md">
+              <div class="progress-bar {% if pct > 90 %}progress-bar--danger{% elif pct > 75 %}progress-bar--warning{% else %}progress-bar--success{% endif %} progress-w-{{ pct|floatformat:0 }}"></div>
+            </div>
+            <span class="text-xs text-slate-600">
+              {% widthratio p.used_space_bytes 1073741824 1 as used_gb %}
+              {% widthratio p.total_space_bytes 1073741824 1 as total_gb %}
+              {{ used_gb }} / {{ total_gb }} GB ({{ pct }}%)
+            </span>
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="validate_connection">
+            <input type="hidden" name="provider_id" value="{{ p.id }}">
+            <button type="submit" class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white hover:bg-slate-50">
+              Test Connection
+            </button>
+          </form>
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle_provider">
+            <input type="hidden" name="provider_id" value="{{ p.id }}">
+            <button type="submit" class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white hover:bg-slate-50">
+              {% if p.is_active %}Disable{% else %}Enable{% endif %}
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Configuration Forms (Collapsible) -->
+      {% if p.status == 'pending' or p.status == 'configuring' %}
+      <div class="mt-4 pt-4 border-t border-dashed">
+        <details class="group">
+          <summary class="cursor-pointer text-sm font-medium text-primary hover:underline">
+            Configure Credentials →
+          </summary>
+          <div class="mt-3 space-y-4">
+            
+            {% if p.provider == 'google_drive' or p.provider == 'google_shared_drive' %}
+            <!-- Google Service Account Configuration -->
+            <div class="bg-slate-50 p-4 rounded">
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">Google Service Account (JSON Key)</h4>
+              <form method="post" class="space-y-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="configure_google_service_account">
+                <input type="hidden" name="provider_id" value="{{ p.id }}">
+                <textarea name="service_account_json" rows="8" 
+                  class="w-full border rounded px-3 py-2 font-mono text-xs"
+                  placeholder='Paste the full service account JSON here:
+{
+  "type": "service_account",
+  "project_id": "your-project",
+  "private_key_id": "...",
+  "private_key": "-----BEGIN PRIVATE KEY-----\n...",
+  "client_email": "sa@project.iam.gserviceaccount.com",
+  ...
+}'></textarea>
+                <div class="flex gap-2">
+                  <button type="submit" class="px-3 py-1.5 text-sm rounded bg-primary text-white hover:bg-primary/90">
+                    Upload Service Account
+                  </button>
+                </div>
+              </form>
+              
+              <div class="mt-4 pt-4 border-t">
+                <h4 class="text-sm font-semibold text-slate-700 mb-2">Bulk Upload Service Accounts</h4>
+                <form method="post" class="space-y-2">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="bulk_upload_service_accounts">
+                  <input type="hidden" name="provider_id" value="{{ p.id }}">
+                  <textarea name="service_accounts_json" rows="6" 
+                    class="w-full border rounded px-3 py-2 font-mono text-xs"
+                    placeholder='Paste JSON array of service accounts:
+[
+  { "type": "service_account", ... },
+  { "type": "service_account", ... }
+]'></textarea>
+                  <button type="submit" class="px-3 py-1.5 text-sm rounded bg-slate-700 text-white hover:bg-slate-600">
+                    Bulk Upload
+                  </button>
+                </form>
+              </div>
+              
+              <div class="mt-4 pt-4 border-t">
+                <h4 class="text-sm font-semibold text-slate-700 mb-2">Auto-Fetch Shared Drives</h4>
+                <p class="text-xs text-slate-600 mb-2">After configuring credentials, fetch all accessible shared drives automatically.</p>
+                <form method="post">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="fetch_shared_drives">
+                  <input type="hidden" name="provider_id" value="{{ p.id }}">
+                  <button type="submit" class="px-3 py-1.5 text-sm rounded border border-primary text-primary hover:bg-primary/10">
+                    Fetch Shared Drives
+                  </button>
+                </form>
+              </div>
+            </div>
+            
+            {% elif p.provider == 'onedrive' %}
+            <!-- OneDrive Configuration -->
+            <div class="bg-slate-50 p-4 rounded">
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">OneDrive / SharePoint Configuration</h4>
+              <form method="post" class="space-y-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="configure_onedrive">
+                <input type="hidden" name="provider_id" value="{{ p.id }}">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">Azure Client ID</label>
+                    <input type="text" name="client_id" class="w-full border rounded px-2 py-1.5 text-sm" required>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">Client Secret</label>
+                    <input type="password" name="client_secret" class="w-full border rounded px-2 py-1.5 text-sm" required>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">Tenant ID</label>
+                    <input type="text" name="tenant_id" value="common" class="w-full border rounded px-2 py-1.5 text-sm">
+                  </div>
+                </div>
+                <button type="submit" class="px-3 py-1.5 text-sm rounded bg-primary text-white hover:bg-primary/90">
+                  Configure OneDrive
+                </button>
+              </form>
+            </div>
+            
+            {% elif p.provider == 'dropbox' %}
+            <!-- Dropbox Configuration -->
+            <div class="bg-slate-50 p-4 rounded">
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">Dropbox Configuration</h4>
+              <form method="post" class="space-y-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="configure_dropbox">
+                <input type="hidden" name="provider_id" value="{{ p.id }}">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">App Key</label>
+                    <input type="text" name="app_key" class="w-full border rounded px-2 py-1.5 text-sm" required>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">App Secret</label>
+                    <input type="password" name="app_secret" class="w-full border rounded px-2 py-1.5 text-sm" required>
+                  </div>
+                  <div class="col-span-2">
+                    <label class="block text-xs text-slate-600 mb-1">Access Token (optional - for pre-authorized apps)</label>
+                    <input type="text" name="access_token" class="w-full border rounded px-2 py-1.5 text-sm">
+                  </div>
+                </div>
+                <button type="submit" class="px-3 py-1.5 text-sm rounded bg-primary text-white hover:bg-primary/90">
+                  Configure Dropbox
+                </button>
+              </form>
+            </div>
+            
+            {% elif p.provider == 'mega' %}
+            <!-- MEGA Configuration -->
+            <div class="bg-slate-50 p-4 rounded">
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">MEGA Configuration</h4>
+              <form method="post" class="space-y-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="configure_mega">
+                <input type="hidden" name="provider_id" value="{{ p.id }}">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">Email</label>
+                    <input type="email" name="mega_email" class="w-full border rounded px-2 py-1.5 text-sm" required>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">Password</label>
+                    <input type="password" name="mega_password" class="w-full border rounded px-2 py-1.5 text-sm" required>
+                  </div>
+                </div>
+                <button type="submit" class="px-3 py-1.5 text-sm rounded bg-primary text-white hover:bg-primary/90">
+                  Configure MEGA
+                </button>
+              </form>
+            </div>
+            
+            {% elif p.provider == 's3' or p.provider == 'wasabi' or p.provider == 'backblaze' or p.provider == 'azure_blob' %}
+            <!-- S3-Compatible Configuration -->
+            <div class="bg-slate-50 p-4 rounded">
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">S3-Compatible Storage Configuration</h4>
+              <form method="post" class="space-y-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="configure_s3">
+                <input type="hidden" name="provider_id" value="{{ p.id }}">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">Access Key ID</label>
+                    <input type="text" name="access_key_id" class="w-full border rounded px-2 py-1.5 text-sm" required>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">Secret Access Key</label>
+                    <input type="password" name="secret_access_key" class="w-full border rounded px-2 py-1.5 text-sm" required>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">Bucket Name</label>
+                    <input type="text" name="bucket_name" class="w-full border rounded px-2 py-1.5 text-sm" required>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-600 mb-1">Region</label>
+                    <input type="text" name="region" value="us-east-1" class="w-full border rounded px-2 py-1.5 text-sm">
+                  </div>
+                  <div class="col-span-2">
+                    <label class="block text-xs text-slate-600 mb-1">Custom Endpoint URL (for Wasabi, B2, MinIO, etc.)</label>
+                    <input type="url" name="endpoint_url" placeholder="https://s3.wasabisys.com" class="w-full border rounded px-2 py-1.5 text-sm">
+                  </div>
+                </div>
+                <button type="submit" class="px-3 py-1.5 text-sm rounded bg-primary text-white hover:bg-primary/90">
+                  Configure S3 Storage
+                </button>
+              </form>
+            </div>
+            {% endif %}
+            
+          </div>
+        </details>
+      </div>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="p-8 text-center text-slate-500">
+      <p>No cloud storage providers configured yet.</p>
+      <p class="text-sm mt-2">Add a provider above to get started with cloud storage management.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Help Section -->
+  <div class="border rounded-lg bg-blue-50 border-blue-200 p-4">
+    <h3 class="text-sm font-semibold text-blue-900 mb-2">📚 Quick Setup Guide</h3>
+    <div class="text-sm text-blue-800 space-y-2">
+      <p><strong>Google Drive / Shared Drive:</strong></p>
+      <ol class="list-decimal list-inside ml-2 space-y-1 text-xs">
+        <li>Go to Google Cloud Console → Create/Select Project</li>
+        <li>Enable Google Drive API</li>
+        <li>Create Service Account → Download JSON key</li>
+        <li>Share your Shared Drive with the service account email</li>
+        <li>Paste the JSON key above to auto-configure</li>
+      </ol>
+      <p class="mt-3"><strong>For bulk operations:</strong> Create up to 100 service accounts per project. Each has 750GB/day transfer quota.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

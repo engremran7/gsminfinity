@@ -8,7 +8,15 @@ class BlogConfig(AppConfig):
     verbose_name = "Blog"
 
     def ready(self):
-        from . import signals  # noqa: F401
+        # Connect signals with deferred imports to prevent circular dependencies
+        from . import signals
+        signals.connect_signals()
+        
+        # Register signal handlers for cross-app communication
+        try:
+            from . import signal_handlers  # noqa: F401
+        except Exception:
+            pass
 
         # Register blog sitemap with the central registry (soft-fail to keep app modular)
         try:

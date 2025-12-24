@@ -1,0 +1,177 @@
+/* Blog Styles - Robust Dual Column System */
+
+/* Main Blog Container - Prevent overflow and maintain structure */
+.blog-container {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Blog Layout - Dual Column with forced constraints */
+.blog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 380px);
+  gap: 2rem;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Main Content Column - Prevent overflow */
+.blog-main-content {
+  min-width: 0; /* Critical: Allows shrinking below content size */
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Sidebar Column - Fixed constraints */
+.blog-sidebar {
+  min-width: 0;
+  max-width: 100%;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Prevent content from breaking layout */
+.blog-main-content * {
+  max-width: 100%;
+}
+
+.blog-main-content img,
+.blog-main-content iframe,
+.blog-main-content video,
+.blog-main-content pre,
+.blog-main-content code,
+.blog-main-content table {
+  max-width: 100% !important;
+  height: auto !important;
+  overflow-x: auto;
+}
+
+/* Responsive: Single column on mobile/tablet */
+@media (max-width: 1024px) {
+  .blog-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .blog-sidebar {
+    position: static;
+    max-height: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .blog-layout {
+    gap: 1rem;
+  }
+  
+  .blog-sidebar {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Post List Grid */
+.post-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .post-list {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Post Card */
+.post-card {
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  min-width: 0; /* Prevent overflow */
+}
+
+.post-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.post-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.post-content {
+  padding: 1.5rem;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.post-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.post-excerpt {
+  color: #666;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Force Grid Columns to Respect Constraints */
+.grid.grid-cols-12 > * {
+  min-width: 0; /* Critical for preventing grid blowout */
+}
+
+.md\:col-span-8 {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.md\:col-span-4 {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Ensure prose content doesn't break layout */
+.prose {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.prose img,
+.prose iframe,
+.prose video,
+.prose pre {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.prose pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}

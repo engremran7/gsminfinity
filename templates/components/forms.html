@@ -1,24 +1,24 @@
 
 {% load static form_tags %}
-{# Form field wrapper. Usage examples:
+{# Form field wrapper - Futuristic HUD Theme. Usage examples:
    {% include "components/forms.html" with id="id_title" label="Title" field=form.title ai_action="generate_title" ai_label="Generate Title" help="Keep it concise." %}
    {% include "components/forms.html" with id="custom" name="custom" label="Custom" %}
  #}
-<div class="space-y-1">
+<div class="space-y-2">
   {% if label %}
-    <label for="{{ id }}" class="block text-sm font-semibold text-slate-800">
-      {{ label }}{% if required %}<span class="text-red-600 ml-1">*</span>{% endif %}
+    <label for="{{ id }}" class="block text-sm font-semibold text-[var(--color-text-primary)]">
+      {{ label }}{% if required %}<span class="text-[var(--primitive-red-400)] ml-1">*</span>{% endif %}
     </label>
   {% endif %}
 
   {% if field %}
-    {{ field|add_class:"w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 "|add_class:extra_class }}
+    {{ field|add_class:"w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] shadow-sm focus:border-[var(--primitive-cyan-500)] focus:ring-2 focus:ring-[var(--primitive-cyan-500)]/20 transition-all "|add_class:extra_class }}
   {% else %}
     <input
       id="{{ id }}"
       name="{{ name }}"
       {% if required %}required{% endif %}
-      class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 {{ extra_class }}"
+      class="w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] shadow-sm focus:border-[var(--primitive-cyan-500)] focus:ring-2 focus:ring-[var(--primitive-cyan-500)]/20 transition-all {{ extra_class }}"
       {{ widget_class|default:"" }}
     />
   {% endif %}
@@ -27,7 +27,7 @@
     <div class="flex justify-end">
       <button
         type="button"
-        class="text-xs text-primary hover:text-primary-600 inline-flex items-center gap-1"
+        class="text-xs text-[var(--primitive-purple-400)] hover:text-[var(--primitive-purple-300)] inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--primitive-purple-500)]/10 border border-[var(--primitive-purple-500)]/30 hover:bg-[var(--primitive-purple-500)]/20 transition-all"
         data-ai-action="{{ ai_action }}"
         data-ai-target="{{ id }}"
       >
@@ -38,13 +38,13 @@
   {% endif %}
 
   {% if help %}
-    <div class="flex items-start gap-2 text-xs text-slate-500">
-      <svg class="w-4 h-4 text-slate-400" aria-hidden="true"><use href="#icon-info"></use></svg>
+    <div class="flex items-start gap-2 text-xs text-[var(--color-text-muted)]">
+      <svg class="w-4 h-4 text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-info"></use></svg>
       <span>{{ help }}</span>
     </div>
   {% endif %}
   {% if error %}
-    <p class="text-xs text-red-600">{{ error }}</p>
+    <p class="text-xs text-[var(--primitive-red-400)]">{{ error }}</p>
   {% endif %}
 </div>
 

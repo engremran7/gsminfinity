@@ -3,48 +3,7 @@
 
 {% block extrastyle %}
 {{ block.super }}
-<style>
-.comment-admin-header {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-}
-.comment-admin-header h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-}
-.comment-admin-header p {
-    margin: 0;
-    opacity: 0.9;
-    font-size: 0.875rem;
-}
-.comment-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-.comment-stat {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-}
-.comment-stat .label {
-    font-size: 0.75rem;
-    color: #6c757d;
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-}
-.comment-stat .value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #8b5cf6;
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/admin/django-admin-custom.css' %}">
 {% endblock %}
 
 {% block content %}

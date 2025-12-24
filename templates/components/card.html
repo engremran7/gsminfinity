@@ -1,0 +1,64 @@
+{# Modern Card Component - Futuristic HUD Theme #}
+{# Usage: {% include "components/card.html" with title="Card Title" %} #}
+
+{% with
+  variant=variant|default:"default"
+  padding=padding|default:"md"
+  shadow=shadow|default:"md"
+  hover=hover|default:False
+%}
+
+<div class="
+  bg-[var(--color-bg-glass)] backdrop-blur-sm rounded-xl border border-[var(--color-border-default)] overflow-hidden
+  {% if hover %}transition-all duration-200 hover:shadow-[0_0_30px_var(--primitive-cyan-500)/20] hover:border-[var(--primitive-cyan-500)]/50{% endif %}
+  
+  {# Padding variants #}
+  {% if padding == 'none' %}p-0{% endif %}
+  {% if padding == 'sm' %}p-4{% endif %}
+  {% if padding == 'md' %}p-6{% endif %}
+  {% if padding == 'lg' %}p-8{% endif %}
+  
+  {# Shadow variants #}
+  {% if shadow == 'none' %}shadow-none{% endif %}
+  {% if shadow == 'sm' %}shadow-sm{% endif %}
+  {% if shadow == 'md' %}shadow-md{% endif %}
+  {% if shadow == 'lg' %}shadow-lg{% endif %}
+  {% if shadow == 'xl' %}shadow-xl{% endif %}
+  
+  {# Variant styles #}
+  {% if variant == 'primary' %}border-[var(--primitive-cyan-500)]/30 bg-[var(--primitive-cyan-500)]/10{% endif %}
+  {% if variant == 'success' %}border-[var(--primitive-neon-500)]/30 bg-[var(--primitive-neon-500)]/10{% endif %}
+  {% if variant == 'warning' %}border-[var(--primitive-amber-500)]/30 bg-[var(--primitive-amber-500)]/10{% endif %}
+  {% if variant == 'danger' %}border-[var(--primitive-red-500)]/30 bg-[var(--primitive-red-500)]/10{% endif %}
+  
+  {{ class }}
+">
+  {# Header #}
+  {% if title or header_actions %}
+    <div class="flex items-center justify-between mb-4 {% if padding == 'none' %}px-6 pt-6{% endif %}">
+      {% if title %}
+        <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">{{ title }}</h3>
+      {% endif %}
+      {% if header_actions %}
+        <div class="flex items-center gap-2">
+          {{ header_actions }}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+  
+  {# Body #}
+  <div class="{% if padding == 'none' %}px-6 pb-6{% endif %}">
+    {{ content }}
+  </div>
+  
+  {# Footer #}
+  {% if footer %}
+    <div class="border-t border-[var(--color-border-default)] mt-4 pt-4 {% if padding == 'none' %}px-6 pb-6{% endif %}">
+      {{ footer }}
+    </div>
+  {% endif %}
+</div>
+
+{% endwith %}
+

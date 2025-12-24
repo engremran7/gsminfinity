@@ -36,20 +36,33 @@ def parse_os_from_ua(ua: str) -> OSInfo:
 
 
 def make_os_fingerprint(user_id: int, ua: str, payload: Dict[str, str] | None) -> Tuple[str, OSInfo]:
+    """
+    Generate a stable OS-level fingerprint.
+    CRITICAL: Does NOT include user_id in the hash, so the same physical device
+    generates the same fingerprint regardless of which user is logged in.
+    This allows detecting "multi-users in same OS".
+    """
     p = payload or {}
     os_info = parse_os_from_ua(ua or "")
+    
+    # We use hardware traits + OS info to identify the "machine"
+    # Browser variations (Chrome vs Firefox) should ideally produce the same
+    # fingerprint if they expose the same hardware info (screen, cores, gpu).
+    #
+    # UPDATE: Removed 'timezone' and 'languages' to support Factory Resets.
+    # A factory reset keeps hardware traits but resets timezone/language preferences.
     stable_raw = "|".join(
         [
-            str(user_id),
+            # REMOVED: str(user_id),  <-- This was causing per-user isolation
             os_info.name,
             os_info.version,
             str(p.get("screen", "")),
             str(p.get("pixel_ratio", "")),
-            str(p.get("timezone", "")),
+            # REMOVED: str(p.get("timezone", "")), <-- Volatile on reset/travel
             str(p.get("cores", "")),
             str(p.get("device_memory", "")),
             str(p.get("touch_points", "")),
-            str(p.get("languages", "")),
+            # REMOVED: str(p.get("languages", "")), <-- Volatile on reset/setup
             str(p.get("gpu_vendor", "")),
             str(p.get("gpu_renderer", "")),
         ]

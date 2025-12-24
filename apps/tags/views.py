@@ -62,6 +62,7 @@ def search(request):
     return JsonResponse({"items": items})
 
 
+@require_GET
 def tag_list(request: HttpRequest) -> HttpResponse:
     tags = Tag.objects.filter(is_active=True, is_deleted=False).order_by("-usage_count", "name")
     return render(
@@ -71,6 +72,7 @@ def tag_list(request: HttpRequest) -> HttpResponse:
     )
 
 
+@require_GET
 def tag_detail(request: HttpRequest, slug: str) -> HttpResponse:
     tag = get_object_or_404(Tag, slug=slug, is_deleted=False)
     now_ts = timezone.now()
@@ -151,6 +153,7 @@ def merge_tags(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"ok": True, "merged": source_slug, "into": target_slug})
 
 
+@require_GET
 def tag_analytics(request: HttpRequest) -> HttpResponse:
     tags = Tag.objects.order_by("-usage_count", "name")[:50]
     data = [{"name": t.name, "usage": t.usage_count} for t in tags]

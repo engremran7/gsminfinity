@@ -1,178 +1,181 @@
+/**
+ * GSM Infinity - Ads Management JavaScript
+ * 
+ * Handles client-side ad slot hydration, consent checking,
+ * impression tracking, and click tracking.
+ * 
+ * CSP-compliant, no inline scripts.
+ */
 
-(() => {
-  "use strict";
-  const doc = document;
-  const flags = (typeof window !== "undefined" && window.FEATURE_FLAGS) || {};
+(function() {
+  'use strict';
 
-  if (!flags.ads_enabled) {
-    return;
-  }
+  const AdsManager = {
+    config: {
+      fillEndpoint: '/ads/api/fill/',
+      clickEndpoint: '/ads/api/click/',
+      eventEndpoint: '/ads/api/events/',
+      debug: false
+    },
 
-  function readCookie(name) {
-    try {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(";").shift();
-    } catch (_) {
-      return null;
-    }
-    return null;
-  }
-
-  function csrfToken() {
-    return readCookie("csrftoken") || "";
-  }
-
-  function hasAdsConsent() {
-    try {
-      const raw = readCookie("consent_status");
-      if (!raw) return false;
-      if (raw === "1" || raw === "true") return true;
-      const parsed = JSON.parse(decodeURIComponent(raw));
-      if (parsed && typeof parsed === "object") {
-        if (parsed.ads === true) return true;
-        if (parsed.all === true || parsed.accept_all === true) return true;
+    /**
+     * Initialize ads manager
+     */
+    init() {
+      if (!window.FEATURE_FLAGS?.ads_enabled) {
+        this.log('Ads disabled via feature flag');
+        return;
       }
-    } catch (_) {
-      /* ignore */
-    }
-    return false;
-  }
-  let consentGranted = hasAdsConsent();
 
-  function correlationId() {
-    if (crypto && crypto.randomUUID) return crypto.randomUUID();
-    return Math.random().toString(36).slice(2);
-  }
+      this.hydrateAdSlots();
+      this.setupClickTracking();
+      this.log('Ads manager initialized');
+    },
 
-  async function fetchJson(url, options = {}) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
-    try {
-      const res = await fetch(url, {
-        credentials: "same-origin",
-        signal: controller.signal,
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          "X-CSRFToken": csrfToken(),
-          ...(options.headers || {}),
-        },
-        ...options,
-      });
-      clearTimeout(timeout);
-      if (!res.ok) {
-        return { ok: false, error: `http-${res.status}` };
+    /**
+     * Check if user has given consent for ads
+     */
+    hasConsent() {
+      try {
+        const consent = localStorage.getItem('gsm_consent');
+        if (consent) {
+          const parsed = JSON.parse(consent);
+          return parsed.ads === true;
+        }
+      } catch (e) {
+        this.log('Error checking consent', e);
       }
-      return await res.json();
-    } catch (err) {
-      clearTimeout(timeout);
-      return { ok: false, error: "network-error" };
-    }
-  }
+      // Default to true if no consent system or error
+      return true;
+    },
 
-  async function trackEvent(eventType, slug, creativeId, meta = {}) {
-    consentGranted = hasAdsConsent();
-    if (!consentGranted) return;
-    try {
-      const res = await fetchJson(`/ads/api/events/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          event_type: eventType,
-          placement: slug,
-          creative: creativeId || "",
-          page_url: window.location.href,
-          referrer: document.referrer || "",
-          consent_granted: "1",
-          correlation_id: correlationId(),
-        }),
-      });
-      if (!res.ok && res.error !== "no_consent") {
-        console.warn("Ads track error", res);
+    /**
+     * Hydrate all ad slots on the page
+     */
+    async hydrateAdSlots() {
+      const slots = document.querySelectorAll('[data-ad-slot]');
+      
+      for (const slot of slots) {
+        const slotId = slot.dataset.adSlot;
+        const requiresConsent = slot.dataset.requiresConsent === 'ads';
+        
+        if (requiresConsent && !this.hasConsent()) {
+          this.log(`Skipping slot ${slotId} - no consent`);
+          continue;
+        }
+
+        await this.fillSlot(slot, slotId);
       }
-    } catch (_) {
-      /* silent */
-    }
-  }
+    },
 
-  function wireClickTracking(slot, slug, creativeId) {
-    const clickLinks = slot.querySelectorAll("[data-ad-click], a[href]");
-    clickLinks.forEach((el) => {
-      el.addEventListener("click", async () => {
-        if (!consentGranted) return;
-        trackEvent("click", slug, creativeId || "", {
-          page_url: window.location.href,
-          referrer: document.referrer || "",
-        });
-      });
-    });
-  }
-
-  async function hydrateSlot(slot) {
-    const slug = slot.getAttribute("data-ad-slot");
-    if (!slug) return;
-    try {
-      const data = await fetchJson(
-        `/ads/api/fill/?placement=${encodeURIComponent(slug)}`
-      );
-      if (!data.ok || !data.creative) return;
-      const c = data.creative;
-      const clickUrl = c.click_url || "#";
-      if (c.type === "html" && c.html) {
-        slot.innerHTML = c.html;
-      } else if (c.image_url) {
-        slot.innerHTML = `<a href="${clickUrl}" data-ad-click data-placement="${slug}" data-creative="${c.creative || ""}"><img src="${c.image_url}" alt="ad" class="mx-auto" /></a>`;
-      } else {
-        // native text fallback
-        slot.innerHTML = `<a href="${clickUrl}" data-ad-click class="block text-sm text-primary-700 hover:text-primary-900">${c.title || "Sponsored"}</a>`;
-      }
-      wireClickTracking(slot, slug, c.creative || c.id || "");
-      await trackEvent("impression", slug, c.creative || c.id || "", {
-        context: slot.getAttribute("data-context") || "",
-      });
-    } catch (err) {
-      /* silent */
-    }
-  }
-
-  function mountAds() {
-    const slots = doc.querySelectorAll("[data-ad-slot]");
-    if (!slots.length) return;
-
-    // Lazy-load when visible
-    const obs = "IntersectionObserver" in window ? new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const requiresConsent = entry.target.getAttribute("data-requires-consent") === "ads";
-          if (requiresConsent && !consentGranted) {
-            entry.target.innerHTML = '<div class="text-xs text-slate-500">Ads disabled by consent</div>';
-            obs.unobserve(entry.target);
-            return;
+    /**
+     * Fill a single ad slot with content from the server
+     */
+    async fillSlot(slotElement, slotId) {
+      try {
+        const pageUrl = encodeURIComponent(window.location.href);
+        const response = await fetch(
+          `${this.config.fillEndpoint}?placement=${encodeURIComponent(slotId)}&page_url=${pageUrl}`,
+          {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
           }
-          hydrateSlot(entry.target);
-          obs.unobserve(entry.target);
+        );
+
+        if (!response.ok) {
+          this.log(`Failed to fill slot ${slotId}: ${response.status}`);
+          return;
+        }
+
+        const data = await response.json();
+        
+        if (data.skipped) {
+          this.log(`Slot ${slotId} skipped: ${data.skipped}`);
+          return;
+        }
+
+        if (data.ok && data.html) {
+          slotElement.innerHTML = data.html;
+          slotElement.classList.add('ad-slot--filled');
+          
+          // Track impression
+          this.trackEvent('impression', slotId, data.creative_id);
+        }
+      } catch (error) {
+        this.log(`Error filling slot ${slotId}`, error);
+      }
+    },
+
+    /**
+     * Setup click tracking for ad links
+     */
+    setupClickTracking() {
+      document.addEventListener('click', (e) => {
+        const adLink = e.target.closest('.ad-slot a, [data-ad-click]');
+        if (adLink) {
+          const slot = adLink.closest('[data-ad-slot]');
+          if (slot) {
+            const slotId = slot.dataset.adSlot;
+            const creativeId = slot.dataset.creativeId;
+            this.trackEvent('click', slotId, creativeId);
+          }
         }
       });
-    }, { rootMargin: "100px" }) : null;
+    },
 
-    slots.forEach((slot) => {
-      if (obs) {
-        obs.observe(slot);
-      } else {
-        hydrateSlot(slot);
+    /**
+     * Track an ad event (impression, click, etc.)
+     */
+    async trackEvent(eventType, slotId, creativeId) {
+      try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        
+        await fetch(this.config.eventEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            event_type: eventType,
+            placement: slotId,
+            creative_id: creativeId,
+            page_url: window.location.href,
+            timestamp: new Date().toISOString()
+          })
+        });
+        
+        this.log(`Tracked ${eventType} for slot ${slotId}`);
+      } catch (error) {
+        this.log(`Error tracking ${eventType}`, error);
       }
-    });
-  }
+    },
 
-  window.addEventListener("consent:updated", () => {
-    consentGranted = hasAdsConsent();
-  });
+    /**
+     * Debug logging
+     */
+    log(message, data) {
+      if (this.config.debug || window.DEBUG) {
+        console.log(`[Ads] ${message}`, data || '');
+      }
+    }
+  };
 
-  if (doc.readyState === "loading") {
-    doc.addEventListener("DOMContentLoaded", mountAds);
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => AdsManager.init());
   } else {
-    mountAds();
+    AdsManager.init();
   }
-})();
 
+  // Expose globally
+  window.AdsManager = AdsManager;
+
+})();
 

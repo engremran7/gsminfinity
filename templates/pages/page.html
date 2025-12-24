@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static sanitize_tags %}
+
+{% block title %}{{ page.title }} | {{ site_settings.site_name|default:"GSM Infinity" }}{% endblock %}
+
+{% block meta_description %}{{ page.meta_description|default:page.excerpt|default:page.title }}{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-8 max-w-4xl">
+  {# Page Header #}
+  <header class="mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] mb-4">
+      {{ page.title }}
+    </h1>
+    {% if page.excerpt %}
+    <p class="text-lg text-[var(--color-text-secondary)]">
+      {{ page.excerpt }}
+    </p>
+    {% endif %}
+  </header>
+
+  {# Page Content - Sanitized for XSS protection #}
+  <article class="prose prose-invert max-w-none prose-headings:text-[var(--color-text-primary)] prose-p:text-[var(--color-text-secondary)] prose-a:text-[var(--primitive-cyan-400)] prose-strong:text-[var(--color-text-primary)]">
+    {{ page.content|sanitize_html }}
+  </article>
+
+  {# Page Footer / Meta #}
+  {% if page.updated_at %}
+  <footer class="mt-12 pt-6 border-t border-[var(--color-border-default)]">
+    <p class="text-sm text-[var(--color-text-muted)]">
+      Last updated: {{ page.updated_at|date:"F j, Y" }}
+    </p>
+  </footer>
+  {% endif %}
+</main>
+{% endblock %}
+

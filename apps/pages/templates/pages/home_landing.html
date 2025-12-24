@@ -1,47 +1,381 @@
 {% extends "base.html" %}
+{% load static sanitize_tags %}
 
-{% block title %}Welcome - {{ site_settings.site_name|default:"Blog" }}{% endblock %}
+{% block title %}Welcome - {{ site_settings.site_name|default:"GsmInfinity" }}{% endblock %}
+
+{% block extra_head %}
+<!-- Homepage optimizations -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<!-- Homepage styles moved to external file for CSP compliance -->
+{% endblock %}
 
 {% block content %}
-<section class="py-16 hero">
-  <div class="max-w-5xl mx-auto px-4 space-y-8 text-center">
-    <div class="space-y-3">
-      <p class="pill inline-flex">Powered by {{ site_settings.site_name|default:"Our Blog" }}</p>
-      <h1 class="text-4xl md:text-5xl font-extrabold text-slate-100">Latest posts, straight away</h1>
-      <p class="text-lg text-slate-200 max-w-3xl mx-auto">
-        Dive into the freshest articles. Sign in to unlock your dashboard; everyone can browse the blog.
-      </p>
+<!-- Top Banner Ad -->
+{% if ad_placements.slots %}
+  {% for slot in ad_placements.slots %}
+    {% if slot.position == 'top_banner' and slot.ad_unit %}
+      <div class="ad-slot ad-slot--banner">
+        <!-- Ad code: {{ slot.ad_unit.provider }} -->
+        <div nonce="{{ request.csp_nonce }}">
+          {{ slot.ad_unit.code|sanitize_ad }}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+  <!-- Header -->
+  <div class="text-center mb-12">
+    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
+      {% if site_settings.site_name %}{{ site_settings.site_name }}{% else %}GsmInfinity{% endif %}
+    </h1>
+    <p class="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto font-medium">
+      Your ultimate source for firmware downloads, tools, and mobile insights
+    </p>
+    
+    <!-- Search Bar with improved contrast -->
+    <div class="homepage-search-container">
+      <form action="{% url 'blog:post_list' %}" method="get" class="relative">
+        <input
+          type="search"
+          name="q"
+          placeholder="Search firmwares, blogs, brands, models..."
+          aria-label="Search firmwares, blogs, brands, models"
+          class="homepage-search-input"
+          value="{{ request.GET.q|default:'' }}"
+        />
+        <button 
+          type="submit" 
+          aria-label="Search"
+          class="homepage-search-button">
+          <svg class="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          Search
+        </button>
+      </form>
     </div>
-    <div class="flex justify-center gap-3 flex-wrap">
-      <a href="{% url 'blog:post_list' %}" class="btn-primary px-6 py-3">View blog</a>
+    
+    <!-- Stats Section with better contrast -->
+    <div class="stats-grid">
+      <div class="stat-card stat-card--brands">
+        <div class="stat-number">{{ stats.brands_count|default:0 }}</div>
+        <div class="stat-label text-blue-50">Brands Available</div>
+      </div>
+      <div class="stat-card stat-card--models">
+        <div class="stat-number">{{ stats.models_count|default:0 }}</div>
+        <div class="stat-label text-green-50">Device Models</div>
+      </div>
+      <div class="stat-card stat-card--firmwares">
+        <div class="stat-number">{{ stats.firmwares_count|default:0 }}</div>
+        <div class="stat-label text-purple-50">Official Firmwares</div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons with better contrast -->
+    <div class="action-buttons">
+      <a href="{% url 'blog:post_list' %}" class="btn-primary">
+        Browse Blog
+      </a>
       {% if not request.user.is_authenticated %}
-        <a href="{% url 'account_login' %}" class="btn-outline px-6 py-3">Sign in</a>
+        <a href="{% url 'account_login' %}" class="btn-secondary">
+          Sign In
+        </a>
       {% else %}
-        <a href="{% url 'users:dashboard' %}" class="btn-outline px-6 py-3">Go to dashboard</a>
+        <a href="{% url 'users:dashboard' %}" class="btn-secondary">
+          Dashboard
+        </a>
       {% endif %}
     </div>
   </div>
-</section>
 
-<section class="container mx-auto px-4 pb-16">
-  <div class="section-surface p-6">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-2xl font-bold text-slate-900">Latest posts</h2>
-      <a href="{% url 'blog:post_list' %}" class="text-sm text-primary">All posts</a>
-    </div>
-    {% if latest_posts %}
-      <div class="grid md:grid-cols-2 gap-4">
-        {% for post in latest_posts %}
-          <a href="{% url 'blog:post_detail' slug=post.slug %}" class="card light p-4 block">
-            <p class="text-xs text-slate-500">{{ post.published_at|date:"M d, Y" }}</p>
-            <h3 class="text-xl font-semibold text-slate-900 mt-1">{{ post.title }}</h3>
-            <p class="text-slate-600 mt-2">{{ post.summary|default_if_none:""|truncatechars:160 }}</p>
+  <!-- Dual Column Layout -->
+  <div class="content-grid">
+    
+    <!-- LEFT COLUMN: Firmwares -->
+    <div class="content-column">
+      
+      <!-- Latest Firmwares Widget -->
+      {% if left_column.latest_firmwares %}
+      <div class="widget-card">
+        <h2 class="widget-title">
+          <span class="flex items-center gap-2">
+            <span class="text-2xl" aria-hidden="true">🆕</span>
+            <span>Latest Firmwares</span>
+          </span>
+          <span class="text-sm font-normal text-gray-600">{{ left_column.latest_firmwares|length }} files</span>
+        </h2>
+        <div class="space-y-1">
+          {% for fw in left_column.latest_firmwares %}
+          <div class="firmware-item">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <a href="#" class="font-semibold text-gray-900 hover:text-blue-700 truncate block text-base">
+                  {{ fw.brand }} {{ fw.model }}
+                  {% if fw.variant != 'Unknown' %}- {{ fw.variant }}{% endif %}
+                </a>
+                <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-600 flex-wrap">
+                  <span class="badge badge--blue">
+                    {{ fw.type }}
+                  </span>
+                  {% if fw.chipset != 'N/A' %}
+                  <span>🔧 {{ fw.chipset }}</span>
+                  {% endif %}
+                  {% if fw.has_password %}
+                  <span class="badge badge--amber">🔒 Protected</span>
+                  {% endif %}
+                  <span class="ml-auto text-gray-500 font-medium">{{ fw.uploaded_at|timesince }} ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <a href="#" class="link-primary widget-nav-link">
+            View all firmwares
+            <svg class="widget-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
           </a>
-        {% endfor %}
+        </div>
       </div>
-    {% else %}
-      <p class="text-slate-600">No posts published yet. Check back soon.</p>
-    {% endif %}
+      {% endif %}
+
+      <!-- Ad Slot: Left Sidebar 1 -->
+      {% for slot in ad_placements.slots %}
+        {% if slot.position == 'left_sidebar_1' and slot.ad_unit %}
+        <div class="ad-slot ad-slot--rect">
+          {{ slot.ad_unit.code|sanitize_ad }}
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Trending Firmwares Widget -->
+      {% if left_column.trending_firmwares %}
+      <div class="widget-card">
+        <h2 class="widget-title">
+          <span class="flex items-center gap-2">
+            <span class="text-2xl" aria-hidden="true">🔥</span>
+            <span>Trending Firmwares</span>
+          </span>
+          <span class="text-sm font-normal text-gray-600">Last 7 days</span>
+        </h2>
+        <div class="space-y-1">
+          {% for fw in left_column.trending_firmwares %}
+          <div class="firmware-item">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <a href="#" class="font-semibold text-gray-900 hover:text-blue-700 truncate block text-base">
+                  {{ fw.brand }} {{ fw.model }}
+                  {% if fw.variant != 'Unknown' %}- {{ fw.variant }}{% endif %}
+                </a>
+                <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-600 flex-wrap">
+                  <span class="badge badge--gray">
+                    {{ fw.type }}
+                  </span>
+                  <span class="font-medium">👁️ {{ fw.views }}</span>
+                  <span class="font-medium">⬇️ {{ fw.downloads }}</span>
+                  <span class="ml-auto font-bold text-orange-700 badge badge--orange">
+                    Score: {{ fw.trending_score }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Most Requested Firmwares Widget -->
+      {% if left_column.most_requested %}
+      <div class="widget-card">
+        <h2 class="widget-title">
+          <span class="flex items-center gap-2">
+            <span class="text-2xl" aria-hidden="true">📋</span>
+            <span>Most Requested</span>
+          </span>
+          <span class="text-sm font-normal text-gray-600">Help us prioritize</span>
+        </h2>
+        <div class="space-y-1">
+          {% for req in left_column.most_requested %}
+          <div class="firmware-item">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold text-gray-900 truncate text-base">
+                  {{ req.brand }} {{ req.model }}
+                  {% if req.variant != 'Not specified' %}- {{ req.variant }}{% endif %}
+                </div>
+                <div class="flex items-center gap-3 mt-1.5 text-xs text-gray-600 flex-wrap">
+                  <span class="badge badge--indigo">
+                    {{ req.firmware_type }}
+                  </span>
+                  <span class="font-bold text-blue-700">{{ req.request_count }} requests</span>
+                  {% if req.urgency == 'Urgent' %}
+                  <span class="badge badge--red font-semibold">
+                    🚨 {{ req.urgency }}
+                  </span>
+                  {% endif %}
+                  <span class="ml-auto text-gray-500 font-medium">{{ req.last_requested|timesince }} ago</span>
+                </div>
+                {% if req.description_preview %}
+                <p class="text-xs text-gray-700 mt-1.5 line-clamp-1 font-medium">{{ req.description_preview }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <a href="#" class="link-primary widget-nav-link">
+            Request a firmware
+            <svg class="widget-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Ad Slot: Left Sidebar 2 -->
+      {% for slot in ad_placements.slots %}
+        {% if slot.position == 'left_sidebar_2' and slot.ad_unit %}
+        <div class="ad-slot ad-slot--skyscraper">
+          <div nonce="{{ request.csp_nonce }}">
+            {{ slot.ad_unit.code|sanitize_ad }}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+
+    </div>
+
+    <!-- RIGHT COLUMN: Blogs -->
+    <div class="content-column">
+      
+      <!-- Latest Blogs Widget -->
+      {% if right_column.latest_blogs %}
+      <div class="widget-card">
+        <h2 class="widget-title">
+          <span class="flex items-center gap-2">
+            <span class="text-2xl" aria-hidden="true">📰</span>
+            <span>Latest Articles</span>
+          </span>
+          <span class="text-sm font-normal text-gray-600">{{ right_column.latest_blogs|length }} posts</span>
+        </h2>
+        <div class="space-y-1">
+          {% for post in right_column.latest_blogs %}
+          <div class="blog-item">
+            <div class="flex items-start gap-3">
+              {% if post.featured_image %}
+              <img src="{{ post.featured_image }}" alt="{{ post.title }}" 
+                   class="w-20 h-20 object-cover rounded-lg flex-shrink-0 shadow-sm border border-gray-200">
+              {% else %}
+              <div class="w-20 h-20 rounded-lg flex-shrink-0 flex items-center justify-center shadow-sm border image-placeholder image-placeholder--blog">
+                <span class="text-3xl" aria-hidden="true">📝</span>
+              </div>
+              {% endif %}
+              <div class="flex-1 min-w-0">
+                <a href="{% url 'blog:post_detail' post.slug %}" 
+                   class="font-semibold text-gray-900 hover:text-blue-700 line-clamp-2 block text-base leading-snug">
+                  {{ post.title }}
+                </a>
+                <p class="text-xs text-gray-700 mt-1.5 line-clamp-2 leading-relaxed">{{ post.excerpt }}</p>
+                <div class="flex items-center gap-3 mt-2 text-xs text-gray-600 flex-wrap">
+                  <span class="font-medium">✍️ {{ post.author }}</span>
+                  <span>👁️ {{ post.view_count }}</span>
+                  <span>💬 {{ post.comment_count }}</span>
+                  <span class="ml-auto text-gray-500">{{ post.published_at|timesince }} ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <a href="{% url 'blog:post_list' %}" class="link-primary widget-nav-link">
+            Read all articles
+            <svg class="widget-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Ad Slot: Right Sidebar 1 -->
+      {% for slot in ad_placements.slots %}
+        {% if slot.position == 'right_sidebar_1' and slot.ad_unit %}
+        <div class="ad-slot ad-slot--rect">
+          {{ slot.ad_unit.code|sanitize_ad }}
+        </div>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Trending Blogs Widget -->
+      {% if right_column.trending_blogs %}
+      <div class="widget-card">
+        <h2 class="widget-title">
+          <span class="flex items-center gap-2">
+            <span class="text-2xl" aria-hidden="true">🔥</span>
+            <span>Trending Articles</span>
+          </span>
+          <span class="text-sm font-normal text-gray-600">Last 7 days</span>
+        </h2>
+        <div class="space-y-1">
+          {% for post in right_column.trending_blogs %}
+          <div class="blog-item">
+            <div class="flex items-start gap-3">
+              {% if post.featured_image %}
+              <img src="{{ post.featured_image }}" alt="{{ post.title }}" 
+                   class="w-20 h-20 object-cover rounded-lg flex-shrink-0 shadow-sm border border-gray-200">
+              {% else %}
+              <div class="w-20 h-20 rounded-lg flex-shrink-0 flex items-center justify-center shadow-sm border image-placeholder image-placeholder--trending">
+                <span class="text-3xl" aria-hidden="true">🔥</span>
+              </div>
+              {% endif %}
+              <div class="flex-1 min-w-0">
+                <a href="{% url 'blog:post_detail' post.slug %}" 
+                   class="font-semibold text-gray-900 hover:text-blue-700 line-clamp-2 block text-base leading-snug">
+                  {{ post.title }}
+                </a>
+                <p class="text-xs text-gray-700 mt-1.5 line-clamp-2 leading-relaxed">{{ post.excerpt }}</p>
+                <div class="flex items-center gap-3 mt-2 text-xs text-gray-600 flex-wrap">
+                  <span class="font-medium">✍️ {{ post.author }}</span>
+                  <span class="font-bold text-orange-700">👁️ {{ post.view_count }}</span>
+                  <span class="ml-auto text-gray-500">{{ post.published_at|timesince }} ago</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
   </div>
-</section>
+
+  <!-- Bottom Banner Ad -->
+  {% if ad_placements.slots %}
+    {% for slot in ad_placements.slots %}
+      {% if slot.position == 'bottom_banner' and slot.ad_unit %}
+        <div class="ad-slot mt-8 ad-slot--banner">
+          <!-- Ad: {{ slot.ad_unit.provider }} -->
+          <div nonce="{{ request.csp_nonce }}">
+            {{ slot.ad_unit.code|sanitize_ad }}
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  <!-- Cache Info (debug only for staff) -->
+  {% if cache_timestamp and request.user.is_staff %}
+  <div class="cache-info">
+    <p class="cache-timestamp">
+      Cache updated: {{ cache_timestamp }}
+    </p>
+  </div>
+  {% endif %}
+
+</div>
+
 {% endblock %}

@@ -9,15 +9,14 @@ from django.template import Context, Template
 from apps.core.utils import feature_flags
 from apps.site_settings.models import SiteSettings
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "gsminfinity.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
 os.environ.setdefault("DJANGO_SECRET_KEY", "test-secret")
 django.setup()
 
 
 @override_settings(
     ALLOWED_HOSTS=["testserver", "localhost"],
-    ROOT_URLCONF="gsminfinity.urls",
-    TEMPLATES=[{"BACKEND": "django.template.backends.django.DjangoTemplates", "APP_DIRS": True}],
+    ROOT_URLCONF="app.urls",
 )
 class SeoTemplateTagTests(TestCase):
     def test_render_seo_meta_respects_flag(self):

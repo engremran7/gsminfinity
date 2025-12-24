@@ -1,11 +1,11 @@
 
-<div class="bg-white shadow rounded-lg p-6">
+<div class="card-glass p-6">
   <div class="flex justify-between items-center mb-4">
-    <h3 class="text-lg font-medium text-slate-900">{{ title }}</h3>
+    <h3 class="text-lg font-medium text-[var(--color-text-primary)]">{{ title }}</h3>
     {% if refresh_url %}
     <button
       type="button"
-      class="text-sm text-primary underline js-chart-refresh"
+      class="text-sm text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors js-chart-refresh"
       data-chart-url="{{ refresh_url }}"
       data-chart-target="chart-{{ chart_id }}"
     >

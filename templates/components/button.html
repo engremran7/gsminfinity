@@ -1,0 +1,83 @@
+{# Modern Button Component #}
+{# Usage: {% include "components/button.html" with variant="primary" label="Save" icon="check" %} #}
+
+{% with
+  variant=variant|default:"primary"
+  size=size|default:"md"
+  type=type|default:"button"
+  disabled=disabled|default:False
+  loading=loading|default:False
+  full_width=full_width|default:False
+%}
+
+<button
+  type="{{ type }}"
+  {% if disabled or loading %}disabled{% endif %}
+  {% if id %}id="{{ id }}"{% endif %}
+  {% if name %}name="{{ name }}"{% endif %}
+  {% if value %}value="{{ value }}"{% endif %}
+  {% if hx_get %}hx-get="{{ hx_get }}"{% endif %}
+  {% if hx_post %}hx-post="{{ hx_post }}"{% endif %}
+  {% if hx_target %}hx-target="{{ hx_target }}"{% endif %}
+  {% if hx_swap %}hx-swap="{{ hx_swap }}"{% endif %}
+  {% if data_modal_open %}data-modal-open="{{ data_modal_open }}"{% endif %}
+  class="
+    inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200
+    focus:outline-none focus:ring-2 focus:ring-offset-2
+    disabled:opacity-50 disabled:cursor-not-allowed
+    {% if full_width %}w-full{% endif %}
+    
+    {# Size variants #}
+    {% if size == 'xs' %}px-2.5 py-1.5 text-xs rounded{% endif %}
+    {% if size == 'sm' %}px-3 py-2 text-sm rounded-md{% endif %}
+    {% if size == 'md' %}px-4 py-2.5 text-sm rounded-md{% endif %}
+    {% if size == 'lg' %}px-5 py-3 text-base rounded-lg{% endif %}
+    {% if size == 'xl' %}px-6 py-3.5 text-base rounded-lg{% endif %}
+    
+    {# Color variants #}
+    {% if variant == 'primary' %}
+      bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500
+    {% elif variant == 'secondary' %}
+      bg-slate-600 text-white hover:bg-slate-700 focus:ring-slate-500
+    {% elif variant == 'success' %}
+      bg-green-600 text-white hover:bg-green-700 focus:ring-green-500
+    {% elif variant == 'danger' %}
+      bg-red-600 text-white hover:bg-red-700 focus:ring-red-500
+    {% elif variant == 'warning' %}
+      bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500
+    {% elif variant == 'outline' %}
+      border-2 border-slate-300 text-slate-700 hover:bg-slate-50 focus:ring-slate-500
+    {% elif variant == 'ghost' %}
+      text-slate-700 hover:bg-slate-100 focus:ring-slate-500
+    {% elif variant == 'link' %}
+      text-primary-600 hover:text-primary-700 underline-offset-4 hover:underline focus:ring-primary-500
+    {% endif %}
+    
+    {{ class }}
+  "
+>
+  {# Loading spinner #}
+  {% if loading %}
+    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+  {% endif %}
+  
+  {# Icon #}
+  {% if icon and not loading %}
+    <svg class="w-4 h-4" aria-hidden="true">
+      <use href="#icon-{{ icon }}"></use>
+    </svg>
+  {% endif %}
+  
+  {# Label #}
+  {% if label %}
+    <span>{{ label }}</span>
+  {% else %}
+    {{ content }}
+  {% endif %}
+</button>
+
+{% endwith %}
+

@@ -1,156 +1,153 @@
 {% extends "base.html" %}
-{% block title %}Distribution Dashboard{% endblock %}
+{% load static %}
+
+{% block title %}Distribution Dashboard | {{ site_settings.site_name|default:"GSM Infinity" }}{% endblock %}
+
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
-  <div>
-    <h1 class="text-2xl font-bold text-slate-900">Distribution</h1>
-    <p class="text-sm text-slate-600">Accounts, templates, plans, and recent share jobs/logs.</p>
-  </div>
+<main class="container mx-auto px-4 py-8">
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-[var(--color-text-primary)]">Distribution Dashboard</h1>
+    <p class="text-[var(--color-text-secondary)] mt-2">Manage social sharing, syndication, and content distribution.</p>
+  </header>
 
-  <div class="grid md:grid-cols-3 gap-4">
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-      <div class="text-xs uppercase text-slate-500 mb-1">Distribution</div>
-      <div class="text-lg font-semibold text-slate-800">{{ dist_settings.distribution_enabled|yesno:"Enabled,Disabled" }}</div>
-      <div class="text-[12px] text-slate-600">Auto fanout on publish: {{ dist_settings.auto_fanout_on_publish|yesno:"On,Off" }}</div>
+  {# Channel Status #}
+  {% if channel_status %}
+  <section class="mb-8 card-glass-neon rounded-xl p-6">
+    <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Channel Status</h2>
+    <div class="flex flex-wrap gap-2 mb-4">
+      {% for channel in channel_status.active_channels %}
+      <span class="inline-flex items-center gap-1 px-3 py-1 bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)] rounded-full text-sm border border-[var(--primitive-neon-500)]/30">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        {{ channel }}
+      </span>
+      {% endfor %}
     </div>
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-      <div class="text-xs uppercase text-slate-500 mb-1">Channels</div>
-      <div class="text-lg font-semibold text-slate-800">
-        {% if dist_settings.default_channels %}
-          {{ dist_settings.default_channels|join:", " }}
-        {% else %}
-          All enabled
-        {% endif %}
-      </div>
-      <div class="text-[12px] text-slate-600">Indexing jobs allowed: {{ dist_settings.allow_indexing_jobs|yesno:"Yes,No" }}</div>
+    {% if channel_status.has_gaps %}
+    <div class="p-4 bg-[var(--primitive-yellow-500)]/10 border border-[var(--primitive-yellow-500)]/30 rounded-lg">
+      <p class="text-sm text-[var(--primitive-yellow-400)]">
+        <strong>Missing channels:</strong> {{ channel_status.missing_channels|join:", " }}
+      </p>
     </div>
-    <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-      <div class="text-xs uppercase text-slate-500 mb-1">Retries</div>
-      <div class="text-lg font-semibold text-slate-800">{{ dist_settings.max_retries }} max attempts</div>
-      <div class="text-[12px] text-slate-600">Backoff: {{ dist_settings.retry_backoff_seconds }}s</div>
-    </div>
-  </div>
-
-  <div class="rounded-xl border {% if readiness.has_gaps %}border-amber-300 bg-amber-50{% else %}border-slate-200 bg-white{% endif %} shadow-sm p-4 space-y-2">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-slate-800">Channel readiness</h2>
-        <p class="text-[12px] text-slate-600">Active accounts vs enabled channels</p>
-      </div>
-      {% if readiness.has_gaps %}
-        <span class="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800">Missing providers</span>
-      {% else %}
-        <span class="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">All covered</span>
-      {% endif %}
-    </div>
-    <div class="text-sm text-slate-700">Enabled: {{ readiness.enabled_channels|join:", " }}</div>
-    <div class="text-sm text-slate-700">Active: {{ readiness.active_channels|join:", "|default:"None" }}</div>
-    {% if readiness.missing_channels %}
-      <div class="text-sm text-amber-800">Missing accounts for: {{ readiness.missing_channels|join:", " }}</div>
     {% endif %}
-  </div>
+  </section>
+  {% endif %}
 
-  <div class="grid lg:grid-cols-3 gap-4">
-    <section class="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-slate-800">Social Accounts</h2>
-        <span class="text-xs text-slate-500">{{ accounts|length }} items</span>
-      </div>
-      <div class="grid sm:grid-cols-2 gap-3 text-sm">
-        {% for acc in accounts %}
-          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div class="font-semibold text-slate-900">{{ acc.get_channel_display }}</div>
-            <div class="text-xs text-slate-600">Name: {{ acc.account_name|default:"-" }}</div>
-            <div class="text-[11px] text-slate-500">Active: {{ acc.is_active|yesno:"Yes,No" }}{% if acc.is_expired %} - Expired{% endif %}</div>
-            {% if acc.last_tested_at %}<div class="text-[11px] text-slate-500">Tested: {{ acc.last_tested_at|date:"M j, Y H:i" }}</div>{% endif %}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {# Social Accounts #}
+    <section class="card-glass-neon rounded-xl p-6">
+      <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Social Accounts ({{ accounts|length }})</h2>
+      {% if accounts %}
+      <div class="space-y-3 max-h-64 overflow-y-auto">
+        {% for account in accounts %}
+        <div class="flex items-center justify-between p-3 bg-[var(--color-bg-surface-secondary)] rounded-lg border border-[var(--color-border-subtle)]">
+          <div>
+            <span class="font-medium text-[var(--color-text-primary)]">{{ account.name }}</span>
+            <span class="text-sm text-[var(--color-text-muted)] ml-2">{{ account.platform }}</span>
           </div>
-        {% empty %}
-          <p class="text-sm text-slate-500">No accounts configured.</p>
+          <span class="px-2 py-1 text-xs rounded-full {% if account.is_active %}bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)]{% else %}bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-muted)]{% endif %}">
+            {% if account.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+        </div>
         {% endfor %}
       </div>
+      {% else %}
+      <p class="text-[var(--color-text-muted)] text-center py-4">No social accounts configured.</p>
+      {% endif %}
     </section>
-    <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-slate-800">Templates</h2>
-        <span class="text-xs text-slate-500">{{ templates|length }} items</span>
-      </div>
-      <div class="space-y-2 text-sm">
-        {% for tpl in templates %}
-          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div class="font-semibold text-slate-900">{{ tpl.name }}</div>
-            <div class="text-xs text-slate-600">Channel: {{ tpl.get_channel_display }}</div>
-          </div>
-        {% empty %}
-          <p class="text-sm text-slate-500">No templates.</p>
-        {% endfor %}
-      </div>
-    </section>
-  </div>
 
-  <div class="grid lg:grid-cols-2 gap-4">
-    <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-      <h2 class="text-lg font-semibold text-slate-800 mb-2">Plans</h2>
-      <div class="space-y-2 text-sm">
-        {% for plan in plans %}
-          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div class="font-semibold text-slate-900">{{ plan.post.title }}</div>
-            <div class="text-xs text-slate-600">Status: {{ plan.status|default:"-" }} | Channels: {{ plan.channels|join:", " }}</div>
-            {% if plan.schedule_at %}
-            <div class="text-[12px] text-slate-500">Scheduled: {{ plan.schedule_at|date:"M j, Y H:i" }}</div>
-            {% endif %}
-          </div>
-        {% empty %}
-          <p class="text-sm text-slate-500">No plans.</p>
+    {# Share Templates #}
+    <section class="card-glass-neon rounded-xl p-6">
+      <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Share Templates ({{ templates|length }})</h2>
+      {% if templates %}
+      <div class="space-y-3 max-h-64 overflow-y-auto">
+        {% for template in templates %}
+        <div class="p-3 bg-[var(--color-bg-surface-secondary)] rounded-lg border border-[var(--color-border-subtle)]">
+          <span class="font-medium text-[var(--color-text-primary)]">{{ template.name }}</span>
+          <p class="text-sm text-[var(--color-text-muted)] mt-1 truncate">{{ template.content|truncatewords:15 }}</p>
+        </div>
         {% endfor %}
       </div>
+      {% else %}
+      <p class="text-[var(--color-text-muted)] text-center py-4">No share templates created.</p>
+      {% endif %}
     </section>
-    <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-      <h2 class="text-lg font-semibold text-slate-800 mb-2">Partners</h2>
-      <div class="space-y-2 text-sm">
-        {% for partner in partners %}
-          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div class="font-semibold text-slate-900">{{ partner.name }}</div>
-            <div class="text-xs text-slate-600">Type: {{ partner.get_partner_type_display }}</div>
-          </div>
-        {% empty %}
-          <p class="text-sm text-slate-500">No partners.</p>
-        {% endfor %}
-      </div>
-    </section>
-  </div>
 
-  <div class="grid lg:grid-cols-2 gap-4">
-    <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-      <h2 class="text-lg font-semibold text-slate-800 mb-2">Recent Jobs</h2>
-      <div class="space-y-2 text-sm">
+    {# Recent Jobs #}
+    <section class="card-glass-neon rounded-xl p-6">
+      <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Recent Jobs ({{ jobs|length }})</h2>
+      {% if jobs %}
+      <div class="space-y-3 max-h-64 overflow-y-auto">
         {% for job in jobs %}
-          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div class="font-semibold text-slate-900">{{ job.channel|upper }} — {{ job.post.title }}</div>
-            <div class="text-xs text-slate-600">Status: {{ job.status }} | Attempts: {{ job.attempt_count }}</div>
-            <div class="text-[12px] text-slate-500">Created: {{ job.created_at|date:"M j, Y H:i" }}</div>
-            {% if readiness.missing_channels and job.channel in readiness.missing_channels %}
-              <div class="text-[12px] text-amber-700">Warning: No active account for this channel.</div>
-            {% endif %}
-            {% if job.last_error %}<div class="text-[12px] text-red-600">Error: {{ job.last_error|truncatechars:140 }}</div>{% endif %}
+        <div class="flex items-center justify-between p-3 bg-[var(--color-bg-surface-secondary)] rounded-lg border border-[var(--color-border-subtle)]">
+          <div>
+            <span class="font-medium text-[var(--color-text-primary)]">{{ job.title|default:"Job" }}</span>
+            <span class="text-xs text-[var(--color-text-muted)] ml-2">{{ job.created_at|timesince }} ago</span>
           </div>
-        {% empty %}
-          <p class="text-sm text-slate-500">No jobs yet.</p>
+          <span class="px-2 py-1 text-xs rounded-full {% if job.status == 'completed' %}bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)]{% elif job.status == 'failed' %}bg-[var(--primitive-red-500)]/20 text-[var(--primitive-red-400)]{% else %}bg-[var(--primitive-yellow-500)]/20 text-[var(--primitive-yellow-400)]{% endif %}">
+            {{ job.status|default:"pending" }}
+          </span>
+        </div>
         {% endfor %}
       </div>
+      {% else %}
+      <p class="text-[var(--color-text-muted)] text-center py-4">No recent jobs.</p>
+      {% endif %}
     </section>
-    <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
-      <h2 class="text-lg font-semibold text-slate-800 mb-2">Recent Logs</h2>
-      <div class="space-y-2 text-sm">
-        {% for log in logs %}
-          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div class="text-sm text-slate-800">{{ log.message|default:"Log" }}</div>
-            <div class="text-[11px] text-slate-500">{{ log.created_at|date:"M j, Y H:i" }}</div>
-          </div>
-        {% empty %}
-          <p class="text-sm text-slate-500">No logs.</p>
+
+    {# Syndication Partners #}
+    <section class="card-glass-neon rounded-xl p-6">
+      <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Syndication Partners ({{ partners|length }})</h2>
+      {% if partners %}
+      <div class="space-y-3 max-h-64 overflow-y-auto">
+        {% for partner in partners %}
+        <div class="flex items-center justify-between p-3 bg-[var(--color-bg-surface-secondary)] rounded-lg border border-[var(--color-border-subtle)]">
+          <span class="font-medium text-[var(--color-text-primary)]">{{ partner.name }}</span>
+          <span class="px-2 py-1 text-xs rounded-full {% if partner.is_active %}bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)]{% else %}bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-muted)]{% endif %}">
+            {% if partner.is_active %}Active{% else %}Inactive{% endif %}
+          </span>
+        </div>
         {% endfor %}
       </div>
+      {% else %}
+      <p class="text-[var(--color-text-muted)] text-center py-4">No syndication partners configured.</p>
+      {% endif %}
     </section>
   </div>
-</div>
+
+  {# Recent Logs #}
+  <section class="mt-8 card-glass-neon rounded-xl p-6">
+    <h2 class="text-xl font-semibold text-[var(--color-text-primary)] mb-4">Recent Activity Logs</h2>
+    {% if logs %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-left text-[var(--color-text-muted)] border-b border-[var(--color-border-default)]">
+          <tr>
+            <th class="pb-3 font-medium">Time</th>
+            <th class="pb-3 font-medium">Action</th>
+            <th class="pb-3 font-medium">Status</th>
+            <th class="pb-3 font-medium">Details</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--color-border-subtle)]">
+          {% for log in logs %}
+          <tr>
+            <td class="py-3 text-[var(--color-text-secondary)]">{{ log.created_at|timesince }} ago</td>
+            <td class="py-3 text-[var(--color-text-primary)]">{{ log.action|default:"Share" }}</td>
+            <td class="py-3">
+              <span class="px-2 py-1 text-xs rounded-full {% if log.success %}bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)]{% else %}bg-[var(--primitive-red-500)]/20 text-[var(--primitive-red-400)]{% endif %}">
+                {% if log.success %}Success{% else %}Failed{% endif %}
+              </span>
+            </td>
+            <td class="py-3 text-[var(--color-text-muted)] truncate max-w-xs">{{ log.message|default:"-" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-[var(--color-text-muted)] text-center py-4">No activity logs yet.</p>
+    {% endif %}
+  </section>
+</main>
 {% endblock %}
+

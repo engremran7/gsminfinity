@@ -1,40 +1,61 @@
 
 {% extends "base.html" %}
 {% block title %}#{{ tag.name }} - {{ site_settings.site_name|default:"Site" }}{% endblock %}
+{% block sidebar_left %}{% endblock %}
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-  <header class="space-y-2">
-    <p class="text-xs uppercase tracking-wide text-primary font-semibold">Tag</p>
-    <h1 class="text-3xl font-bold text-slate-900">#{{ tag.name }}</h1>
-    {% if tag.description %}<p class="text-sm text-slate-600 max-w-3xl">{{ tag.description }}</p>{% endif %}
-    <p class="text-xs text-slate-500">{{ page_obj.paginator.count }} posts · {{ tag.usage_count }} total uses</p>
-    <p class="text-xs text-slate-500">Use existing tags where possible to avoid fragmentation. Synonyms: {{ tag.synonyms|join:', '|default:'None' }}.</p>
-  </header>
+<div class="w-full px-4 sm:px-6 lg:px-8 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <header class="lg:col-span-12 space-y-2">
+      <p class="text-xs uppercase tracking-wide text-[var(--primitive-cyan-400)] font-semibold">Tag</p>
+      <h1 class="text-3xl font-bold bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-neon-400)] bg-clip-text text-transparent">#{{ tag.name }}</h1>
+      {% if tag.description %}<p class="text-sm text-[var(--color-text-secondary)] max-w-3xl">{{ tag.description }}</p>{% endif %}
+      <p class="text-xs text-[var(--color-text-muted)]">{{ page_obj.paginator.count }} posts · {{ tag.usage_count }} total uses</p>
+      <p class="text-xs text-[var(--color-text-muted)]">Use existing tags where possible to avoid fragmentation. Synonyms: {{ tag.synonyms|join:', '|default:'None' }}.</p>
+    </header>
 
-  <div class="grid gap-8 lg:grid-cols-[2fr_1fr]">
-    <section class="space-y-4">
+    <section class="lg:col-span-8 space-y-4">
       {% if posts %}
         {% for post in posts %}
           {% url 'blog:post_detail' slug=post.slug as post_url %}
           {% include "components/post_card.html" with title=post.title url=post_url meta="By %s · %s" % (post.author, post.published_at|date:"M j, Y"|default:"Draft") excerpt=post.summary|truncatechars:220 tags=post.tags.all category=post.category.name thumbnail=post.hero_image %}
         {% endfor %}
       {% else %}
-        <div class="text-sm text-slate-500">No posts for this tag yet.</div>
+        <div class="text-sm text-[var(--color-text-muted)]">No posts for this tag yet.</div>
       {% endif %}
       {% include "components/pagination.html" with page_obj=page_obj %}
     </section>
-    <aside class="space-y-4 lg:sticky lg:top-24">
-      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+    <aside class="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
+      <div class="card-glass p-4">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-semibold text-slate-800">Trending tags</h3>
+          <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">Trending tags</h3>
         </div>
-        <div class="space-y-3">{{ trending_tags_html|default:"<div class='text-sm text-slate-500'>Coming soon</div>"|safe }}</div>
+        <div class="space-y-3">
+          {% if trending_tags_html %}
+            {{ trending_tags_html|safe }}
+          {% elif trending_tags %}
+            {% for t in trending_tags %}
+              <a href="{% url 'tags:detail' slug=t.slug %}" class="inline-block px-2 py-1 text-xs rounded-full bg-[var(--primitive-cyan-500)]/10 text-[var(--primitive-cyan-400)] hover:bg-[var(--primitive-cyan-500)]/20 transition-colors">#{{ t.name }}</a>
+            {% endfor %}
+          {% else %}
+            <p class="text-sm text-[var(--color-text-muted)]">No trending tags yet</p>
+          {% endif %}
+        </div>
       </div>
-      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4">
+      <div class="card-glass p-4">
         <div class="flex items-center justify-between mb-2">
-          <h3 class="text-sm font-semibold text-slate-800">Latest</h3>
+          <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">Latest</h3>
         </div>
-        <div class="space-y-3">{{ latest_widget_html|default:"<div class='text-sm text-slate-500'>Coming soon</div>"|safe }}</div>
+        <div class="space-y-3">
+          {% if latest_widget_html %}
+            {{ latest_widget_html|safe }}
+          {% elif latest_posts %}
+            {% for post in latest_posts %}
+              <a href="{{ post.get_absolute_url }}" class="block text-sm text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] truncate transition-colors">{{ post.title }}</a>
+            {% endfor %}
+          {% else %}
+            <p class="text-sm text-[var(--color-text-muted)]">No recent posts</p>
+          {% endif %}
+        </div>
       </div>
     </aside>
   </div>

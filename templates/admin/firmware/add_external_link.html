@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Add External Link | Admin | {{ site_settings.site_name|default:"GSM Infinity" }}{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-8 max-w-2xl">
+  <header class="mb-8">
+    <nav class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+      <a href="{% url 'admin_suite:dashboard' %}" class="hover:text-primary-600">Admin</a>
+      <span class="mx-2">›</span>
+      <a href="{% url 'admin_suite:firmwares' %}" class="hover:text-primary-600">Firmwares</a>
+      <span class="mx-2">›</span>
+      <span class="text-slate-900 dark:text-white">Add External Link</span>
+    </nav>
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Add External Link</h1>
+    <p class="text-slate-600 dark:text-slate-400 mt-2">Add an external download link to a firmware.</p>
+  </header>
+
+  <form method="post" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 space-y-6">
+    {% csrf_token %}
+    
+    {# Firmware Selection #}
+    <div>
+      <label for="firmware" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        Firmware
+      </label>
+      {% if firmware %}
+      <input type="hidden" name="firmware_id" value="{{ firmware.id }}">
+      <div class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+        <span class="font-medium text-slate-900 dark:text-white">{{ firmware.title }}</span>
+        <span class="text-sm text-slate-500 dark:text-slate-400 ml-2">{{ firmware.brand }} - {{ firmware.model }}</span>
+      </div>
+      {% else %}
+      <select name="firmware_id" id="firmware" required class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+        <option value="">Select a firmware...</option>
+        {% for fw in firmwares %}
+        <option value="{{ fw.id }}">{{ fw.title }} ({{ fw.brand }} - {{ fw.model }})</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+    </div>
+
+    {# Link URL #}
+    <div>
+      <label for="url" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        External URL <span class="text-red-500">*</span>
+      </label>
+      <input type="url" name="url" id="url" required placeholder="https://example.com/download/file.zip" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">The full URL to the external download.</p>
+    </div>
+
+    {# Link Label #}
+    <div>
+      <label for="label" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        Link Label
+      </label>
+      <input type="text" name="label" id="label" placeholder="Mirror 1" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Optional label for this download link.</p>
+    </div>
+
+    {# File Size #}
+    <div>
+      <label for="file_size" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+        File Size (bytes)
+      </label>
+      <input type="number" name="file_size" id="file_size" placeholder="1073741824" class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Optional file size in bytes.</p>
+    </div>
+
+    {# Is Primary #}
+    <div class="flex items-center gap-3">
+      <input type="checkbox" name="is_primary" id="is_primary" class="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
+      <label for="is_primary" class="text-sm font-medium text-slate-700 dark:text-slate-300">
+        Set as primary download link
+      </label>
+    </div>
+
+    {# Submit #}
+    <div class="flex items-center justify-end gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+      <a href="{% url 'admin_suite:firmwares' %}" class="px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+        Cancel
+      </a>
+      <button type="submit" class="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-colors">
+        Add Link
+      </button>
+    </div>
+  </form>
+</main>
+{% endblock %}
+

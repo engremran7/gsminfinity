@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Analytics Dashboard | {{ site_settings.site_name|default:"GSM Infinity" }}{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-8">
+  <header class="mb-8">
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Analytics Dashboard</h1>
+    <p class="text-slate-600 dark:text-slate-400 mt-2">Overview of site performance and user engagement.</p>
+  </header>
+
+  {# Quick Stats #}
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.page_views|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Page Views</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.unique_visitors|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Unique Visitors</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.downloads|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Downloads</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.avg_session|default:"0m" }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Avg. Session</div>
+    </div>
+  </section>
+
+  {# Report Links #}
+  <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6 mb-8">
+    <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Reports</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <a href="{% url 'analytics:traffic_report' %}" class="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+        <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+        <div>
+          <div class="font-medium text-slate-900 dark:text-white">Traffic Report</div>
+          <div class="text-sm text-slate-500 dark:text-slate-400">Page views, sources, referrers</div>
+        </div>
+      </a>
+      <a href="{% url 'analytics:content_report' %}" class="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+        <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <div>
+          <div class="font-medium text-slate-900 dark:text-white">Content Report</div>
+          <div class="text-sm text-slate-500 dark:text-slate-400">Top pages, downloads, posts</div>
+        </div>
+      </a>
+      <a href="{% url 'analytics:engagement_report' %}" class="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors">
+        <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <div>
+          <div class="font-medium text-slate-900 dark:text-white">Engagement Report</div>
+          <div class="text-sm text-slate-500 dark:text-slate-400">User behavior, interactions</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  {# Realtime Link #}
+  <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-white">Realtime Analytics</h2>
+        <p class="text-slate-600 dark:text-slate-400 mt-1">See what's happening on your site right now.</p>
+      </div>
+      <a href="{% url 'analytics:realtime_dashboard' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+        <span class="relative flex h-3 w-3">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+        </span>
+        View Realtime
+      </a>
+    </div>
+  </section>
+</main>
+{% endblock %}
+

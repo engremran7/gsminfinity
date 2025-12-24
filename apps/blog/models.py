@@ -15,6 +15,7 @@ from apps.core.utils.sanitize import sanitize_html
 
 class PostStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
+    IN_REVIEW = "in_review", "In Review"
     SCHEDULED = "scheduled", "Scheduled"
     PUBLISHED = "published", "Published"
     ARCHIVED = "archived", "Archived"
@@ -72,16 +73,24 @@ class Post(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts"
     )
     category = models.ForeignKey(
-        Category, on_delete=models.SET_NULL, null=True, blank=True, related_name="posts"
+        Category,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="posts",
+        db_index=True,  # HIGH: Heavily filtered in category_detail view
     )
     tags = models.ManyToManyField("tags.Tag", blank=True, related_name="posts")
     status = models.CharField(
-        max_length=20, choices=PostStatus.choices, default=PostStatus.DRAFT
+        max_length=20, choices=PostStatus.choices, default=PostStatus.DRAFT, db_index=True
     )
     publish_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
     is_published = models.BooleanField(default=False)
-    featured = models.BooleanField(default=False)
+    featured = models.BooleanField(
+        default=False,
+        db_index=True,  # MEDIUM: Queried in featured_posts view
+    )
     reading_time = models.PositiveIntegerField(default=0, help_text="Minutes")
     version = models.PositiveIntegerField(default=1)
     is_ai_generated = models.BooleanField(default=False)

@@ -884,6 +884,7 @@
 /* Display utilities */
 .d-none { display: none; }
 .d-flex { display: flex; }
+.hidden { display: none; }
 
 /* Flexbox utilities */
 .flex-dir-col { flex-direction: column; }
@@ -926,3 +927,54 @@
   font: inherit;
   color: inherit;
 }
+
+/* ============================================================================
+   PROGRESS BARS - CSP Compliant (CSS-only width via custom property)
+   ============================================================================ */
+
+.progress-bar-container {
+  width: 100%;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-bar-container--sm { height: 0.375rem; }
+.progress-bar-container--md { height: 0.5rem; }
+.progress-bar-container--lg { height: 0.625rem; }
+
+.progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+  /* Width set via --progress-width custom property */
+  width: var(--progress-width, 0%);
+}
+
+.progress-bar--success { background: #22c55e; }
+.progress-bar--warning { background: #f59e0b; }
+.progress-bar--danger { background: #ef4444; }
+.progress-bar--primary { background: #3b82f6; }
+
+/* Dynamic width classes for common percentages */
+.progress-w-0 { --progress-width: 0%; }
+.progress-w-5 { --progress-width: 5%; }
+.progress-w-10 { --progress-width: 10%; }
+.progress-w-15 { --progress-width: 15%; }
+.progress-w-20 { --progress-width: 20%; }
+.progress-w-25 { --progress-width: 25%; }
+.progress-w-30 { --progress-width: 30%; }
+.progress-w-35 { --progress-width: 35%; }
+.progress-w-40 { --progress-width: 40%; }
+.progress-w-45 { --progress-width: 45%; }
+.progress-w-50 { --progress-width: 50%; }
+.progress-w-55 { --progress-width: 55%; }
+.progress-w-60 { --progress-width: 60%; }
+.progress-w-65 { --progress-width: 65%; }
+.progress-w-70 { --progress-width: 70%; }
+.progress-w-75 { --progress-width: 75%; }
+.progress-w-80 { --progress-width: 80%; }
+.progress-w-85 { --progress-width: 85%; }
+.progress-w-90 { --progress-width: 90%; }
+.progress-w-95 { --progress-width: 95%; }
+.progress-w-100 { --progress-width: 100%; }

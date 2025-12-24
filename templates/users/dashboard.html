@@ -1,24 +1,32 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Dashboard - {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block title %}Dashboard - {{ site_settings.site_name|default:"Site" }}{% endblock %}
+
+{% block sidebar_left %}{% endblock %}
+{% block sidebar_right %}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-  <!-- Header Section -->
-  <div class="bg-white border-b border-gray-200">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="flex items-center justify-between">
+<div class="min-h-screen">
+  <!-- Hero Header Section with Animated Background -->
+  <div class="relative overflow-hidden bg-gradient-to-br from-[var(--primitive-gray-900)] via-[var(--color-bg-page)] to-[var(--primitive-gray-900)]">
+    <div class="absolute top-0 right-0 w-96 h-96 bg-[var(--primitive-cyan-500)]/5 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 left-0 w-96 h-96 bg-[var(--primitive-neon-500)]/5 rounded-full blur-3xl"></div>
+    
+    <div class="relative w-full px-4 sm:px-6 lg:px-8 py-8">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p class="mt-1 text-sm text-gray-600">Welcome back, {{ user.get_full_name|default:user.username }}</p>
+          <h1 class="text-3xl sm:text-4xl font-bold text-[var(--color-text-primary)]">
+            <span class="bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-neon-400)] bg-clip-text text-transparent">Dashboard</span>
+          </h1>
+          <p class="mt-2 text-[var(--color-text-secondary)]">Welcome back, <span class="text-[var(--primitive-cyan-400)]">{{ user.get_full_name|default:user.username }}</span></p>
         </div>
         <div class="flex items-center gap-3">
-          <a href="{% url 'users:profile' %}" class="btn btn-light">
+          <a href="{% url 'users:profile' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--color-bg-glass)] backdrop-blur-sm border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] hover:border-[var(--primitive-cyan-500)]/50 transition-all">
             <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-user"></use></svg>
             Profile
           </a>
-          <a href="{% url 'blog:post_list' %}" class="btn btn-primary">
+          <a href="{% url 'blog:post_list' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[var(--primitive-cyan-500)] to-[var(--primitive-cyan-600)] text-white font-medium hover:shadow-[0_0_20px_var(--primitive-cyan-500)] transition-shadow">
             <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-edit"></use></svg>
             Browse Posts
           </a>
@@ -27,190 +35,190 @@
     </div>
   </div>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="w-full px-4 sm:px-6 lg:px-8 py-8">
     <!-- Alerts Section -->
     {% if current_device and not current_device.is_trusted %}
-      <div class="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-        <svg class="icon w-5 h-5 text-amber-600 mt-0.5" aria-hidden="true"><use href="#icon-alert"></use></svg>
+      <div class="mb-6 card-glass-neon p-4 flex items-start gap-3 border-l-4 border-[var(--primitive-amber-500)]">
+        <svg class="icon w-5 h-5 text-[var(--primitive-amber-400)] mt-0.5" aria-hidden="true"><use href="#icon-alert"></use></svg>
         <div class="flex-1">
-          <p class="text-sm font-semibold text-amber-900">Trust this device</p>
-          <p class="text-sm text-amber-800 mt-1">
+          <p class="text-sm font-semibold text-[var(--primitive-amber-400)]">Trust this device</p>
+          <p class="text-sm text-[var(--color-text-secondary)] mt-1">
             We detected you're on an untrusted device{% if current_device.display_name %} ({{ current_device.display_name }}){% endif %}. 
             If this is yours, mark it trusted to avoid friction next time.
           </p>
         </div>
-        <a href="{% url 'users:devices' %}" class="text-sm font-semibold text-primary hover:underline">Manage</a>
+        <a href="{% url 'users:devices' %}" class="text-sm font-semibold text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors">Manage</a>
       </div>
     {% endif %}
 
     {% if profile_missing_fields %}
-      <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
-        <svg class="icon w-5 h-5 text-blue-600 mt-0.5" aria-hidden="true"><use href="#icon-info"></use></svg>
+      <div class="mb-6 card-glass p-4 flex items-start gap-3 border-l-4 border-[var(--primitive-cyan-500)]">
+        <svg class="icon w-5 h-5 text-[var(--primitive-cyan-400)] mt-0.5" aria-hidden="true"><use href="#icon-info"></use></svg>
         <div class="flex-1">
-          <p class="text-sm font-semibold text-blue-900">Complete your profile</p>
-          <p class="text-sm text-blue-800 mt-1">
+          <p class="text-sm font-semibold text-[var(--primitive-cyan-400)]">Complete your profile</p>
+          <p class="text-sm text-[var(--color-text-secondary)] mt-1">
             Add your {{ profile_missing_fields|join:", " }} to keep your account details up to date.
           </p>
         </div>
-        <a href="{% url 'users:profile' %}" class="text-sm font-semibold text-primary hover:underline">Go to profile</a>
+        <a href="{% url 'users:profile' %}" class="text-sm font-semibold text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors">Go to profile</a>
       </div>
     {% endif %}
 
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Stats Bento Grid -->
+    <div class="bento-grid mb-8">
       <!-- Credits Card -->
-      <div class="card p-6">
+      <div class="bento-sm card-glass-neon p-6 group hover:shadow-[0_0_30px_var(--primitive-neon-500)/20] transition-all">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-600">Credits</p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">{{ user.credits|default:0 }}</p>
+            <p class="text-sm font-medium text-[var(--color-text-secondary)]">Credits</p>
+            <p class="mt-2 text-3xl font-bold bg-gradient-to-r from-[var(--primitive-neon-400)] to-[var(--primitive-neon-500)] bg-clip-text text-transparent">{{ user.credits|default:0 }}</p>
           </div>
-          <div class="p-3 bg-green-100 rounded-lg">
-            <svg class="icon w-6 h-6 text-green-600" aria-hidden="true"><use href="#icon-dollar"></use></svg>
+          <div class="p-3 rounded-lg bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)] group-hover:shadow-[0_0_15px_var(--primitive-neon-500)/40] transition-shadow">
+            <svg class="icon w-6 h-6" aria-hidden="true"><use href="#icon-dollar"></use></svg>
           </div>
         </div>
         <div class="mt-4">
-          <a href="#" class="text-sm text-primary font-semibold hover:underline">Add credits →</a>
+          <a href="#" class="text-sm text-[var(--primitive-neon-400)] font-semibold hover:text-[var(--primitive-neon-300)] transition-colors">Add credits →</a>
         </div>
       </div>
 
       <!-- Posts Card -->
-      <div class="card p-6">
+      <div class="bento-sm card-glass p-6 group hover:shadow-[0_0_30px_var(--primitive-cyan-500)/20] transition-all">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-600">Your Posts</p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">{{ stats.posts_count|default:0 }}</p>
+            <p class="text-sm font-medium text-[var(--color-text-secondary)]">Your Posts</p>
+            <p class="mt-2 text-3xl font-bold bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-cyan-500)] bg-clip-text text-transparent">{{ stats.posts_count|default:0 }}</p>
           </div>
-          <div class="p-3 bg-blue-100 rounded-lg">
-            <svg class="icon w-6 h-6 text-blue-600" aria-hidden="true"><use href="#icon-file-text"></use></svg>
+          <div class="p-3 rounded-lg bg-[var(--primitive-cyan-500)]/20 text-[var(--primitive-cyan-400)] group-hover:shadow-[0_0_15px_var(--primitive-cyan-500)/40] transition-shadow">
+            <svg class="icon w-6 h-6" aria-hidden="true"><use href="#icon-file-text"></use></svg>
           </div>
         </div>
         <div class="mt-4">
-          <a href="{% url 'blog:post_list' %}" class="text-sm text-primary font-semibold hover:underline">View all →</a>
+          <a href="{% url 'blog:post_list' %}" class="text-sm text-[var(--primitive-cyan-400)] font-semibold hover:text-[var(--primitive-cyan-300)] transition-colors">View all →</a>
         </div>
       </div>
 
       <!-- Comments Card -->
-      <div class="card p-6">
+      <div class="bento-sm card-glass p-6 group hover:shadow-[0_0_30px_var(--primitive-purple-500)/20] transition-all">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-600">Comments</p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">{{ stats.comments_count|default:0 }}</p>
+            <p class="text-sm font-medium text-[var(--color-text-secondary)]">Comments</p>
+            <p class="mt-2 text-3xl font-bold bg-gradient-to-r from-[var(--primitive-purple-400)] to-[var(--primitive-purple-500)] bg-clip-text text-transparent">{{ stats.comments_count|default:0 }}</p>
           </div>
-          <div class="p-3 bg-purple-100 rounded-lg">
-            <svg class="icon w-6 h-6 text-purple-600" aria-hidden="true"><use href="#icon-comment"></use></svg>
+          <div class="p-3 rounded-lg bg-[var(--primitive-purple-500)]/20 text-[var(--primitive-purple-400)] group-hover:shadow-[0_0_15px_var(--primitive-purple-500)/40] transition-shadow">
+            <svg class="icon w-6 h-6" aria-hidden="true"><use href="#icon-comment"></use></svg>
           </div>
         </div>
         <div class="mt-4">
-          <span class="text-sm text-gray-500">Activity this month</span>
+          <span class="text-sm text-[var(--color-text-muted)]">Activity this month</span>
         </div>
       </div>
 
       <!-- Notifications Card -->
-      <div class="card p-6">
+      <div class="bento-sm card-glass p-6 group hover:shadow-[0_0_30px_var(--primitive-amber-500)/20] transition-all">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm font-medium text-gray-600">Notifications</p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">{{ unread_notifications|default:0 }}</p>
+            <p class="text-sm font-medium text-[var(--color-text-secondary)]">Notifications</p>
+            <p class="mt-2 text-3xl font-bold bg-gradient-to-r from-[var(--primitive-amber-400)] to-[var(--primitive-amber-500)] bg-clip-text text-transparent">{{ unread_notifications|default:0 }}</p>
           </div>
-          <div class="p-3 bg-orange-100 rounded-lg">
-            <svg class="icon w-6 h-6 text-orange-600" aria-hidden="true"><use href="#icon-bell"></use></svg>
+          <div class="p-3 rounded-lg bg-[var(--primitive-amber-500)]/20 text-[var(--primitive-amber-400)] group-hover:shadow-[0_0_15px_var(--primitive-amber-500)/40] transition-shadow">
+            <svg class="icon w-6 h-6" aria-hidden="true"><use href="#icon-bell"></use></svg>
           </div>
         </div>
-          <div class="mt-4">
-          <a href="{% url 'users:notifications' %}" class="text-sm text-primary font-semibold hover:underline">View all →</a>
+        <div class="mt-4">
+          <a href="{% url 'users:notifications' %}" class="text-sm text-[var(--primitive-amber-400)] font-semibold hover:text-[var(--primitive-amber-300)] transition-colors">View all →</a>
         </div>
       </div>
     </div>    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- Left Column - Recent Activity -->
-      <div class="lg:col-span-2 space-y-6">
+      <div class="lg:col-span-8 space-y-6">
         <!-- Announcements -->
-        <div class="card">
-          <div class="card-header flex items-center justify-between">
+        <div class="card-hud">
+          <div class="p-4 border-b border-[var(--color-border-default)] flex items-center justify-between">
             <div class="flex items-center gap-2">
-              <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-megaphone"></use></svg>
-              <h3 class="card-title">Announcements</h3>
+              <svg class="icon w-5 h-5 text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-megaphone"></use></svg>
+              <h3 class="font-semibold text-[var(--color-text-primary)]">Announcements</h3>
             </div>
-            <span class="text-xs text-gray-500">Latest updates</span>
+            <span class="text-xs text-[var(--color-text-muted)]">Latest updates</span>
           </div>
-          <div class="card-body">
+          <div class="p-4">
             {% if announcements %}
               <div class="space-y-4">
                 {% for announcement in announcements %}
-                  <div class="border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors">
+                  <div class="card-glass p-4 hover:border-[var(--primitive-cyan-500)]/50 transition-colors group">
                     <div class="flex items-start justify-between gap-4">
                       <div class="flex-1">
-                        <h4 class="text-sm font-semibold text-gray-900">{{ announcement.title }}</h4>
-                        <p class="text-sm text-gray-600 mt-1">{{ announcement.message|truncatewords:30 }}</p>
+                        <h4 class="text-sm font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--primitive-cyan-400)] transition-colors">{{ announcement.title }}</h4>
+                        <p class="text-sm text-[var(--color-text-secondary)] mt-1">{{ announcement.message|truncatewords:30 }}</p>
                       </div>
-                      <span class="text-xs text-gray-500 whitespace-nowrap">{{ announcement.start_at|date:"M j" }}</span>
+                      <span class="text-xs text-[var(--color-text-muted)] whitespace-nowrap">{{ announcement.start_at|date:"M j" }}</span>
                     </div>
                   </div>
                 {% endfor %}
               </div>
             {% else %}
-              <p class="text-sm text-gray-500 text-center py-8">No announcements at this time</p>
+              <p class="text-sm text-[var(--color-text-muted)] text-center py-8">No announcements at this time</p>
             {% endif %}
           </div>
         </div>
 
         <!-- Recent Activity -->
-        <div class="card">
-          <div class="card-header">
+        <div class="card-glass">
+          <div class="p-4 border-b border-[var(--color-border-default)]">
             <div class="flex items-center gap-2">
-              <svg class="icon w-5 h-5 text-primary" aria-hidden="true"><use href="#icon-activity"></use></svg>
-              <h3 class="card-title">Recent Activity</h3>
+              <svg class="icon w-5 h-5 text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-activity"></use></svg>
+              <h3 class="font-semibold text-[var(--color-text-primary)]">Recent Activity</h3>
             </div>
           </div>
-          <div class="card-body">
+          <div class="p-4">
             {% if recent_activities %}
               <div class="space-y-4">
                 {% for activity in recent_activities %}
-                  <div class="flex items-start gap-4">
-                    <div class="p-2 bg-gray-100 rounded-lg">
-                      <svg class="icon w-4 h-4 text-gray-600" aria-hidden="true"><use href="#icon-{{ activity.icon|default:'circle' }}"></use></svg>
+                  <div class="flex items-start gap-4 group">
+                    <div class="p-2 rounded-lg bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] group-hover:bg-[var(--primitive-cyan-500)]/20 group-hover:text-[var(--primitive-cyan-400)] transition-colors">
+                      <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-{{ activity.icon|default:'circle' }}"></use></svg>
                     </div>
                     <div class="flex-1">
-                      <p class="text-sm text-gray-900">{{ activity.description }}</p>
-                      <p class="text-xs text-gray-500 mt-1">{{ activity.created_at|timesince }} ago</p>
+                      <p class="text-sm text-[var(--color-text-primary)]">{{ activity.description }}</p>
+                      <p class="text-xs text-[var(--color-text-muted)] mt-1">{{ activity.created_at|timesince }} ago</p>
                     </div>
                   </div>
                 {% endfor %}
               </div>
             {% else %}
-              <p class="text-sm text-gray-500 text-center py-8">No recent activity</p>
+              <p class="text-sm text-[var(--color-text-muted)] text-center py-8">No recent activity</p>
             {% endif %}
           </div>
         </div>
       </div>
 
       <!-- Right Column - Sidebar -->
-      <div class="space-y-6">
+      <div class="lg:col-span-4 space-y-6">
         <!-- Quick Actions -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Quick Actions</h3>
+        <div class="card-glass-neon">
+          <div class="p-4 border-b border-[var(--color-border-default)]">
+            <h3 class="font-semibold text-[var(--color-text-primary)]">Quick Actions</h3>
           </div>
-          <div class="card-body">
+          <div class="p-4">
             <div class="space-y-2">
-              <a href="{% url 'users:profile' %}" class="btn btn-light w-full justify-start">
+              <a href="{% url 'users:profile' %}" class="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] transition-all">
                 <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-user"></use></svg>
                 Edit Profile
               </a>
-              <a href="{% url 'users:notification_settings' %}" class="btn btn-light w-full justify-start">
+              <a href="{% url 'users:notification_settings' %}" class="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] transition-all">
                 <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-bell"></use></svg>
                 Notification Settings
               </a>
-              <a href="{% url 'account_change_password' %}" class="btn btn-light w-full justify-start">
+              <a href="{% url 'account_change_password' %}" class="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] transition-all">
                 <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-lock"></use></svg>
                 Change Password
               </a>
-              <a href="{% url 'users:devices' %}" class="btn btn-light w-full justify-start">
+              <a href="{% url 'users:devices' %}" class="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] transition-all">
                 <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-smartphone"></use></svg>
                 Manage Devices
               </a>
-              <a href="{% url 'users:notifications' %}" class="btn btn-light w-full justify-start">
+              <a href="{% url 'users:notifications' %}" class="flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] transition-all">
                 <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-bell"></use></svg>
                 Notifications
               </a>
@@ -219,36 +227,37 @@
         </div>
 
         <!-- Account Info -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">Account Info</h3>
+        <div class="card-glass">
+          <div class="p-4 border-b border-[var(--color-border-default)]">
+            <h3 class="font-semibold text-[var(--color-text-primary)]">Account Info</h3>
           </div>
-          <div class="card-body">
+          <div class="p-4">
             <div class="space-y-3 text-sm">
               <div class="flex justify-between">
-                <span class="text-gray-600">Member since</span>
-                <span class="font-medium text-gray-900">{{ user.date_joined|date:"M Y" }}</span>
+                <span class="text-[var(--color-text-secondary)]">Member since</span>
+                <span class="font-medium text-[var(--color-text-primary)]">{{ user.date_joined|date:"M Y" }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Email status</span>
-                <span class="font-medium {% if user.email_verified_at %}text-green-600{% else %}text-amber-600{% endif %}">
+                <span class="text-[var(--color-text-secondary)]">Email status</span>
+                <span class="font-medium {% if user.email_verified_at %}text-[var(--primitive-neon-400)]{% else %}text-[var(--primitive-amber-400)]{% endif %}">
                   {% if user.email_verified_at %}Verified{% else %}Not verified{% endif %}
                 </span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Role</span>
-                <span class="font-medium text-gray-900">{{ user.get_role_display|default:"Member" }}</span>
+                <span class="text-[var(--color-text-secondary)]">Role</span>
+                <span class="font-medium text-[var(--color-text-primary)]">{{ user.get_role_display|default:"Member" }}</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Help & Support -->
-        <div class="card bg-gradient-to-br from-primary to-purple-600 text-white">
-          <div class="card-body">
-            <h3 class="text-lg font-semibold mb-2">Need Help?</h3>
-            <p class="text-sm text-white/90 mb-4">Our support team is here to assist you</p>
-            <a href="#" class="btn bg-white text-primary hover:bg-gray-100 w-full">
+        <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-[var(--primitive-cyan-500)]/20 via-[var(--primitive-purple-500)]/20 to-[var(--primitive-neon-500)]/20 border border-[var(--primitive-cyan-500)]/30">
+          <div class="absolute inset-0 bg-[var(--color-bg-glass)] backdrop-blur-sm"></div>
+          <div class="relative p-6">
+            <h3 class="text-lg font-semibold text-[var(--color-text-primary)] mb-2">Need Help?</h3>
+            <p class="text-sm text-[var(--color-text-secondary)] mb-4">Our support team is here to assist you</p>
+            <a href="#" class="inline-flex items-center justify-center w-full px-4 py-3 rounded-lg bg-gradient-to-r from-[var(--primitive-cyan-500)] to-[var(--primitive-cyan-600)] text-white font-medium hover:shadow-[0_0_20px_var(--primitive-cyan-500)] transition-shadow">
               Contact Support
             </a>
           </div>

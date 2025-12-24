@@ -4,8 +4,7 @@ from __future__ import annotations
 import random
 from typing import Dict, Iterable, Optional
 
-from apps.ads.models import PlacementAssignment, AdCreative, AdPlacement
-from apps.site_settings.models import SiteSettings
+from apps.ads.models import PlacementAssignment, AdCreative, AdPlacement, AdsSettings
 from apps.core.utils import feature_flags
 from apps.core.utils.logging import log_event
 from apps.ads.services.targeting.engine import campaign_allowed, placement_allowed
@@ -15,8 +14,12 @@ logger = logging.getLogger(__name__)
 
 
 def _aggressiveness_multiplier() -> int:
+    """
+    Get ad aggressiveness multiplier from AdsSettings singleton.
+    Uses app-specific AdsSettings for modularity (not SiteSettings).
+    """
     try:
-        level = SiteSettings.get_solo().ad_aggressiveness_level
+        level = AdsSettings.get_solo().ad_aggressiveness_level
     except Exception:
         level = "balanced"
     if level == "minimal":
@@ -45,7 +48,7 @@ def choose_creative(placement: AdPlacement, context: Optional[Dict] = None) -> O
     )
     ad_settings = None
     try:
-        ad_settings = SiteSettings.get_solo()
+        ad_settings = AdsSettings.get_solo()
     except Exception:
         ad_settings = None
 

@@ -18,7 +18,10 @@ class Device(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="devices"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="devices",
+        db_index=True,  # CRITICAL: Heavily queried in my_devices view
     )
     # OS fingerprint (primary identity, per user per OS)
     os_fingerprint = models.CharField(max_length=128, db_index=True, blank=True, default="")
@@ -40,7 +43,7 @@ class Device(models.Model):
     os_family = models.CharField(max_length=50, blank=True, default="")
     first_seen_at = models.DateTimeField(default=timezone.now)
     last_seen_at = models.DateTimeField(default=timezone.now)
-    is_trusted = models.BooleanField(default=False)
+    is_trusted = models.BooleanField(default=True)
     is_blocked = models.BooleanField(default=False)
     risk_score = models.PositiveSmallIntegerField(
         default=0, validators=[MinValueValidator(0), MaxValueValidator(100)]

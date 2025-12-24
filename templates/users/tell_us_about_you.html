@@ -1,76 +1,374 @@
+{% extends "account/auth_shell.html" %}
+{% load static i18n %}
 
-{% extends "base.html" %}
+{% block auth_title %}{% trans "Complete Your Profile" %}{% endblock %}
+{% block auth_heading %}{% trans "Tell us about you" %}{% endblock %}
+{% block auth_description %}{% trans "Complete your profile to get the most out of GsmInfinity" %}{% endblock %}
 
-{% block content %}
-<div class="max-w-3xl mx-auto py-12 px-4">
-  <div class="bg-slate-900 text-slate-100 rounded-2xl shadow-xl p-8 space-y-6">
-    <header class="space-y-2">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Onboarding</p>
-      <h1 class="text-3xl font-bold">Tell us about you</h1>
-      <p class="text-sm text-slate-300">
-        Finish your profile so we can personalize your experience. If you used Google or another provider, add a password for direct login.
-      </p>
-    </header>
-
-    <form method="post" class="space-y-5">
-      {% csrf_token %}
-
-      <label class="space-y-2 block">
-        <span class="text-sm font-semibold text-slate-100">Username</span>
-        {{ form.username.as_widget(attrs={
-          "class": "w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
-          "placeholder": "Choose a username"
-        }) }}
-        {% if form.username.errors %}
-          <p class="text-sm text-red-400 mt-1">{{ form.username.errors.0 }}</p>
-        {% endif %}
-      </label>
-
-      <label class="space-y-2 block">
-        <span class="text-sm font-semibold text-slate-100">Full name</span>
-        {{ form.full_name.as_widget(attrs={
-          "class": "w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
-          "placeholder": "Your name"
-        }) }}
-        {% if form.full_name.errors %}
-          <p class="text-sm text-red-400 mt-1">{{ form.full_name.errors.0 }}</p>
-        {% endif %}
-      </label>
-
-      <label class="space-y-2 block">
-        <span class="text-sm font-semibold text-slate-100">Password</span>
-        {{ form.password1.as_widget(attrs={
-          "class": "w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
-          "placeholder": "Create a password",
-          "autocomplete": "new-password"
-        }) }}
-        {% if form.password1.errors %}
-          <p class="text-sm text-red-400 mt-1">{{ form.password1.errors.0 }}</p>
-        {% endif %}
-        <p class="text-xs text-slate-400">Use at least 8 characters; avoid common words.</p>
-      </label>
-
-      <label class="space-y-2 block">
-        <span class="text-sm font-semibold text-slate-100">Confirm password</span>
-        {{ form.password2.as_widget(attrs={
-          "class": "w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:border-sky-500",
-          "placeholder": "Re-enter password",
-          "autocomplete": "new-password"
-        }) }}
-        {% if form.password2.errors %}
-          <p class="text-sm text-red-400 mt-1">{{ form.password2.errors.0 }}</p>
-        {% endif %}
-      </label>
-
-      {% if form.non_field_errors %}
-        <p class="text-sm text-red-400 mt-2">{{ form.non_field_errors.0 }}</p>
-      {% endif %}
-
-      <button type="submit" class="w-full inline-flex justify-center items-center bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg px-4 py-3 shadow-md focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 focus:ring-offset-slate-900 transition">
-        Complete setup
-      </button>
-    </form>
+{% block auth_body %}
+<form method="post" class="auth-form" id="profile-form">
+  {% csrf_token %}
+  
+  {# Progress indicator #}
+  <div class="auth-progress">
+    <div class="auth-progress-step completed">
+      <span class="auth-progress-icon">✓</span>
+      <span class="auth-progress-label">{% trans "Account" %}</span>
+    </div>
+    <div class="auth-progress-line completed"></div>
+    <div class="auth-progress-step active">
+      <span class="auth-progress-icon">2</span>
+      <span class="auth-progress-label">{% trans "Profile" %}</span>
+    </div>
+    <div class="auth-progress-line"></div>
+    <div class="auth-progress-step">
+      <span class="auth-progress-icon">3</span>
+      <span class="auth-progress-label">{% trans "Done" %}</span>
+    </div>
   </div>
+
+  {# Username Field #}
+  <div class="auth-field">
+    <label for="id_username" class="auth-label auth-label-required">{% trans "Username" %}</label>
+    <div class="auth-input-icon">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+      </svg>
+      <input type="text" name="username" id="id_username" required
+             class="auth-input"
+             placeholder="{% trans 'Choose a unique username' %}"
+             value="{{ form.username.value|default:'' }}"
+             autocomplete="username">
+    </div>
+    {% if form.username.errors %}
+      <p class="auth-error">{{ form.username.errors.0 }}</p>
+    {% endif %}
+    <p class="auth-help">{% trans "3-150 characters. Letters, numbers, and underscores only." %}</p>
+  </div>
+
+  {# Full Name Field #}
+  <div class="auth-field">
+    <label for="id_full_name" class="auth-label auth-label-required">{% trans "Full Name" %}</label>
+    <div class="auth-input-icon">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <input type="text" name="full_name" id="id_full_name" required
+             class="auth-input"
+             placeholder="{% trans 'Your full name' %}"
+             value="{{ form.full_name.value|default:user.full_name|default:'' }}"
+             autocomplete="name">
+    </div>
+    {% if form.full_name.errors %}
+      <p class="auth-error">{{ form.full_name.errors.0 }}</p>
+    {% endif %}
+  </div>
+
+  {# Country Field with Flag #}
+  <div class="auth-field">
+    <label for="id_country" class="auth-label">{% trans "Country" %}</label>
+    <div class="country-select">
+      <span class="country-flag" id="country-flag" aria-hidden="true">🌐</span>
+      <select name="country" id="id_country" class="auth-input country-input" aria-describedby="country-help">
+        <option value="">{% trans "Select your country" %}</option>
+        {% for code, name in countries %}
+          <option value="{{ code }}" 
+                  data-flag="{{ code }}"
+                  {% if code == detected_country or code == form.country.value %}selected{% endif %}>
+            {{ name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if form.country.errors %}
+      <p class="auth-error">{{ form.country.errors.0 }}</p>
+    {% endif %}
+    {% if detected_country %}
+      <p class="auth-help" id="country-help">
+        <span class="country-detected">
+          <svg class="inline-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          {% trans "Auto-detected from your location" %}
+        </span>
+        <span class="auth-help-note">{% trans "You can change this if you're using a VPN" %}</span>
+      </p>
+    {% endif %}
+  </div>
+
+  {# Phone Number with Country Code #}
+  <div class="auth-field">
+    <label for="id_phone" class="auth-label">
+      {% trans "Phone Number" %}
+      <span class="auth-label-optional">{% trans "(optional)" %}</span>
+    </label>
+    <div class="phone-input-group">
+      <select name="phone_country_code" id="id_phone_country_code" class="phone-code-select" 
+              title="{% trans 'Phone country code' %}" aria-label="{% trans 'Phone country code' %}">
+        <option value="">--</option>
+        {% for code, dial in phone_codes %}
+          <option value="{{ dial }}" 
+                  data-country="{{ code }}"
+                  {% if dial == detected_phone_code or dial == form.phone_country_code.value %}selected{% endif %}>
+            {{ dial }}
+          </option>
+        {% endfor %}
+      </select>
+      <input type="tel" name="phone" id="id_phone"
+             class="auth-input phone-number-input"
+             placeholder="{% trans 'Phone number' %}"
+             value="{{ form.phone.value|default:'' }}"
+             autocomplete="tel-national"
+             inputmode="numeric"
+             pattern="[0-9]{6,15}"
+             aria-describedby="phone-help">
+    </div>
+    {% if form.phone.errors %}
+      <p class="auth-error">{{ form.phone.errors.0 }}</p>
+    {% endif %}
+    <p class="auth-help" id="phone-help">{% trans "Used for account recovery and security notifications" %}</p>
+  </div>
+
+  {# Password Fields (only shown for social users who need to set password) #}
+  {% if show_password_fields %}
+  <div class="auth-divider">
+    <span>{% trans "Set a password for direct login" %}</span>
+  </div>
+
+  <div class="auth-field">
+    <label for="id_password1" class="auth-label">
+      {% trans "Password" %}
+      <span class="auth-label-optional">{% trans "(recommended)" %}</span>
+    </label>
+    <div class="auth-input-icon">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+      </svg>
+      <input type="password" name="password1" id="id_password1"
+             class="auth-input"
+             placeholder="{% trans 'Create a password' %}"
+             autocomplete="new-password"
+             minlength="8">
+      <button type="button" class="auth-toggle-password" aria-label="{% trans 'Toggle password visibility' %}">
+        <svg class="eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+        </svg>
+        <svg class="eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+        </svg>
+      </button>
+    </div>
+    {% if form.password1.errors %}
+      <p class="auth-error">{{ form.password1.errors.0 }}</p>
+    {% endif %}
+    <p class="auth-help">{% trans "At least 8 characters with letters and numbers" %}</p>
+  </div>
+
+  <div class="auth-field">
+    <label for="id_password2" class="auth-label">{% trans "Confirm Password" %}</label>
+    <div class="auth-input-icon">
+      <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+      </svg>
+      <input type="password" name="password2" id="id_password2"
+             class="auth-input"
+             placeholder="{% trans 'Confirm your password' %}"
+             autocomplete="new-password">
+    </div>
+    {% if form.password2.errors %}
+      <p class="auth-error">{{ form.password2.errors.0 }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# Non-field errors #}
+  {% if form.non_field_errors %}
+    <div class="auth-alert auth-alert-error">
+      {% for error in form.non_field_errors %}
+        <p>{{ error }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# Submit Button #}
+  <div class="auth-actions">
+    <button type="submit" class="auth-submit">
+      <span>{% trans "Complete Setup" %}</span>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+      </svg>
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block auth_scripts %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+  // Country to flag emoji mapping (ISO 3166-1 alpha-2 to regional indicator)
+  const countryFlags = {
+    'AF': '🇦🇫', 'AL': '🇦🇱', 'DZ': '🇩🇿', 'AD': '🇦🇩', 'AO': '🇦🇴', 'AG': '🇦🇬', 'AR': '🇦🇷', 'AM': '🇦🇲', 'AU': '🇦🇺', 'AT': '🇦🇹',
+    'AZ': '🇦🇿', 'BS': '🇧🇸', 'BH': '🇧🇭', 'BD': '🇧🇩', 'BB': '🇧🇧', 'BY': '🇧🇾', 'BE': '🇧🇪', 'BZ': '🇧🇿', 'BJ': '🇧🇯', 'BT': '🇧🇹',
+    'BO': '🇧🇴', 'BA': '🇧🇦', 'BW': '🇧🇼', 'BR': '🇧🇷', 'BN': '🇧🇳', 'BG': '🇧🇬', 'BF': '🇧🇫', 'BI': '🇧🇮', 'KH': '🇰🇭', 'CM': '🇨🇲',
+    'CA': '🇨🇦', 'CV': '🇨🇻', 'CF': '🇨🇫', 'TD': '🇹🇩', 'CL': '🇨🇱', 'CN': '🇨🇳', 'CO': '🇨🇴', 'KM': '🇰🇲', 'CG': '🇨🇬', 'CR': '🇨🇷',
+    'HR': '🇭🇷', 'CU': '🇨🇺', 'CY': '🇨🇾', 'CZ': '🇨🇿', 'DK': '🇩🇰', 'DJ': '🇩🇯', 'DM': '🇩🇲', 'DO': '🇩🇴', 'EC': '🇪🇨', 'EG': '🇪🇬',
+    'SV': '🇸🇻', 'GQ': '🇬🇶', 'ER': '🇪🇷', 'EE': '🇪🇪', 'ET': '🇪🇹', 'FJ': '🇫🇯', 'FI': '🇫🇮', 'FR': '🇫🇷', 'GA': '🇬🇦', 'GM': '🇬🇲',
+    'GE': '🇬🇪', 'DE': '🇩🇪', 'GH': '🇬🇭', 'GR': '🇬🇷', 'GD': '🇬🇩', 'GT': '🇬🇹', 'GN': '🇬🇳', 'GW': '🇬🇼', 'GY': '🇬🇾', 'HT': '🇭🇹',
+    'HN': '🇭🇳', 'HK': '🇭🇰', 'HU': '🇭🇺', 'IS': '🇮🇸', 'IN': '🇮🇳', 'ID': '🇮🇩', 'IR': '🇮🇷', 'IQ': '🇮🇶', 'IE': '🇮🇪', 'IL': '🇮🇱',
+    'IT': '🇮🇹', 'JM': '🇯🇲', 'JP': '🇯🇵', 'JO': '🇯🇴', 'KZ': '🇰🇿', 'KE': '🇰🇪', 'KI': '🇰🇮', 'KP': '🇰🇵', 'KR': '🇰🇷', 'KW': '🇰🇼',
+    'KG': '🇰🇬', 'LA': '🇱🇦', 'LV': '🇱🇻', 'LB': '🇱🇧', 'LS': '🇱🇸', 'LR': '🇱🇷', 'LY': '🇱🇾', 'LI': '🇱🇮', 'LT': '🇱🇹', 'LU': '🇱🇺',
+    'MO': '🇲🇴', 'MK': '🇲🇰', 'MG': '🇲🇬', 'MW': '🇲🇼', 'MY': '🇲🇾', 'MV': '🇲🇻', 'ML': '🇲🇱', 'MT': '🇲🇹', 'MH': '🇲🇭', 'MR': '🇲🇷',
+    'MU': '🇲🇺', 'MX': '🇲🇽', 'FM': '🇫🇲', 'MD': '🇲🇩', 'MC': '🇲🇨', 'MN': '🇲🇳', 'ME': '🇲🇪', 'MA': '🇲🇦', 'MZ': '🇲🇿', 'MM': '🇲🇲',
+    'NA': '🇳🇦', 'NR': '🇳🇷', 'NP': '🇳🇵', 'NL': '🇳🇱', 'NZ': '🇳🇿', 'NI': '🇳🇮', 'NE': '🇳🇪', 'NG': '🇳🇬', 'NO': '🇳🇴', 'OM': '🇴🇲',
+    'PK': '🇵🇰', 'PW': '🇵🇼', 'PS': '🇵🇸', 'PA': '🇵🇦', 'PG': '🇵🇬', 'PY': '🇵🇾', 'PE': '🇵🇪', 'PH': '🇵🇭', 'PL': '🇵🇱', 'PT': '🇵🇹',
+    'QA': '🇶🇦', 'RO': '🇷🇴', 'RU': '🇷🇺', 'RW': '🇷🇼', 'KN': '🇰🇳', 'LC': '🇱🇨', 'VC': '🇻🇨', 'WS': '🇼🇸', 'SM': '🇸🇲', 'ST': '🇸🇹',
+    'SA': '🇸🇦', 'SN': '🇸🇳', 'RS': '🇷🇸', 'SC': '🇸🇨', 'SL': '🇸🇱', 'SG': '🇸🇬', 'SK': '🇸🇰', 'SI': '🇸🇮', 'SB': '🇸🇧', 'SO': '🇸🇴',
+    'ZA': '🇿🇦', 'SS': '🇸🇸', 'ES': '🇪🇸', 'LK': '🇱🇰', 'SD': '🇸🇩', 'SR': '🇸🇷', 'SZ': '🇸🇿', 'SE': '🇸🇪', 'CH': '🇨🇭', 'SY': '🇸🇾',
+    'TW': '🇹🇼', 'TJ': '🇹🇯', 'TZ': '🇹🇿', 'TH': '🇹🇭', 'TL': '🇹🇱', 'TG': '🇹🇬', 'TO': '🇹🇴', 'TT': '🇹🇹', 'TN': '🇹🇳', 'TR': '🇹🇷',
+    'TM': '🇹🇲', 'TV': '🇹🇻', 'UG': '🇺🇬', 'UA': '🇺🇦', 'AE': '🇦🇪', 'GB': '🇬🇧', 'US': '🇺🇸', 'UY': '🇺🇾', 'UZ': '🇺🇿', 'VU': '🇻🇺',
+    'VA': '🇻🇦', 'VE': '🇻🇪', 'VN': '🇻🇳', 'YE': '🇾🇪', 'ZM': '🇿🇲', 'ZW': '🇿🇼', 'PR': '🇵🇷', 'AS': '🇦🇸', 'AI': '🇦🇮', 'AW': '🇦🇼',
+    'BM': '🇧🇲', 'KY': '🇰🇾', 'CD': '🇨🇩', 'CI': '🇨🇮', 'GG': '🇬🇬', 'JE': '🇯🇪', 'IM': '🇮🇲', 'XK': '🇽🇰', 'TK': '🇹🇰'
+  };
+
+  // Country to phone code mapping
+  const countryPhoneCodes = {
+    'AF': '+93', 'AL': '+355', 'DZ': '+213', 'AD': '+376', 'AO': '+244', 'AG': '+1268', 'AR': '+54', 'AM': '+374',
+    'AU': '+61', 'AT': '+43', 'AZ': '+994', 'BS': '+1242', 'BH': '+973', 'BD': '+880', 'BB': '+1246', 'BY': '+375',
+    'BE': '+32', 'BZ': '+501', 'BJ': '+229', 'BT': '+975', 'BO': '+591', 'BA': '+387', 'BW': '+267', 'BR': '+55',
+    'BN': '+673', 'BG': '+359', 'BF': '+226', 'BI': '+257', 'KH': '+855', 'CM': '+237', 'CA': '+1', 'CV': '+238',
+    'CF': '+236', 'TD': '+235', 'CL': '+56', 'CN': '+86', 'CO': '+57', 'KM': '+269', 'CG': '+242', 'CR': '+506',
+    'HR': '+385', 'CU': '+53', 'CY': '+357', 'CZ': '+420', 'DK': '+45', 'DJ': '+253', 'DM': '+1767', 'DO': '+1809',
+    'EC': '+593', 'EG': '+20', 'SV': '+503', 'GQ': '+240', 'ER': '+291', 'EE': '+372', 'ET': '+251', 'FJ': '+679',
+    'FI': '+358', 'FR': '+33', 'GA': '+241', 'GM': '+220', 'GE': '+995', 'DE': '+49', 'GH': '+233', 'GR': '+30',
+    'GD': '+1473', 'GT': '+502', 'GN': '+224', 'GW': '+245', 'GY': '+592', 'HT': '+509', 'HN': '+504', 'HK': '+852',
+    'HU': '+36', 'IS': '+354', 'IN': '+91', 'ID': '+62', 'IR': '+98', 'IQ': '+964', 'IE': '+353', 'IL': '+972',
+    'IT': '+39', 'JM': '+1876', 'JP': '+81', 'JO': '+962', 'KZ': '+7', 'KE': '+254', 'KI': '+686', 'KP': '+850',
+    'KR': '+82', 'KW': '+965', 'KG': '+996', 'LA': '+856', 'LV': '+371', 'LB': '+961', 'LS': '+266', 'LR': '+231',
+    'LY': '+218', 'LI': '+423', 'LT': '+370', 'LU': '+352', 'MO': '+853', 'MK': '+389', 'MG': '+261', 'MW': '+265',
+    'MY': '+60', 'MV': '+960', 'ML': '+223', 'MT': '+356', 'MH': '+692', 'MR': '+222', 'MU': '+230', 'MX': '+52',
+    'FM': '+691', 'MD': '+373', 'MC': '+377', 'MN': '+976', 'ME': '+382', 'MA': '+212', 'MZ': '+258', 'MM': '+95',
+    'NA': '+264', 'NR': '+674', 'NP': '+977', 'NL': '+31', 'NZ': '+64', 'NI': '+505', 'NE': '+227', 'NG': '+234',
+    'NO': '+47', 'OM': '+968', 'PK': '+92', 'PW': '+680', 'PS': '+970', 'PA': '+507', 'PG': '+675', 'PY': '+595',
+    'PE': '+51', 'PH': '+63', 'PL': '+48', 'PT': '+351', 'PR': '+1787', 'QA': '+974', 'RO': '+40', 'RU': '+7',
+    'RW': '+250', 'KN': '+1869', 'LC': '+1758', 'VC': '+1784', 'WS': '+685', 'SM': '+378', 'ST': '+239', 'SA': '+966',
+    'SN': '+221', 'RS': '+381', 'SC': '+248', 'SL': '+232', 'SG': '+65', 'SK': '+421', 'SI': '+386', 'SB': '+677',
+    'SO': '+252', 'ZA': '+27', 'SS': '+211', 'ES': '+34', 'LK': '+94', 'SD': '+249', 'SR': '+597', 'SZ': '+268',
+    'SE': '+46', 'CH': '+41', 'SY': '+963', 'TW': '+886', 'TJ': '+992', 'TZ': '+255', 'TH': '+66', 'TL': '+670',
+    'TG': '+228', 'TO': '+676', 'TT': '+1868', 'TN': '+216', 'TR': '+90', 'TM': '+993', 'TV': '+688', 'UG': '+256',
+    'UA': '+380', 'AE': '+971', 'GB': '+44', 'US': '+1', 'UY': '+598', 'UZ': '+998', 'VU': '+678', 'VA': '+379',
+    'VE': '+58', 'VN': '+84', 'YE': '+967', 'ZM': '+260', 'ZW': '+263'
+  };
+
+  const countrySelect = document.getElementById('id_country');
+  const phoneCodeSelect = document.getElementById('id_phone_country_code');
+  const countryFlag = document.getElementById('country-flag');
+  const phoneInput = document.getElementById('id_phone');
+
+  // Update flag emoji based on country selection
+  function updateFlag() {
+    if (countrySelect && countryFlag) {
+      const country = countrySelect.value;
+      countryFlag.textContent = countryFlags[country] || '🌐';
+    }
+  }
+
+  // Sync phone code when country changes
+  function syncPhoneCode() {
+    if (countrySelect && phoneCodeSelect) {
+      const country = countrySelect.value;
+      const phoneCode = countryPhoneCodes[country];
+      
+      if (phoneCode) {
+        // Find and select the matching option
+        for (let option of phoneCodeSelect.options) {
+          if (option.value === phoneCode) {
+            phoneCodeSelect.value = phoneCode;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Initialize on page load
+  if (countrySelect) {
+    countrySelect.addEventListener('change', function() {
+      updateFlag();
+      syncPhoneCode();
+    });
+    // Set initial flag
+    updateFlag();
+  }
+
+  // Phone number input validation - only allow digits
+  if (phoneInput) {
+    phoneInput.addEventListener('input', function(e) {
+      // Remove non-numeric characters
+      this.value = this.value.replace(/[^0-9]/g, '');
+    });
+    
+    phoneInput.addEventListener('keypress', function(e) {
+      // Only allow numbers
+      if (!/[0-9]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete' && e.key !== 'Tab') {
+        e.preventDefault();
+      }
+    });
+  }
+
+  // Password toggle functionality
+  document.querySelectorAll('.auth-toggle-password').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      const input = this.parentElement.querySelector('input');
+      const eyeOpen = this.querySelector('.eye-open');
+      const eyeClosed = this.querySelector('.eye-closed');
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        eyeOpen.classList.add('hidden');
+        eyeClosed.classList.remove('hidden');
+      } else {
+        input.type = 'password';
+        eyeOpen.classList.remove('hidden');
+        eyeClosed.classList.add('hidden');
+      }
+    });
+  });
+
+  // Form validation enhancement
+  const form = document.getElementById('profile-form');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      const username = document.getElementById('id_username');
+      const fullName = document.getElementById('id_full_name');
+      
+      // Basic client-side validation
+      if (username && username.value.trim().length < 3) {
+        e.preventDefault();
+        username.focus();
+        return false;
+      }
+      
+      if (fullName && fullName.value.trim().length < 2) {
+        e.preventDefault();
+        fullName.focus();
+        return false;
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
+
+{% block auth_footer %}
+<div class="auth-footer">
+  <p class="auth-footer-text">
+    {% trans "By completing your profile, you agree to our" %}
+    <a href="{% url 'pages:page' slug='terms' %}" class="auth-link">{% trans "Terms of Service" %}</a>
+    {% trans "and" %}
+    <a href="{% url 'pages:page' slug='privacy' %}" class="auth-link">{% trans "Privacy Policy" %}</a>
+  </p>
 </div>
 {% endblock %}
 

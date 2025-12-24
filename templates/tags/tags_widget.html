@@ -2,9 +2,9 @@
 
 <div class="tags-widget">
   <div class="flex items-center justify-between mb-4">
-    <h3 class="text-lg font-semibold text-gray-900">Tags</h3>
+    <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Tags</h3>
     {% if user.is_authenticated %}
-      <button type="button" class="btn btn-sm btn-ghost" onclick="Enterprise.openModal('suggest-tag-modal')">
+      <button type="button" class="btn btn-sm btn-ghost" id="suggest-tag-btn" data-modal="suggest-tag-modal">
         <svg class="icon w-4 h-4" aria-hidden="true">
           <use href="#icon-plus"></use>
         </svg>
@@ -21,10 +21,10 @@
           <span>{{ tag.category.icon }}</span>
         {% endif %}
         {{ tag.name }}
-        <span class="text-xs text-gray-500 ml-1">({{ tag.usage_count }})</span>
+        <span class="text-xs text-[var(--color-text-muted)] ml-1">({{ tag.usage_count }})</span>
       </a>
     {% empty %}
-      <span class="text-sm text-gray-500">No tags yet</span>
+      <span class="text-sm text-[var(--color-text-muted)]">No tags yet</span>
     {% endfor %}
   </div>
   
@@ -35,7 +35,7 @@
         <button 
           type="button" 
           class="btn btn-sm btn-ghost {% if tag.is_subscribed %}active{% endif %}"
-          onclick="subscribeToTag('{{ tag.slug }}')"
+          data-subscribe-tag="{{ tag.slug }}"
           data-tag-slug="{{ tag.slug }}"
           title="Subscribe to updates"
         >
@@ -50,7 +50,7 @@
   <!-- Related Tags -->
   {% if related_tags %}
     <div class="mt-6">
-      <h4 class="text-sm font-semibold text-gray-700 mb-3">Related Tags</h4>
+      <h4 class="text-sm font-semibold text-[var(--color-text-primary)] mb-3">Related Tags</h4>
       <div class="flex flex-wrap gap-2">
         {% for tag in related_tags %}
           <a href="{% url 'tags:detail' tag.slug %}" class="chip chip-secondary">
@@ -64,8 +64,8 @@
   <!-- Trending Tags -->
   {% if trending_tags %}
     <div class="mt-6">
-      <h4 class="text-sm font-semibold text-gray-700 mb-3">
-        <svg class="icon w-4 h-4 inline-block text-orange-500" aria-hidden="true">
+      <h4 class="text-sm font-semibold text-[var(--color-text-primary)] mb-3">
+        <svg class="icon w-4 h-4 inline-block text-[var(--primitive-amber-400)]" aria-hidden="true">
           <use href="#icon-fire"></use>
         </svg>
         Trending Tags
@@ -75,7 +75,7 @@
           <a href="{% url 'tags:detail' tag.slug %}" class="chip chip-warning">
             {{ tag.name }}
             {% if tag.trending_growth_rate %}
-              <span class="text-xs text-orange-600 ml-1">
+              <span class="text-xs text-[var(--primitive-amber-400)] ml-1">
                 +{{ tag.trending_growth_rate|floatformat:0 }}%
               </span>
             {% endif %}
@@ -88,11 +88,11 @@
 
 <!-- Tag Suggest Modal -->
 <div class="modal" id="suggest-tag-modal">
-  <div class="modal-backdrop" onclick="Enterprise.closeModal('suggest-tag-modal')"></div>
+  <div class="modal-backdrop" data-modal-close="suggest-tag-modal"></div>
   <div class="modal-content">
     <div class="modal-header">
-      <h3 class="modal-title">Suggest a Tag</h3>
-      <button class="modal-close" onclick="Enterprise.closeModal('suggest-tag-modal')">&times;</button>
+      <h4 class="modal-title">Suggest a New Tag</h4>
+      <button class="modal-close" data-modal-close="suggest-tag-modal">&times;</button>
     </div>
     <form id="suggest-tag-form" class="modal-body">
       {% csrf_token %}
@@ -136,7 +136,7 @@
       </div>
     </form>
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" onclick="Enterprise.closeModal('suggest-tag-modal')">
+      <button type="button" class="btn btn-secondary" data-modal-close="suggest-tag-modal">
         Cancel
       </button>
       <button type="submit" form="suggest-tag-form" class="btn btn-primary" id="submit-tag-suggestion">
@@ -148,8 +148,34 @@
 
 <script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
+  // Attach event listeners for modal controls
+  const suggestTagBtn = document.getElementById('suggest-tag-btn');
+  if (suggestTagBtn) {
+    suggestTagBtn.addEventListener('click', function() {
+      if (typeof Enterprise !== 'undefined' && Enterprise.openModal) {
+        Enterprise.openModal(this.dataset.modal);
+      }
+    });
+  }
+  
+  // Attach close modal listeners
+  document.querySelectorAll('[data-modal-close]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      if (typeof Enterprise !== 'undefined' && Enterprise.closeModal) {
+        Enterprise.closeModal(this.dataset.modalClose);
+      }
+    });
+  });
+  
+  // Attach subscribe button listeners
+  document.querySelectorAll('.subscribe-tag-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      subscribeToTag(this.dataset.tagSlug);
+    });
+  });
+  
   // Subscribe to tag
-  window.subscribeToTag = async function(tagSlug) {
+  async function subscribeToTag(tagSlug) {
     try {
       const response = await fetch(`/api/tags/${tagSlug}/subscribe/`, {
         method: 'POST',
@@ -178,9 +204,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
     } catch (error) {
-      Enterprise.showToast('Failed to update subscription', 'error');
+      if (typeof Enterprise !== 'undefined' && Enterprise.showToast) {
+        Enterprise.showToast('Failed to update subscription', 'error');
+      }
     }
-  };
+  }
   
   // Submit tag suggestion
   const suggestForm = document.getElementById('suggest-tag-form');
@@ -228,47 +256,3 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-
-<style>
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.15s ease;
-}
-
-.chip-primary {
-  background-color: #dbeafe;
-  color: #1e40af;
-}
-
-.chip-primary:hover {
-  background-color: #bfdbfe;
-  transform: translateY(-1px);
-}
-
-.chip-secondary {
-  background-color: #f3f4f6;
-  color: #374151;
-}
-
-.chip-secondary:hover {
-  background-color: #e5e7eb;
-  transform: translateY(-1px);
-}
-
-.chip-warning {
-  background-color: #fef3c7;
-  color: #92400e;
-}
-
-.chip-warning:hover {
-  background-color: #fde68a;
-  transform: translateY(-1px);
-}
-</style>

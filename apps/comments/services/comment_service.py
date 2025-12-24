@@ -15,11 +15,12 @@ import re
 import logging
 
 from apps.comments.models import Comment
-from apps.comments.models_enhanced import (
-    CommentReaction, CommentVote, CommentFlag, CommentMention,
-    CommentEdit, CommentBookmark, CommentAward, CommentAnalytics,
-    CommentThread, ModerationAction
-)
+# ARCHIVED: Enhanced models moved to apps/core/versions/
+# from apps.comments.models_enhanced import (
+#     CommentReaction, CommentVote, CommentFlag, CommentMention,
+#     CommentEdit, CommentBookmark, CommentAward, CommentAnalytics,
+#     CommentThread, ModerationAction
+# )
 from apps.core.infrastructure import QueueService, EmailService
 from apps.core.events import event_bus, EventTypes
 from apps.core.metrics import metrics

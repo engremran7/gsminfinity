@@ -1,22 +1,37 @@
 
-{# Pagination component. Expects page_obj and request. #}
+{# Pagination component - Futuristic HUD Theme. Expects page_obj and request. #}
+{# Optional: pass anchor="id" to scroll to that element after navigation #}
 {% if page_obj.has_other_pages %}
-  <nav class="flex items-center justify-between mt-6" aria-label="Pagination">
+  <nav id="pagination" class="flex items-center justify-between mt-8 px-4 py-3 rounded-xl bg-[var(--color-bg-glass)] backdrop-blur-sm border border-[var(--color-border-default)]" aria-label="Pagination">
     <div>
       {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}" class="text-sm text-primary hover:text-primary-600">Previous</a>
+        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}#pagination" class="inline-flex items-center gap-2 text-sm text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          Previous
+        </a>
       {% else %}
-        <span class="text-sm text-slate-400">Previous</span>
+        <span class="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+          Previous
+        </span>
       {% endif %}
     </div>
-    <div class="text-xs text-slate-600">
-      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-[var(--color-text-muted)]">Page</span>
+      <span class="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-lg bg-[var(--primitive-cyan-500)]/20 text-[var(--primitive-cyan-400)] text-sm font-medium border border-[var(--primitive-cyan-500)]/30">{{ page_obj.number }}</span>
+      <span class="text-xs text-[var(--color-text-muted)]">of</span>
+      <span class="text-sm text-[var(--color-text-secondary)]">{{ page_obj.paginator.num_pages }}</span>
     </div>
     <div>
       {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}" class="text-sm text-primary hover:text-primary-600">Next</a>
+        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.tag %}&tag={{ request.GET.tag }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}#pagination" class="inline-flex items-center gap-2 text-sm text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </a>
       {% else %}
-        <span class="text-sm text-slate-400">Next</span>
+        <span class="inline-flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
+          Next
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </span>
       {% endif %}
     </div>
   </nav>

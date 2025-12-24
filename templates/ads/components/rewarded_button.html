@@ -1,0 +1,72 @@
+{# Rewarded ad trigger button #}
+{% if config and config.is_enabled %}
+<div class="rewarded-ad-container" data-config-id="{{ config.id }}" data-cooldown="{{ config.cooldown_minutes }}">
+  <button
+    type="button"
+    class="rewarded-ad-trigger inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[var(--primitive-cyan-500)] to-[var(--primitive-purple-500)] text-white text-sm font-medium hover:opacity-90 transition-opacity micro-press"
+    data-action="show-rewarded-ad"
+    data-config="{{ config.id }}"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <span>
+      Watch Ad &amp; Get 
+      {% if config.reward_type == 'download' %}
+        {{ config.reward_amount }} Download{{ config.reward_amount|pluralize }}
+      {% elif config.reward_type == 'points' %}
+        {{ config.reward_amount }} Point{{ config.reward_amount|pluralize }}
+      {% elif config.reward_type == 'premium' %}
+        {{ config.reward_amount }}h Premium Access
+      {% elif config.reward_type == 'ad_free' %}
+        {{ config.reward_amount }}h Ad-Free
+      {% else %}
+        {{ config.reward_description|default:"Reward" }}
+      {% endif %}
+    </span>
+  </button>
+  
+  <p class="text-xs text-[var(--color-text-muted)] mt-2">
+    {% if config.reward_description %}
+      {{ config.reward_description }}
+    {% else %}
+      Watch a short video to earn rewards
+    {% endif %}
+  </p>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+  document.addEventListener('DOMContentLoaded', function() {
+    const triggers = document.querySelectorAll('.rewarded-ad-trigger');
+    triggers.forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const configId = this.dataset.config;
+        try {
+          // Start rewarded ad view
+          const response = await fetch('/api/ads/rewarded/start/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+            },
+            body: JSON.stringify({ config_id: configId }),
+          });
+          
+          const data = await response.json();
+          
+          if (data.status === 'ok') {
+            // Show the rewarded ad video/modal
+            window.showRewardedAd && window.showRewardedAd(data.view_id, configId);
+          } else {
+            // Show error (rate limit, etc.)
+            alert(data.message || 'Unable to show ad right now. Try again later.');
+          }
+        } catch (e) {
+          console.error('Rewarded ad error:', e);
+        }
+      });
+    });
+  });
+</script>
+{% endif %}

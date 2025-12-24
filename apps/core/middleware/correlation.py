@@ -19,8 +19,10 @@ class CorrelationIdMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
+        # Django stores headers as HTTP_<header> with underscores
+        header_key = f"HTTP_{self.header_name.replace('-', '_').upper()}"
         correlation_id = (
-            request.META.get(self.header_name.replace("-", "_").upper())
+            request.META.get(header_key)
             or str(uuid.uuid4())
         )
         request.correlation_id = correlation_id

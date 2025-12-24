@@ -1,1 +1,22 @@
 * text=auto eol=lf
+# Core Infrastructure Files - PROTECTED
+# These files are critical to application initialization and must not be modified without careful review.
+app/settings.py export-ignore merge=binary
+app/settings_dev.py export-ignore merge=binary
+app/wsgi.py export-ignore merge=binary
+app/asgi.py export-ignore merge=binary
+app/celery.py export-ignore merge=binary
+app/urls.py export-ignore merge=binary
+app/__init__.py export-ignore merge=binary
+
+manage.py export-ignore merge=binary
+conftest.py export-ignore merge=binary
+
+# Database configuration
+appdb export-ignore
+
+# Environment configuration
+.env export-ignore
+
+# Lock files
+requirements.txt export-ignore

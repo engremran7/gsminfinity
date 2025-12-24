@@ -1,44 +1,55 @@
 {% extends "base.html" %}
 {% block title %}Device limit - remove a device{% endblock %}
-
+{% block sidebar_left %}{% endblock %}
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 py-10">
-  <div class="bg-white shadow rounded-lg p-6 space-y-4">
-    <h1 class="text-xl font-semibold text-slate-900">Device limit reached</h1>
-    <p class="text-sm text-slate-600">Remove an old device so you can sign in from a new one.</p>
+<div class="w-full px-4 sm:px-6 lg:px-8 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-8 lg:col-start-3">
+      <div class="card-glass-neon p-6 space-y-4">
+        <h1 class="text-xl font-semibold text-[var(--color-text-primary)]">Device limit reached</h1>
+        <p class="text-sm text-[var(--color-text-secondary)]">Remove an old device so you can sign in from a new one.</p>
 
-    {% if error %}
-      <div class="bg-rose-50 border border-rose-200 text-rose-700 rounded p-3 text-sm">{{ error }}</div>
-    {% endif %}
-    {% if message %}
-      <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded p-3 text-sm">{{ message }}</div>
-    {% endif %}
+        {% if error %}
+          <div class="card-glass border-l-4 border-[var(--primitive-red-500)] text-[var(--color-text-primary)] p-3 text-sm">{{ error }}</div>
+        {% endif %}
+        {% if message %}
+          <div class="card-glass border-l-4 border-[var(--primitive-neon-500)] text-[var(--color-text-primary)] p-3 text-sm">{{ message }}</div>
+        {% endif %}
 
-    {% if devices %}
-    <div class="divide-y divide-slate-200">
-      {% for d in devices %}
-        <div class="py-3 flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <p class="text-sm font-semibold text-slate-900">{{ d.display_name|default:"Device" }}</p>
-            <p class="text-xs text-slate-500 break-all">ID: {{ d.os_fingerprint }}</p>
-            <p class="text-xs text-slate-500">Last seen: {{ d.last_seen_at|default:"-" }}</p>
-          </div>
-          <form method="post" onsubmit="return confirm('Remove this device?');">
-            {% csrf_token %}
-            <input type="hidden" name="device_id" value="{{ d.id }}">
-            <button type="submit" class="text-xs px-3 py-2 rounded border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100">
-              Remove
-            </button>
-          </form>
+        {% if devices %}
+        <div class="divide-y divide-[var(--color-border-default)]">
+          {% for d in devices %}
+            <div class="py-3 flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-[var(--color-text-primary)]">{{ d.display_name|default:"Device" }}</p>
+                <p class="text-xs text-[var(--color-text-muted)] break-all">ID: {{ d.os_fingerprint }}</p>
+                <p class="text-xs text-[var(--color-text-muted)]">Last seen: {{ d.last_seen_at|default:"-" }}</p>
+              </div>
+              {# Only superusers can remove devices #}
+              {% if request.user.is_superuser %}
+              <form method="post" data-confirm="Remove this device?">
+                {% csrf_token %}
+                <input type="hidden" name="device_id" value="{{ d.id }}">
+                <button type="submit" class="text-xs px-3 py-2 rounded border border-[var(--primitive-red-500)]/30 bg-[var(--primitive-red-500)]/10 text-[var(--primitive-red-400)] hover:bg-[var(--primitive-red-500)]/20 transition-colors">
+                  Remove
+                </button>
+              </form>
+              {% else %}
+              <span class="text-xs text-[var(--color-text-muted)] px-3 py-2">
+                Contact admin to remove
+              </span>
+              {% endif %}
+            </div>
+          {% endfor %}
         </div>
-      {% endfor %}
-    </div>
-    {% else %}
-      <p class="text-sm text-slate-600">No devices found for this account.</p>
-    {% endif %}
+        {% else %}
+          <p class="text-sm text-[var(--color-text-secondary)]">No devices found for this account.</p>
+        {% endif %}
 
-    <div class="text-sm text-slate-600">
-      After removing a device, retry signing in from your new device.
+        <div class="text-sm text-[var(--color-text-secondary)]">
+          After removing a device, retry signing in from your new device.
+        </div>
+      </div>
     </div>
   </div>
 </div>

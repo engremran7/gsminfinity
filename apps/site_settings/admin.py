@@ -88,7 +88,9 @@ class SiteSettingsAdmin(ExportMixin, SingletonModelAdmin):
                     "default_language",
                     "timezone",
                     "enable_localization",
+                    "featured_languages",
                 ),
+                "description": "Featured languages appear in the header dropdown (max 10). Use comma-separated codes like: en,ar,fr,de,es",
             },
         ),
         (

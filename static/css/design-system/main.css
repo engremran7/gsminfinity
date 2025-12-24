@@ -1,0 +1,43 @@
+/**
+ * =============================================================================
+ * GSMINFINITY ENTERPRISE DESIGN SYSTEM - Main Entry Point
+ * =============================================================================
+ * 
+ * Version: 3.0.0
+ * 
+ * This is the SINGLE CSS file to import for the entire design system.
+ * It imports all modules in the correct order.
+ * 
+ * Architecture:
+ * 1. Design Tokens (CSS Custom Properties)
+ * 2. Base Styles (Reset + Typography)
+ * 3. Layout Utilities
+ * 4. Components
+ * 5. Theme-specific overrides
+ * 
+ * Usage in HTML:
+ * <link rel="stylesheet" href="/static/css/design-system/main.css">
+ * 
+ * For production, minify this file with:
+ * npx postcss main.css -o main.min.css --minify
+ * 
+ * =============================================================================
+ */
+
+/* Layer 1: Design Tokens - MUST be first */
+@import url('./tokens.css');
+
+/* Layer 2: Base Styles (includes its own reset) */
+@import url('./base.css');
+
+/* Layer 3: Layout Utilities */
+@import url('./layout.css');
+
+/* Layer 4: Components */
+@import url('./components.css');
+
+/* Layer 5: Animations & Motion */
+@import url('./motion.css');
+
+/* Layer 6: Typography Enhancements */
+@import url('./typography.css');

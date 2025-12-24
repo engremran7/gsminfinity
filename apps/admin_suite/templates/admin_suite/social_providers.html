@@ -1,0 +1,285 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Social Authentication Providers{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Social Authentication Providers</h1>
+      <p class="text-sm text-slate-600">Configure OAuth providers for social login (Google, Facebook, Microsoft, GitHub, etc.)</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:users' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">← Back to Users</a>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm {% if 'failed' in message|lower or 'error' in message|lower %}text-red-700 bg-red-50 border-red-100{% else %}text-emerald-700 bg-emerald-50 border-emerald-100{% endif %} border px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <!-- OAuth Setup Guide -->
+  <div class="border rounded-lg bg-blue-50 border-blue-100 p-4">
+    <h3 class="font-medium text-blue-900 mb-2">📋 OAuth Setup Guide</h3>
+    <div class="text-sm text-blue-800 space-y-1">
+      <p><strong>Step 1:</strong> Create OAuth credentials in the provider's developer console (links below)</p>
+      <p><strong>Step 2:</strong> Set the callback URL to: <code class="bg-blue-100 px-1 rounded">{{ request.scheme }}://{{ request.get_host }}/accounts/PROVIDER/login/callback/</code></p>
+      <p><strong>Step 3:</strong> Enter the Client ID and Client Secret below</p>
+      <p><strong>Note:</strong> Some providers (Google, Microsoft) require browser-based OAuth for admin consent. The credentials below enable end-user login.</p>
+    </div>
+  </div>
+
+  <!-- Add New Provider Form -->
+  {% if provider_choices %}
+  <div class="border rounded-lg bg-white shadow-sm p-4">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">Add Social Provider</h2>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create_provider">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Provider</label>
+          <select name="provider" id="provider-select" class="w-full border rounded px-3 py-2" required data-provider-select title="Select social provider">
+            <option value="">Select provider...</option>
+            {% for value, label in provider_choices %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Client ID / App ID</label>
+          <input type="text" name="client_id" placeholder="Your OAuth Client ID" class="w-full border rounded px-3 py-2" required>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Client Secret / App Secret</label>
+          <input type="password" name="client_secret" placeholder="Your OAuth Client Secret" class="w-full border rounded px-3 py-2" required>
+        </div>
+        
+        <!-- Microsoft-specific field -->
+        <div id="microsoft-fields" class="hidden">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Tenant ID (Azure AD)</label>
+          <input type="text" name="tenant_id" placeholder="common, consumers, or your tenant ID" class="w-full border rounded px-3 py-2">
+          <p class="text-xs text-slate-500 mt-1">Use 'common' for multi-tenant, 'consumers' for personal accounts</p>
+        </div>
+        
+        <!-- Apple-specific fields -->
+        <div id="apple-fields" class="hidden space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Team ID</label>
+            <input type="text" name="team_id" placeholder="Your Apple Developer Team ID" class="w-full border rounded px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Key ID</label>
+            <input type="text" name="key_id" placeholder="Sign In with Apple Key ID" class="w-full border rounded px-3 py-2">
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex justify-between items-center pt-2">
+        <div id="console-link" class="text-sm text-blue-600 hidden">
+          <a href="#" target="_blank" rel="noopener noreferrer" class="hover:underline">Open Developer Console →</a>
+        </div>
+        <button type="submit" class="px-4 py-2 rounded bg-primary text-white hover:bg-primary/90">Add Provider</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- Configured Providers -->
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Configured Providers ({{ providers|length }})</h2>
+    </div>
+    
+    {% if providers %}
+    {% for p in providers %}
+    <div class="border-b last:border-b-0 p-4 hover:bg-slate-50">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">
+              {% if p.provider == 'google' %}🔵
+              {% elif p.provider == 'facebook' %}🔷
+              {% elif p.provider == 'microsoft' %}🟦
+              {% elif p.provider == 'github' %}⬛
+              {% elif p.provider == 'apple' %}🍎
+              {% elif p.provider == 'twitter' %}🐦
+              {% elif p.provider == 'linkedin' %}🔗
+              {% elif p.provider == 'discord' %}🎮
+              {% elif p.provider == 'slack' %}💬
+              {% else %}🔐
+              {% endif %}
+            </span>
+            <div>
+              <h3 class="text-lg font-medium text-slate-900">
+                <a href="{% url 'admin_suite:social_provider_detail' p.id %}" class="hover:text-primary">
+                  {{ p.display_name|default:p.get_provider_display }}
+                </a>
+              </h3>
+              <p class="text-sm text-slate-500">{{ p.provider }}</p>
+            </div>
+            
+            <!-- Status Badge -->
+            {% if p.status == 'active' %}
+              <span class="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700">Active</span>
+            {% elif p.status == 'pending_oauth' %}
+              <span class="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700">Pending OAuth</span>
+            {% elif p.status == 'error' %}
+              <span class="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700">Error</span>
+            {% elif p.status == 'disabled' %}
+              <span class="px-2 py-0.5 text-xs rounded bg-slate-200 text-slate-600">Disabled</span>
+            {% else %}
+              <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">{{ p.status }}</span>
+            {% endif %}
+            
+            {% if not p.is_enabled %}
+              <span class="px-2 py-0.5 text-xs rounded bg-slate-200 text-slate-600">Disabled</span>
+            {% endif %}
+            
+            {% if p.provider in existing_allauth %}
+              <span class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700" title="Synced with django-allauth">✓ Synced</span>
+            {% endif %}
+          </div>
+          
+          <!-- Stats -->
+          <div class="mt-2 text-sm text-slate-600 flex gap-4">
+            <span>👥 {{ p.users_count }} users</span>
+            {% if p.last_tested_at %}
+            <span>Tested: {{ p.last_tested_at|date:"M d, H:i" }}</span>
+            {% endif %}
+            {% if p.requires_browser_oauth %}
+            <span class="text-amber-600" title="Requires browser OAuth for some features">🌐 Browser OAuth</span>
+            {% endif %}
+          </div>
+          
+          {% if p.last_error %}
+          <div class="mt-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded">
+            Error: {{ p.last_error|truncatechars:100 }}
+          </div>
+          {% endif %}
+          
+          <!-- Callback URL -->
+          <div class="mt-2 text-xs text-slate-500">
+            Callback: <code class="bg-slate-100 px-1 rounded">{{ p.callback_url }}</code>
+          </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="test_connection">
+            <input type="hidden" name="provider_id" value="{{ p.id }}">
+            <button type="submit" class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white hover:bg-slate-50">
+              Test
+            </button>
+          </form>
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="sync_allauth">
+            <input type="hidden" name="provider_id" value="{{ p.id }}">
+            <button type="submit" class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white hover:bg-slate-50">
+              Sync
+            </button>
+          </form>
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle_provider">
+            <input type="hidden" name="provider_id" value="{{ p.id }}">
+            <button type="submit" class="px-3 py-1.5 text-xs rounded border border-slate-200 bg-white hover:bg-slate-50">
+              {% if p.is_enabled %}Disable{% else %}Enable{% endif %}
+            </button>
+          </form>
+          <a href="{% url 'admin_suite:social_provider_detail' p.id %}" class="px-3 py-1.5 text-xs rounded border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100">
+            Configure →
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="p-8 text-center text-slate-500">
+      <p class="text-lg mb-2">No social providers configured yet</p>
+      <p class="text-sm">Add a provider above to enable social login</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Developer Console Links -->
+  <div class="border rounded-lg bg-white shadow-sm p-4">
+    <h3 class="font-semibold text-slate-900 mb-3">📚 Developer Console Links</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-600 hover:underline">
+        🔵 Google Cloud Console
+      </a>
+      <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-600 hover:underline">
+        🔷 Facebook Developers
+      </a>
+      <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-600 hover:underline">
+        🟦 Azure Portal
+      </a>
+      <a href="https://github.com/settings/developers" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-600 hover:underline">
+        ⬛ GitHub Developers
+      </a>
+      <a href="https://developer.apple.com/account/resources/identifiers/list/serviceId" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-600 hover:underline">
+        🍎 Apple Developer
+      </a>
+      <a href="https://developer.twitter.com/en/portal/projects" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-600 hover:underline">
+        🐦 Twitter Developer
+      </a>
+      <a href="https://www.linkedin.com/developers/apps" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-600 hover:underline">
+        🔗 LinkedIn Developers
+      </a>
+      <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-600 hover:underline">
+        🎮 Discord Developer
+      </a>
+    </div>
+  </div>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+function updateProviderFields() {
+  const provider = document.getElementById('provider-select').value;
+  const msFields = document.getElementById('microsoft-fields');
+  const appleFields = document.getElementById('apple-fields');
+  const consoleLink = document.getElementById('console-link');
+  const consoleLinkAnchor = consoleLink.querySelector('a');
+  
+  // Hide all extra fields
+  msFields.classList.add('hidden');
+  appleFields.classList.add('hidden');
+  consoleLink.classList.add('hidden');
+  
+  // Show provider-specific fields
+  if (provider === 'microsoft') {
+    msFields.classList.remove('hidden');
+  } else if (provider === 'apple') {
+    appleFields.classList.remove('hidden');
+  }
+  
+  // Update console link
+  const consoleUrls = {
+    'google': 'https://console.cloud.google.com/apis/credentials',
+    'facebook': 'https://developers.facebook.com/apps/',
+    'microsoft': 'https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade',
+    'github': 'https://github.com/settings/developers',
+    'apple': 'https://developer.apple.com/account/resources/identifiers/list/serviceId',
+    'twitter': 'https://developer.twitter.com/en/portal/projects',
+    'linkedin': 'https://www.linkedin.com/developers/apps',
+    'discord': 'https://discord.com/developers/applications',
+    'slack': 'https://api.slack.com/apps'
+  };
+  
+  if (consoleUrls[provider]) {
+    consoleLinkAnchor.href = consoleUrls[provider];
+    consoleLink.classList.remove('hidden');
+  }
+}
+</script>
+{% endblock %}

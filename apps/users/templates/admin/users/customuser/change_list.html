@@ -3,32 +3,7 @@
 
 {% block extrastyle %}
 {{ block.super }}
-<style>
-.user-admin-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-.stat-card {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1rem;
-}
-.stat-card h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.875rem;
-    color: #6c757d;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-.stat-card .number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #0ea5a4;
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/admin/django-admin-custom.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -51,7 +26,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ request.csp_nonce }}">
 (function() {
     // Fetch user stats from API if available
     const activeEl = document.getElementById('active-count');

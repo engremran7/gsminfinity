@@ -85,7 +85,7 @@ class StaticViewsSitemap(Sitemap):
     def items(self):
         # Tuple of (view_name, kwargs)
         candidates = [
-            ("pages:home", None),
+            ("home", None),
             ("blog:post_list", None),
             ("users:dashboard", None),
             ("account_login", None),

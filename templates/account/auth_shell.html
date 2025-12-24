@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{# =============================================================================
+   ENTERPRISE AUTH SHELL - Unified Authentication Template
+   
+   All auth pages inherit from this for consistent styling.
+   Uses design system tokens - NO hardcoded colors.
+   ============================================================================= #}
+
+{% block title %}{% block auth_title %}Account{% endblock %} - {{ site_settings.site_name|default:"Site" }}{% endblock %}
+
+{% block sidebar_left %}{% endblock %}
+{% block sidebar_right %}{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-container">
+    {# Logo/Brand Header #}
+    <div class="auth-header">
+      {% if site_settings.logo %}
+        <img src="{{ site_settings.logo }}" alt="{{ site_settings.site_name }}" class="auth-logo">
+      {% else %}
+        <div class="auth-logo-placeholder">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+        </div>
+      {% endif %}
+      <h1 class="auth-title">{% block auth_heading %}Account{% endblock %}</h1>
+      <p class="auth-subtitle">{% block auth_description %}{% endblock %}</p>
+    </div>
+
+    {# Messages/Alerts #}
+    {% if messages %}
+      <div class="auth-messages">
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags|default:'info' }}{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {# Main Auth Card #}
+    <div class="auth-card">
+      {% block auth_body %}{% endblock %}
+    </div>
+
+    {# Footer Links #}
+    {% block auth_footer %}
+      <div class="auth-footer">
+        <a href="{% url 'home' %}" class="auth-back-link">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          {% trans "Back to home" %}
+        </a>
+      </div>
+    {% endblock %}
+  </div>
+</div>
+
+{# Page-specific scripts #}
+{% block auth_scripts %}{% endblock %}
+{% endblock %}

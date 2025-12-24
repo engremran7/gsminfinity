@@ -35,57 +35,58 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  <div class="flex flex-col gap-8 lg:grid lg:grid-cols-[2fr_1fr] lg:items-start">
-    <article class="space-y-4">
+<div class="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 blog-container">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 blog-layout">
+    <!-- Main Content Column -->
+    <article class="lg:col-span-8 blog-main-content prose prose-invert max-w-none space-y-6 content-overflow-safe">
       <div class="mb-4">
         {% render_ad_slot "post-top" %}
       </div>
-      <header class="space-y-3 relative">
+      <header class="space-y-4 relative">
        <div class="absolute right-0 top-0 flex items-center gap-2">
           {% with share_url=request.build_absolute_uri %}
           <div class="flex items-center gap-2 flex-wrap justify-end">
             <button
               type="button"
-              class="share-chip js-copy-link"
+              class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-glass)] hover:bg-[var(--primitive-cyan-500)]/20 hover:border-[var(--primitive-cyan-500)]/50 transition-all js-copy-link"
               data-share-url="{{ share_url }}"
               aria-label="Copy link"
             >
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-link"></use></svg>
+              <svg class="icon w-4 h-4 text-[var(--color-text-secondary)]" aria-hidden="true"><use href="#icon-link"></use></svg>
             </button>
           </div>
           {% endwith %}
         </div>
         {% if request.user.is_authenticated and request.user.is_staff or request.user.is_superuser or request.user == post.author %}
           <div class="flex items-center gap-2 text-xs">
-            <a href="{% url 'blog:post_create' %}?edit={{ post.slug }}" class="px-3 py-1.5 rounded-full border border-slate-300 bg-white hover:bg-primary/10 hover:text-primary">
+            <a href="{% url 'blog:post_create' %}?edit={{ post.slug }}" class="px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-glass)] hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] hover:border-[var(--primitive-cyan-500)]/50 transition-all text-[var(--color-text-secondary)]">
               Edit post
             </a>
             {% if request.user.is_staff or request.user.is_superuser %}
-              <a href="/admin/blog/post/{{ post.id }}/change/" class="px-3 py-1.5 rounded-full border border-slate-300 bg-white hover:bg-amber-50 hover:text-amber-700">
+              <a href="{% url 'admin:blog_post_change' post.id %}" class="px-3 py-1.5 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-glass)] hover:bg-[var(--primitive-amber-500)]/20 hover:text-[var(--primitive-amber-400)] hover:border-[var(--primitive-amber-500)]/50 transition-all text-[var(--color-text-secondary)]">
                 Admin edit
               </a>
             {% endif %}
           </div>
         {% endif %}
-        <div class="flex items-center gap-2 text-xs text-slate-500">
-          <a href="{% url 'blog:post_list' %}" class="hover:text-primary">Blog</a>
-          <span aria-hidden="true">/</span>
+        <div class="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+          <a href="{% url 'blog:post_list' %}" class="hover:text-[var(--primitive-cyan-400)] transition-colors">Blog</a>
+          <span aria-hidden="true" class="text-[var(--primitive-cyan-500)]">/</span>
           {% if post.category %}
-            <a href="#" class="hover:text-primary">{{ post.category.name }}</a>
-            <span aria-hidden="true">/</span>
+            <a href="#" class="hover:text-[var(--primitive-cyan-400)] transition-colors">{{ post.category.name }}</a>
+            <span aria-hidden="true" class="text-[var(--primitive-cyan-500)]">/</span>
           {% endif %}
-          <span class="text-slate-700">{{ post.published_at|date:"M j, Y"|default:"Draft" }}</span>
+          <span class="text-[var(--color-text-secondary)]">{{ post.published_at|date:"M j, Y"|default:"Draft" }}</span>
         </div>
-        <h1 class="text-3xl md:text-4xl font-bold text-slate-900 leading-tight">{{ post.title }}</h1>
-        <div class="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+        <h1 class="text-3xl md:text-4xl font-bold text-[var(--color-text-primary)] leading-tight">{{ post.title }}</h1>
+        <div class="flex flex-wrap items-center gap-3 text-sm text-[var(--color-text-secondary)]">
           <div class="inline-flex items-center gap-2">
-            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-user"></use></svg>
+            <svg class="icon w-4 h-4 text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-user"></use></svg>
             <span>{{ post.author }}</span>
           </div>
           {% if post.category %}
             <div class="inline-flex items-center gap-2">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-folder"></use></svg>
+              <svg class="icon w-4 h-4 text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-folder"></use></svg>
               <span>
                 {% if post.category.parent %}{{ post.category.parent.name }} / {% endif %}{{ post.category.name }}
               </span>
@@ -93,7 +94,7 @@
           {% endif %}
           {% if post.published_at %}
             <div class="inline-flex items-center gap-2">
-              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-calendar"></use></svg>
+              <svg class="icon w-4 h-4 text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-calendar"></use></svg>
               <span>{{ post.published_at|date:"M j, Y" }}</span>
             </div>
           {% endif %}
@@ -102,76 +103,76 @@
           {% include "components/tag_badges.html" with tags=post.tags.all %}
         {% endif %}
         {% if current_locale %}
-          <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-slate-100 text-slate-600">
+          <span class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-lg bg-[var(--primitive-cyan-500)]/10 text-[var(--primitive-cyan-400)] border border-[var(--primitive-cyan-500)]/30">
             {{ current_locale|upper }} version
           </span>
         {% endif %}
       </header>
 
       {% if post.is_ai_generated %}
-        <div class="inline-flex items-center gap-2 text-xs px-3 py-1 rounded bg-amber-50 border border-amber-200 text-amber-800">
+        <div class="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-[var(--primitive-purple-500)]/10 border border-[var(--primitive-purple-500)]/30 text-[var(--primitive-purple-400)]">
           <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
           AI-generated
         </div>
       {% endif %}
 
       {% if post.summary %}
-        <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 text-slate-700">
+        <div class="card-glass p-4 text-[var(--color-text-secondary)] border-l-4 border-[var(--primitive-cyan-500)]">
           {{ post.summary }}
         </div>
       {% endif %}
 
-      <div class="prose prose-slate max-w-none text-slate-800">
-        {{ post.body|linebreaks }}
+      <div class="prose prose-invert max-w-none text-[var(--color-text-secondary)]">
+        {{ post.body|inject_ads:3 }}
       </div>
       <div class="mt-6">
       {% render_ad_slot "post-inline" %}
       </div>
 
-      <div class="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-200">
-        <button type="button" class="btn-outline text-sm" data-ai-action="summarize" data-ai-target="article-body">AI summary</button>
-        <button type="button" class="btn-outline text-sm" data-ai-action="improve" data-ai-target="article-body">Improve readability</button>
-        <button type="button" class="btn-outline text-sm" data-ai-action="translate" data-ai-target="article-body">Translate</button>
+      <div class="flex flex-wrap items-center gap-3 pt-4 border-t border-[var(--color-border-default)]">
+        <button type="button" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--primitive-purple-500)]/30 bg-[var(--primitive-purple-500)]/10 text-[var(--primitive-purple-400)] text-sm hover:bg-[var(--primitive-purple-500)]/20 transition-all" data-ai-action="summarize" data-ai-target="article-body">AI summary</button>
+        <button type="button" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--primitive-purple-500)]/30 bg-[var(--primitive-purple-500)]/10 text-[var(--primitive-purple-400)] text-sm hover:bg-[var(--primitive-purple-500)]/20 transition-all" data-ai-action="improve" data-ai-target="article-body">Improve readability</button>
+        <button type="button" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--primitive-purple-500)]/30 bg-[var(--primitive-purple-500)]/10 text-[var(--primitive-purple-400)] text-sm hover:bg-[var(--primitive-purple-500)]/20 transition-all" data-ai-action="translate" data-ai-target="article-body">Translate</button>
       </div>
-      <section aria-label="Share this post" class="mt-6 rounded-lg border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+      <section aria-label="Share this post" class="mt-6 card-glass-neon p-5 space-y-4">
         <div class="flex items-center justify-between gap-2">
           <div class="flex items-center gap-2">
-            <svg class="icon w-4 h-4 text-primary" aria-hidden="true"><use href="#icon-share"></use></svg>
-            <h3 class="text-sm font-semibold text-slate-900">Share</h3>
+            <svg class="icon w-4 h-4 text-[var(--primitive-cyan-400)]" aria-hidden="true"><use href="#icon-share"></use></svg>
+            <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">Share</h3>
           </div>
-          <button type="button" class="text-xs text-slate-500 hover:text-primary" data-copy-target="share-url">Copy link</button>
+          <button type="button" class="text-xs text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors" data-copy-target="share-url">Copy link</button>
         </div>
         {% with share_url=request.build_absolute_uri %}
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-sm">
           <button
             type="button"
-            class="btn-outline text-xs justify-center js-copy-link"
+            class="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] text-xs hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] hover:border-[var(--primitive-cyan-500)]/50 transition-all js-copy-link"
             data-share-url="{{ share_url }}"
           >
             Copy link
           </button>
           <button
             type="button"
-            class="btn-outline text-xs justify-center js-copy-link"
+            class="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] text-xs hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] hover:border-[var(--primitive-cyan-500)]/50 transition-all js-copy-link"
             data-share-url="{{ share_url }}"
           >
             Copy link (alt)
           </button>
         </div>
-        <div class="text-xs text-slate-500">
+        <div class="text-xs text-[var(--color-text-muted)]">
           <div class="flex items-center gap-2">
-            <input id="share-url" aria-label="Share URL" class="w-full border border-slate-200 rounded-md px-2 py-1" readonly value="{{ share_url }}">
-            <button type="button" class="btn-outline text-xs" data-copy-target="share-url">Copy</button>
+            <input id="share-url" aria-label="Share URL" class="w-full border border-[var(--color-border-default)] rounded-lg px-3 py-2 bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-primary)]" readonly value="{{ share_url }}">
+            <button type="button" class="px-3 py-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] text-xs hover:bg-[var(--primitive-cyan-500)]/20 hover:text-[var(--primitive-cyan-400)] transition-all" data-copy-target="share-url">Copy</button>
           </div>
-          <p class="mt-1">RSS: <a class="text-primary underline" href="{% url 'blog:feed_rss' %}">/feed/rss/</a> · JSON: <a class="text-primary underline" href="{% url 'blog:feed_json' %}">/feed/json/</a></p>
+          <p class="mt-2">RSS: <a class="text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] underline transition-colors" href="{% url 'blog:feed_rss' %}">/feed/rss/</a> · JSON: <a class="text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] underline transition-colors" href="{% url 'blog:feed_json' %}">/feed/json/</a></p>
         </div>
         {% endwith %}
       </section>
-      <div class="rounded-lg bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
+      <div class="card-glass p-4 text-xs text-[var(--color-text-muted)] border-l-4 border-[var(--primitive-amber-500)]">
         Internal links and meta are updated only when content changes or when you trigger regeneration from the SEO dashboard.
       </div>
 
-      <section aria-labelledby="comments-heading" class="mt-8 rounded-xl border border-slate-200 bg-white shadow-sm p-5">
+      <section aria-labelledby="comments-heading" class="mt-8 card-glass-neon p-6">
         <div class="flex items-center justify-between gap-2">
           <div>
             <h2 id="comments-heading" class="text-lg font-semibold text-slate-900 inline-flex items-center gap-2">
@@ -241,33 +242,39 @@
       </section>
     </article>
 
-    <aside class="space-y-4" aria-label="Sidebar widgets">
-      <div class="lg:sticky lg:top-24 space-y-4">
-        {% render_ad_slot "sidebar-rect" %}
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+    <!-- Sidebar Column -->
+    <aside class="lg:col-span-4 blog-sidebar space-y-6 content-overflow-safe" aria-label="Sidebar widgets">
+      <div class="space-y-6">
+        <div class="overflow-hidden rounded-xl">
+          {% render_ad_slot "sidebar-rect" %}
+        </div>
+        <div class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-sm p-5 space-y-4">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-900">Trending posts</h3>
+            <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">Trending posts</h3>
           </div>
           {% include "blog/partials/trending_widget.html" with posts=trending_posts %}
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+        <div class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-sm p-5 space-y-4">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-900">Related posts</h3>
+            <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">Related posts</h3>
           </div>
           {{ related_widget_html|safe }}
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+        <div class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-sm p-5 space-y-4">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-900">Trending tags</h3>
+            <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">Trending tags</h3>
           </div>
           {% include "components/tag_badges.html" with tags=trending_tags %}
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-4 space-y-3">
+        <div class="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-sm p-5 space-y-4">
           <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-semibold text-slate-900">Tag cloud</h3>
+            <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">Tag cloud</h3>
           </div>
           {% include "components/tag_cloud.html" with tags=tag_cloud %}
         </div>
+        
+        <!-- Affiliate Products -->
+        {% render_affiliate_products blog_post=post max_products=3 layout="compact" title="Recommended" %}
       </div>
     </aside>
   </div>
@@ -275,7 +282,7 @@
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="/static/js/blog.js" nonce="{{ request.csp_nonce }}" defer></script>
+  <script src="{% static 'js/blog.js' %}" nonce="{{ request.csp_nonce }}" defer></script>
   {# Recaptcha disabled for CSP/offline mode; enable only via config flag and local proxy if needed #}
 {% endblock %}
 

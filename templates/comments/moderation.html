@@ -1,21 +1,24 @@
 
 {% extends "base.html" %}
 {% block title %}Comment Moderation{% endblock %}
+{% block sidebar_left %}{% endblock %}
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-  <header class="flex items-center justify-between gap-3">
-    <div>
-      <p class="text-xs font-semibold text-primary uppercase tracking-wide">Moderation</p>
-      <h1 class="text-2xl font-bold text-slate-900 inline-flex items-center gap-2">
-        <svg class="icon w-5 h-5" aria-hidden="true"><use href="#icon-shield"></use></svg>
-        Comments Queue
-      </h1>
-      <p class="text-sm text-slate-600">AI flagged comments need review before publishing.</p>
-      <p class="text-xs text-slate-500">Only approved comments are displayed publicly; spam stays locked.</p>
-    </div>
-  </header>
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-10 lg:col-start-2 space-y-6">
+      <header class="flex items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold text-primary uppercase tracking-wide">Moderation</p>
+          <h1 class="text-2xl font-bold text-slate-900 inline-flex items-center gap-2">
+            <svg class="icon w-5 h-5" aria-hidden="true"><use href="#icon-shield"></use></svg>
+            Comments Queue
+          </h1>
+          <p class="text-sm text-slate-600">AI flagged comments need review before publishing.</p>
+          <p class="text-xs text-slate-500">Only approved comments are displayed publicly; spam stays locked.</p>
+        </div>
+      </header>
 
-  <div class="grid md:grid-cols-2 gap-4">
+      <div class="grid md:grid-cols-2 gap-4">
     <section class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
       <div class="flex items-center justify-between">
         <div>
@@ -71,6 +74,8 @@
         {% endfor %}
       </div>
     </section>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

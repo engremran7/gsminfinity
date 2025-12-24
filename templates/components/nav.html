@@ -1,7 +1,179 @@
 
 {# Wrapper to include the main site navbar with semantic landmarks. #}
-<header class="sticky top-0 z-40 shadow-sm bg-white/95 backdrop-blur">
-  {% include "includes/navbar.html" %}
+<header class="fixed top-0 left-0 right-0 w-full z-50 bg-[var(--color-bg-glass-dark)] backdrop-blur-xl border-b border-[var(--color-border-default)]">
+  {% load static i18n %}
+
+  <nav class="site-nav">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center site-nav-inner py-3">
+        <div class="flex items-center">
+          <a href="{% url 'home' %}" class="flex items-center group">
+            <div class="relative">
+              {% if site_settings.logo %}
+              <img
+                src="{{ site_settings.logo }}"
+                alt="{{ site_settings.site_name|default:'GSMInfinity' }}"
+                class="h-10 w-auto"
+              />
+              {% else %}
+              <img
+                src="{% static 'img/default-logo.svg' %}"
+                alt="{{ site_settings.site_name|default:'GSMInfinity' }}"
+                class="h-10 w-auto"
+              />
+              {% endif %}
+              <div class="absolute -inset-1 bg-[var(--primitive-cyan-500)]/20 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </div>
+          </a>
+        </div>
+
+        <div class="flex items-center space-x-4">
+          {# Global Search Button #}
+          <button type="button" 
+                  id="global-search-btn"
+                  class="text-sm inline-flex items-center gap-1.5 text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-interactive-hover)]"
+                  aria-label="Search">
+            <svg class="icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+            <span class="hidden md:inline">Search</span>
+            <kbd class="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-[var(--color-text-muted)] bg-[var(--color-bg-surface-secondary)] border border-[var(--color-border-default)] rounded ml-1">/</kbd>
+          </button>
+
+          {# Logo already links to home, so no separate Home link needed #}
+
+          {% if site_settings.enable_blog %}
+          <a href="{% url 'blog:post_list' %}" class="text-sm inline-flex items-center gap-1.5 text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-interactive-hover)]">
+            <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-notes"></use></svg>
+            <span>Blog</span>
+          </a>
+          {% endif %}
+          
+          {# Dynamic pages from pages app #}
+          {% if pages_nav %}
+            {% for page in pages_nav %}
+              <a href="{{ page.url }}" class="text-sm inline-flex items-center gap-1.5 text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-interactive-hover)]">
+                <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-link"></use></svg>
+                <span>{{ page.title }}</span>
+              </a>
+            {% endfor %}
+          {% endif %}
+
+          {% get_current_language as LANGUAGE_CODE %}
+          {% get_available_languages as LANGUAGES %}
+          {% with featured=site_settings.featured_languages|default:"en,ar,fr,de,es,zh-hans,ja,ko,ru,pt" %}
+          <form method="post" action="{% url 'set_language' %}" class="hidden md:inline-flex items-center" id="lang-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <div class="lang-select-wrapper">
+              <span id="current-lang-flag" class="lang-flag"></span>
+              <select id="lang-switch" name="language" aria-label="Select language" title="Language selector" data-lang-switch class="lang-select bg-[var(--color-bg-surface-secondary)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-lg text-sm">
+                {% for code, name in LANGUAGES %}{% if code in featured or code == LANGUAGE_CODE %}
+                <option value="{{ code }}"{% if code == LANGUAGE_CODE %} selected{% endif %} data-flag="{% if code == 'en' %}🇺🇸{% elif code == 'ar' %}🇸🇦{% elif code == 'fr' %}🇫🇷{% elif code == 'de' %}🇩🇪{% elif code == 'es' %}🇪🇸{% elif code == 'zh-hans' %}🇨🇳{% elif code == 'ja' %}🇯🇵{% elif code == 'ko' %}🇰🇷{% elif code == 'ru' %}🇷🇺{% elif code == 'pt' %}🇵🇹{% elif code == 'it' %}🇮🇹{% elif code == 'nl' %}🇳🇱{% elif code == 'pl' %}🇵🇱{% elif code == 'tr' %}🇹🇷{% elif code == 'hi' %}🇮🇳{% elif code == 'th' %}🇹🇭{% elif code == 'vi' %}🇻🇳{% elif code == 'id' %}🇮🇩{% elif code == 'sv' %}🇸🇪{% elif code == 'da' %}🇩🇰{% elif code == 'fi' %}🇫🇮{% elif code == 'no' %}🇳🇴{% elif code == 'el' %}🇬🇷{% elif code == 'cs' %}🇨🇿{% elif code == 'hu' %}🇭🇺{% elif code == 'ro' %}🇷🇴{% elif code == 'uk' %}🇺🇦{% elif code == 'he' %}🇮🇱{% elif code == 'bn' %}🇧🇩{% elif code == 'ms' %}🇲🇾{% elif code == 'fa' %}🇮🇷{% else %}🌐{% endif %}">{% if code == 'en' %}🇺🇸{% elif code == 'ar' %}🇸🇦{% elif code == 'fr' %}🇫🇷{% elif code == 'de' %}🇩🇪{% elif code == 'es' %}🇪🇸{% elif code == 'zh-hans' %}🇨🇳{% elif code == 'ja' %}🇯🇵{% elif code == 'ko' %}🇰🇷{% elif code == 'ru' %}🇷🇺{% elif code == 'pt' %}🇵🇹{% elif code == 'it' %}🇮🇹{% elif code == 'nl' %}🇳🇱{% elif code == 'pl' %}🇵🇱{% elif code == 'tr' %}🇹🇷{% elif code == 'hi' %}🇮🇳{% elif code == 'th' %}🇹🇭{% elif code == 'vi' %}🇻🇳{% elif code == 'id' %}🇮🇩{% elif code == 'sv' %}🇸🇪{% elif code == 'da' %}🇩🇰{% elif code == 'fi' %}🇫🇮{% elif code == 'no' %}🇳🇴{% elif code == 'el' %}🇬🇷{% elif code == 'cs' %}🇨🇿{% elif code == 'hu' %}🇭🇺{% elif code == 'ro' %}🇷🇴{% elif code == 'uk' %}🇺🇦{% elif code == 'he' %}🇮🇱{% elif code == 'bn' %}🇧🇩{% elif code == 'ms' %}🇲🇾{% elif code == 'fa' %}🇮🇷{% else %}🌐{% endif %} {{ code|upper }}</option>
+                {% endif %}{% endfor %}
+              </select>
+            </div>
+          </form>
+          <script nonce="{{ request.csp_nonce }}">
+          function updateLangFlag(sel){
+            var opt = sel.options[sel.selectedIndex];
+            var flag = opt.getAttribute('data-flag') || '🌐';
+            document.getElementById('current-lang-flag').textContent = flag;
+          }
+          document.addEventListener('DOMContentLoaded', function(){
+            var sel = document.getElementById('lang-switch');
+            if(sel) updateLangFlag(sel);
+          });
+          </script>
+          {% endwith %}
+
+          {% if request.user.is_authenticated %}
+            <a href="{% url 'users:dashboard' %}" class="text-sm inline-flex items-center gap-1.5 text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-interactive-hover)]">
+              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-layout"></use></svg>
+              <span>Dashboard</span>
+            </a>
+          {% endif %}
+
+          {% if request.user.is_authenticated %}
+            <!-- Notification bell -->
+            <div class="relative inline-block" id="app-notifications">
+              <button
+                type="button"
+                class="relative inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-[var(--color-interactive-hover)] transition-colors"
+                data-notify-toggle
+                aria-label="Notifications"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white hover:text-[var(--primitive-cyan-400)] transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 2a6 6 0 00-6 6v3.586L3.293 13.293A1 1 0 004 15h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z" />
+                  <path d="M10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                </svg>
+                <span
+                  id="notify-badge"
+                  class="hidden absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white bg-[var(--primitive-cyan-500)] rounded-full shadow-[0_0_8px_var(--primitive-cyan-500)]"
+                >
+                  0
+                </span>
+              </button>
+              <div
+                id="notify-panel"
+                class="hidden absolute right-0 mt-2 w-80 bg-[#1A1A2E] shadow-2xl rounded-xl border border-[var(--color-border-default)] z-50"
+              >
+                <div class="p-3 border-b border-[var(--color-border-default)] flex items-center justify-between">
+                  <span class="font-semibold text-sm text-[var(--color-text-primary)]">Notifications</span>
+                  <button
+                    type="button"
+                    id="notify-mark-all"
+                    class="text-xs text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors"
+                    aria-label="Mark all read"
+                  >
+                    Mark all read
+                  </button>
+                </div>
+                <div id="notify-list" class="max-h-80 overflow-y-auto divide-y divide-[var(--color-border-subtle)]"></div>
+              </div>
+            </div>
+
+            {% with full=request.user.full_name|default_if_none:"" username=request.user.username|default_if_none:"" email=request.user.email|default_if_none:"" %}
+              {% with name=full|default:username %}
+                {% if not name and email and '@' in email %}
+                  {% with prefix=email|cut:"@" %}
+                    <span class="text-sm text-[var(--color-text-secondary)] hidden sm:inline">
+                      Logged in as <span class="text-[var(--primitive-cyan-400)]">{{ prefix }}</span>
+                    </span>
+                  {% endwith %}
+                {% else %}
+                  <span class="text-sm text-[var(--color-text-secondary)] hidden sm:inline">
+                    Logged in as <span class="text-[var(--primitive-cyan-400)]">{{ name|default:"user" }}</span>
+                  </span>
+                {% endif %}
+              {% endwith %}
+            {% endwith %}
+            <a href="{% url 'account_logout' %}" class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--primitive-red-400)] transition-colors inline-flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-[var(--primitive-red-500)]/10">
+              <svg class="icon w-4 h-4" aria-hidden="true"><use href="#icon-logout"></use></svg>
+              <span>Logout</span>
+            </a>
+          {% else %}
+            <a
+              href="{% url 'account_login' %}"
+              class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] transition-colors px-3 py-2 rounded-lg hover:bg-[var(--color-interactive-hover)]"
+            >
+              Login
+            </a>
+            <a
+              href="{% url 'account_signup' %}"
+              class="text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primitive-cyan-500)] to-[var(--primitive-cyan-600)] text-white font-medium hover:shadow-[0_0_20px_var(--primitive-cyan-500)] transition-shadow"
+            >
+              Sign up
+            </a>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  </nav>
 </header>
+<!-- Spacer to prevent content from hiding behind fixed header -->
+<div class="header-spacer"></div>
+
 
 

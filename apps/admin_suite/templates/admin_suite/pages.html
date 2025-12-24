@@ -71,14 +71,14 @@
             <td class="px-4 py-2">{{ p.include_in_sitemap|yesno:"Yes,No" }}</td>
             <td class="px-4 py-2 text-slate-500">{{ p.updated_at }}</td>
             <td class="px-4 py-2 space-x-2 text-xs">
-              <a href="{% url 'admin_suite:admin_suite_pages' %}?page_id={{ p.id }}" class="text-primary hover:underline">Edit</a>
+              <a href="{% url 'admin_suite:pages' %}?page_id={{ p.id }}" class="text-primary hover:underline">Edit</a>
               <form method="post" class="inline">
                 {% csrf_token %}
                 <input type="hidden" name="page_id" value="{{ p.id }}">
                 <input type="hidden" name="action" value="{% if p.status == 'published' %}unpublish{% else %}publish{% endif %}">
                 <button type="submit" class="text-slate-700 hover:underline">{% if p.status == 'published' %}Unpublish{% else %}Publish{% endif %}</button>
               </form>
-              <form method="post" class="inline" onsubmit="return confirm('Delete this page?');">
+              <form method="post" class="inline" data-confirm="Delete this page?">
                 {% csrf_token %}
                 <input type="hidden" name="page_id" value="{{ p.id }}">
                 <input type="hidden" name="action" value="delete">
@@ -101,7 +101,7 @@
         <p class="text-xs text-slate-500">Publish state, access level, sitemap toggles, and content.</p>
       </div>
       {% if edit_page %}
-      <a href="{% url 'admin_suite:admin_suite_pages' %}" class="text-xs text-primary hover:underline">Clear edit</a>
+      <a href="{% url 'admin_suite:pages' %}" class="text-xs text-primary hover:underline">Clear edit</a>
       {% endif %}
     </div>
     <div class="p-4">

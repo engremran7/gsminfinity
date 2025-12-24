@@ -1,0 +1,260 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - {{ config.get_provider_display }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">{{ config.display_name|default:config.get_provider_display }}</h1>
+      <p class="text-sm text-slate-600">Configure {{ config.get_provider_display }} OAuth authentication</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:social_providers' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">← Back to Providers</a>
+      {% if config.provider_console_url %}
+      <a href="{{ config.provider_console_url }}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 text-sm rounded border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100">
+        Open Developer Console ↗
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm {% if 'failed' in message|lower or 'error' in message|lower or 'invalid' in message|lower %}text-red-700 bg-red-50 border-red-100{% else %}text-emerald-700 bg-emerald-50 border-emerald-100{% endif %} border px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <!-- Status Overview -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="border rounded-lg bg-white p-4">
+      <div class="text-sm text-slate-500">Status</div>
+      <div class="text-lg font-semibold mt-1">
+        {% if config.status == 'active' %}
+          <span class="text-emerald-600">✓ Active</span>
+        {% elif config.status == 'pending_oauth' %}
+          <span class="text-amber-600">⏳ Pending OAuth</span>
+        {% elif config.status == 'error' %}
+          <span class="text-red-600">✗ Error</span>
+        {% elif config.status == 'disabled' %}
+          <span class="text-slate-500">◯ Disabled</span>
+        {% else %}
+          <span class="text-slate-500">{{ config.status }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="border rounded-lg bg-white p-4">
+      <div class="text-sm text-slate-500">Users</div>
+      <div class="text-lg font-semibold mt-1">{{ config.users_count }}</div>
+    </div>
+    <div class="border rounded-lg bg-white p-4">
+      <div class="text-sm text-slate-500">Credentials</div>
+      <div class="text-lg font-semibold mt-1">
+        {% if config.has_credentials %}
+          <span class="text-emerald-600">✓ Configured</span>
+        {% else %}
+          <span class="text-amber-600">⚠ Not Set</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="border rounded-lg bg-white p-4">
+      <div class="text-sm text-slate-500">Last Tested</div>
+      <div class="text-lg font-semibold mt-1">
+        {% if config.last_tested_at %}
+          {{ config.last_tested_at|date:"M d, H:i" }}
+        {% else %}
+          Never
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Callback URL Info -->
+  <div class="border rounded-lg bg-blue-50 border-blue-100 p-4">
+    <h3 class="font-medium text-blue-900 mb-2">🔗 OAuth Callback URL</h3>
+    <p class="text-sm text-blue-800 mb-2">Configure this URL in your {{ config.get_provider_display }} developer console:</p>
+    <code class="block bg-blue-100 px-3 py-2 rounded text-blue-900 text-sm font-mono">{{ config.callback_url }}</code>
+  </div>
+
+  <!-- Credentials Form -->
+  <div class="border rounded-lg bg-white shadow-sm p-4">
+    <h2 class="text-lg font-semibold text-slate-900 mb-4">OAuth Credentials</h2>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_credentials">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Display Name</label>
+          <input type="text" name="display_name" value="{{ config.display_name }}" placeholder="{{ config.get_provider_display }}" class="w-full border rounded px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Client ID / App ID</label>
+          <input type="text" name="client_id" placeholder="{{ client_id_masked }}" class="w-full border rounded px-3 py-2">
+          <p class="text-xs text-slate-500 mt-1">Current: {{ client_id_masked }}</p>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Client Secret / App Secret</label>
+          <input type="password" name="client_secret" placeholder="Leave blank to keep current" class="w-full border rounded px-3 py-2">
+          <p class="text-xs text-slate-500 mt-1">Leave empty to keep existing secret</p>
+        </div>
+        
+        {% if config.provider == 'microsoft' %}
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Tenant ID</label>
+          <input type="text" name="tenant_id" value="{{ config.tenant_id }}" placeholder="common" class="w-full border rounded px-3 py-2">
+          <p class="text-xs text-slate-500 mt-1">Use 'common' for any Azure AD, 'consumers' for personal accounts only</p>
+        </div>
+        {% endif %}
+        
+        {% if config.provider == 'apple' %}
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Team ID</label>
+          <input type="text" name="team_id" value="{{ config.team_id }}" class="w-full border rounded px-3 py-2" title="Apple Team ID">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Key ID</label>
+          <input type="text" name="key_id" value="{{ config.key_id }}" class="w-full border rounded px-3 py-2" title="Apple Key ID">
+        </div>
+        {% endif %}
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium text-slate-700 mb-1">OAuth Scopes</label>
+        <input type="text" name="scopes" value="{{ config.scopes|join:', ' }}" placeholder="email, profile, openid" class="w-full border rounded px-3 py-2">
+        <p class="text-xs text-slate-500 mt-1">Comma-separated list of OAuth scopes to request</p>
+      </div>
+      
+      <div class="flex justify-between items-center pt-2">
+        <div class="flex gap-2">
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="test_connection">
+            <button type="submit" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">
+              Test Credentials
+            </button>
+          </form>
+          <form method="post" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="sync_allauth">
+            <button type="submit" class="px-3 py-1.5 text-sm rounded border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100">
+              Sync to Auth System
+            </button>
+          </form>
+        </div>
+        <button type="submit" class="px-4 py-2 rounded bg-primary text-white hover:bg-primary/90">
+          Update Credentials
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Advanced Settings -->
+  <details class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <summary class="px-4 py-3 cursor-pointer hover:bg-slate-50 font-medium text-slate-900">
+      Advanced Settings (JSON)
+    </summary>
+    <div class="px-4 py-3 border-t">
+      <form method="post" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_settings">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">Provider Settings (JSON)</label>
+          <textarea name="settings_json" rows="6" class="w-full border rounded px-3 py-2 font-mono text-sm">{{ config.settings_json|default:"{}"|safe }}</textarea>
+          <p class="text-xs text-slate-500 mt-1">Additional provider-specific settings in JSON format</p>
+        </div>
+        <button type="submit" class="px-4 py-2 rounded bg-primary text-white hover:bg-primary/90">
+          Update Settings
+        </button>
+      </form>
+    </div>
+  </details>
+
+  <!-- Recent Users -->
+  {% if linked_users %}
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Recent Users via {{ config.get_provider_display }}</h2>
+    </div>
+    <div class="divide-y">
+      {% for sa in linked_users %}
+      <div class="px-4 py-2 flex items-center justify-between hover:bg-slate-50">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-sm">
+            {{ sa.user.email|first|upper }}
+          </div>
+          <div>
+            <div class="text-sm font-medium">{{ sa.user.email }}</div>
+            <div class="text-xs text-slate-500">{{ sa.uid|truncatechars:30 }}</div>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500">
+          {{ sa.date_joined|date:"M d, Y" }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if config.users_count > 10 %}
+    <div class="px-4 py-2 bg-slate-50 text-sm text-slate-600 text-center">
+      ... and {{ config.users_count|add:"-10" }} more users
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Error Log -->
+  {% if config.last_error %}
+  <div class="border rounded-lg bg-red-50 border-red-100 p-4">
+    <h3 class="font-medium text-red-900 mb-2">⚠️ Last Error</h3>
+    <pre class="text-sm text-red-800 whitespace-pre-wrap bg-red-100 p-2 rounded">{{ config.last_error }}</pre>
+  </div>
+  {% endif %}
+
+  <!-- Browser OAuth Notice -->
+  {% if config.requires_browser_oauth %}
+  <div class="border rounded-lg bg-amber-50 border-amber-100 p-4">
+    <h3 class="font-medium text-amber-900 mb-2">🌐 Browser OAuth Required</h3>
+    <div class="text-sm text-amber-800 space-y-2">
+      <p>{{ config.get_provider_display }} may require browser-based OAuth for certain admin operations:</p>
+      <ul class="list-disc ml-4">
+        <li>Initial OAuth consent for the application</li>
+        <li>Accessing additional APIs beyond basic authentication</li>
+        <li>Managing organization-level permissions</li>
+      </ul>
+      <p class="mt-2">
+        For end-user social login, the credentials configured above are sufficient.
+        For admin API access, you may need to complete an OAuth flow in your browser.
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Provider Documentation -->
+  <div class="border rounded-lg bg-white shadow-sm p-4">
+    <h3 class="font-semibold text-slate-900 mb-3">📚 Provider Documentation</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      {% if config.provider == 'google' %}
+      <a href="https://developers.google.com/identity/protocols/oauth2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Google OAuth 2.0 Documentation</a>
+      <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Google Cloud Console</a>
+      {% elif config.provider == 'facebook' %}
+      <a href="https://developers.facebook.com/docs/facebook-login/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Facebook Login Documentation</a>
+      <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Facebook Developer Portal</a>
+      {% elif config.provider == 'microsoft' %}
+      <a href="https://docs.microsoft.com/en-us/azure/active-directory/develop/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Microsoft Identity Documentation</a>
+      <a href="https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Azure Portal App Registrations</a>
+      {% elif config.provider == 'github' %}
+      <a href="https://docs.github.com/en/developers/apps/building-oauth-apps" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">GitHub OAuth Apps Documentation</a>
+      <a href="https://github.com/settings/developers" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">GitHub Developer Settings</a>
+      {% elif config.provider == 'apple' %}
+      <a href="https://developer.apple.com/documentation/sign_in_with_apple" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Sign in with Apple Documentation</a>
+      <a href="https://developer.apple.com/account/resources/identifiers/list/serviceId" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Apple Developer Portal</a>
+      {% else %}
+      <a href="{{ config.provider_console_url }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Developer Console</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

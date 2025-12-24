@@ -48,6 +48,14 @@ class UsersConfig(AppConfig):
         # ---------------------------------------------------------------
         try:
             import apps.users.signals  # noqa: F401
+        except Exception as exc:
+            logger.warning("Failed to import users signals: %s", exc)
+        
+        # Import signal handlers for cross-app communication
+        try:
+            from . import signal_handlers  # noqa: F401
+        except Exception as exc:
+            logger.warning("Failed to import signal handlers: %s", exc)
 
             logger.debug("UsersConfig → signals imported successfully.")
         except ImportError as exc:

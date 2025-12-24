@@ -23,7 +23,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         root = Path(options["templates_dir"]).resolve()
         pattern = re.compile(
-            r"(ads:slot|<!--\s*ad-slot:)(?P<name>[\w\-\s]+)(?:\s+sizes=(?P<sizes>[\w,x]+))?(?:\s+types=(?P<types>[\w,]+))?",
+            r"(?:ads:slot|<!--\s*ad-slot:|{%\s*render_ad_slot\s+['\"])(?P<name>[\w\-\s]+)(?:['\"]|)(?:\s+sizes=(?P<sizes>[\w,x]+))?(?:\s+types=(?P<types>[\w,]+))?",
             re.IGNORECASE,
         )
         created = 0

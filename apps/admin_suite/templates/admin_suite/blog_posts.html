@@ -1,0 +1,152 @@
+{% extends "admin_suite/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Message Display -->
+    {% if message %}
+    <div class="rounded-md bg-green-50 p-4 border border-green-200">
+        <p class="text-sm text-green-700">{{ message }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Search & Filters -->
+    <div class="bg-white rounded-lg shadow-sm border p-4">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Search Posts</label>
+                <input type="text" name="q" value="{{ query }}" placeholder="Search by title..." class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select name="status" class="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" title="Filter by post status">
+                    <option value="">All Status</option>
+                    <option value="published" {% if status_filter == 'published' %}selected{% endif %}>Published</option>
+                    <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+                </select>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Search</button>
+            <a href="{% url 'admin_suite:blog_posts' %}" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Clear</a>
+        </form>
+    </div>
+
+    <!-- Results Count -->
+    <div class="flex justify-between items-center">
+        <div class="text-sm text-gray-600">
+            Showing {{ posts|length }} of {{ total_count }} posts
+            {% if query %} matching "{{ query }}"{% endif %}
+        </div>
+        <a href="{% url 'admin:blog_post_add' %}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Create Post
+        </a>
+    </div>
+
+    <!-- Posts Table -->
+    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Author</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Views</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for post in posts %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <div class="font-medium text-gray-900 line-clamp-1">{{ post.title }}</div>
+                                {% if post.is_featured %}
+                                <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Featured</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-xs text-gray-500 truncate max-w-[300px]">{{ post.slug }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ post.author__email|default:"-" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if post.category__name %}
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800">{{ post.category__name }}</span>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if post.is_published %}
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Published</span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">Draft</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ post.view_count|default:0 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ post.created_at|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap space-x-2">
+                            <a href="{% url 'admin:blog_post_change' post.id %}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 text-sm">Edit</a>
+                            <form method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_publish">
+                                <input type="hidden" name="post_id" value="{{ post.id }}">
+                                <button type="submit" class="text-blue-600 hover:text-blue-800 text-sm">
+                                    {% if post.is_published %}Unpublish{% else %}Publish{% endif %}
+                                </button>
+                            </form>
+                            <form method="post" class="inline" data-confirm="Delete this post?">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_post">
+                                <input type="hidden" name="post_id" value="{{ post.id }}">
+                                <button type="submit" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            No blog posts found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if total_count > page_size %}
+    <div class="flex justify-center gap-2">
+        {% if page > 1 %}
+        <a href="?page={{ page|add:-1 }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-4 py-2 border rounded-lg hover:bg-gray-100">← Previous</a>
+        {% endif %}
+        <span class="px-4 py-2 text-gray-600">Page {{ page }}</span>
+        {% if posts|length >= page_size %}
+        <a href="?page={{ page|add:1 }}{% if query %}&q={{ query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Categories Section -->
+    {% if categories %}
+    <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+        <div class="px-6 py-4 border-b bg-gray-50">
+            <h3 class="text-lg font-semibold text-gray-900">Categories</h3>
+        </div>
+        <div class="p-6">
+            <div class="flex flex-wrap gap-2">
+                {% for cat in categories %}
+                <a href="?q=&category={{ cat.id }}" class="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm hover:bg-blue-100">
+                    {{ cat.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

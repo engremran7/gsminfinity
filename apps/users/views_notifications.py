@@ -96,7 +96,7 @@ def notification_mark_read(request: HttpRequest, pk: int) -> JsonResponse:
 
     if "application/json" in (request.headers.get("Accept") or "") or request.headers.get("HX-Request"):
         return JsonResponse({"ok": True})
-    return redirect(request.META.get("HTTP_REFERER") or "users_notifications:list")
+    return redirect(request.META.get("HTTP_REFERER") or "users:notifications")
 
 
 @login_required
@@ -108,6 +108,6 @@ def notification_mark_all_read(request: HttpRequest) -> JsonResponse:
     )
     if "application/json" in (request.headers.get("Accept") or "") or request.headers.get("HX-Request"):
         return JsonResponse({"ok": True})
-    return redirect(request.META.get("HTTP_REFERER") or "users_notifications:list")
+    return redirect(request.META.get("HTTP_REFERER") or "users:notifications")
 
 

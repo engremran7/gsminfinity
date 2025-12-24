@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% load static i18n humanize %}
+
+{% block title %}{{ site_settings.site_name|default:"Home" }} - Welcome{% endblock %}
+
+{% block meta_description %}{{ site_settings.tagline|default:"Your source for the latest firmwares and updates." }}{% endblock %}
+
+{% block sidebar_left %}{% endblock %}
+{% block sidebar_right %}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen">
+  <!-- Hero Section with Stats -->
+  <section class="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20">
+    <!-- Background gradient effect -->
+    <div class="absolute inset-0 bg-gradient-to-br from-[var(--color-bg-surface)] via-[var(--color-bg-page)] to-[var(--primitive-cyan-950)]/20"></div>
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--primitive-cyan-500)/10,_transparent_50%)]"></div>
+    
+    <!-- Decorative floating dots -->
+    <div class="absolute top-32 left-[10%] w-4 h-4 rounded-full bg-[var(--primitive-cyan-400)] opacity-60 animate-pulse"></div>
+    <div class="absolute top-44 right-[15%] w-3 h-3 rounded-full bg-[var(--primitive-neon-400)] opacity-50"></div>
+    <div class="absolute top-56 left-[5%] w-2 h-2 rounded-full bg-[var(--primitive-purple-400)] opacity-40"></div>
+    <div class="absolute top-36 right-[8%] w-5 h-5 rounded-full bg-[var(--primitive-cyan-500)] opacity-30"></div>
+    <div class="absolute bottom-32 left-[20%] w-3 h-3 rounded-full bg-[var(--primitive-neon-500)] opacity-50 animate-pulse"></div>
+    <div class="absolute bottom-48 right-[25%] w-2 h-2 rounded-full bg-[var(--primitive-cyan-400)] opacity-60"></div>
+    <div class="absolute top-52 left-[30%] w-2 h-2 rounded-full bg-white opacity-30"></div>
+    <div class="absolute bottom-24 right-[10%] w-4 h-4 rounded-full bg-[var(--primitive-purple-500)] opacity-40 animate-pulse"></div>
+    
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <!-- Logo and Site Name - Large Centered -->
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center gap-4 mb-6">
+          <img src="{% static 'img/logo-icon-only.svg' %}" alt="" class="h-20 sm:h-24 w-auto" />
+          <span class="text-5xl sm:text-6xl lg:text-7xl font-bold text-[var(--color-text-primary)]">
+            <span class="text-white">GSM</span><span class="text-transparent bg-clip-text bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-neon-400)]">Infinity</span>
+          </span>
+        </div>
+        <p class="text-xl sm:text-2xl text-[var(--color-text-secondary)] max-w-3xl mx-auto leading-relaxed mb-6">
+          {% if site_settings.tagline %}{{ site_settings.tagline }}{% else %}Download official firmwares max speed and Free.<br/>Your trusted source for mobile technology updates.{% endif %}
+        </p>
+      </div>
+
+      <!-- Search Bar - Prominent -->
+      <div class="hero-search-container">
+        <form action="{% url 'firmwares:browse' %}" method="get" class="hero-search-form">
+          <div class="hero-search-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <input 
+            type="search" 
+            name="q" 
+            placeholder="Enter device name or model code"
+            class="hero-search-input"
+            data-live-search
+            data-search-type="all"
+            data-max-results="8"
+            id="hero-search-input"
+          />
+          <button type="submit" aria-label="Search" title="Search" class="hero-search-btn">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </button>
+        </form>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <!-- Brands -->
+        <a href="{% url 'firmwares:brand_list' %}" class="card-glass-neon p-4 sm:p-6 text-center group hover:shadow-[0_0_30px_var(--primitive-cyan-500)/30] transition-all duration-300 cursor-pointer">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-full bg-gradient-to-br from-[var(--primitive-cyan-500)]/20 to-[var(--primitive-cyan-600)]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <svg width="24" height="24" class="sm:w-7 sm:h-7 flex-shrink-0 text-[var(--primitive-cyan-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+          </div>
+          <div class="text-2xl sm:text-3xl font-bold text-[var(--primitive-cyan-400)] mb-1">{{ stats.brands_count|default:"0" }}</div>
+          <div class="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium">Brands</div>
+        </a>
+
+        <!-- Device Models -->
+        <a href="{% url 'firmwares:brand_list' %}" class="card-glass-neon p-4 sm:p-6 text-center group hover:shadow-[0_0_30px_var(--primitive-neon-500)/30] transition-all duration-300 cursor-pointer">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-full bg-gradient-to-br from-[var(--primitive-neon-500)]/20 to-[var(--primitive-neon-600)]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <svg width="24" height="24" class="sm:w-7 sm:h-7 flex-shrink-0 text-[var(--primitive-neon-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div class="text-2xl sm:text-3xl font-bold text-[var(--primitive-neon-400)] mb-1">{{ stats.models_count|default:"0" }}</div>
+          <div class="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium">Models</div>
+        </a>
+
+        <!-- Firmwares -->
+        <a href="{% url 'firmwares:browse' %}" class="card-glass-neon p-4 sm:p-6 text-center group hover:shadow-[0_0_30px_var(--primitive-purple-500)/30] transition-all duration-300 cursor-pointer">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-full bg-gradient-to-br from-[var(--primitive-purple-500)]/20 to-[var(--primitive-purple-600)]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <svg width="24" height="24" class="sm:w-7 sm:h-7 flex-shrink-0 text-[var(--primitive-purple-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+            </svg>
+          </div>
+          <div class="text-2xl sm:text-3xl font-bold text-[var(--primitive-purple-400)] mb-1">{{ stats.firmwares_count|default:"0" }}</div>
+          <div class="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium">Firmwares</div>
+        </a>
+
+        <!-- Total Downloads -->
+        <a href="{% url 'firmwares:browse' %}" class="card-glass-neon p-4 sm:p-6 text-center group hover:shadow-[0_0_30px_var(--primitive-green-500)/30] transition-all duration-300 cursor-pointer">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-full bg-gradient-to-br from-green-500/20 to-green-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <svg width="24" height="24" class="sm:w-7 sm:h-7 flex-shrink-0 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+          </div>
+          <div class="text-2xl sm:text-3xl font-bold text-green-400 mb-1">{{ stats.total_downloads|default:"0"|intcomma }}</div>
+          <div class="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium">Downloads</div>
+        </a>
+
+        <!-- Auto Blogs -->
+        <a href="{% url 'blog:post_list' %}" class="card-glass-neon p-4 sm:p-6 text-center group hover:shadow-[0_0_30px_var(--primitive-orange-500)/30] transition-all duration-300 cursor-pointer">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-full bg-gradient-to-br from-orange-500/20 to-orange-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <svg width="24" height="24" class="sm:w-7 sm:h-7 flex-shrink-0 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div class="text-2xl sm:text-3xl font-bold text-orange-400 mb-1">{{ stats.auto_blogs_count|default:"0" }}</div>
+          <div class="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium">Auto Blogs</div>
+        </a>
+
+        <!-- Manual Blogs -->
+        <a href="{% url 'blog:post_list' %}" class="card-glass-neon p-4 sm:p-6 text-center group hover:shadow-[0_0_30px_var(--primitive-pink-500)/30] transition-all duration-300 cursor-pointer">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-full bg-gradient-to-br from-pink-500/20 to-pink-600/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <svg width="24" height="24" class="sm:w-7 sm:h-7 flex-shrink-0 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </div>
+          <div class="text-2xl sm:text-3xl font-bold text-pink-400 mb-1">{{ stats.manual_blogs_count|default:"0" }}</div>
+          <div class="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium">Manual Blogs</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content - Dual Column Layout -->
+  <section class="py-12 sm:py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left Column - Firmwares -->
+        <div class="lg:col-span-2 space-y-8">
+          
+          <!-- Latest Firmwares Widget -->
+          {% if left_column.latest_firmwares %}
+          <div class="card-glass-neon overflow-hidden">
+            <div class="px-6 py-4 border-b border-[var(--color-border-default)] flex items-center justify-between">
+              <h2 class="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                <svg class="w-5 h-5 text-[var(--primitive-cyan-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Latest Firmwares
+              </h2>
+              <a href="{% url 'firmwares:browse' %}" class="text-sm text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors">View All →</a>
+            </div>
+            <div class="divide-y divide-[var(--color-border-default)]">
+              {% for firmware in left_column.latest_firmwares %}
+              <a href="{% url 'firmwares:firmware_detail' firmware.type_slug firmware.id %}" class="block px-6 py-4 hover:bg-[var(--color-bg-surface-secondary)]/50 transition-colors">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="font-medium text-[var(--color-text-primary)]">{{ firmware.file_name|truncatechars:40 }}</h3>
+                    <p class="text-sm text-[var(--color-text-muted)]">{{ firmware.brand }} {{ firmware.model }}</p>
+                  </div>
+                  <span class="text-xs px-2 py-1 rounded-full bg-[var(--primitive-cyan-500)]/20 text-[var(--primitive-cyan-400)]">New</span>
+                </div>
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Trending Firmwares Widget -->
+          {% if left_column.trending_firmwares %}
+          <div class="card-glass-neon overflow-hidden">
+            <div class="px-6 py-4 border-b border-[var(--color-border-default)] flex items-center justify-between">
+              <h2 class="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                <svg class="w-5 h-5 text-[var(--primitive-neon-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                </svg>
+                Trending Firmwares
+              </h2>
+              <a href="{% url 'firmwares:browse' %}" class="text-sm text-[var(--primitive-neon-400)] hover:text-[var(--primitive-neon-300)] transition-colors">View All →</a>
+            </div>
+            <div class="divide-y divide-[var(--color-border-default)]">
+              {% for firmware in left_column.trending_firmwares %}
+              <a href="{% url 'firmwares:firmware_detail' firmware.type_slug firmware.id %}" class="block px-6 py-4 hover:bg-[var(--color-bg-surface-secondary)]/50 transition-colors">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="font-medium text-[var(--color-text-primary)]">{{ firmware.file_name|truncatechars:40 }}</h3>
+                    <p class="text-sm text-[var(--color-text-muted)]">{{ firmware.brand }} {{ firmware.model }}</p>
+                  </div>
+                  <span class="text-xs px-2 py-1 rounded-full bg-[var(--primitive-neon-500)]/20 text-[var(--primitive-neon-400)]">🔥 Hot</span>
+                </div>
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Most Requested Widget -->
+          {% if left_column.most_requested %}
+          <div class="card-glass-neon overflow-hidden">
+            <div class="px-6 py-4 border-b border-[var(--color-border-default)] flex items-center justify-between">
+              <h2 class="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                <svg class="w-5 h-5 text-[var(--primitive-purple-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                </svg>
+                Most Requested
+              </h2>
+            </div>
+            <div class="divide-y divide-[var(--color-border-default)]">
+              {% for item in left_column.most_requested %}
+              <div class="px-6 py-4 hover:bg-[var(--color-bg-surface-secondary)]/50 transition-colors">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="font-medium text-[var(--color-text-primary)]">{{ item.brand }} {{ item.model }}</h3>
+                    <p class="text-sm text-[var(--color-text-muted)]">{{ item.request_count|default:"0" }} requests</p>
+                  </div>
+                  <span class="text-xs px-2 py-1 rounded-full bg-[var(--primitive-purple-500)]/20 text-[var(--primitive-purple-400)]">⭐ Popular</span>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+
+        <!-- Right Column - Blog Posts -->
+        <div class="space-y-8">
+          
+          <!-- Latest Blog Posts Widget -->
+          {% if right_column.latest_blogs %}
+          <div class="card-glass-neon overflow-hidden">
+            <div class="px-6 py-4 border-b border-[var(--color-border-default)] flex items-center justify-between">
+              <h2 class="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                <svg class="w-5 h-5 text-[var(--primitive-cyan-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
+                </svg>
+                Latest Articles
+              </h2>
+              <a href="{% url 'blog:post_list' %}" class="text-sm text-[var(--primitive-cyan-400)] hover:text-[var(--primitive-cyan-300)] transition-colors">View All →</a>
+            </div>
+            <div class="divide-y divide-[var(--color-border-default)]">
+              {% for post in right_column.latest_blogs %}
+              <a href="{% url 'blog:post_detail' post.slug %}" class="block px-6 py-4 hover:bg-[var(--color-bg-surface-secondary)]/50 transition-colors">
+                <h3 class="font-medium text-[var(--color-text-primary)] line-clamp-2 mb-1">{{ post.title }}</h3>
+                <p class="text-xs text-[var(--color-text-muted)]">{{ post.published_at|date:"M d, Y" }}</p>
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Trending Blog Posts Widget -->
+          {% if right_column.trending_blogs %}
+          <div class="card-glass-neon overflow-hidden">
+            <div class="px-6 py-4 border-b border-[var(--color-border-default)] flex items-center justify-between">
+              <h2 class="text-xl font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                <svg class="w-5 h-5 text-[var(--primitive-neon-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+                </svg>
+                Trending Now
+              </h2>
+            </div>
+            <div class="divide-y divide-[var(--color-border-default)]">
+              {% for post in right_column.trending_blogs %}
+              <a href="{% url 'blog:post_detail' post.slug %}" class="block px-6 py-4 hover:bg-[var(--color-bg-surface-secondary)]/50 transition-colors">
+                <h3 class="font-medium text-[var(--color-text-primary)] line-clamp-2 mb-1">{{ post.title }}</h3>
+                <p class="text-xs text-[var(--color-text-muted)]">{{ post.view_count|default:"0" }} views</p>
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Quick Links Card -->
+          <div class="card-glass-neon p-6">
+            <h2 class="text-xl font-bold text-[var(--color-text-primary)] mb-4 flex items-center gap-2">
+              <svg class="w-5 h-5 text-[var(--primitive-cyan-400)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+              </svg>
+              Quick Links
+            </h2>
+            <div class="space-y-3">
+              <a href="{% url 'blog:post_list' %}" class="flex items-center gap-3 text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] transition-colors">
+                <span class="w-2 h-2 rounded-full bg-[var(--primitive-cyan-500)]"></span>
+                Browse All Articles
+              </a>
+              <a href="{% url 'tags:list' %}" class="flex items-center gap-3 text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] transition-colors">
+                <span class="w-2 h-2 rounded-full bg-[var(--primitive-neon-500)]"></span>
+                Browse by Tags
+              </a>
+              {% if user.is_authenticated %}
+              <a href="{% url 'users:dashboard' %}" class="flex items-center gap-3 text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] transition-colors">
+                <span class="w-2 h-2 rounded-full bg-[var(--primitive-purple-500)]"></span>
+                My Dashboard
+              </a>
+              {% else %}
+              <a href="{% url 'account_login' %}" class="flex items-center gap-3 text-[var(--color-text-secondary)] hover:text-[var(--primitive-cyan-400)] transition-colors">
+                <span class="w-2 h-2 rounded-full bg-[var(--primitive-purple-500)]"></span>
+                Sign In
+              </a>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

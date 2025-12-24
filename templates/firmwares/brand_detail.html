@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load static i18n humanize ads_tags %}
+
+{% block title %}{{ brand.name }} Firmwares - {{ site_settings.site_name }}{% endblock %}
+{% block meta_description %}Download firmware files for {{ brand.name }} devices. Find official, engineering, and modified firmwares for all {{ brand.name }} models.{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-[var(--color-bg-primary)]">
+  
+  <!-- Breadcrumb -->
+  <div class="border-b border-[var(--color-border-default)]">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <nav class="flex items-center gap-2 text-sm">
+        <a href="{% url 'firmwares:browse' %}" class="text-[var(--color-text-muted)] hover:text-[var(--primitive-cyan-400)] transition-colors">Firmwares</a>
+        <svg class="w-4 h-4 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+        <a href="{% url 'firmwares:brand_list' %}" class="text-[var(--color-text-muted)] hover:text-[var(--primitive-cyan-400)] transition-colors">Brands</a>
+        <svg class="w-4 h-4 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+        <span class="text-[var(--color-text-primary)]">{{ brand.name }}</span>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Brand Header -->
+  <div class="relative overflow-hidden bg-gradient-to-br from-[var(--primitive-cyan-900)]/20 via-transparent to-[var(--primitive-purple-900)]/20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="flex flex-col sm:flex-row items-center gap-6">
+        <div class="w-24 h-24 rounded-full bg-[var(--color-bg-surface-secondary)] flex items-center justify-center overflow-hidden">
+          {% if brand.logo %}
+          <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" class="w-16 h-16 object-contain">
+          {% else %}
+          <span class="text-4xl font-bold text-[var(--color-text-muted)]">{{ brand.name|slice:":1"|upper }}</span>
+          {% endif %}
+        </div>
+        <div class="text-center sm:text-left">
+          <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-purple-400)]">
+            {{ brand.name }} Firmwares
+          </h1>
+          <p class="text-lg text-[var(--color-text-secondary)] mt-2">
+            {{ models|length }} model{% if models|length != 1 %}s{% endif %} • {{ total_firmwares|intcomma }} firmware{% if total_firmwares != 1 %}s{% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Search -->
+    <div class="mb-8">
+      <div class="relative max-w-md">
+        <div class="absolute left-4 top-0 bottom-0 flex items-center pointer-events-none z-10">
+          <svg class="w-5 h-5 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <input type="text" 
+               id="model-search" 
+               placeholder="Search models..."
+               data-live-search
+               data-search-type="models"
+               data-max-results="8"
+               class="w-full px-4 py-3 pl-12 rounded-lg bg-[var(--color-bg-surface-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--primitive-cyan-500)] focus:ring-1 focus:ring-[var(--primitive-cyan-500)] focus:outline-none transition-colors">
+      </div>
+    </div>
+
+    <!-- Models Grid -->
+    <div id="models-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for model in models %}
+      <a href="{% url 'firmwares:model_detail' brand.slug model.slug %}" 
+         class="model-card card-glass-neon p-6 hover:border-[var(--primitive-cyan-500)]/50 transition-all group"
+         data-name="{{ model.name|lower }}{% if model.model_code %} {{ model.model_code|lower }}{% endif %}">
+        
+        <!-- Model Image or Placeholder -->
+        <div class="aspect-square mb-4 rounded-lg bg-[var(--color-bg-surface-secondary)] flex items-center justify-center overflow-hidden">
+          {% if model.image %}
+          <img src="{{ model.image.url }}" alt="{{ model.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+          {% else %}
+          <svg class="w-16 h-16 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+          {% endif %}
+        </div>
+        
+        <h3 class="text-lg font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--primitive-cyan-400)] transition-colors">
+          {{ model.name }}
+        </h3>
+        
+        {% if model.model_code %}
+        <p class="text-sm text-[var(--color-text-muted)] mt-1">{{ model.model_code }}</p>
+        {% endif %}
+        
+        <div class="flex items-center gap-4 mt-3 pt-3 border-t border-[var(--color-border-default)]">
+          <span class="text-sm text-[var(--color-text-secondary)]">
+            <span class="text-[var(--color-text-primary)] font-medium">{{ model.firmware_count }}</span> firmware{% if model.firmware_count != 1 %}s{% endif %}
+          </span>
+        </div>
+      </a>
+      {% empty %}
+      <div class="col-span-full text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-[var(--color-text-muted)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-[var(--color-text-primary)]">No models found</h3>
+        <p class="text-[var(--color-text-muted)]">No firmware files available for {{ brand.name }} yet.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- No Results Message -->
+    <div id="no-results" class="hidden text-center py-12">
+      <svg class="w-16 h-16 mx-auto text-[var(--color-text-muted)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <h3 class="text-lg font-medium text-[var(--color-text-primary)]">No models match your search</h3>
+      <p class="text-[var(--color-text-muted)]">Try a different search term.</p>
+    </div>
+
+    <!-- Affiliate Products for Brand -->
+    {% render_affiliate_products brand=brand max_products=4 layout="grid" title="Recommended Accessories" %}
+
+    <!-- Browse Other Brands -->
+    <div class="mt-12 pt-8 border-t border-[var(--color-border-default)]">
+      <h2 class="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Other Brands</h2>
+      <div class="flex flex-wrap gap-2">
+        {% for other_brand in other_brands|slice:":12" %}
+        <a href="{% url 'firmwares:brand_detail' other_brand.slug %}" 
+           class="px-4 py-2 rounded-full bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-secondary)]/80 transition-colors text-sm">
+          {{ other_brand.name }}
+        </a>
+        {% endfor %}
+        <a href="{% url 'firmwares:brand_list' %}" 
+           class="px-4 py-2 rounded-full bg-[var(--primitive-cyan-500)]/10 text-[var(--primitive-cyan-400)] hover:bg-[var(--primitive-cyan-500)]/20 transition-colors text-sm">
+          View All →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Model Search Filter
+const searchInput = document.getElementById('model-search');
+const modelCards = document.querySelectorAll('.model-card');
+const noResults = document.getElementById('no-results');
+
+searchInput.addEventListener('input', (e) => {
+  const query = e.target.value.toLowerCase().trim();
+  let visibleCount = 0;
+  
+  modelCards.forEach(card => {
+    const name = card.dataset.name;
+    if (name.includes(query)) {
+      card.classList.remove('hidden');
+      visibleCount++;
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+  
+  if (visibleCount === 0 && query) {
+    noResults.classList.remove('hidden');
+  } else {
+    noResults.classList.add('hidden');
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% load static i18n humanize %}
+
+{% block title %}Firmware Brands - {{ site_settings.site_name }}{% endblock %}
+{% block meta_description %}Browse firmware files by brand. Find official, engineering, and modified firmwares for Samsung, Xiaomi, Oppo, Vivo, and more.{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-[var(--color-bg-primary)]">
+  
+  <!-- Hero Section -->
+  <div class="relative overflow-hidden bg-gradient-to-br from-[var(--primitive-cyan-900)]/20 via-transparent to-[var(--primitive-purple-900)]/20">
+    <div class="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-5"></div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
+      <div class="text-center">
+        <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-purple-400)] mb-4">
+          Browse by Brand
+        </h1>
+        <p class="text-lg text-[var(--color-text-secondary)] max-w-2xl mx-auto">
+          Select a brand to explore all available firmware files for that manufacturer's devices.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <!-- Search -->
+    <div class="mb-8">
+      <div class="relative max-w-md mx-auto">
+        <div class="absolute left-4 top-0 bottom-0 flex items-center pointer-events-none z-10">
+          <svg class="w-5 h-5 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <input type="text" 
+               id="brand-search" 
+               placeholder="Search brands..."
+               data-live-search
+               data-search-type="brands"
+               data-max-results="8"
+               class="w-full px-4 py-3 pl-12 rounded-lg bg-[var(--color-bg-surface-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--primitive-cyan-500)] focus:ring-1 focus:ring-[var(--primitive-cyan-500)] focus:outline-none transition-colors">
+      </div>
+    </div>
+
+    <!-- Alphabet Quick Navigation -->
+    <div class="mb-8 flex flex-wrap justify-center gap-2">
+      {% for letter in alphabet %}
+      <a href="#letter-{{ letter }}" 
+         class="alphabet-link w-10 h-10 flex items-center justify-center rounded-lg bg-[var(--color-bg-surface-secondary)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:border-[var(--primitive-cyan-500)] hover:text-[var(--primitive-cyan-400)] transition-all font-semibold">
+        {{ letter }}
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div class="card-glass-neon p-4 text-center">
+        <div class="text-2xl font-bold text-[var(--color-text-primary)]">{{ brands|length }}</div>
+        <div class="text-sm text-[var(--color-text-muted)]">Total Brands</div>
+      </div>
+      <div class="card-glass-neon p-4 text-center">
+        <div class="text-2xl font-bold text-[var(--color-text-primary)]">{{ total_firmwares|intcomma }}</div>
+        <div class="text-sm text-[var(--color-text-muted)]">Total Firmwares</div>
+      </div>
+      <div class="card-glass-neon p-4 text-center">
+        <div class="text-2xl font-bold text-[var(--color-text-primary)]">{{ total_models|intcomma }}</div>
+        <div class="text-sm text-[var(--color-text-muted)]">Device Models</div>
+      </div>
+      <div class="card-glass-neon p-4 text-center">
+        <div class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[var(--primitive-cyan-400)] to-[var(--primitive-purple-400)]">Free</div>
+        <div class="text-sm text-[var(--color-text-muted)]">Downloads</div>
+      </div>
+    </div>
+
+    <!-- Brands Grouped by Alphabet -->
+    <div id="brands-container" class="space-y-8">
+      {% for letter, letter_brands in grouped_brands %}
+      <div id="letter-{{ letter }}" class="alphabet-section scroll-mt-24">
+        <!-- Letter Header -->
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primitive-cyan-500)] to-[var(--primitive-purple-500)] text-white text-xl font-bold shadow-lg">
+            {{ letter }}
+          </div>
+          <div class="flex-1 h-px bg-gradient-to-r from-[var(--primitive-cyan-500)]/50 to-transparent"></div>
+          <span class="text-sm text-[var(--color-text-muted)]">{{ letter_brands|length }} brand{% if letter_brands|length != 1 %}s{% endif %}</span>
+        </div>
+        
+        <!-- Brands Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {% for brand in letter_brands %}
+          <a href="{% url 'firmwares:brand_detail' brand.slug %}" 
+             class="brand-card card-glass-neon p-4 text-center hover:border-[var(--primitive-cyan-500)]/50 transition-all group"
+             data-name="{{ brand.name|lower }}">
+            <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-[var(--color-bg-surface-secondary)] flex items-center justify-center overflow-hidden group-hover:scale-110 transition-transform border border-[var(--color-border-default)]">
+              {% if brand.logo %}
+              <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" class="w-10 h-10 object-contain">
+              {% else %}
+              <span class="text-xl font-bold text-[var(--primitive-cyan-400)]">{{ brand.name|slice:":2"|upper }}</span>
+              {% endif %}
+            </div>
+            <h3 class="text-[var(--color-text-primary)] font-medium group-hover:text-[var(--primitive-cyan-400)] transition-colors truncate">
+              {{ brand.name }}
+            </h3>
+            <p class="text-sm text-[var(--color-text-muted)] mt-1">
+              {{ brand.firmware_count|intcomma }} firmware{% if brand.firmware_count != 1 %}s{% endif %}
+            </p>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% empty %}
+      <div class="text-center py-12">
+        <svg class="w-16 h-16 mx-auto text-[var(--color-text-muted)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="text-lg font-medium text-[var(--color-text-primary)]">No brands found</h3>
+        <p class="text-[var(--color-text-muted)]">Check back later for firmware updates.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- No Results Message -->
+    <div id="no-results" class="hidden text-center py-12">
+      <svg class="w-16 h-16 mx-auto text-[var(--color-text-muted)] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <h3 class="text-lg font-medium text-[var(--color-text-primary)]">No brands match your search</h3>
+      <p class="text-[var(--color-text-muted)]">Try a different search term.</p>
+    </div>
+
+    <!-- Browse All Link -->
+    <div class="mt-12 text-center">
+      <a href="{% url 'firmwares:browse' %}" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[var(--color-bg-surface-secondary)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-surface-secondary)]/80 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+        </svg>
+        Browse All Firmwares
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Brand Search Filter
+const searchInput = document.getElementById('brand-search');
+const brandsContainer = document.getElementById('brands-container');
+const alphabetSections = document.querySelectorAll('.alphabet-section');
+const brandCards = document.querySelectorAll('.brand-card');
+const alphabetLinks = document.querySelectorAll('.alphabet-link');
+const noResults = document.getElementById('no-results');
+
+searchInput.addEventListener('input', (e) => {
+  const query = e.target.value.toLowerCase().trim();
+  let visibleCount = 0;
+  
+  // Track which alphabet sections have visible brands
+  const visibleSections = new Set();
+  
+  brandCards.forEach(card => {
+    const name = card.dataset.name;
+    const section = card.closest('.alphabet-section');
+    
+    if (name.includes(query)) {
+      card.classList.remove('hidden');
+      visibleCount++;
+      if (section) {
+        visibleSections.add(section.id);
+      }
+    } else {
+      card.classList.add('hidden');
+    }
+  });
+  
+  // Show/hide alphabet sections based on whether they have visible brands
+  alphabetSections.forEach(section => {
+    if (visibleSections.has(section.id) || !query) {
+      section.classList.remove('hidden');
+    } else {
+      section.classList.add('hidden');
+    }
+  });
+  
+  // Update alphabet links visibility
+  alphabetLinks.forEach(link => {
+    const letter = link.getAttribute('href').replace('#letter-', '');
+    if (visibleSections.has('letter-' + letter) || !query) {
+      link.classList.remove('opacity-30', 'pointer-events-none');
+    } else {
+      link.classList.add('opacity-30', 'pointer-events-none');
+    }
+  });
+  
+  if (visibleCount === 0 && query) {
+    noResults.classList.remove('hidden');
+  } else {
+    noResults.classList.add('hidden');
+  }
+});
+
+// Smooth scroll for alphabet links
+alphabetLinks.forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const targetId = link.getAttribute('href').substring(1);
+    const target = document.getElementById(targetId);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+{% endblock %}

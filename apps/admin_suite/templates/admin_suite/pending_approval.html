@@ -1,0 +1,147 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Pending Approval{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Pending Approval</h1>
+      <p class="text-sm text-slate-600">Items requiring admin review and approval.</p>
+    </div>
+    <div class="flex gap-2">
+      <span class="px-3 py-1.5 text-sm rounded bg-amber-50 text-amber-700 font-medium">
+        {{ total_pending }} item{{ total_pending|pluralize }} pending
+      </span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Pending Users</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ pending_items.users|length }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Pending Comments</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ pending_items.comments|length }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Pending Posts</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ pending_items.posts|length }}</div>
+    </div>
+  </div>
+
+  <!-- Pending Users Section -->
+  {% if pending_items.users %}
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b bg-slate-50">
+      <h2 class="text-lg font-semibold text-slate-900">Users Awaiting Verification</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Joined</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for user in pending_items.users %}
+          <tr>
+            <td class="px-4 py-2">
+              <a href="{% url 'admin_suite:user_detail' user.id %}" class="text-primary hover:underline">{{ user.email }}</a>
+            </td>
+            <td class="px-4 py-2">{{ user.first_name }} {{ user.last_name }}</td>
+            <td class="px-4 py-2">{{ user.date_joined|date:"Y-m-d H:i" }}</td>
+            <td class="px-4 py-2">
+              <a href="{% url 'admin_suite:user_detail' user.id %}" class="text-xs text-primary hover:underline">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Pending Comments Section -->
+  {% if pending_items.comments %}
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b bg-slate-50">
+      <h2 class="text-lg font-semibold text-slate-900">Comments Awaiting Moderation</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Content</th>
+            <th class="px-4 py-2">Post ID</th>
+            <th class="px-4 py-2">Created</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for comment in pending_items.comments %}
+          <tr>
+            <td class="px-4 py-2 max-w-md truncate">{{ comment.body|truncatechars:100 }}</td>
+            <td class="px-4 py-2">{{ comment.post_id }}</td>
+            <td class="px-4 py-2">{{ comment.created_at|date:"Y-m-d H:i" }}</td>
+            <td class="px-4 py-2">
+              <a href="{% url 'admin_suite:comments' %}" class="text-xs text-primary hover:underline">Moderate</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Pending Posts Section -->
+  {% if pending_items.posts %}
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b bg-slate-50">
+      <h2 class="text-lg font-semibold text-slate-900">Posts Awaiting Review</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Title</th>
+            <th class="px-4 py-2">Slug</th>
+            <th class="px-4 py-2">Created</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for post in pending_items.posts %}
+          <tr>
+            <td class="px-4 py-2">{{ post.title }}</td>
+            <td class="px-4 py-2 font-mono text-xs">{{ post.slug }}</td>
+            <td class="px-4 py-2">{{ post.created_at|date:"Y-m-d H:i" }}</td>
+            <td class="px-4 py-2">
+              <a href="{% url 'admin_suite:blog' %}" class="text-xs text-primary hover:underline">Review</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not pending_items.users and not pending_items.comments and not pending_items.posts %}
+  <div class="border rounded-lg bg-white shadow-sm p-8 text-center">
+    <div class="flex flex-col items-center gap-2 text-slate-500">
+      <svg class="w-16 h-16 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span class="text-lg font-medium text-emerald-600">All Clear!</span>
+      <span>No items pending approval.</span>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

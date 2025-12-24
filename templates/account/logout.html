@@ -1,8 +1,8 @@
 
 {% extends "base.html" %}
-{% block title %}Logged out — {{ site_settings.site_name|default:"GSMInfinity" }}{% endblock %}
+{% block title %}Logged out — {{ site_settings.site_name|default:"Site" }}{% endblock %}
 {% block auth_heading %}You have been logged out{% endblock %}
-{% block auth_description %}Thanks for visiting {{ site_settings.site_name|default:"GSMInfinity" }}.{% endblock %}
+{% block auth_description %}Thanks for visiting {{ site_settings.site_name|default:"Site" }}.{% endblock %}
 {% block auth_body %}
 <div class="text-center">
   <a href="{% url 'account_login' %}" class="bg-primary text-white px-4 py-2 rounded">Sign in again</a>

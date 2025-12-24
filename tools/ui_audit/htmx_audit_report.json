@@ -1,0 +1,73 @@
+{
+  "summary": {
+    "htmx_included": true,
+    "total_usages": 5,
+    "unique_endpoints": 2,
+    "partial_templates": 26,
+    "issues_found": 3
+  },
+  "by_attribute": {
+    "hx-swap": 2,
+    "hx-get": 1,
+    "hx-post": 1,
+    "hx-target": 1
+  },
+  "endpoints": [
+    {
+      "url": "{{ hx_get }}",
+      "method": "GET",
+      "source": "D:\\GsmInfinity\\templates\\components\\button.html"
+    },
+    {
+      "url": "{{ hx_post }}",
+      "method": "POST",
+      "source": "D:\\GsmInfinity\\templates\\components\\button.html"
+    }
+  ],
+  "partial_templates": [
+    "D:\\GsmInfinity\\templates\\partials\\favicon_link.html",
+    "D:\\GsmInfinity\\templates\\partials\\notification_list.html",
+    "D:\\GsmInfinity\\templates\\partials\\site_branding.html",
+    "D:\\GsmInfinity\\templates\\partials\\toast_fragment.html",
+    "D:\\GsmInfinity\\templates\\partials\\_toast_inner.html",
+    "D:\\GsmInfinity\\templates\\blog\\partials\\latest_widget.html",
+    "D:\\GsmInfinity\\templates\\blog\\partials\\related_widget.html",
+    "D:\\GsmInfinity\\templates\\blog\\partials\\trending_widget.html",
+    "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\partials\\breadcrumb.html",
+    "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\partials\\command_palette.html",
+    "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\partials\\footer.html",
+    "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\partials\\header.html",
+    "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\partials\\nav.html",
+    "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\partials\\quick_actions.html",
+    "D:\\GsmInfinity\\templates\\includes\\dashboard_cards.html",
+    "D:\\GsmInfinity\\templates\\includes\\dashboard_sidebar.html",
+    "D:\\GsmInfinity\\templates\\includes\\device_prompt.html",
+    "D:\\GsmInfinity\\templates\\includes\\footer.html",
+    "D:\\GsmInfinity\\templates\\includes\\icon_sprite.html",
+    "D:\\GsmInfinity\\templates\\includes\\messages.html"
+  ],
+  "issues": [
+    {
+      "type": "MISSING_TARGET",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\components\\button.html",
+      "line": 19,
+      "attribute": "hx-get",
+      "message": "HTMX request without explicit hx-target (will swap innerHTML of triggering element)"
+    },
+    {
+      "type": "MISSING_TARGET",
+      "severity": "info",
+      "file": "D:\\GsmInfinity\\templates\\components\\button.html",
+      "line": 20,
+      "attribute": "hx-post",
+      "message": "HTMX request without explicit hx-target (will swap innerHTML of triggering element)"
+    },
+    {
+      "type": "MISSING_CSRF",
+      "severity": "warning",
+      "file": "D:\\GsmInfinity\\templates\\components\\button.html",
+      "message": "Template has hx-post but no visible CSRF token"
+    }
+  ]
+}

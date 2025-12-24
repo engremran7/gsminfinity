@@ -178,6 +178,16 @@ def get_effective_policy(request, user=None, service_name: str | None = None) ->
             }
         )
 
+    # -----------------------------------------------------------------
+    # SUPER ADMIN OVERRIDE (Unlimited Access)
+    # -----------------------------------------------------------------
+    # Superusers get unlimited devices to avoid lockout scenarios.
+    # Regular staff/users are subject to normal policy limits.
+    if user and user.is_authenticated and user.is_superuser:
+        policy["max_devices"] = 999999
+        policy["monthly_quota"] = None
+        policy["yearly_quota"] = None
+
     if service_name:
         svc_rules = policy["service_rules"].get(service_name, {})
         if isinstance(svc_rules, dict):
@@ -266,6 +276,7 @@ def resolve_or_create_device(
         Device.objects.filter(user=user, last_seen_at__lt=cutoff).delete()
 
     device = Device.objects.filter(user=user, os_fingerprint=os_fp).first()
+    override = UserDeviceQuota.objects.filter(user=user).first()
 
     if device:
         updates = ["last_seen_at"]
@@ -287,7 +298,7 @@ def resolve_or_create_device(
             pass
         device.save(update_fields=list(set(updates)))
     else:
-        override = UserDeviceQuota.objects.filter(user=user).first()
+        # override = UserDeviceQuota.objects.filter(user=user).first()  <-- Moved up
 
         # Enforce monthly/yearly quotas before creating
         if monthly_quota:
@@ -383,7 +394,7 @@ def resolve_or_create_device(
             metadata={"payload": payload} if payload else {},
             first_seen_at=now,
             last_seen_at=now,
-            # Always require explicit user approval/trust; start untrusted
+            # New devices require user approval via popup
             is_trusted=False,
         )
         is_new = True
@@ -424,8 +435,12 @@ def resolve_or_create_device(
         allowed_max = int((override.max_devices if override and override.max_devices is not None else policy.get("max_devices") or 5))
         current_count = Device.objects.filter(user=user, is_blocked=False).count()
         ident["remaining_devices"] = max(0, allowed_max - current_count)
+        ident["current_device_count"] = current_count
+        ident["max_devices"] = allowed_max
     except Exception:
         ident["remaining_devices"] = None
+        ident["current_device_count"] = 0
+        ident["max_devices"] = 5
 
     try:
         reset_days: Optional[int] = None

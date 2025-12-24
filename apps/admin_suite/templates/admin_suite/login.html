@@ -6,11 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>Admin Suite Login</title>
-  <link href="{% static 'css/admin/enterprise.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/auth.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/components.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/forms.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/motion.min.css' %}" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <link href="{% static 'css/admin/enterprise.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/admin/auth.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/admin/components.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/admin/forms.css' %}" rel="stylesheet" />
+  <link href="{% static 'css/admin/motion.css' %}" rel="stylesheet" />
 </head>
 <body class="admin-login">
   <div class="admin-page">
@@ -48,7 +48,7 @@
       <div class="links">
         <a class="link-btn" href="{% url 'admin_suite:admin_suite_security_question' %}">Forgot password</a>
       </div>
-      <div class="muted muted-spacing">Need the regular site? <a href="{% url 'pages:home' %}">Go to Home</a></div>
+      <div class="muted muted-spacing">Need the regular site? <a href="{% url 'home' %}">Go to Home</a></div>
     </div>
     </div>
   </div>

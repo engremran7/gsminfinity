@@ -3,72 +3,7 @@
 
 {% block extrastyle %}
 {{ block.super }}
-<style>
-.app-registry-header {
-    background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-}
-.app-registry-header h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.app-registry-header .header-icon {
-    font-size: 1.75rem;
-}
-.app-registry-header p {
-    margin: 0;
-    opacity: 0.9;
-    font-size: 0.875rem;
-}
-.feature-categories {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-.feature-category {
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1rem;
-}
-.feature-category h3 {
-    margin: 0 0 0.75rem 0;
-    font-size: 1rem;
-    color: #1f2937;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.feature-category .icon {
-    width: 24px;
-    height: 24px;
-    background: #8b5cf6;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 0.875rem;
-}
-.feature-category ul {
-    margin: 0;
-    padding-left: 1.25rem;
-    list-style: disc;
-}
-.feature-category li {
-    color: #4b5563;
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/admin/django-admin-custom.css' %}">
 {% endblock %}
 
 {% block content %}

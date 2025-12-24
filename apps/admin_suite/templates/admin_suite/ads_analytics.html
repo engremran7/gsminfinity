@@ -1,0 +1,134 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Ads Analytics{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Ads Analytics</h1>
+      <p class="text-sm text-slate-600">Performance metrics and reporting for your ads.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:ads' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">← Ads Overview</a>
+      <a href="{% url 'admin_suite:ads_campaigns' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Campaigns</a>
+    </div>
+  </div>
+
+  <!-- Overall Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Total Impressions</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.total_impressions|default:0 }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Total Clicks</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.total_clicks|default:0 }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Overall CTR</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.ctr|default:0 }}%</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Avg Daily Impressions</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.impressions_24h|default:0 }}</div>
+    </div>
+  </div>
+
+  <!-- Time-based Stats -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="border rounded-lg bg-white shadow-sm p-4">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">Last 24 Hours</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="text-sm text-slate-500">Impressions</div>
+          <div class="text-xl font-semibold text-slate-900">{{ stats.impressions_24h|default:0 }}</div>
+        </div>
+        <div>
+          <div class="text-sm text-slate-500">Clicks</div>
+          <div class="text-xl font-semibold text-slate-900">{{ stats.clicks_24h|default:0 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="border rounded-lg bg-white shadow-sm p-4">
+      <h3 class="text-lg font-semibold text-slate-900 mb-4">Last 7 Days</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <div class="text-sm text-slate-500">Impressions</div>
+          <div class="text-xl font-semibold text-slate-900">{{ stats.impressions_7d|default:0 }}</div>
+        </div>
+        <div>
+          <div class="text-sm text-slate-500">Clicks</div>
+          <div class="text-xl font-semibold text-slate-900">{{ stats.clicks_7d|default:0 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Placements -->
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Top Performing Placements</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Placement</th>
+            <th class="px-4 py-2">Slug</th>
+            <th class="px-4 py-2">Events</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for p in top_placements %}
+          <tr>
+            <td class="px-4 py-2 font-medium">{{ p.name }}</td>
+            <td class="px-4 py-2 font-mono text-xs">{{ p.slug }}</td>
+            <td class="px-4 py-2">{{ p.event_count }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="px-4 py-3 text-slate-500">No placement data yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Events -->
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Recent Events</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Event Type</th>
+            <th class="px-4 py-2">Placement</th>
+            <th class="px-4 py-2">Time</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for e in recent_events %}
+          <tr>
+            <td class="px-4 py-2">
+              {% if e.event_type == 'impression' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700">Impression</span>
+              {% elif e.event_type == 'click' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700">Click</span>
+              {% else %}
+                <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">{{ e.event_type }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">{{ e.placement__name|default:"-" }}</td>
+            <td class="px-4 py-2">{{ e.created_at|date:"Y-m-d H:i:s" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" class="px-4 py-3 text-slate-500">No events recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

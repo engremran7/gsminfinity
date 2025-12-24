@@ -4,13 +4,16 @@
 
 <div
   id="consent-banner"
-  class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-3xl px-4"
-  role="region"
-  aria-label="Cookie preferences"
+  class="fixed bottom-0 left-0 right-0 w-full shadow-2xl"
+  style="z-index: 100;"
+  role="dialog"
+  aria-label="Cookie and privacy preferences"
+  aria-modal="true"
   data-consent-version="{{ consent_version|default:'' }}"
 >
   <div
-    class="bg-white shadow-lg rounded-lg p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center gap-4"
+    class="max-w-7xl mx-auto shadow-2xl p-6 flex flex-col gap-6 border-t-4 border-blue-500"
+    style="background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);"
   >
     <div class="flex-1">
       <div class="font-semibold text-base text-slate-900">
@@ -58,13 +61,13 @@
       </div>
     </div>
 
-    <div class="flex items-center space-x-2 pt-3 md:pt-0">
+    <div class="flex items-center space-x-3 pt-3 md:pt-0">
       <!-- buttons contain BOTH attributes to support the loader & HTMX -->
       <button
         id="consent-accept-all"
         data-consent-action="accept-all"
-        data-consent-action="accept-all"
-        class="btn btn-primary px-3 py-2 rounded"
+        class="px-6 py-2.5 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 hover-lift"
+        style="background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);"
       >
         Accept all
       </button>
@@ -72,8 +75,7 @@
       <button
         id="consent-reject-all"
         data-consent-action="reject-all"
-        data-consent-action="reject-all"
-        class="btn btn-outline px-3 py-2 rounded"
+        class="px-6 py-2.5 bg-white text-slate-950 border-2 border-slate-300 rounded-xl font-medium hover:bg-slate-50 hover:border-blue-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
         Reject optional
       </button>
@@ -99,7 +101,7 @@
 </div>
 
 {# Fallback JS only - loader should normally attach; nonce added by loader/template #}
-<script nonce="{{ request.csp_nonce|default_if_none:'' }}">
+<script nonce="{{ request.csp_nonce }}">
   (function () {
     if (!window.__CONSENT_FALLBACK_LOADED__) {
       window.__CONSENT_FALLBACK_LOADED__ = true;

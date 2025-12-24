@@ -8,6 +8,7 @@ from django.utils import timezone
 from solo.admin import SingletonModelAdmin
 
 from apps.devices.models import AppPolicy, Device, DeviceConfig, DeviceEvent
+from apps.devices.admin_quota import UserDeviceQuotaAdmin  # Register quota admin
 
 
 @admin.register(Device)
@@ -20,12 +21,28 @@ class DeviceAdmin(admin.ModelAdmin):
         "is_blocked",
         "risk_score",
         "last_seen_at",
+        "related_users_count",
     )
     list_filter = ("is_trusted", "is_blocked", "risk_score", "last_seen_at")
     search_fields = ("os_fingerprint", "user__email", "user__username", "display_name")
-    readonly_fields = ("first_seen_at", "last_seen_at")
+    readonly_fields = ("first_seen_at", "last_seen_at", "related_users_list")
 
     actions = ["mark_trusted", "block_devices", "unblock_devices", "remove_devices"]
+
+    def related_users_count(self, obj):
+        """Count other users on the same OS fingerprint."""
+        if not obj.os_fingerprint:
+            return 0
+        return Device.objects.filter(os_fingerprint=obj.os_fingerprint).values("user").distinct().count()
+    related_users_count.short_description = "Users on Device"
+
+    def related_users_list(self, obj):
+        """List other users sharing this device fingerprint."""
+        if not obj.os_fingerprint:
+            return "N/A"
+        users = Device.objects.filter(os_fingerprint=obj.os_fingerprint).values_list("user__email", flat=True).distinct()
+        return ", ".join(users)
+    related_users_list.short_description = "Users sharing this device"
 
     @admin.action(description="Mark selected devices as trusted")
     def mark_trusted(self, request, queryset):
@@ -61,6 +78,10 @@ class DeviceConfigAdmin(SingletonModelAdmin):
     def has_add_permission(self, request):
         return False
 
+    def has_change_permission(self, request, obj=None):
+        # Only superusers can change global device config
+        return request.user.is_superuser
+
 
 @admin.register(AppPolicy)
 class AppPolicyAdmin(admin.ModelAdmin):
@@ -69,6 +90,16 @@ class AppPolicyAdmin(admin.ModelAdmin):
     formfield_overrides = {
         AppPolicy._meta.get_field("service_level_rules").__class__: {"widget": admin.widgets.AdminTextareaWidget}
     }
+
+    def has_change_permission(self, request, obj=None):
+        # Only superusers can change app policies
+        return request.user.is_superuser
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+    def has_add_permission(self, request):
+        return request.user.is_superuser
 
 
 @admin.register(DeviceEvent)

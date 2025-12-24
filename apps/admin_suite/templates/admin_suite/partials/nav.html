@@ -1,24 +1,227 @@
-<nav>
-  <div class="text-xs text-muted uppercase tracking-wide mb-2">Navigation</div>
-  <ul class="nav">
+{% load static %}
+<!-- Admin Suite Navigation - Collapsible Menu -->
+<nav class="admin-nav" id="adminNav">
     {% with active=nav_active|default:"" %}
-      <li><a href="{% url 'admin_suite:admin_suite' %}" class="{% if active == 'overview' %}active{% endif %}">Overview</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_security' %}" class="{% if active == 'security' %}active{% endif %}">Security</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_users' %}" class="{% if active == 'users' %}active{% endif %}">Users</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_consent' %}" class="{% if active == 'consent' %}active{% endif %}">Consent</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_pages' %}" class="{% if active == 'pages' %}active{% endif %}">Pages</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_blog' %}" class="{% if active == 'blog' %}active{% endif %}">Blog</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_content' %}" class="{% if active == 'content' %}active{% endif %}">Content</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_comments' %}" class="{% if active == 'comments' %}active{% endif %}">Comments</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_marketing' %}" class="{% if active == 'marketing' %}active{% endif %}">Marketing</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_ads' %}" class="{% if active == 'ads' %}active{% endif %}">Ads</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_ai' %}" class="{% if active == 'ai' %}active{% endif %}">AI</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_seo' %}" class="{% if active == 'seo' %}active{% endif %}">SEO</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_tags' %}" class="{% if active == 'tags' %}active{% endif %}">Tags</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_distribution' %}" class="{% if active == 'distribution' %}active{% endif %}">Distribution</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_registry' %}" class="{% if active == 'registry' %}active{% endif %}">App Registry</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_settings' %}" class="{% if active == 'settings' %}active{% endif %}">Settings</a></li>
-      <li><a href="{% url 'admin_suite:admin_suite_email_settings' %}" class="{% if active == 'settings_email' %}active{% endif %}">Email & Delivery</a></li>
+    
+    <!-- Sidebar Header -->
+    <div class="sidebar-header">
+        <a href="{% url 'admin_suite:dashboard' %}" class="sidebar-brand">
+            <img src="{% static 'img/default-logo.svg' %}" alt="Logo" class="sidebar-logo">
+            <span>Admin Suite</span>
+        </a>
+    </div>
+    
+    <!-- Overview Dashboard -->
+    <a href="{% url 'admin_suite:dashboard' %}" class="admin-nav-item {% if active == 'overview' or active == 'dashboard' %}admin-nav-item-active{% endif %}">
+        <span class="admin-nav-icon">📊</span>
+        <span class="admin-nav-label">Overview</span>
+    </a>
+
+    <!-- Security Management -->
+    <div class="admin-nav-group" data-nav-group="security">
+        <button type="button" class="admin-nav-group-toggle {% if active in 'security,risk,devices,crawlers,events' %}is-expanded{% endif %}" aria-expanded="{% if active in 'security,risk,devices,crawlers,events' %}true{% else %}false{% endif %}">
+            <span class="admin-nav-group-icon">🔒</span>
+            <span class="admin-nav-group-title-text">Security</span>
+            <span class="admin-nav-group-arrow">▼</span>
+        </button>
+        <div class="admin-nav-group-items {% if active in 'security,risk,devices,crawlers,events' %}is-open{% endif %}">
+            <a href="{% url 'admin_suite:security' %}" class="admin-nav-item {% if active == 'security' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Overview</span>
+            </a>
+            <a href="{% url 'admin_suite:risk_insights' %}" class="admin-nav-item {% if active == 'risk' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Risk Insights</span>
+            </a>
+            <a href="{% url 'admin_suite:devices' %}" class="admin-nav-item {% if active == 'devices' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Devices</span>
+            </a>
+            <a href="{% url 'admin_suite:crawlers' %}" class="admin-nav-item {% if active == 'crawlers' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Crawlers</span>
+            </a>
+            <a href="{% url 'admin_suite:security_events' %}" class="admin-nav-item {% if active == 'events' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Events Log</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- User Administration -->
+    <div class="admin-nav-group" data-nav-group="users">
+        <button type="button" class="admin-nav-group-toggle {% if active in 'users,staff,sessions,social_providers' %}is-expanded{% endif %}" aria-expanded="{% if active in 'users,staff,sessions,social_providers' %}true{% else %}false{% endif %}">
+            <span class="admin-nav-group-icon">👥</span>
+            <span class="admin-nav-group-title-text">Users</span>
+            <span class="admin-nav-group-arrow">▼</span>
+        </button>
+        <div class="admin-nav-group-items {% if active in 'users,staff,sessions,social_providers' %}is-open{% endif %}">
+            <a href="{% url 'admin_suite:users' %}" class="admin-nav-item {% if active == 'users' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">All Users</span>
+            </a>
+            <a href="{% url 'admin_suite:staff_users' %}" class="admin-nav-item {% if active == 'staff' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Staff</span>
+            </a>
+            <a href="{% url 'admin_suite:user_sessions' %}" class="admin-nav-item {% if active == 'sessions' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Sessions</span>
+            </a>
+            <a href="{% url 'admin_suite:social_providers' %}" class="admin-nav-item {% if active == 'social_providers' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">🔐 Social Auth</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Content Operations -->
+    <div class="admin-nav-group" data-nav-group="content">
+        <button type="button" class="admin-nav-group-toggle {% if active in 'pages,blog,blog_posts,categories,comments,tags,seo,pending' %}is-expanded{% endif %}" aria-expanded="{% if active in 'pages,blog,blog_posts,categories,comments,tags,seo,pending' %}true{% else %}false{% endif %}">
+            <span class="admin-nav-group-icon">📝</span>
+            <span class="admin-nav-group-title-text">Content</span>
+            <span class="admin-nav-group-arrow">▼</span>
+        </button>
+        <div class="admin-nav-group-items {% if active in 'pages,blog,blog_posts,categories,comments,tags,seo,pending' %}is-open{% endif %}">
+            <a href="{% url 'admin_suite:pages' %}" class="admin-nav-item {% if active == 'pages' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Pages</span>
+            </a>
+            <a href="{% url 'admin_suite:blog' %}" class="admin-nav-item {% if active == 'blog' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Blog</span>
+            </a>
+            <a href="{% url 'admin_suite:blog_posts' %}" class="admin-nav-item {% if active == 'blog_posts' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Posts</span>
+            </a>
+            <a href="{% url 'admin_suite:blog_categories' %}" class="admin-nav-item {% if active == 'categories' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Categories</span>
+            </a>
+            <a href="{% url 'admin_suite:comments' %}" class="admin-nav-item {% if active == 'comments' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Comments</span>
+            </a>
+            <a href="{% url 'admin_suite:tags' %}" class="admin-nav-item {% if active == 'tags' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Tags</span>
+            </a>
+            <a href="{% url 'admin_suite:seo' %}" class="admin-nav-item {% if active == 'seo' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">SEO</span>
+            </a>
+            <a href="{% url 'admin_suite:pending_approval' %}" class="admin-nav-item {% if active == 'pending' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Pending</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Marketing & Growth -->
+    <div class="admin-nav-group" data-nav-group="marketing">
+        <button type="button" class="admin-nav-group-toggle {% if active in 'marketing,ads,campaigns,placements,distribution,social_posting' %}is-expanded{% endif %}" aria-expanded="{% if active in 'marketing,ads,campaigns,placements,distribution,social_posting' %}true{% else %}false{% endif %}">
+            <span class="admin-nav-group-icon">🚀</span>
+            <span class="admin-nav-group-title-text">Marketing</span>
+            <span class="admin-nav-group-arrow">▼</span>
+        </button>
+        <div class="admin-nav-group-items {% if active in 'marketing,ads,campaigns,placements,distribution,social_posting' %}is-open{% endif %}">
+            <a href="{% url 'admin_suite:marketing' %}" class="admin-nav-item {% if active == 'marketing' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Overview</span>
+            </a>
+            <a href="{% url 'admin_suite:ads' %}" class="admin-nav-item {% if active == 'ads' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Ads</span>
+            </a>
+            <a href="{% url 'admin_suite:ads_campaigns' %}" class="admin-nav-item {% if active == 'campaigns' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Campaigns</span>
+            </a>
+            <a href="{% url 'admin_suite:ads_placements' %}" class="admin-nav-item {% if active == 'placements' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Placements</span>
+            </a>
+            <a href="{% url 'admin_suite:distribution' %}" class="admin-nav-item {% if active == 'distribution' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Distribution</span>
+            </a>
+            <a href="{% url 'admin_suite:social_posting' %}" class="admin-nav-item {% if active == 'social_posting' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">📣 Social Posting</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Infrastructure -->
+    <div class="admin-nav-group" data-nav-group="infrastructure">
+        <button type="button" class="admin-nav-group-toggle {% if active in 'storage,storage_providers,files,firmwares,brands,models,i18n,i18n_translations' %}is-expanded{% endif %}" aria-expanded="{% if active in 'storage,storage_providers,files,firmwares,brands,models,i18n,i18n_translations' %}true{% else %}false{% endif %}">
+            <span class="admin-nav-group-icon">🗄️</span>
+            <span class="admin-nav-group-title-text">Infrastructure</span>
+            <span class="admin-nav-group-arrow">▼</span>
+        </button>
+        <div class="admin-nav-group-items {% if active in 'storage,storage_providers,files,firmwares,brands,models,i18n,i18n_translations' %}is-open{% endif %}">
+            <a href="{% url 'admin_suite:storage' %}" class="admin-nav-item {% if active == 'storage' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Storage</span>
+            </a>
+            <a href="{% url 'admin_suite:storage_providers' %}" class="admin-nav-item {% if active == 'storage_providers' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Cloud Providers</span>
+            </a>
+            <a href="{% url 'admin_suite:storage_files' %}" class="admin-nav-item {% if active == 'files' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Files</span>
+            </a>
+            <a href="{% url 'admin_suite:firmwares' %}" class="admin-nav-item {% if active == 'firmwares' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Firmwares</span>
+            </a>
+            <a href="{% url 'admin_suite:firmwares_brands' %}" class="admin-nav-item {% if active == 'brands' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Brands</span>
+            </a>
+            <a href="{% url 'admin_suite:firmwares_models' %}" class="admin-nav-item {% if active == 'models' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Models</span>
+            </a>
+            <a href="{% url 'admin_suite:i18n' %}" class="admin-nav-item {% if active == 'i18n' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Localization</span>
+            </a>
+            <a href="{% url 'admin_suite:i18n_translations' %}" class="admin-nav-item {% if active == 'i18n_translations' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Translations</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- AI & Automation -->
+    <div class="admin-nav-group" data-nav-group="ai">
+        <button type="button" class="admin-nav-group-toggle {% if active in 'ai,endpoints,knowledge,workflows' %}is-expanded{% endif %}" aria-expanded="{% if active in 'ai,endpoints,knowledge,workflows' %}true{% else %}false{% endif %}">
+            <span class="admin-nav-group-icon">🤖</span>
+            <span class="admin-nav-group-title-text">AI & Automation</span>
+            <span class="admin-nav-group-arrow">▼</span>
+        </button>
+        <div class="admin-nav-group-items {% if active in 'ai,endpoints,knowledge,workflows' %}is-open{% endif %}">
+            <a href="{% url 'admin_suite:ai_settings' %}" class="admin-nav-item {% if active == 'ai' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">AI Settings</span>
+            </a>
+            <a href="{% url 'admin_suite:ai_endpoints' %}" class="admin-nav-item {% if active == 'endpoints' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Endpoints</span>
+            </a>
+            <a href="{% url 'admin_suite:ai_knowledge' %}" class="admin-nav-item {% if active == 'knowledge' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Knowledge Bases</span>
+            </a>
+            <a href="{% url 'admin_suite:ai_workflows' %}" class="admin-nav-item {% if active == 'workflows' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Workflows</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- System Configuration -->
+    <div class="admin-nav-group" data-nav-group="system">
+        <button type="button" class="admin-nav-group-toggle {% if active in 'settings,settings_edit,email,features,consent,registry,crawler_rules,devices_settings' %}is-expanded{% endif %}" aria-expanded="{% if active in 'settings,settings_edit,email,features,consent,registry,crawler_rules,devices_settings' %}true{% else %}false{% endif %}">
+            <span class="admin-nav-group-icon">⚙️</span>
+            <span class="admin-nav-group-title-text">System</span>
+            <span class="admin-nav-group-arrow">▼</span>
+        </button>
+        <div class="admin-nav-group-items {% if active in 'settings,settings_edit,email,features,consent,registry,crawler_rules,devices_settings' %}is-open{% endif %}">
+            <a href="{% url 'admin_suite:settings' %}" class="admin-nav-item {% if active == 'settings' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Settings</span>
+            </a>
+            <a href="{% url 'admin_suite:settings_edit' %}" class="admin-nav-item {% if active == 'settings_edit' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Edit Settings</span>
+            </a>
+            <a href="{% url 'admin_suite:email_settings' %}" class="admin-nav-item {% if active == 'email' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Email</span>
+            </a>
+            <a href="{% url 'admin_suite:features' %}" class="admin-nav-item {% if active == 'features' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Features</span>
+            </a>
+            <a href="{% url 'admin_suite:consent' %}" class="admin-nav-item {% if active == 'consent' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Consent</span>
+            </a>
+            <a href="{% url 'admin_suite:app_registry' %}" class="admin-nav-item {% if active == 'registry' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">App Registry</span>
+            </a>
+            <a href="{% url 'admin_suite:crawler_rules' %}" class="admin-nav-item {% if active == 'crawler_rules' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Crawler Rules</span>
+            </a>
+            <a href="{% url 'admin_suite:devices_settings' %}" class="admin-nav-item {% if active == 'devices_settings' %}admin-nav-item-active{% endif %}">
+                <span class="admin-nav-label">Device Settings</span>
+            </a>
+        </div>
+    </div>
+    
     {% endwith %}
-  </ul>
 </nav>

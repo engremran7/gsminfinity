@@ -4,8 +4,12 @@ module.exports = {
     './apps/**/templates/**/*.html',
     './templates/**/*.html',
     './static/**/*.js',
+    './static/**/*.ts',
   ],
-  
+
+  // JIT mode enabled by default in Tailwind 3.x
+  mode: 'jit',
+
   darkMode: 'class',
   
   theme: {

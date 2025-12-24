@@ -7,10 +7,18 @@ class SeoConfig(AppConfig):
     verbose_name = "SEO"
 
     def ready(self):
+        # Connect signals with deferred imports to prevent circular dependencies
         try:
-            import apps.seo.signals  # noqa: F401
+            from . import signals
+            signals.connect_signals()
         except Exception:
-            return
+            pass
+        
+        # Register signal handlers for cross-app communication
+        try:
+            from . import signal_handlers  # noqa: F401
+        except Exception:
+            pass
 
         # Register SEO sitemap entries into the shared registry
         try:

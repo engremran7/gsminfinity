@@ -23,8 +23,16 @@ from apps.distribution.api import get_settings
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name="distribution.deliver_job")
-def deliver_job(job_id: int) -> None:
+@shared_task(
+    name="distribution.deliver_job",
+    bind=True,
+    acks_late=True,
+    max_retries=3,
+    default_retry_delay=60,
+    soft_time_limit=120,  # 2 minutes for individual delivery
+    time_limit=180,       # 3 minutes hard limit
+)
+def deliver_job(self, job_id: int) -> None:
     try:
         with transaction.atomic():
             job = (
@@ -47,16 +55,32 @@ def deliver_job(job_id: int) -> None:
     job.save(update_fields=["status", "last_error", "external_post_id", "updated_at"])
 
 
-@shared_task(name="distribution.pump_due_jobs")
-def pump_due_jobs() -> None:
+@shared_task(
+    name="distribution.pump_due_jobs",
+    bind=True,
+    acks_late=True,
+    soft_time_limit=60,
+    time_limit=90,
+)
+def pump_due_jobs(self) -> None:
+    """Pump due jobs for delivery. Uses values_list for efficiency."""
     now = timezone.now()
-    due = ShareJob.objects.filter(status__in=["pending", "queued"], schedule_at__lte=now)[:50]
-    for job in due:
-        deliver_job.delay(job.id)
+    due_ids = list(
+        ShareJob.objects.filter(status__in=["pending", "queued"], schedule_at__lte=now)
+        .values_list('id', flat=True)[:50]
+    )
+    for job_id in due_ids:
+        deliver_job.delay(job_id)
 
 
-@shared_task(name="distribution.retry_failed_jobs")
-def retry_failed_jobs() -> None:
+@shared_task(
+    name="distribution.retry_failed_jobs",
+    bind=True,
+    acks_late=True,
+    soft_time_limit=60,
+    time_limit=90,
+)
+def retry_failed_jobs(self) -> None:
     cfg = get_settings()
     max_retries = cfg.get("max_retries", 3)
     backoff_seconds = cfg.get("retry_backoff_seconds", 1800)

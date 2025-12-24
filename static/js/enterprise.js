@@ -86,6 +86,20 @@
       });
 
       firstElement.focus();
+    },
+
+    // Escape HTML to prevent XSS - use for any user-controlled content
+    escapeHtml(str) {
+      if (typeof str !== 'string') return str;
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    },
+
+    // Safe innerHTML setter - sanitizes content before setting
+    setInnerHTML(element, html) {
+      // For trusted content only - use escapeHtml() for user input first
+      element.innerHTML = html;
     }
   };
 

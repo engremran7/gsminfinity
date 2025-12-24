@@ -5,16 +5,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="csrf-token" content="{{ csrf_token }}">
-  <title>{% block title %}Admin Suite{% endblock %} | GSM Infinity</title>
+  <title>{% block title %}Admin Suite{% endblock %}</title>
   
-  <!-- New Admin Panel CSS (Modular Architecture) -->
-  <link href="{% static 'css/admin/enterprise.min.css' %}?v=2.2" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/components.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/forms.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/tables.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/widgets.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/layout.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
-  <link href="{% static 'css/admin/motion.min.css' %}?v=2.1" rel="stylesheet" nonce="{{ request.csp_nonce|default:'' }}" />
+  <!-- Admin Panel CSS (Modular Architecture) -->
+  <link href="{% static 'css/admin/enterprise.css' %}?v=2.3" rel="stylesheet" />
+  <link href="{% static 'css/admin/components.css' %}?v=2.2" rel="stylesheet" />
+  <link href="{% static 'css/admin/forms.css' %}?v=2.2" rel="stylesheet" />
+  <link href="{% static 'css/admin/tables.css' %}?v=2.2" rel="stylesheet" />
+  <link href="{% static 'css/admin/layout.css' %}?v=2.2" rel="stylesheet" />
+  <link href="{% static 'css/admin/motion.css' %}?v=2.2" rel="stylesheet" />
   
   {% block extra_head %}{% endblock %}
 </head>
@@ -25,21 +24,232 @@
     </aside>
     <main class="admin-main">
       {% include "admin_suite/partials/header.html" %}
-      <section class="card bg-panel mt-3">
-        <div class="space-y-4">
+      <div class="admin-content">
+        <div class="admin-content-inner">
           {% block breadcrumb %}{% include "admin_suite/partials/breadcrumb.html" %}{% endblock %}
           {% include "admin_suite/partials/quick_actions.html" %}
           {% block content %}{% endblock %}
         </div>
-      </section>
+      </div>
     </main>
   </div>
   {% include "admin_suite/partials/footer.html" %}
   
-  <!-- New Admin Panel JavaScript (Modular Architecture) -->
-  <script src="{% static 'js/admin/htmx-offline.js' %}" nonce="{{ request.csp_nonce|default:'' }}" defer></script>
-  <script src="{% static 'js/admin/enterprise.js' %}" nonce="{{ request.csp_nonce|default:'' }}" defer></script>
-  <script src="{% static 'js/admin/enterprise-extended.js' %}" nonce="{{ request.csp_nonce|default:'' }}" defer></script>
+  {# Enterprise Admin Panel JavaScript - Progressive Enhancement #}
+  {# Self-contained, works without external dependencies #}
+  <script nonce="{{ request.csp_nonce }}">
+  (function() {
+    'use strict';
+    
+    // Feature detection
+    const features = {
+      fetch: typeof fetch !== 'undefined',
+      promises: typeof Promise !== 'undefined',
+      localStorage: (function() {
+        try { return 'localStorage' in window && window.localStorage !== null; }
+        catch(e) { return false; }
+      })(),
+      intersectionObserver: 'IntersectionObserver' in window
+    };
+    
+    // Admin Suite Core - No external dependencies
+    const AdminSuite = {
+      init() {
+        this.initSidebar();
+        this.initForms();
+        this.initTables();
+        this.initAccessibility();
+      },
+      
+      initSidebar() {
+        // Highlight current page
+        const path = location.pathname;
+        document.querySelectorAll('.nav a, .sidebar-nav-item').forEach(link => {
+          if (link.pathname === path) link.classList.add('active');
+        });
+        
+        // Mobile toggle
+        const toggle = document.querySelector('[data-sidebar-toggle]');
+        const sidebar = document.querySelector('.admin-sidebar');
+        if (toggle && sidebar) {
+          toggle.addEventListener('click', () => sidebar.classList.toggle('active'));
+        }
+      },
+      
+      initForms() {
+        // Auto-save forms if localStorage available
+        if (!features.localStorage) return;
+        
+        document.querySelectorAll('form[data-auto-save]').forEach(form => {
+          const formId = form.id || `form-${Date.now()}`;
+          const storageKey = `admin-form-${formId}`;
+          
+          // Restore saved data
+          try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) {
+              JSON.parse(saved).forEach(({name, value}) => {
+                const input = form.querySelector(`[name="${name}"]`);
+                if (input && input.type !== 'password') input.value = value;
+              });
+            }
+          } catch(e) {}
+          
+          // Save on input
+          form.addEventListener('input', () => {
+            const data = Array.from(new FormData(form)).map(([name, value]) => ({name, value}));
+            try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch(e) {}
+          });
+          
+          // Clear on submit
+          form.addEventListener('submit', () => {
+            try { localStorage.removeItem(storageKey); } catch(e) {}
+          });
+        });
+        
+        // Form validation enhancement
+        document.querySelectorAll('form[data-validate]').forEach(form => {
+          form.addEventListener('submit', function(e) {
+            const required = this.querySelectorAll('[required]');
+            let valid = true;
+            required.forEach(field => {
+              if (!field.value.trim()) {
+                field.classList.add('error');
+                valid = false;
+              } else {
+                field.classList.remove('error');
+              }
+            });
+            if (!valid) e.preventDefault();
+          });
+        });
+      },
+      
+      initTables() {
+        // Row selection
+        document.querySelectorAll('table input[type="checkbox"][data-row-select]').forEach(cb => {
+          cb.addEventListener('change', function() {
+            const row = this.closest('tr');
+            row?.classList.toggle('selected', this.checked);
+          });
+        });
+        
+        // Sortable columns
+        document.querySelectorAll('table th[data-sortable]').forEach(th => {
+          th.style.cursor = 'pointer';
+          th.addEventListener('click', function() {
+            const table = this.closest('table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const index = Array.from(this.parentNode.children).indexOf(this);
+            const asc = this.getAttribute('data-sort-dir') !== 'asc';
+            
+            rows.sort((a, b) => {
+              const aVal = a.children[index]?.textContent.trim() || '';
+              const bVal = b.children[index]?.textContent.trim() || '';
+              return asc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            });
+            
+            rows.forEach(row => tbody.appendChild(row));
+            this.setAttribute('data-sort-dir', asc ? 'asc' : 'desc');
+          });
+        });
+      },
+      
+      initAccessibility() {
+        // Keyboard navigation for dropdowns
+        document.querySelectorAll('[role="button"]').forEach(btn => {
+          if (!btn.hasAttribute('tabindex')) btn.setAttribute('tabindex', '0');
+          btn.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this.click();
+            }
+          });
+        });
+        
+        // Skip to main content
+        const skipLink = document.querySelector('a[href="#main-content"]');
+        if (skipLink) {
+          skipLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            const main = document.getElementById('main-content') || document.querySelector('main');
+            if (main) {
+              main.setAttribute('tabindex', '-1');
+              main.focus();
+            }
+          });
+        }
+      }
+    };
+    
+    // Initialize when DOM ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => AdminSuite.init());
+    } else {
+      AdminSuite.init();
+    }
+    
+    // Export for external use if needed
+    window.AdminSuite = AdminSuite;
+  })();
+  </script>
+  
+  <!-- Navigation Collapse Script -->
+  <script nonce="{{ request.csp_nonce }}">
+  (function() {
+    'use strict';
+    
+    // Collapsible navigation groups
+    document.querySelectorAll('.admin-nav-group-toggle').forEach(function(toggle) {
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var group = this.closest('.admin-nav-group');
+        var items = group.querySelector('.admin-nav-group-items');
+        var isExpanded = this.classList.contains('is-expanded');
+        
+        // Toggle state
+        this.classList.toggle('is-expanded');
+        items.classList.toggle('is-open');
+        this.setAttribute('aria-expanded', !isExpanded);
+        
+        // Save state to localStorage
+        var groupName = group.dataset.navGroup;
+        if (groupName) {
+          try {
+            var state = JSON.parse(localStorage.getItem('adminNavState') || '{}');
+            state[groupName] = !isExpanded;
+            localStorage.setItem('adminNavState', JSON.stringify(state));
+          } catch(err) { console.log('localStorage error:', err); }
+        }
+      });
+    });
+    
+    // Restore saved state from localStorage (only for groups without active items)
+    try {
+      var state = JSON.parse(localStorage.getItem('adminNavState') || '{}');
+      Object.keys(state).forEach(function(groupName) {
+        var group = document.querySelector('[data-nav-group="' + groupName + '"]');
+        if (group && !group.querySelector('.admin-nav-item-active')) {
+          var toggle = group.querySelector('.admin-nav-group-toggle');
+          var items = group.querySelector('.admin-nav-group-items');
+          if (state[groupName]) {
+            toggle.classList.add('is-expanded');
+            items.classList.add('is-open');
+            toggle.setAttribute('aria-expanded', 'true');
+          } else {
+            toggle.classList.remove('is-expanded');
+            items.classList.remove('is-open');
+            toggle.setAttribute('aria-expanded', 'false');
+          }
+        }
+      });
+    } catch(err) { console.log('localStorage restore error:', err); }
+    
+    console.log('Admin navigation initialized');
+  })();
+  </script>
   
   {% block extra_scripts %}{% endblock %}
 </body>

@@ -2,71 +2,76 @@
 {% extends "base.html" %}
 {% load consent_tags %}
 {% block title %}Privacy Center{% endblock %}
+{% block sidebar_left %}{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-10 space-y-6">
-  <header class="space-y-2">
-    <p class="text-xs uppercase tracking-wide text-primary font-semibold">Privacy</p>
-    <h1 class="text-3xl font-bold text-slate-900">Privacy & Consent</h1>
-    <p class="text-sm text-slate-600">Review your consent choices, advertising and analytics partners, and data controls.</p>
-  </header>
+<div class="w-full px-4 sm:px-6 lg:px-8 py-10">
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-8 lg:col-start-3 space-y-6">
+      <header class="space-y-2">
+        <p class="text-xs uppercase tracking-wide text-[var(--color-brand-primary)] font-semibold">Privacy</p>
+        <h1 class="text-3xl font-bold text-[var(--color-text-primary)]">Privacy & Consent</h1>
+        <p class="text-sm text-[var(--color-text-secondary)]">Review your consent choices, advertising and analytics partners, and data controls.</p>
+      </header>
 
-  <section class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 space-y-3">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-slate-900">Active Policy</h2>
-        <p class="text-sm text-slate-600">Versioned policy snapshot with effective date.</p>
-      </div>
-      {% if policy %}
-        <span class="px-3 py-1 text-xs rounded bg-emerald-50 text-emerald-700">v{{ policy.version }}</span>
-      {% endif %}
-    </div>
-    {% if policy %}
-      <div class="prose prose-sm max-w-none text-slate-800">
-        {{ policy.text|linebreaks }}
-      </div>
-      <p class="text-xs text-slate-500">Effective from {{ policy.effective_from }}</p>
-    {% else %}
-      <p class="text-sm text-slate-500">No active policy configured.</p>
-    {% endif %}
-  </section>
+      <section class="card-glass rounded-xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Active Policy</h2>
+            <p class="text-sm text-[var(--color-text-secondary)]">Versioned policy snapshot with effective date.</p>
+          </div>
+          {% if policy %}
+            <span class="px-3 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-400 font-medium">v{{ policy.version }}</span>
+          {% endif %}
+        </div>
+        {% if policy %}
+          <div class="prose prose-sm max-w-none text-[var(--color-text-secondary)] prose-invert">
+            {{ policy.text|linebreaks }}
+          </div>
+          <p class="text-xs text-[var(--color-text-muted)]">Effective from {{ policy.effective_from }}</p>
+        {% else %}
+          <p class="text-sm text-[var(--color-text-muted)]">No active policy configured.</p>
+        {% endif %}
+      </section>
 
-  <section class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 space-y-3">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-slate-900">Your Decisions</h2>
-        <p class="text-sm text-slate-600">Recent consent choices recorded for your account/session.</p>
-      </div>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm table-fixed">
-        <colgroup>
-          <col class="w-2/5" />
-          <col class="w-2/5" />
-          <col class="w-1/5" />
-        </colgroup>
-        <thead class="text-xs text-slate-500">
-          <tr>
-            <th class="py-2 text-left">When</th>
-            <th class="py-2 text-left">Categories</th>
+      <section class="card-glass rounded-xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-semibold text-[var(--color-text-primary)]">Your Decisions</h2>
+            <p class="text-sm text-[var(--color-text-secondary)]">Recent consent choices recorded for your account/session.</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm table-fixed">
+            <colgroup>
+              <col class="w-2/5" />
+              <col class="w-2/5" />
+              <col class="w-1/5" />
+            </colgroup>
+            <thead class="text-xs text-[var(--color-text-muted)]">
+              <tr>
+                <th class="py-2 text-left">When</th>
+                <th class="py-2 text-left">Categories</th>
             <th class="py-2 text-left">Policy</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody class="divide-y divide-[var(--color-border-default)]">
           {% for d in decisions %}
             <tr>
-              <td class="py-2 text-slate-700">{{ d.created_at }}</td>
-              <td class="py-2 text-slate-600 text-xs">
+              <td class="py-2 text-[var(--color-text-secondary)]">{{ d.created_at }}</td>
+              <td class="py-2 text-[var(--color-text-muted)] text-xs">
                 {{ d.categories|format_categories }}
               </td>
-              <td class="py-2 text-slate-600">{{ d.policy.version|default:"-" }}</td>
+              <td class="py-2 text-[var(--color-text-muted)]">{{ d.policy.version|default:"-" }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="3" class="py-3 text-slate-500 text-center text-sm">No decisions recorded.</td></tr>
+            <tr><td colspan="3" class="py-3 text-[var(--color-text-muted)] text-center text-sm">No decisions recorded.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </section>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

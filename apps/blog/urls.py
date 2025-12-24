@@ -11,6 +11,7 @@ urlpatterns = [
     path("manage/", views.manage_posts, name="manage_posts"),
     path("manage/bulk_publish/", views.bulk_publish, name="bulk_publish"),
     path("create/", views.post_create, name="post_create"),
+    path("category/create/", views.category_create, name="category_create"),
     path("archives/<int:year>/", views.post_archive_year, name="post_archive_year"),
     path("archives/<int:year>/<int:month>/", views.post_archive_month, name="post_archive_month"),
     path("feed/rss/", feeds.LatestRssFeed(), name="feed_rss"),

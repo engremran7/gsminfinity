@@ -1,0 +1,82 @@
+{% extends "account/auth_shell.html" %}
+{% load static i18n %}
+
+{% block auth_title %}{% trans "Email Verification Required" %}{% endblock %}
+{% block auth_heading %}{% trans "Verify Your Email" %}{% endblock %}
+{% block auth_description %}{% trans "Email verification is required to continue" %}{% endblock %}
+
+{% block auth_body %}
+<div class="auth-alert auth-alert-warning auth-mb-6">
+  <div class="auth-flex auth-flex-start auth-gap-3">
+    <svg class="auth-icon-lg auth-flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+    </svg>
+    <div>
+      <p class="auth-text-semibold">{% trans "Please verify your email address" %}</p>
+      <p class="auth-mt-1 auth-text-xs">
+        {% trans "We sent a verification email to" %} <strong>{{ user.email }}</strong>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div class="auth-text-center auth-py-6">
+  <div class="auth-verify-icon-wrapper">
+    <svg class="auth-verify-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"></path>
+    </svg>
+  </div>
+  
+  <h3 class="auth-verify-title">
+    {% trans "Check your inbox" %}
+  </h3>
+  
+  <p class="auth-verify-text">
+    {% trans "Click the verification link in the email we sent you. This helps us keep your account secure." %}
+  </p>
+</div>
+
+<div class="auth-divider">
+  <span class="auth-divider-text">{% trans "Didn't receive the email?" %}</span>
+</div>
+
+<div class="auth-actions-column">
+  <form method="post" action="{% url 'users:resend_verification' %}" id="resend-form">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-secondary auth-btn-full">
+      <svg class="auth-icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+      {% trans "Resend verification email" %}
+    </button>
+  </form>
+  
+  <a href="{% url 'users:profile' %}" class="btn btn-ghost auth-btn-full">
+    <svg class="auth-icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+    </svg>
+    {% trans "Update email address" %}
+  </a>
+</div>
+
+<div class="auth-tip-box">
+  <p class="auth-tip-text">
+    <svg class="inline-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    {% trans "Check your spam folder if you don't see the email in your inbox." %}
+  </p>
+</div>
+{% endblock %}
+
+{% block auth_footer %}
+<div class="auth-footer">
+  <a href="{% url 'users:dashboard' %}" class="auth-back-link">
+    <svg class="auth-icon-sm" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+    </svg>
+    {% trans "Back to dashboard" %}
+  </a>
+</div>
+{% endblock %}

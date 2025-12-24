@@ -158,7 +158,25 @@ def ensure_breadcrumb_schema(post) -> None:
 def apply_auto_tags(post, max_tags: int = 6) -> list[Tag]:
     if not _get_setting("auto_tags", True):
         return []
-    suggestions = suggest_tags([post.title, post.summary or "", post.body], max_tags=max_tags)
+
+    suggestions = []
+    # Try AI first
+    try:
+        from apps.ai.services import test_completion, get_settings
+        ai_settings = get_settings()
+        if ai_settings.get("ai_enabled"):
+            prompt = f"Generate {max_tags} relevant tags for the following blog post. Return ONLY a comma-separated list of tags.\n\nTitle: {post.title}\nSummary: {post.summary}\n\nTags:"
+            response = test_completion(prompt)
+            text = response.get("text", "")
+            if text:
+                tags = [t.strip() for t in text.split(",") if t.strip()]
+                suggestions = [(t, 1.0) for t in tags[:max_tags]]
+    except Exception:
+        pass
+
+    if not suggestions:
+        suggestions = suggest_tags([post.title, post.summary or "", post.body], max_tags=max_tags)
+
     attached: list[Tag] = []
     suggest_only = _get_setting("suggest_only", False)
     for name, score in suggestions:

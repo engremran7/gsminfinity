@@ -1,0 +1,256 @@
+{
+  "summary": {
+    "total_static_refs": 62,
+    "valid_refs": 47,
+    "missing_refs": 15,
+    "total_static_files": 540,
+    "unused_files": 511,
+    "duplicate_warnings": 4
+  },
+  "missing_references": [
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\login.html",
+      "line": 9,
+      "static_path": "css/admin/enterprise.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\login.html",
+      "line": 10,
+      "static_path": "css/admin/auth.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\login.html",
+      "line": 11,
+      "static_path": "css/admin/components.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\login.html",
+      "line": 12,
+      "static_path": "css/admin/forms.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\login.html",
+      "line": 13,
+      "static_path": "css/admin/motion.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\password_reset_inline.html",
+      "line": 9,
+      "static_path": "css/admin/enterprise.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\password_reset_inline.html",
+      "line": 10,
+      "static_path": "css/admin/auth.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\password_reset_inline.html",
+      "line": 11,
+      "static_path": "css/admin/components.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\password_reset_inline.html",
+      "line": 12,
+      "static_path": "css/admin/forms.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\password_reset_inline.html",
+      "line": 13,
+      "static_path": "css/admin/motion.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\security_question.html",
+      "line": 9,
+      "static_path": "css/admin/enterprise.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\security_question.html",
+      "line": 10,
+      "static_path": "css/admin/auth.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\security_question.html",
+      "line": 11,
+      "static_path": "css/admin/components.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\security_question.html",
+      "line": 12,
+      "static_path": "css/admin/forms.min.css"
+    },
+    {
+      "file": "D:\\GsmInfinity\\apps\\admin_suite\\templates\\admin_suite\\security_question.html",
+      "line": 13,
+      "static_path": "css/admin/motion.min.css"
+    }
+  ],
+  "unused_files": [
+    "css/design-system/layout.css",
+    "flags/hm.gif",
+    "enduser/css/home.css",
+    "flags/va.gif",
+    "admin/js/vendor/select2/i18n/sr.js",
+    "flags/li.gif",
+    "flags/sm.gif",
+    "flags/mq.gif",
+    "admin/img/tooltag-arrowright.svg",
+    "css/enterprise-frontend.css",
+    "summernote/lang/summernote-ru-RU.min.js",
+    "flags/gs.gif",
+    "summernote/lang/summernote-sk-SK.min.js",
+    "css/enterprise.css",
+    "flags/ba.gif",
+    "flags/ph.gif",
+    "enduser/css/tables.css",
+    "admin/js/vendor/select2/i18n/tr.js",
+    "summernote/summernote-lite.min.css",
+    "flags/ge.gif",
+    "admin/js/vendor/select2/i18n/bg.js",
+    "admin/img/icon-unknown.svg",
+    "css/motion.css",
+    "flags/mu.gif",
+    "admin/js/vendor/jquery/jquery.js",
+    "flags/ml.gif",
+    "admin/js/vendor/select2/i18n/ja.js",
+    "summernote/lang/summernote-fa-IR.min.js",
+    "admin/js/vendor/select2/i18n/th.js",
+    "admin/css/vendor/select2/select2.css",
+    "flags/tk.gif",
+    "css/forms.css",
+    "admin/js/enterprise.js",
+    "admin/js/vendor/select2/i18n/en.js",
+    "flags/gi.gif",
+    "summernote/font/summernote.woff",
+    "admin/css/unusable_password_field.css",
+    "css/design-system/tokens.css",
+    "flags/dj.gif",
+    "flags/bm.gif",
+    "summernote/lang/summernote-az-AZ.min.js",
+    "flags/pe.gif",
+    "flags/bd.gif",
+    "flags/mo.gif",
+    "import_export/import.css",
+    "flags/si.gif",
+    "admin/js/admin/RelatedObjectLookups.js",
+    "flags/cc.gif",
+    "admin/js/core.js",
+    "summernote/lang/summernote-hu-HU.min.js"
+  ],
+  "duplicates": [
+    {
+      "type": "NAME_COLLISION",
+      "severity": "info",
+      "filename": "enterprise.js",
+      "locations": [
+        "js\\enterprise.js",
+        "admin\\js\\enterprise.js"
+      ],
+      "message": "File 'enterprise.js' exists in multiple locations with different sizes"
+    },
+    {
+      "type": "NAME_COLLISION",
+      "severity": "info",
+      "filename": "components.css",
+      "locations": [
+        "css\\admin\\components.css",
+        "css\\design-system\\components.css"
+      ],
+      "message": "File 'components.css' exists in multiple locations with different sizes"
+    },
+    {
+      "type": "NAME_COLLISION",
+      "severity": "info",
+      "filename": "layout.css",
+      "locations": [
+        "css\\admin\\layout.css",
+        "css\\design-system\\layout.css"
+      ],
+      "message": "File 'layout.css' exists in multiple locations with different sizes"
+    },
+    {
+      "type": "NAME_COLLISION",
+      "severity": "info",
+      "filename": "motion.css",
+      "locations": [
+        "css\\admin\\motion.css",
+        "css\\design-system\\motion.css"
+      ],
+      "message": "File 'motion.css' exists in multiple locations with different sizes"
+    }
+  ],
+  "structure": {
+    "css": {
+      "total": 27,
+      "by_directory": {
+        "css": 1,
+        "css\\admin": 1,
+        "css\\design-system": 1,
+        "enduser\\css": 1,
+        "js\\summernote": 1,
+        "shared\\css": 1
+      },
+      "files": [
+        "css\\app.css",
+        "css\\browser-compatibility.css",
+        "css\\summernote-custom.css",
+        "css\\summernote-overrides.css",
+        "shared\\css\\utilities.css",
+        "js\\summernote\\summernote-lite.min.css",
+        "enduser\\css\\blog.css",
+        "enduser\\css\\home.css",
+        "enduser\\css\\index.css",
+        "enduser\\css\\reset.css",
+        "enduser\\css\\responsive.css",
+        "css\\admin\\auth.css",
+        "css\\admin\\components.css",
+        "css\\admin\\django-admin-custom.css",
+        "css\\admin\\enterprise.css",
+        "css\\admin\\forms.css",
+        "css\\admin\\layout.css",
+        "css\\admin\\motion.css",
+        "css\\admin\\tables.css",
+        "css\\design-system\\base.css",
+        "css\\design-system\\components.css",
+        "css\\design-system\\layout.css",
+        "css\\design-system\\main.css",
+        "css\\design-system\\modern-enhancements.css",
+        "css\\design-system\\motion.css",
+        "css\\design-system\\tokens.css",
+        "css\\design-system\\typography.css"
+      ]
+    },
+    "js": {
+      "total": 21,
+      "by_directory": {
+        "admin\\js": 1,
+        "enduser\\js": 1,
+        "js": 1,
+        "js\\summernote": 1,
+        "shared\\js": 1
+      },
+      "files": [
+        "js\\ads.js",
+        "js\\ai_helpers.js",
+        "js\\blog.js",
+        "js\\browser-compatibility.js",
+        "js\\consent-banner-loader.js",
+        "js\\consent.js",
+        "js\\csp-handlers.js",
+        "js\\device_fingerprint.js",
+        "js\\device_identity.js",
+        "js\\enterprise.js",
+        "js\\htmx.min.js",
+        "js\\main.js",
+        "js\\sw.js",
+        "shared\\js\\htmx-config.js",
+        "shared\\js\\utilities.js",
+        "js\\summernote\\summernote-init.js",
+        "js\\summernote\\summernote-lite.min.js",
+        "enduser\\js\\notifications.js",
+        "admin\\js\\enterprise-extended.js",
+        "admin\\js\\enterprise.js",
+        "admin\\js\\htmx-offline.js"
+      ]
+    }
+  }
+}

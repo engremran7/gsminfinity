@@ -100,7 +100,7 @@ def devices_view(request: HttpRequest) -> HttpResponse:
                 else:
                     # Only staff/superusers may change trust state or delete devices
                     if not request.user.is_staff and not request.user.is_superuser:
-                        error = "You do not have permission to change device trust or remove devices."
+                        error = "You cannot manually remove devices. Please wait for the automatic reset."
                     else:
                         if action == "trust":
                             device.is_trusted = True
@@ -120,7 +120,8 @@ def devices_view(request: HttpRequest) -> HttpResponse:
                 error = f"Action failed: {exc}"
 
         try:
-            devices = list(
+            # Group devices by OS fingerprint to show "Same Device" status
+            raw_devices = list(
                 Device.objects.filter(user=request.user)
                 .order_by("-last_seen_at")
                 .values(
@@ -136,6 +137,21 @@ def devices_view(request: HttpRequest) -> HttpResponse:
                     "first_seen_at",
                 )
             )
+            
+            # Post-process to flag duplicates (same OS, different browser entry)
+            seen_fingerprints = {}
+            devices = []
+            for d in raw_devices:
+                fp = d["os_fingerprint"]
+                if fp and fp in seen_fingerprints:
+                    d["is_duplicate_entry"] = True
+                    d["primary_device_id"] = seen_fingerprints[fp]
+                else:
+                    d["is_duplicate_entry"] = False
+                    if fp:
+                        seen_fingerprints[fp] = d["id"]
+                devices.append(d)
+
         except Exception as exc:
             error = f"Could not load devices: {exc}"
 
@@ -152,10 +168,31 @@ def devices_view(request: HttpRequest) -> HttpResponse:
         except Exception:
             pending_device = None
 
+    # Calculate quota info for display
+    remaining_devices = None
+    max_devices = 5
+    current_device_count = len(devices)
+    try:
+        from apps.devices.services import get_effective_policy
+        policy = get_effective_policy(request, user=request.user)
+        max_devices = policy.get("max_devices", 5)
+        current_device_count = Device.objects.filter(user=request.user, is_blocked=False).count()
+        remaining_devices = max(0, max_devices - current_device_count)
+    except Exception:
+        pass
+
     return render(
         request,
         "users/devices.html",
-        {"devices": devices, "message": message, "error": error, "pending_device": pending_device},
+        {
+            "devices": devices, 
+            "message": message, 
+            "error": error, 
+            "pending_device": pending_device,
+            "remaining_devices": remaining_devices,
+            "max_devices": max_devices,
+            "current_device_count": current_device_count
+        },
     )
 
 
@@ -170,13 +207,13 @@ def login_view(request: HttpRequest) -> HttpResponse:
         "form": LoginForm(),
         "site": get_current_site(request),
     }
-    return render(request, "login.html", context)
+    return render(request, "account/login.html", context)
 
 
 # ============================================================
 # Settings resolver (lazy import to avoid circular deps)
 # ============================================================
-def _get_settings(request=None) -> Dict[str, object]:
+def _get_settings(request: Optional[HttpRequest] = None) -> Dict[str, object]:
     """
     Return primitive settings snapshot (dict). Try to use the canonical resolver
     from apps.site_settings.views (which already returns dict snapshots). If
@@ -454,6 +491,41 @@ class EnterpriseSignupView(SignupView):
         kwargs["request"] = self.request
         return kwargs
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Import country detection utilities
+        from apps.users.services import (
+            COUNTRY_PHONE_CODES,
+            detect_country_from_ip,
+            get_client_ip,
+            get_phone_code_for_country,
+        )
+        from django_countries import countries
+        
+        # Detect country from IP
+        ip = get_client_ip(self.request)
+        detected_country = detect_country_from_ip(ip) if ip else None
+        detected_phone_code = get_phone_code_for_country(detected_country) if detected_country else None
+        
+        # Build country choices list
+        country_choices = list(countries)
+        
+        # Build phone code choices list
+        phone_code_choices = sorted(
+            [(code, dial) for code, dial in COUNTRY_PHONE_CODES.items()],
+            key=lambda x: x[0]
+        )
+        
+        context.update({
+            "countries": country_choices,
+            "phone_codes": phone_code_choices,
+            "detected_country": detected_country,
+            "detected_phone_code": detected_phone_code,
+        })
+        
+        return context
+
     def form_valid(self, form):
         s = _get_settings(self.request)
 
@@ -495,7 +567,7 @@ class EnterpriseSignupView(SignupView):
 # Manual email verification (MFA / email)
 # ============================================================
 @login_required
-def verify_email_view(request):
+def verify_email_view(request: HttpRequest) -> HttpResponse:
     """Manual verification for MFA / email confirmation."""
     user = request.user
     # If already verified, skip the page and continue to dashboard
@@ -567,9 +639,35 @@ def verify_email_status(request: HttpRequest) -> JsonResponse:
 
 
 # ============================================================
+# Email verification required - gate page
+# ============================================================
+@login_required
+def verify_email_required(request: HttpRequest) -> HttpResponse:
+    """
+    Gate page shown when a user tries to perform a sensitive action
+    but hasn't verified their email yet.
+    
+    Social login users should never see this page (they're pre-verified).
+    """
+    user = request.user
+    
+    # Social login users are already verified
+    if getattr(user, "signup_method", None) == "social":
+        next_url = request.session.pop("next_after_verify", None)
+        return redirect(next_url or "users:dashboard")
+    
+    # If already verified, redirect to intended destination
+    if getattr(user, "email_verified_at", None):
+        next_url = request.session.pop("next_after_verify", None)
+        return redirect(next_url or "users:dashboard")
+    
+    return render(request, "users/verify_email_required.html", {"user": user})
+
+
+# ============================================================
 # Device approval / eviction helpers
 # ============================================================
-def _get_pending_device_token(request) -> Optional[str]:
+def _get_pending_device_token(request: HttpRequest) -> Optional[str]:
     return request.session.get("pending_device_token")
 
 
@@ -688,7 +786,7 @@ def device_mfa_challenge(request: HttpRequest) -> HttpResponse:
 # Dashboard view
 # ============================================================
 @login_required(login_url="account_login")
-def dashboard_view(request):
+def dashboard_view(request: HttpRequest) -> HttpResponse:
     """Render user dashboard with recent announcements and notifications."""
     s = _get_settings(request)
     # Gate unverified manual users if required
@@ -771,16 +869,38 @@ def dashboard_view(request):
                 missing.append(label)
         return missing
 
+    # Calculate stats
+    posts_count = 0
+    comments_count = 0
+    try:
+        from apps.blog.models import Post
+        posts_count = Post.objects.filter(author=request.user).count()
+    except Exception:
+        pass
+
+    try:
+        from apps.comments.models import Comment
+        comments_count = Comment.objects.filter(user=request.user).count()
+    except Exception:
+        pass
+
+    unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+
     context = {
         "site_settings": s,
         "announcements": announcements,
         "notifications": notifications,
+        "unread_notifications": unread_count,
         "display_name": _display_name(request.user),
         "profile_missing_fields": _missing_profile_fields(request.user),
         "credits": getattr(request.user, "credits", 0),
         "can_watch_ad": bool(s.get("recaptcha_enabled", False)),
         "can_pay": bool(s.get("enable_payments", True)),
         "current_device": current_device,
+        "stats": {
+            "posts_count": posts_count,
+            "comments_count": comments_count,
+        },
     }
     return render(request, "users/dashboard.html", context)
 
@@ -789,7 +909,7 @@ def dashboard_view(request):
 # Profile view
 # ============================================================
 @login_required
-def profile_view(request):
+def profile_view(request: HttpRequest) -> HttpResponse:
     """Render the user profile overview page with inline updates."""
     s = _get_settings(request)
     user = request.user
@@ -817,7 +937,7 @@ def profile_view(request):
 # Auth hub
 # ============================================================
 
-def auth_hub_view(request):
+def auth_hub_view(request: HttpRequest) -> HttpResponse:
     """Landing page for login/signup/social auth selection."""
     return render(request, "account/hub.html")
 
@@ -827,111 +947,126 @@ def auth_hub_view(request):
 # ============================================================
 @login_required
 @require_http_methods(["GET", "POST"])
-def tell_us_about_you(request: HttpRequest):
+def tell_us_about_you(request: HttpRequest) -> HttpResponse:
     """
-    Enhanced cascaded onboarding view that runs after signup.
+    Enhanced profile completion view for social login and new signups.
     Collects:
-      • Full name and bio
-      • Username
-      • Password (for social accounts)
-      • Profile picture
-      • Notification preferences
+      • Username and full name
+      • Country (auto-detected from IP)
+      • Phone number with country code
+      • Password (for social accounts without password)
     """
+    from apps.users.services import (
+        COUNTRY_PHONE_CODES,
+        auto_detect_user_country,
+        get_phone_code_for_country,
+    )
+    from django_countries import countries
+    
     user = request.user
 
     if getattr(user, "profile_completed", False):
         return redirect("users:dashboard")
+    
+    # Auto-detect country from IP on first visit
+    detected_country = None
+    detected_phone_code = None
+    
+    if not user.country:
+        auto_detect_user_country(user, request)
+    
+    if user.country:
+        detected_country = user.country
+        detected_phone_code = get_phone_code_for_country(user.country)
+    
+    # Determine if we need password fields
+    show_password_fields = not user.has_usable_password()
 
     if request.method == "POST":
-        update_fields: list[str] = []
+        form = TellUsAboutYouForm(request.POST, user=user, request=request)
         
-        try:
-            # Step 1: Basic Info
-            full_name = (request.POST.get("full_name") or "").strip()
-            if full_name and getattr(user, "full_name", "") != full_name:
+        if form.is_valid():
+            update_fields: list[str] = []
+            
+            # Username
+            username = form.cleaned_data.get("username", "").strip()
+            if username and user.username != username:
+                user.username = username
+                update_fields.append("username")
+            
+            # Full name
+            full_name = form.cleaned_data.get("full_name", "").strip()
+            if full_name:
                 user.full_name = full_name
                 update_fields.append("full_name")
             
-            bio = (request.POST.get("bio") or "").strip()[:500]
-            if hasattr(user, "bio") and bio:
-                user.bio = bio
-                update_fields.append("bio")
+            # Country
+            country = form.cleaned_data.get("country", "").strip()
+            if country and hasattr(user, "country"):
+                user.country = country
+                update_fields.append("country")
             
-            # Profile picture upload
-            if request.FILES.get("profile_picture"):
-                try:
-                    user.profile_picture = request.FILES["profile_picture"]
-                    update_fields.append("profile_picture")
-                except Exception as exc:
-                    logger.warning("Failed to upload profile picture: %s", exc)
-            
-            # Step 2: Account Settings
-            username = (request.POST.get("username") or "").strip()
-            if username and user.username != username:
-                # Validate username is available
-                User = get_user_model()
-                if not User.objects.filter(username__iexact=username).exclude(pk=user.pk).exists():
-                    user.username = username
-                    update_fields.append("username")
-                else:
-                    messages.error(request, "Username is already taken.")
-                    return redirect("users:tell_us_about_you")
+            # Phone
+            phone = form.cleaned_data.get("phone", "").strip()
+            phone_country_code = form.cleaned_data.get("phone_country_code", "").strip()
+            if phone and hasattr(user, "phone"):
+                user.phone = phone
+                update_fields.append("phone")
+            if phone_country_code and hasattr(user, "phone_country_code"):
+                user.phone_country_code = phone_country_code
+                update_fields.append("phone_country_code")
             
             # Password for social accounts
-            new_password1 = request.POST.get("new_password1")
-            new_password2 = request.POST.get("new_password2")
-            if new_password1 and new_password2:
-                if new_password1 == new_password2:
-                    if len(new_password1) >= 8:
-                        user.set_password(new_password1)
-                        update_fields.append("password")
-                        update_session_auth_hash(request, user)
-                    else:
-                        messages.error(request, "Password must be at least 8 characters.")
-                        return redirect("users:tell_us_about_you")
-                else:
-                    messages.error(request, "Passwords don't match.")
-                    return redirect("users:tell_us_about_you")
-            
-            # Step 3: Notification Preferences
-            try:
-                from apps.users.models import NotificationPreferences
-                prefs, created = NotificationPreferences.objects.get_or_create(user=user)
-                
-                prefs.email_comments = request.POST.get("email_comments") == "on"
-                prefs.email_mentions = request.POST.get("email_mentions") == "on"
-                prefs.email_new_posts = request.POST.get("email_new_posts") == "on"
-                prefs.email_frequency = request.POST.get("email_frequency", "instant")
-                prefs.save()
-            except Exception as exc:
-                logger.warning("Failed to save notification preferences: %s", exc)
+            password1 = form.cleaned_data.get("password1")
+            password2 = form.cleaned_data.get("password2")
+            if password1 and password2 and password1 == password2:
+                user.set_password(password1)
+                update_session_auth_hash(request, user)
             
             # Mark profile as completed
             if hasattr(user, "profile_completed"):
                 user.profile_completed = True
                 update_fields.append("profile_completed")
             
-            if hasattr(user, "signup_method") and not user.signup_method:
-                user.signup_method = "email"
-                update_fields.append("signup_method")
-            
             # Save all updates
             if update_fields:
                 user.save(update_fields=update_fields)
             
-            messages.success(request, "Welcome! Your profile has been completed.")
+            messages.success(request, _("Welcome! Your profile has been completed."))
             return redirect("users:dashboard")
-            
-        except Exception as exc:
-            logger.exception("Failed to complete profile: %s", exc)
-            messages.error(request, "An error occurred. Please try again.")
-            return redirect("users:tell_us_about_you")
+        else:
+            # Form has errors - will be shown in template
+            pass
+    else:
+        # GET request - initialize form with user data
+        initial_data = {
+            "username": user.username if user.username != user.email else "",
+            "full_name": getattr(user, "full_name", ""),
+            "country": detected_country or "",
+            "phone_country_code": detected_phone_code or "",
+            "phone": getattr(user, "phone", "") or "",
+        }
+        form = TellUsAboutYouForm(initial=initial_data, user=user, request=request)
     
-    # GET request - show onboarding form
+    # Build country choices list
+    country_choices = list(countries)
+    
+    # Build phone code choices list
+    phone_code_choices = sorted(
+        [(code, dial) for code, dial in COUNTRY_PHONE_CODES.items()],
+        key=lambda x: x[0]
+    )
+    
     context = {
         "user": user,
+        "form": form,
+        "countries": country_choices,
+        "phone_codes": phone_code_choices,
+        "detected_country": detected_country,
+        "detected_phone_code": detected_phone_code,
+        "show_password_fields": show_password_fields,
     }
-    return render(request, "users/onboarding_cascade.html", context)
+    return render(request, "users/tell_us_about_you.html", context)
 
 
 # ============================================================

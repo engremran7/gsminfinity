@@ -222,18 +222,26 @@ class ConsentMiddleware:
         Retrieve ConsentRecord applying database-accurate filters.
         """
         user = getattr(request, "user", None)
-        lookup = {"site_domain": site_domain, "policy_version": policy_version}
+
+        # Get the policy object matching the version
+        from apps.consent.models import ConsentPolicy
+        policy = ConsentPolicy.objects.filter(version=policy_version, is_active=True).first()
+        if not policy:
+            return None
+
+        lookup = {"policy": policy}
 
         try:
             if user and getattr(user, "is_authenticated", False):
                 lookup["user"] = user
             else:
                 lookup["user__isnull"] = True
-                lookup["session_key"] = getattr(request.session, "session_key", None)
+                # Use session_id instead of session_key
+                lookup["session_id"] = getattr(request.session, "session_key", None) or ""
 
             return (
                 ConsentRecord.objects.filter(**lookup)
-                .order_by("-updated_at", "-created_at")
+                .order_by("-created_at")
                 .first()
             )
         except Exception as exc:
@@ -299,9 +307,24 @@ class ConsentMiddleware:
     def process_response(
         self, request: HttpRequest, response: HttpResponse, policy_payload: Optional[dict]
     ) -> HttpResponse:
-        """Write cookie storing accepted categories - best effort."""
+        """
+        Write cookie storing accepted categories - best effort.
+        NOTE: The view (accept_all/reject_all) already sets the cookie when user makes a choice.
+        This middleware should NOT overwrite it. Only set if cookie doesn't exist yet.
+        """
         if not policy_payload:
             return response
+
+        # Check if cookie already exists (set by view or previous request)
+        existing_cookie = request.COOKIES.get(self.cookie_name)
+        if existing_cookie:
+            # Cookie already set, don't overwrite
+            return response
+
+        # Only set cookie if user has given consent (has a record in DB)
+        if not getattr(request, 'has_cookie_consent', False):
+            return response
+
         try:
             payload = dict(request.consent_categories or {"functional": True})
             value = json.dumps(payload, separators=(",", ":"))

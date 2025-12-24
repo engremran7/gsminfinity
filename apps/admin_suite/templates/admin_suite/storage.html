@@ -1,0 +1,255 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Storage Management{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Storage Management</h1>
+      <p class="text-sm text-slate-600">Cloud providers, shared drives, service accounts, and file storage.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:storage_providers' %}" class="px-3 py-1.5 text-sm rounded border border-primary bg-primary text-white hover:bg-primary/90">Manage Providers</a>
+      <a href="{% url 'admin_suite:storage_files' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Browse Files</a>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Cloud Providers</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.total_providers|default:0 }}</div>
+      <div class="text-xs text-slate-500 mt-1">{{ stats.active_providers|default:0 }} active</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Shared Drives</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.total_drives }}</div>
+      <div class="text-xs text-slate-500 mt-1">{{ stats.active_drives }} active</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Total Files</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.total_files|default:0 }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Total Size</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.total_size_gb|floatformat:2 }} GB</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-white shadow-sm">
+      <div class="text-sm text-slate-500">Service Accounts</div>
+      <div class="text-2xl font-semibold text-slate-900">{{ stats.service_accounts }}</div>
+    </div>
+  </div>
+
+  <!-- Cloud Providers Quick View -->
+  {% if providers %}
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-900">Cloud Storage Providers</h2>
+      <a href="{% url 'admin_suite:storage_providers' %}" class="text-sm text-primary hover:underline">View All →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Provider</th>
+            <th class="px-4 py-2">Account</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Storage</th>
+            <th class="px-4 py-2">Last Sync</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for p in providers %}
+          <tr>
+            <td class="px-4 py-2">
+              <a href="{% url 'admin_suite:storage_provider_detail' p.id %}" class="text-primary hover:underline">{{ p.name }}</a>
+            </td>
+            <td class="px-4 py-2">
+              {% if p.provider == 'google_drive' or p.provider == 'google_shared_drive' %}
+                <span class="text-blue-600">📁 Google Drive</span>
+              {% elif p.provider == 'onedrive' %}
+                <span class="text-blue-500">☁️ OneDrive</span>
+              {% elif p.provider == 'dropbox' %}
+                <span class="text-blue-700">📦 Dropbox</span>
+              {% elif p.provider == 'mega' %}
+                <span class="text-red-600">🔒 MEGA</span>
+              {% elif p.provider == 's3' or p.provider == 'wasabi' or p.provider == 'backblaze' %}
+                <span class="text-orange-600">🪣 S3</span>
+              {% else %}
+                {{ p.provider }}
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-xs">{{ p.account_email|default:"-" }}</td>
+            <td class="px-4 py-2">
+              {% if p.status == 'active' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700">Active</span>
+              {% elif p.status == 'pending' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700">Pending</span>
+              {% elif p.status == 'error' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700">Error</span>
+              {% else %}
+                <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">{{ p.status }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-xs">
+              {% if p.total_space_bytes > 0 %}
+                {% widthratio p.used_space_bytes p.total_space_bytes 100 as pct %}
+                <div class="flex items-center gap-2">
+                  <div class="w-16 progress-bar-container progress-bar-container--sm">
+                    <div class="progress-bar {% if pct > 90 %}progress-bar--danger{% elif pct > 75 %}progress-bar--warning{% else %}progress-bar--success{% endif %} progress-w-{{ pct|floatformat:0 }}"></div>
+                  </div>
+                  <span>{{ pct }}%</span>
+                </div>
+              {% else %}
+                <span class="text-slate-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-xs text-slate-500">{{ p.last_sync_at|date:"M d, H:i"|default:"Never" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Health Overview -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="border rounded-lg p-4 bg-emerald-50 border-emerald-200">
+      <div class="text-sm text-emerald-700">Healthy Drives</div>
+      <div class="text-3xl font-semibold text-emerald-900">{{ stats.healthy_drives }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-amber-50 border-amber-200">
+      <div class="text-sm text-amber-700">Warning</div>
+      <div class="text-3xl font-semibold text-amber-900">{{ stats.warning_drives }}</div>
+    </div>
+    <div class="border rounded-lg p-4 bg-red-50 border-red-200">
+      <div class="text-sm text-red-700">Critical/Full</div>
+      <div class="text-3xl font-semibold text-red-900">{{ stats.critical_drives }}</div>
+    </div>
+  </div>
+
+  <!-- Shared Drives Table -->
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-slate-900">Shared Drives</h2>
+      <form method="post" class="flex items-center gap-2 text-xs">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_drive">
+        <input type="text" name="name" placeholder="Drive Name" class="border rounded px-2 py-1" required>
+        <input type="text" name="drive_id_value" placeholder="Drive ID" class="border rounded px-2 py-1" required>
+        <input type="text" name="owner_email" placeholder="Owner Email" class="border rounded px-2 py-1">
+        <button type="submit" class="px-2 py-1 rounded bg-primary text-white">Add Drive</button>
+      </form>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Drive ID</th>
+            <th class="px-4 py-2">Provider</th>
+            <th class="px-4 py-2">Files</th>
+            <th class="px-4 py-2">Size (GB)</th>
+            <th class="px-4 py-2">Health</th>
+            <th class="px-4 py-2">Priority</th>
+            <th class="px-4 py-2">Active</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for d in drives %}
+          <tr>
+            <td class="px-4 py-2">{{ d.name }}</td>
+            <td class="px-4 py-2 font-mono text-xs">{{ d.drive_id|truncatechars:20 }}</td>
+            <td class="px-4 py-2 text-xs">{{ d.provider__name|default:"-" }}</td>
+            <td class="px-4 py-2">
+              {{ d.current_file_count|default:0 }} / {{ d.max_files }}
+              {% widthratio d.current_file_count d.max_files 100 as pct %}
+              <div class="mt-1 w-full progress-bar-container progress-bar-container--sm">
+                <div class="progress-bar {% if pct > 90 %}progress-bar--danger{% elif pct > 75 %}progress-bar--warning{% else %}progress-bar--success{% endif %} progress-w-{{ pct|floatformat:0 }}"></div>
+              </div>
+            </td>
+            <td class="px-4 py-2">{{ d.total_size_gb|floatformat:2 }}</td>
+            <td class="px-4 py-2">
+              {% if d.health_status == 'healthy' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700">Healthy</span>
+              {% elif d.health_status == 'warning' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700">Warning</span>
+              {% elif d.health_status == 'critical' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700">Critical</span>
+              {% elif d.health_status == 'full' %}
+                <span class="px-2 py-0.5 text-xs rounded bg-red-100 text-red-700">Full</span>
+              {% else %}
+                <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">{{ d.health_status }}</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">{{ d.priority }}</td>
+            <td class="px-4 py-2">{{ d.is_active|yesno:"Yes,No" }}</td>
+            <td class="px-4 py-2 space-y-1">
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle_drive">
+                <input type="hidden" name="drive_id" value="{{ d.id }}">
+                <button type="submit" class="text-xs text-primary hover:underline">
+                  {% if d.is_active %}Disable{% else %}Enable{% endif %}
+                </button>
+              </form>
+              <form method="post" class="inline ml-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="health_check">
+                <input type="hidden" name="drive_id" value="{{ d.id }}">
+                <button type="submit" class="text-xs text-slate-600 hover:underline">Health Check</button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="9" class="px-4 py-3 text-slate-500">No shared drives configured.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Service Accounts Table -->
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="px-4 py-3 border-b">
+      <h2 class="text-lg font-semibold text-slate-900">Service Accounts</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Quota Used</th>
+            <th class="px-4 py-2">Quota Limit</th>
+            <th class="px-4 py-2">Active</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for sa in service_accounts %}
+          <tr>
+            <td class="px-4 py-2">{{ sa.name }}</td>
+            <td class="px-4 py-2 font-mono text-xs">{{ sa.email }}</td>
+            <td class="px-4 py-2">{{ sa.daily_quota_used|default:0 }}</td>
+            <td class="px-4 py-2">{{ sa.daily_quota_limit|default:0 }}</td>
+            <td class="px-4 py-2">{{ sa.is_active|yesno:"Yes,No" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-4 py-3 text-slate-500">No service accounts configured.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

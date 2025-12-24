@@ -3,47 +3,7 @@
 
 {% block extrastyle %}
 {{ block.super }}
-<style>
-.consent-admin-header {
-    background: linear-gradient(135deg, #0ea5a4 0%, #0a7f7e 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-}
-.consent-admin-header h2 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-}
-.consent-admin-header p {
-    margin: 0;
-    opacity: 0.9;
-}
-.policy-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-.policy-stat {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-}
-.policy-stat .label {
-    font-size: 0.75rem;
-    color: #6c757d;
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-}
-.policy-stat .value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #0ea5a4;
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/admin/django-admin-custom.css' %}">
 {% endblock %}
 
 {% block content %}

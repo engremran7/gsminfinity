@@ -28,6 +28,11 @@ def _should_force_https() -> bool:
     if override is not None and override.strip().lower() in ("0", "false", "off", "no"):
         return False
 
+    # Check Django settings first
+    from django.conf import settings as django_settings
+    if hasattr(django_settings, 'FORCE_HTTPS'):
+        return bool(django_settings.FORCE_HTTPS)
+
     try:
         from apps.site_settings.models import SiteSettings  # local import
 

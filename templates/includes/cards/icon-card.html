@@ -1,14 +1,14 @@
 
-<div class="bg-white shadow rounded-lg p-6 flex items-center gap-4">
+<div class="card-glass p-6 flex items-center gap-4">
   <div
-    class="h-12 w-12 flex items-center justify-center bg-slate-100 rounded-lg"
+    class="h-12 w-12 flex items-center justify-center bg-[var(--color-bg-surface-secondary)] rounded-lg border border-[var(--color-border-default)]"
   >
     <img src="{{ icon_url }}" alt="" class="h-6 w-6" />
   </div>
 
   <div>
-    <div class="text-slate-500 text-sm">{{ label }}</div>
-    <div class="text-xl font-semibold text-slate-900">{{ value }}</div>
+    <div class="text-[var(--color-text-muted)] text-sm">{{ label }}</div>
+    <div class="text-xl font-semibold text-[var(--color-text-primary)]">{{ value }}</div>
   </div>
 </div>
 

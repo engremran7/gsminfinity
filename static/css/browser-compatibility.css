@@ -1,0 +1,257 @@
+/**
+ * =============================================================================
+ * BROWSER COMPATIBILITY STYLESHEET
+ * =============================================================================
+ * 
+ * Provides fallbacks and adjustments for different browsers
+ * Automatically applied based on browser detection
+ * 
+ * Version: 1.0.0
+ * Date: 2025-12-22
+ * 
+ * =============================================================================
+ */
+
+/* ============================================================================
+   BROWSER-SPECIFIC FIXES
+   ============================================================================ */
+
+/* Internet Explorer 11 */
+html.browser-ie {
+  /* IE doesn't support CSS Grid, use Flexbox fallback */
+  --layout-mode: flex;
+}
+
+html.browser-ie .grid-layout {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+html.browser-ie .grid-item {
+  flex: 1 1 calc(33.333% - 1rem);
+}
+
+/* Safari specific fixes */
+html.browser-safari {
+  /* Safari needs webkit prefixes */
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+html.browser-safari input,
+html.browser-safari textarea,
+html.browser-safari select {
+  font-size: 16px; /* Prevents zoom on iOS */
+}
+
+/* Firefox specific fixes */
+html.browser-firefox {
+  /* Firefox specific adjustments */
+}
+
+html.browser-firefox input::-moz-placeholder {
+  opacity: 1;
+}
+
+/* Edge specific fixes */
+html.browser-edge {
+  /* Edge specific adjustments */
+}
+
+/* ============================================================================
+   FEATURE-BASED FALLBACKS
+   ============================================================================ */
+
+/* No CSS Grid support */
+html.no-grid .grid-layout {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+html.no-grid .grid-item {
+  flex: 1 1 calc(33.333% - 1rem);
+}
+
+/* No Backdrop Filter support */
+html:not(.supports-css-backdrop) .backdrop-blur {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: none;
+}
+
+/* No CSS Custom Properties support */
+html:not(.supports-css-customProperties) {
+  --primary-color: #3b82f6;
+  --secondary-color: #6b7280;
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --warning-color: #f59e0b;
+}
+
+/* No Intersection Observer support */
+html.no-intersection-observer .lazy-load {
+  /* Load images immediately instead of lazy loading */
+  background-image: var(--image-url);
+}
+
+/* ============================================================================
+   MOBILE OPTIMIZATIONS
+   ============================================================================ */
+
+html.is-mobile {
+  font-size: 16px; /* Prevents zoom on input focus */
+}
+
+html.is-mobile input,
+html.is-mobile textarea,
+html.is-mobile select {
+  font-size: 16px;
+}
+
+html.is-mobile .desktop-only {
+  display: none !important;
+}
+
+html.is-mobile .mobile-optimized {
+  display: block;
+}
+
+/* Tablet optimizations */
+html.is-tablet {
+  --spacing-unit: 1.25rem;
+}
+
+html.is-tablet .tablet-hidden {
+  display: none !important;
+}
+
+/* ============================================================================
+   OS-SPECIFIC ADJUSTMENTS
+   ============================================================================ */
+
+/* iOS specific */
+html.os-ios {
+  /* iOS specific adjustments */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html.os-ios input,
+html.os-ios textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Android specific */
+html.os-android {
+  /* Android specific adjustments */
+}
+
+/* macOS specific */
+html.os-macos {
+  /* macOS specific adjustments */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Windows specific */
+html.os-windows {
+  /* Windows specific adjustments */
+  font-family: 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Linux specific */
+html.os-linux {
+  /* Linux specific adjustments */
+  font-family: 'Ubuntu', 'Droid Sans', sans-serif;
+}
+
+/* ============================================================================
+   MEDIA QUERY FALLBACKS
+   ============================================================================ */
+
+/* No WebP support */
+html:not(.supports-media-webp) .image-webp {
+  background-image: url('image.jpg');
+}
+
+/* No WebM support */
+html:not(.supports-media-webm) video {
+  /* Use H.264 fallback */
+}
+
+/* ============================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================================================ */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: more) {
+  :root {
+    --text-color: #000;
+    --bg-color: #fff;
+    --border-color: #000;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme='light']) {
+    color-scheme: dark;
+  }
+}
+
+/* Light mode */
+@media (prefers-color-scheme: light) {
+  html:not([data-theme='dark']) {
+    color-scheme: light;
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES
+   ============================================================================ */
+
+@media print {
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+
+  img {
+    max-width: 100%;
+  }
+}
+
+/* ============================================================================
+   LEGACY BROWSER SUPPORT
+   ============================================================================ */
+
+/* IE 11 specific */
+@supports (-ms-ime-align: auto) {
+  /* IE 11 specific styles */
+  .grid-layout {
+    display: -ms-grid;
+    -ms-grid-columns: 1fr 1fr 1fr;
+  }
+}
+
+/* Old Safari */
+@supports (-webkit-appearance: none) {
+  input[type='search'] {
+    -webkit-appearance: textfield;
+  }
+}
+

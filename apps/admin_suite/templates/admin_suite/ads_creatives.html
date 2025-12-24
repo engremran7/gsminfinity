@@ -1,0 +1,73 @@
+{% extends "admin_suite/base.html" %}
+
+{% block title %}Admin Suite - Ads Creatives{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-900">Creative Assets</h1>
+      <p class="text-sm text-slate-600">Manage ad creative assets and media.</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'admin_suite:ads' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">← Ads Overview</a>
+      <a href="{% url 'admin_suite:ads_placements' %}" class="px-3 py-1.5 text-sm rounded border border-slate-200 bg-white hover:bg-slate-50">Placements</a>
+    </div>
+  </div>
+
+  {% if message %}
+  <div class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-3 py-2 rounded">
+    {{ message }}
+  </div>
+  {% endif %}
+
+  <!-- Creatives Table -->
+  <div class="border rounded-lg bg-white shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200">
+        <thead class="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+          <tr>
+            <th class="px-4 py-2">Name</th>
+            <th class="px-4 py-2">Type</th>
+            <th class="px-4 py-2">Status</th>
+            <th class="px-4 py-2">Created</th>
+            <th class="px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 text-sm text-slate-800">
+          {% for c in creatives %}
+          <tr>
+            <td class="px-4 py-2 font-medium">{{ c.name }}</td>
+            <td class="px-4 py-2">
+              <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">{{ c.creative_type|default:"unknown" }}</span>
+            </td>
+            <td class="px-4 py-2">
+              {% if c.is_active and c.is_enabled %}
+                <span class="px-2 py-0.5 text-xs rounded bg-emerald-100 text-emerald-700">Active</span>
+              {% elif c.is_enabled %}
+                <span class="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700">Enabled</span>
+              {% else %}
+                <span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">Disabled</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">{{ c.created_at|date:"Y-m-d" }}</td>
+            <td class="px-4 py-2">
+              <form method="post" class="inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle">
+                <input type="hidden" name="creative_id" value="{{ c.id }}">
+                <button type="submit" class="text-xs text-primary hover:underline">
+                  {% if c.is_active %}Deactivate{% else %}Activate{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-4 py-3 text-slate-500">No creatives found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

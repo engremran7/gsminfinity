@@ -105,20 +105,20 @@
             <td class="px-4 py-2 text-slate-500">{{ p.publish_at }}</td>
             <td class="px-4 py-2 text-slate-500">{{ p.updated_at }}</td>
             <td class="px-4 py-2 space-x-2 text-xs">
-              <a href="{% url 'admin_suite:admin_suite_blog' %}?post_id={{ p.id }}" class="text-primary hover:underline">Edit</a>
+              <a href="{% url 'admin_suite:blog' %}?post_id={{ p.id }}" class="text-primary hover:underline">Edit</a>
               <form method="post" class="inline">
                 {% csrf_token %}
                 <input type="hidden" name="post_id" value="{{ p.id }}">
                 <input type="hidden" name="action" value="{% if p.status == 'published' %}unpublish{% else %}publish{% endif %}">
                 <button type="submit" class="text-slate-700 hover:underline">{% if p.status == 'published' %}Unpublish{% else %}Publish{% endif %}</button>
               </form>
-              <form method="post" class="inline" onsubmit="return confirm('Delete this post?');">
-                {% csrf_token %}
+              <form method="post" class="inline" data-confirm="Delete this post?">
+                {% csrf_token %>
                 <input type="hidden" name="post_id" value="{{ p.id }}">
                 <input type="hidden" name="action" value="delete">
                 <button type="submit" class="text-red-600 hover:underline">Delete</button>
               </form>
-              <a href="/blog/{{ p.slug }}/" target="_blank" class="text-slate-500 hover:underline">View</a>
+              <a href="/blog/{{ p.slug }}/" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:underline">View</a>
             </td>
           </tr>
           {% empty %}
@@ -136,7 +136,7 @@
         <p class="text-xs text-slate-500">Status, scheduling, SEO, and body content.</p>
       </div>
       {% if edit_post %}
-      <a href="{% url 'admin_suite:admin_suite_blog' %}" class="text-xs text-primary hover:underline">Clear edit</a>
+      <a href="{% url 'admin_suite:blog' %}" class="text-xs text-primary hover:underline">Clear edit</a>
       {% endif %}
     </div>
     <div class="p-4 space-y-3">

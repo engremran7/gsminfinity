@@ -1,5 +1,5 @@
 
-{# HTMX toast fragment — enterprise-hardened version #}
+{# HTMX toast fragment — Tailwind Enterprise Edition #}
 {% load static %}
 
 {% comment %}
@@ -8,80 +8,74 @@
 
     Context variables expected:
     - message (string): The main body text of the toast.
-    - toast_class (string, optional): Bootstrap class like 'text-bg-danger', 'text-bg-success'.
+    - toast_type (string, optional): 'success', 'danger', 'warning', 'info', 'primary'.
     - toast_delay (int, optional): Delay in milliseconds (defaults to 4000).
 {% endcomment %}
 
-{% with final_class=toast_class|default:'text-bg-primary' final_delay=toast_delay|default:4000 %}
-<div
-  class="toast toast-fragment align-items-center mb-2 {{ final_class }}"
-  role="status"
-  aria-live="polite"
-  aria-atomic="true"
-  data-bs-delay="{{ final_delay }}"
->
-  <div class="d-flex">
-    <div class="toast-body">{{ message }}</div>
-    <button
-      type="button"
-      {# Use btn-close-white for dark backgrounds like danger/success #}
-      class="btn-close me-2 m-auto {% if final_class != 'text-bg-white' and final_class != 'text-bg-primary' %}btn-close-white{% endif %}"
-      data-bs-dismiss="toast"
-      aria-label="Close"
-    ></button>
-  </div>
-</div>
+{% with t_type=toast_type|default:'primary' t_delay=toast_delay|default:4000 %}
+{# Toast type to Tailwind class mapping #}
+{% if t_type == 'success' %}
+  {% with bg_class='bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-700' icon_class='text-emerald-500' %}
+  {% include 'partials/_toast_inner.html' %}
+  {% endwith %}
+{% elif t_type == 'danger' or t_type == 'error' %}
+  {% with bg_class='bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700' icon_class='text-red-500' %}
+  {% include 'partials/_toast_inner.html' %}
+  {% endwith %}
+{% elif t_type == 'warning' %}
+  {% with bg_class='bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-700' icon_class='text-amber-500' %}
+  {% include 'partials/_toast_inner.html' %}
+  {% endwith %}
+{% elif t_type == 'info' %}
+  {% with bg_class='bg-sky-50 dark:bg-sky-900/30 border-sky-200 dark:border-sky-700' icon_class='text-sky-500' %}
+  {% include 'partials/_toast_inner.html' %}
+  {% endwith %}
+{% else %}
+  {# Default: primary/indigo #}
+  {% with bg_class='bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700' icon_class='text-indigo-500' %}
+  {% include 'partials/_toast_inner.html' %}
+  {% endwith %}
+{% endif %}
 {% endwith %}
 
 <script nonce="{{ request.csp_nonce }}">
-  (function () {
-    // Note: The toast container must have the ID #app-toasts in base.html
-    
-    // 1. Find the *toast element associated with this script* safely.
-    let script = document.currentScript;
-    if (!script) return;
-
-    let sibling = script.previousElementSibling;
-    let toastEl = null;
-
-    // Walk backwards until a .toast element is found (max 3 steps for safety)
-    for (let i = 0; i < 3 && sibling; i++) {
-      if (sibling.classList && sibling.classList.contains("toast")) {
-        toastEl = sibling;
-        break;
-      }
-      sibling = sibling.previousElementSibling;
-    }
-
-    if (!toastEl) return;
-
-    // 2. Ensure Bootstrap is available
-    if (typeof window.bootstrap === "undefined" || !window.bootstrap.Toast) {
-        console.warn("Bootstrap Toast not found. Falling back to simple removal.");
-        // Fallback: Manually remove the toast after delay
-        const delay = parseInt(toastEl.getAttribute('data-bs-delay'), 10) || 4000;
-        setTimeout(() => {
-            try { toastEl.remove(); } catch (_) {}
-        }, delay + 500);
-        return;
-    }
-
-    // 3. Initialize and show the toast (FIXED: use standard constructor)
-    try {
-      // Use standard constructor for Bootstrap 5+
-      let instance = new window.bootstrap.Toast(toastEl);
-      instance.show();
-
-      // Clean up toast element after it's hidden by Bootstrap
-      toastEl.addEventListener('hidden.bs.toast', () => {
-          toastEl.remove();
-      });
-
-    } catch (err) {
-      console.error("Toast initialization failed:", err);
-      // Ensure the element is cleaned up if initialization fails
-      try { toastEl.remove(); } catch (_) {}
-    }
-  })();
+(function() {
+  const script = document.currentScript;
+  if (!script) return;
+  
+  // Find the toast element (sibling before this script)
+  let toast = script.previousElementSibling;
+  for (let i = 0; i < 3 && toast; i++) {
+    if (toast.classList?.contains('toast-fragment')) break;
+    toast = toast.previousElementSibling;
+  }
+  if (!toast) return;
+  
+  const delay = parseInt(toast.dataset.delay || '4000', 10);
+  
+  // Add enter animation
+  toast.classList.add('slide-in-up');
+  
+  // Auto dismiss after delay
+  const dismissTimer = setTimeout(() => dismissToast(toast), delay);
+  
+  // Dismiss on close button click
+  const closeBtn = toast.querySelector('[data-dismiss-toast]');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      clearTimeout(dismissTimer);
+      dismissToast(toast);
+    });
+  }
+  
+  function dismissToast(el) {
+    el.classList.add('fade-out');
+    el.addEventListener('animationend', () => {
+      el.remove();
+    }, { once: true });
+    // Fallback removal if animation fails
+    setTimeout(() => { try { el.remove(); } catch(_){} }, 400);
+  }
+})();
 </script>
 

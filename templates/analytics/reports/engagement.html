@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Engagement Report | {{ site_settings.site_name|default:"GSM Infinity" }}{% endblock %}
+
+{% block content %}
+<main class="container mx-auto px-4 py-8">
+  <header class="mb-8 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Engagement Report</h1>
+      <p class="text-slate-600 dark:text-slate-400 mt-2">User behavior, interactions, and engagement metrics.</p>
+    </div>
+    <a href="{% url 'analytics:dashboard' %}" class="text-sm text-primary-600 hover:text-primary-700">← Back to Dashboard</a>
+  </header>
+
+  {# Summary Stats #}
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-primary-600">{{ stats.avg_session|default:"0m" }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Avg. Session</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-green-600">{{ stats.pages_per_session|default:"0" }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Pages / Session</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-blue-600">{{ stats.return_rate|default:"0%" }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Return Rate</div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm">
+      <div class="text-2xl font-bold text-purple-600">{{ stats.total_interactions|default:0 }}</div>
+      <div class="text-sm text-slate-600 dark:text-slate-400">Interactions</div>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {# User Actions #}
+    <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Top User Actions</h2>
+      {% if user_actions %}
+      <div class="space-y-3">
+        {% for action in user_actions %}
+        <div class="flex items-center justify-between">
+          <span class="text-slate-900 dark:text-white">{{ action.name }}</span>
+          <div class="flex items-center gap-2">
+            <div class="w-24 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+              <div class="bg-primary-600 h-2 rounded-full" style="width: {{ action.percentage }}%"></div>
+            </div>
+            <span class="text-sm text-slate-600 dark:text-slate-400">{{ action.count }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-slate-500 dark:text-slate-400 text-center py-4">No action data available.</p>
+      {% endif %}
+    </section>
+
+    {# Device Breakdown #}
+    <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+      <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">Device Breakdown</h2>
+      {% if devices %}
+      <div class="space-y-3">
+        {% for device in devices %}
+        <div class="flex items-center justify-between">
+          <span class="text-slate-900 dark:text-white">{{ device.type }}</span>
+          <div class="flex items-center gap-2">
+            <div class="w-24 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+              <div class="bg-blue-600 h-2 rounded-full" style="width: {{ device.percentage }}%"></div>
+            </div>
+            <span class="text-sm text-slate-600 dark:text-slate-400">{{ device.percentage }}%</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-slate-500 dark:text-slate-400 text-center py-4">No device data available.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {# User Segments #}
+  <section class="mt-8 bg-white dark:bg-slate-800 rounded-lg shadow-sm p-6">
+    <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-4">User Segments</h2>
+    {% if segments %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {% for segment in segments %}
+      <div class="p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+        <div class="text-lg font-semibold text-slate-900 dark:text-white">{{ segment.name }}</div>
+        <div class="text-3xl font-bold text-primary-600 mt-2">{{ segment.count }}</div>
+        <div class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ segment.description }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-slate-500 dark:text-slate-400 text-center py-4">No segment data available.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}
+

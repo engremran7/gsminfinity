@@ -17,6 +17,7 @@ from .models import (
     WebSubSubscription,
     SyndicationPartner,
     DistributionSettings,
+    ContentDistribution,
 )
 
 
@@ -142,17 +143,131 @@ except ImportError as exc:
 
 @admin.register(DistributionSettings)
 class DistributionSettingsAdmin(SingletonModelAdmin):
-    list_display = ("distribution_enabled", "auto_fanout_on_publish", "max_retries", "require_admin_approval")
+    """
+    Centralized control panel for all distribution automation limits and policies.
+    Configure SEO limits, auto-tagging frequency, platform restrictions, and more.
+    """
+    
     fieldsets = (
-        (None, {"fields": ("distribution_enabled", "auto_fanout_on_publish", "require_admin_approval")}),
-        (
-            "Channels & Indexing",
-            {"fields": ("default_channels", "allow_indexing_jobs")},
-        ),
-        ("Retries & Backoff", {"fields": ("max_retries", "retry_backoff_seconds")}),
+        ("🌐 General Distribution Settings", {
+            "fields": ("distribution_enabled", "auto_fanout_on_publish", "require_admin_approval"),
+            "description": (
+                "<strong>Master Controls:</strong> Enable/disable distribution globally, "
+                "auto-publish on post creation, and require manual approval for jobs."
+            ),
+        }),
+        ("📱 Platform & Distribution Limits", {
+            "fields": ("max_platforms_per_content", "distribution_frequency_hours", "default_channels"),
+            "description": (
+                "<strong>⚠️ POLICY COMPLIANCE:</strong> Limits prevent spam detection and platform bans. "
+                "<ul>"
+                "<li><strong>Max Platforms:</strong> Recommended 5 or less to avoid spam flags</li>"
+                "<li><strong>Frequency:</strong> Minimum hours between distributions (4-24 recommended)</li>"
+                "<li><strong>Default Channels:</strong> JSON array like ['twitter', 'facebook', 'linkedin']</li>"
+                "</ul>"
+            ),
+        }),
+        ("🔍 SEO Limits (Search Engine Guidelines)", {
+            "fields": ("max_seo_title_length", "max_seo_description_length", "max_seo_tags"),
+            "description": (
+                "<strong>Google Best Practices:</strong> "
+                "<ul>"
+                "<li><strong>Title:</strong> Google displays ~60 chars in search results</li>"
+                "<li><strong>Description:</strong> Google displays ~160 chars</li>"
+                "<li><strong>SEO Tags:</strong> 5-10 recommended; more = keyword stuffing penalty</li>"
+                "</ul>"
+            ),
+        }),
+        ("🏷️ Auto-Tagging Configuration", {
+            "fields": ("max_auto_tags", "auto_tag_frequency_days"),
+            "description": (
+                "<strong>Content Optimization:</strong> "
+                "<ul>"
+                "<li><strong>Max Auto Tags:</strong> 10-15 recommended; more reduces quality</li>"
+                "<li><strong>Update Frequency:</strong> Days between re-tagging existing content (0 = never)</li>"
+                "</ul>"
+                "<em>Platform limits: Twitter=10 hashtags, Instagram=30, LinkedIn=10</em>"
+            ),
+        }),
+        ("🔄 Retry & Error Handling", {
+            "fields": ("max_retries", "retry_backoff_seconds"),
+            "description": (
+                "<strong>Failure Recovery:</strong> "
+                "<ul>"
+                "<li><strong>Max Retries:</strong> Attempts before marking as permanently failed</li>"
+                "<li><strong>Backoff:</strong> Wait time between retries (1800s = 30 min)</li>"
+                "</ul>"
+            ),
+        }),
+        ("🚀 Advanced Features", {
+            "fields": ("allow_indexing_jobs", "enable_firmware_auto_distribution"),
+            "description": (
+                "<strong>Optional Features:</strong> "
+                "<ul>"
+                "<li><strong>Indexing:</strong> Auto-submit to Google/Bing (requires API keys)</li>"
+                "<li><strong>Firmware Auto-Distribution:</strong> Auto-publish firmware blog posts</li>"
+                "</ul>"
+            ),
+            "classes": ("collapse",),
+        }),
     )
-
+    
     def has_add_permission(self, request):
         return False
+
+
+@admin.register(ContentDistribution)
+class ContentDistributionAdmin(admin.ModelAdmin):
+    """
+    Tracks individual content distribution jobs across platforms.
+    View status, retry failed distributions, and monitor platform delivery.
+    """
+    list_display = ("title", "content_type", "status", "platform_count", "distribution_count", "created_at")
+    list_filter = ("status", "content_type", "created_at")
+    search_fields = ("title", "summary")
+    readonly_fields = ("content_type", "object_id", "distribution_count", "failed_count", "created_at", "updated_at")
+    actions = ["apply_limits_action", "retry_failed"]
+    
+    fieldsets = (
+        ("Content Information", {
+            "fields": ("content_type", "object_id", "title", "summary", "content_url"),
+        }),
+        ("Distribution Settings", {
+            "fields": ("target_channels", "status", "priority", "schedule_at"),
+        }),
+        ("Tracking & Metrics", {
+            "fields": ("distributed_at", "distribution_count", "failed_count", "last_error"),
+        }),
+        ("Metadata", {
+            "fields": ("metadata", "created_by", "created_at", "updated_at"),
+            "classes": ("collapse",),
+        }),
+    )
+    
+    @admin.display(description="Platforms")
+    def platform_count(self, obj):
+        return len(obj.target_channels) if obj.target_channels else 0
+    
+    @admin.action(description="Apply admin-configured limits to selected")
+    def apply_limits_action(self, request, queryset):
+        count = 0
+        for dist in queryset:
+            dist.apply_limits()
+            count += 1
+        self.message_user(request, f"Applied limits to {count} distribution(s)")
+    
+    @admin.action(description="Retry failed distributions")
+    def retry_failed(self, request, queryset):
+        from apps.distribution.tasks import distribute_content
+        count = 0
+        for dist in queryset.filter(status='failed'):
+            dist.status = 'pending'
+            dist.save()
+            try:
+                distribute_content.delay(dist.id)
+                count += 1
+            except Exception:
+                pass
+        self.message_user(request, f"Queued {count} distribution(s) for retry")
 
 
