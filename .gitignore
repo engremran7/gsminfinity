@@ -184,6 +184,7 @@ pip-delete-this-directory.txt
 #######################################
 
 # Test artifacts and temporary files
+test_results*.txt
 test_*.py
 *_test_*.py
 *.test.py
@@ -257,3 +258,33 @@ secrets/
 *.gpg
 id_rsa
 id_rsa.pub
+
+# Storage credentials
+storage_credentials/
+
+#######################################
+# BUILD AND DEVELOPMENT ARTIFACTS
+#######################################
+
+# Build scripts and tools
+build.js
+check_tables.py
+create_admin.py
+
+# Pre-commit config (usually project-specific)
+.pre-commit-config.yaml
+
+# GitHub workflows (may contain sensitive info)
+.github/
+
+# Well-known directory (usually for security/acme challenges)
+.well-known/
+
+# Summernote font files (can be downloaded)
+static/js/summernote/font/
+
+# Service worker
+sw.js
+
+# Application database
+appdb
