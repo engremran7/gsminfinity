@@ -476,6 +476,7 @@ def _validate_webhook_url(url: str) -> bool:
     import re
     from urllib.parse import urlparse
     import ipaddress
+    import socket
     
     try:
         parsed = urlparse(url)
@@ -493,28 +494,48 @@ def _validate_webhook_url(url: str) -> bool:
         # Extract hostname (remove port if present)
         hostname = parsed.netloc.split(':')[0].lower()
         
-        # Block localhost and loopback
-        localhost_patterns = ['localhost', '127.', '0.0.0.0', '::1', '0:0:0:0:0:0:0:1']
-        if any(pattern in hostname for pattern in localhost_patterns):
-            logger.warning(f"Webhook URL rejected: localhost/loopback - {url}")
-            return False
+        # Block localhost and loopback using exact matching and regex
+        localhost_patterns = [
+            r'^localhost$',
+            r'^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$',  # 127.x.x.x
+            r'^0\.0\.0\.0$',
+            r'^::1$',
+            r'^0:0:0:0:0:0:0:1$',
+        ]
+        for pattern in localhost_patterns:
+            if re.match(pattern, hostname, re.IGNORECASE):
+                logger.warning(f"Webhook URL rejected: localhost/loopback - {url}")
+                return False
         
-        # Try to resolve as IP and check if it's private
+        # Try to resolve hostname to IP and check if it's private
         try:
             # If hostname is already an IP
             ip = ipaddress.ip_address(hostname)
-            if ip.is_private or ip.is_loopback or ip.is_link_local:
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
                 logger.warning(f"Webhook URL rejected: private/loopback IP - {url}")
                 return False
         except ValueError:
-            # Not a direct IP, which is fine - it's a domain name
-            pass
+            # Not a direct IP - it's a domain name, try to resolve it
+            try:
+                # Resolve domain to IP and check
+                resolved_ips = socket.getaddrinfo(hostname, None)
+                for _, _, _, _, sockaddr in resolved_ips:
+                    ip_str = sockaddr[0]
+                    ip = ipaddress.ip_address(ip_str)
+                    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                        logger.warning(f"Webhook URL rejected: resolves to private IP {ip_str} - {url}")
+                        return False
+            except (socket.gaierror, ValueError):
+                # Cannot resolve - could be typo or non-existent domain
+                # Allow it through but log warning
+                logger.warning(f"Webhook URL warning: cannot resolve hostname - {url}")
         
         # Block common internal/private domain patterns
-        internal_patterns = ['.local', '.internal', '.lan', '.home', 'intranet']
-        if any(pattern in hostname for pattern in internal_patterns):
-            logger.warning(f"Webhook URL rejected: internal domain - {url}")
-            return False
+        internal_patterns = [r'\.local$', r'\.internal$', r'\.lan$', r'\.home$', r'^intranet\.']
+        for pattern in internal_patterns:
+            if re.search(pattern, hostname, re.IGNORECASE):
+                logger.warning(f"Webhook URL rejected: internal domain - {url}")
+                return False
         
         return True
         

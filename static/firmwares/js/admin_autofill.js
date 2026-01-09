@@ -8,8 +8,9 @@
 /**
  * Auto-fill brand information from API
  * @param {number} brandId - The brand ID to auto-fill
+ * @param {Event} event - The click event (optional, for loading state)
  */
-function autofillBrand(brandId) {
+function autofillBrand(brandId, event) {
     if (!brandId) {
         alert('Invalid brand ID');
         return;
@@ -22,11 +23,15 @@ function autofillBrand(brandId) {
         return;
     }
     
-    // Show loading state
-    const button = event.target;
-    const originalText = button.textContent;
-    button.textContent = '⏳ Loading...';
-    button.disabled = true;
+    // Show loading state if event is provided
+    let button = null;
+    let originalText = '';
+    if (event && event.target) {
+        button = event.target;
+        originalText = button.textContent;
+        button.textContent = '⏳ Loading...';
+        button.disabled = true;
+    }
     
     fetch(`/api/firmwares/brand/${brandId}/autofill/`, {
         method: 'POST',
@@ -37,8 +42,10 @@ function autofillBrand(brandId) {
     })
     .then(response => response.json())
     .then(data => {
-        button.textContent = originalText;
-        button.disabled = false;
+        if (button) {
+            button.textContent = originalText;
+            button.disabled = false;
+        }
         
         if (data.success) {
             alert('Auto-fill completed! Refresh the page to see changes.');
@@ -48,8 +55,10 @@ function autofillBrand(brandId) {
         }
     })
     .catch(error => {
-        button.textContent = originalText;
-        button.disabled = false;
+        if (button) {
+            button.textContent = originalText;
+            button.disabled = false;
+        }
         alert('Error: ' + error.message);
     });
 }

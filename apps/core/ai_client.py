@@ -567,13 +567,13 @@ def _scrub_sensitive_data(data: Any) -> Any:
     """
     import re
     
-    # Patterns to detect and redact
+    # Patterns to detect and redact - now with simpler replacement
     sensitive_patterns = [
-        (re.compile(r'(api[_-]?key|apikey)[\'":\s]*[\'"]([\w\-]+)[\'"]', re.IGNORECASE), 'API_KEY_REDACTED'),
-        (re.compile(r'(secret|password|passwd|pwd)[\'":\s]*[\'"]([\w\-]+)[\'"]', re.IGNORECASE), 'SECRET_REDACTED'),
-        (re.compile(r'(token|bearer)[\'":\s]*[\'"]([\w\-\.]+)[\'"]', re.IGNORECASE), 'TOKEN_REDACTED'),
-        (re.compile(r'(sk-[a-zA-Z0-9]{20,})', re.IGNORECASE), 'SK_KEY_REDACTED'),  # OpenAI style keys
-        (re.compile(r'([0-9a-f]{32,})', re.IGNORECASE), 'HASH_REDACTED'),  # Long hex strings (likely keys)
+        (re.compile(r'(api[_-]?key|apikey)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9\-_]{10,})["\']?', re.IGNORECASE), r'\1": "API_KEY_REDACTED"'),
+        (re.compile(r'(secret|password|passwd|pwd)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9\-_]{10,})["\']?', re.IGNORECASE), r'\1": "SECRET_REDACTED"'),
+        (re.compile(r'(token|bearer)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9\-_\.]{10,})["\']?', re.IGNORECASE), r'\1": "TOKEN_REDACTED"'),
+        (re.compile(r'(sk-[a-zA-Z0-9]{20,})', re.IGNORECASE), 'SK_KEY_REDACTED'),
+        (re.compile(r'\b([0-9a-f]{32,64})\b', re.IGNORECASE), 'HASH_REDACTED'),  # Long hex strings
     ]
     
     if isinstance(data, dict):
@@ -583,7 +583,7 @@ def _scrub_sensitive_data(data: Any) -> Any:
     elif isinstance(data, str):
         scrubbed = data
         for pattern, replacement in sensitive_patterns:
-            scrubbed = pattern.sub(lambda m: m.group(1) + '": "' + replacement + '"' if len(m.groups()) > 1 else replacement, scrubbed)
+            scrubbed = pattern.sub(replacement, scrubbed)
         return scrubbed
     else:
         return data

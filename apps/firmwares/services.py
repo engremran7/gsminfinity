@@ -72,6 +72,8 @@ def handle_upload(*, uploader, uploaded_brand, uploaded_model, uploaded_variant,
         raise ValueError("File is too small to be a valid firmware (minimum 100 bytes)")
     
     # Validate file mime type using python-magic if available
+    # Note: MIME type detection based on file headers can be spoofed.
+    # For critical security, combine with extension validation and deeper content analysis.
     try:
         import magic
         mime = magic.Magic(mime=True)
@@ -99,6 +101,15 @@ def handle_upload(*, uploader, uploaded_brand, uploaded_model, uploaded_variant,
             raise ValueError(
                 f"Invalid file type detected: {detected_mime}. "
                 f"Only compressed firmware files are allowed."
+            )
+            
+        # Additional validation: check file extension as secondary confirmation
+        file_extension = Path(file_obj.name).suffix.lower()
+        allowed_extensions = {'.zip', '.tar', '.gz', '.tgz', '.7z', '.rar', '.bin', '.img'}
+        if file_extension and file_extension not in allowed_extensions:
+            raise ValueError(
+                f"Invalid file extension: {file_extension}. "
+                f"Only firmware archive files are allowed."
             )
     except ImportError:
         # python-magic not installed - skip mime validation but log warning
@@ -268,10 +279,11 @@ def run_ai_analysis(pf: PendingFirmware) -> None:
                 pf.save(update_fields=["metadata"])
                 return
         
-        # Calculate exponential backoff with jitter
+        # Calculate exponential backoff with proper random jitter
         if attempt < max_retries:
+            import random
             delay = base_delay * (2 ** (attempt - 1))
-            jitter = delay * 0.1 * (0.5 + time.time() % 1)  # 10% jitter
+            jitter = delay * 0.1 * random.random()  # Proper random jitter (0-10% of delay)
             sleep_time = min(delay + jitter, 30.0)  # Cap at 30 seconds
             logger.info(f"Retrying AI analysis after {sleep_time:.2f}s (attempt {attempt}/{max_retries})")
             time.sleep(sleep_time)
