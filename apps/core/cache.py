@@ -109,8 +109,8 @@ class DistributedCacheManager:
             # Remove legacy global key
             try:
                 cache.delete("active_site_settings")
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Failed to delete legacy site settings cache: %s", exc)
 
             # Remove new hashed-domain keys (pattern)
             DistributedCacheManager.safe_delete_pattern("active_site_settings_*")
@@ -119,18 +119,18 @@ class DistributedCacheManager:
             if site_id is not None:
                 try:
                     cache.delete(f"site_settings_{site_id}")
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Failed to delete site settings cache for site_id=%s: %s", site_id, exc)
 
             # Defensive enumeration (non-fatal)
             try:
                 for s in Site.objects.only("id"):
                     try:
                         cache.delete(f"site_settings_{s.id}")
-                    except Exception:
-                        pass
-            except Exception:
-                pass
+                    except Exception as exc:
+                        logger.debug("Failed to delete site settings cache for site %s: %s", s.id, exc)
+            except Exception as exc:
+                logger.debug("Failed to enumerate sites for cache invalidation: %s", exc)
 
             logger.info("Site settings cache invalidated (site_id=%s)", site_id)
 
@@ -152,14 +152,14 @@ class DistributedCacheManager:
             # exact delete
             try:
                 cache.delete(digest_key)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Failed to delete consent policy cache key %s: %s", digest_key, exc)
 
             # legacy
             try:
                 cache.delete("active_consent_policy")
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Failed to delete legacy consent policy cache: %s", exc)
 
             # pattern cleanup
             DistributedCacheManager.safe_delete_pattern("active_consent_policy_*")

@@ -184,22 +184,22 @@ def detect_user_region(request: HttpRequest) -> str:
             pref = getattr(user, "preferred_region", None)
             if pref:
                 return str(pref)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to detect user preferred region: %s", exc)
 
     try:
         geo_region = _detect_region_via_geoip(request)
         if geo_region:
             return geo_region
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to detect region via GeoIP: %s", exc)
 
     try:
         lang_region = _detect_region_via_language(request)
         if lang_region:
             return lang_region
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to detect region via language: %s", exc)
 
     return "global"
 
