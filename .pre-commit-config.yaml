@@ -1,0 +1,84 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # Ruff - Fast Python linter and formatter (replaces black, isort, flake8)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.6
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi, jupyter]
+      # Run the formatter
+      - id: ruff-format
+        types_or: [python, pyi, jupyter]
+
+  # Mypy - Static type checker for Python
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - django-stubs>=5.1.1
+          - types-requests
+        args: [--ignore-missing-imports, --no-strict-optional]
+        exclude: |
+          (?x)^(
+              migrations/.*|
+              tests/.*|
+              conftest\.py
+          )$
+
+  # General pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: |
+          (?x)^(
+              \.min\.(js|css)$|
+              static/.*\.(min\.js|min\.css)$
+          )
+      - id: end-of-file-fixer
+        exclude: |
+          (?x)^(
+              \.min\.(js|css)$|
+              static/.*\.(min\.js|min\.css)$
+          )
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Django-specific checks
+  - repo: local
+    hooks:
+      - id: django-check
+        name: django-check
+        entry: python manage.py check
+        language: system
+        pass_filenames: false
+        files: \.(py)$
+
+      - id: django-migrations
+        name: check-django-migrations
+        entry: python manage.py makemigrations --check --dry-run --no-input
+        language: system
+        pass_filenames: false
+        files: \.(py)$
+
+# Default settings
+default_language_version:
+  python: python3.12
+
+# Minimum pre-commit version
+minimum_pre_commit_version: '3.0.0'
