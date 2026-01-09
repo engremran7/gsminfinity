@@ -52,6 +52,10 @@ class ConsentDecision(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+    def __str__(self):
+        user_info = self.user.username if self.user else f"Session {self.session_id[:8]}"
+        return f"Consent by {user_info} - {self.created_at.strftime('%Y-%m-%d')}"
+
     def set_hashes(self, ip: str = "", ua: str = "") -> None:
         from apps.consent.utils import hash_ip, hash_ua
 
@@ -71,6 +75,9 @@ class ConsentEvent(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+    def __str__(self):
+        return f"{self.event_type.title()} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
     def set_hashes(self, ip: str = "", ua: str = "") -> None:
         from apps.consent.utils import hash_ip, hash_ua
 
@@ -88,6 +95,9 @@ class ConsentRecord(ConsentDecision):
         verbose_name = "Consent record"
         verbose_name_plural = "Consent records"
 
+    def __str__(self):
+        return super().__str__()
+
 
 class ConsentLog(ConsentEvent):
     """
@@ -98,6 +108,9 @@ class ConsentLog(ConsentEvent):
         proxy = True
         verbose_name = "Consent log"
         verbose_name_plural = "Consent logs"
+
+    def __str__(self):
+        return super().__str__()
 
 
 class ConsentCategory(models.Model):
@@ -114,5 +127,8 @@ class ConsentCategory(models.Model):
         managed = False
         db_table = "consent_consentcategory"
         ordering = ["index", "slug"]
+
+    def __str__(self):
+        return self.name
 
 

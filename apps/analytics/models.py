@@ -32,6 +32,9 @@ class PageView(models.Model):
         ]
         ordering = ['-created_at']
 
+    def __str__(self):
+        return f"{self.path} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
 
 class Event(models.Model):
     """Track custom events for analytics"""
@@ -81,6 +84,9 @@ class Event(models.Model):
         ]
         ordering = ['-created_at']
 
+    def __str__(self):
+        return f"{self.event_type}: {self.event_name}"
+
 
 class DailyMetrics(models.Model):
     """Aggregated daily metrics"""
@@ -118,6 +124,9 @@ class DailyMetrics(models.Model):
         ordering = ['-date']
         verbose_name_plural = 'Daily Metrics'
 
+    def __str__(self):
+        return f"Metrics for {self.date}"
+
 
 class RealtimeMetrics(models.Model):
     """Real-time metrics snapshot (updated every minute)"""
@@ -144,6 +153,9 @@ class RealtimeMetrics(models.Model):
         db_table = 'analytics_realtime_metrics'
         ordering = ['-timestamp']
         verbose_name_plural = 'Realtime Metrics'
+
+    def __str__(self):
+        return f"Realtime @ {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
 
 
 class UserAnalytics(models.Model):
@@ -177,4 +189,7 @@ class UserAnalytics(models.Model):
     class Meta:
         db_table = 'analytics_user_analytics'
         verbose_name_plural = 'User Analytics'
+
+    def __str__(self):
+        return f"Analytics for {self.user.username}"
 
