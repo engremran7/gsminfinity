@@ -252,7 +252,7 @@ def post_list(request: HttpRequest) -> HttpResponse:
         sort = "recent"
         posts = posts.order_by("-published_at")
 
-    posts = posts.prefetch_related("tags").distinct()
+    posts = posts.prefetch_related("tags", "tags__translations").distinct()
 
     # Status filter (only staff/author can view non-published states)
     if status_filter in PostStatus.values:
@@ -280,17 +280,21 @@ def post_list(request: HttpRequest) -> HttpResponse:
 
     trending_posts = list(
         Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
-        .select_related("author")
+        .select_related("author", "category")
+        .prefetch_related("tags", "tags__translations")
         .order_by("-featured", "-published_at")[:5]
     )
     if not trending_posts:
         trending_posts = list(
             Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
-            .select_related("author")
+            .select_related("author", "category")
+            .prefetch_related("tags", "tags__translations")
             .order_by("-published_at")[:5]
         )
     latest_posts = (
         Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
+        .select_related("author", "category")
+        .prefetch_related("tags", "tags__translations")
         .order_by("-published_at")[:5]
     )
     # Get featured post (most recent featured or latest published)
@@ -298,13 +302,13 @@ def post_list(request: HttpRequest) -> HttpResponse:
         status=PostStatus.PUBLISHED, 
         publish_at__lte=now_ts,
         featured=True
-    ).order_by('-published_at').first()
+    ).select_related("author", "category").prefetch_related("tags", "tags__translations").order_by('-published_at').first()
     
     if not featured_post:
         featured_post = Post.objects.filter(
             status=PostStatus.PUBLISHED,
             publish_at__lte=now_ts
-        ).order_by('-published_at').first()
+        ).select_related("author", "category").prefetch_related("tags", "tags__translations").order_by('-published_at').first()
     
     # Annotate categories with post count
     from django.db.models import Count
