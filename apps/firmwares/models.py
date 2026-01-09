@@ -198,9 +198,9 @@ class PendingFirmware(Timestamped):
 
     def __str__(self):
         # Use AI-detected or uploaded fields to create meaningful representation
-        brand = self.ai_brand or (self.uploaded_brand.name if self.uploaded_brand else "Unknown Brand")
-        model = self.ai_model or (self.uploaded_model.name if self.uploaded_model else "Unknown Model")
-        variant = self.ai_variant or (self.uploaded_variant.name if self.uploaded_variant else "")
+        brand = self.ai_brand or (getattr(self.uploaded_brand, 'name', 'Unknown Brand') if self.uploaded_brand else "Unknown Brand")
+        model = self.ai_model or (getattr(self.uploaded_model, 'name', 'Unknown Model') if self.uploaded_model else "Unknown Model")
+        variant = self.ai_variant or (getattr(self.uploaded_variant, 'name', '') if self.uploaded_variant else "")
         
         if variant:
             return f"{brand} {model} ({variant})"
