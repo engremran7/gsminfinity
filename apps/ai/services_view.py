@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 
-from apps.ai.models import Workflow, PipelineRun, ModelEndpoint
+from apps.ai.models import ModelEndpoint, PipelineRun, Workflow
 
 
 @staff_member_required(login_url="admin_suite:admin_suite_login")

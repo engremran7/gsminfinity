@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from . import LoggingConnector
@@ -30,5 +29,3 @@ class RedditConnector(LoggingConnector):
 
 class TikTokConnector(LoggingConnector):
     channel = "tiktok"
-
-

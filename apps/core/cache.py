@@ -1,4 +1,3 @@
-
 """
 apps.core.cache
 
@@ -16,7 +15,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Any, Callable, Optional, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 from django.contrib.sites.models import Site
 from django.core.cache import cache
@@ -33,8 +33,8 @@ _T = TypeVar("_T")
 def _namespaced_key(
     key: str,
     *,
-    version: Optional[int] = None,
-    namespace: Optional[str] = None,
+    version: int | None = None,
+    namespace: str | None = None,
 ) -> str:
     """
     Portable canonical key format.
@@ -97,7 +97,7 @@ class DistributedCacheManager:
     # SITE SETTINGS INVALIDATION
     # ------------------------------------------------------------------
     @staticmethod
-    def invalidate_site_settings(site_id: Optional[int] = None) -> None:
+    def invalidate_site_settings(site_id: int | None = None) -> None:
         """
         Invalidate all cache entries for site settings.
 
@@ -141,7 +141,7 @@ class DistributedCacheManager:
     # CONSENT POLICY INVALIDATION
     # ------------------------------------------------------------------
     @staticmethod
-    def invalidate_consent_policy(site_identifier: Optional[str] = None) -> None:
+    def invalidate_consent_policy(site_identifier: str | None = None) -> None:
         """
         Invalidate consent policy caches with full pattern-safe cleanup.
         """
@@ -178,9 +178,9 @@ class DistributedCacheManager:
         fallback_func: Callable[[], _T],
         *,
         timeout: int = 300,
-        version: Optional[int] = None,
-        namespace: Optional[str] = None,
-    ) -> Optional[_T]:
+        version: int | None = None,
+        namespace: str | None = None,
+    ) -> _T | None:
         """
         Atomic get-or-compute with digest-safe keys.
 
@@ -237,4 +237,3 @@ class DistributedCacheManager:
 
 # Legacy alias for compatibility
 CacheManager = DistributedCacheManager
-

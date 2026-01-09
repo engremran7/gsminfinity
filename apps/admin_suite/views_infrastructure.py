@@ -5,18 +5,17 @@ Enterprise-grade admin views for:
 - Storage (Shared Drives, Service Accounts, File Management)
 - Firmwares (Brands, Models, Variants, ROMs)
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse
 from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.http import require_POST
 
-from .views_shared import _render_admin, _make_breadcrumb, _ADMIN_DISABLED
+from .views_shared import _ADMIN_DISABLED, _make_breadcrumb, _render_admin
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +23,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # STORAGE MANAGEMENT
 # =============================================================================
+
 
 @csrf_protect
 @staff_member_required
@@ -50,7 +50,8 @@ def admin_suite_storage(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.storage.models import SharedDriveAccount, ServiceAccount as SA
+            from apps.storage.models import ServiceAccount as SA
+            from apps.storage.models import SharedDriveAccount
 
             if action == "toggle_drive":
                 drive_id = request.POST.get("drive_id")
@@ -83,40 +84,77 @@ def admin_suite_storage(request: HttpRequest) -> HttpResponse:
 
     # Load data
     try:
-        from apps.storage.models import SharedDriveAccount, ServiceAccount as SA, CloudStorageProvider
+        from apps.storage.models import CloudStorageProvider, SharedDriveAccount
+        from apps.storage.models import ServiceAccount as SA
 
         # Cloud Storage Providers
-        all_providers = CloudStorageProvider.objects.all().order_by("-priority", "-is_active", "name")
+        all_providers = CloudStorageProvider.objects.all().order_by(
+            "-priority", "-is_active", "name"
+        )
         stats["total_providers"] = all_providers.count()
-        stats["active_providers"] = all_providers.filter(is_active=True, status="active").count()
-        
-        providers = list(all_providers[:20].values(
-            "id", "name", "provider", "auth_type", "account_email", "status",
-            "is_active", "total_space_bytes", "used_space_bytes", "last_sync_at"
-        ))
-        
+        stats["active_providers"] = all_providers.filter(
+            is_active=True, status="active"
+        ).count()
+
+        providers = list(
+            all_providers[:20].values(
+                "id",
+                "name",
+                "provider",
+                "auth_type",
+                "account_email",
+                "status",
+                "is_active",
+                "total_space_bytes",
+                "used_space_bytes",
+                "last_sync_at",
+            )
+        )
+
         # Shared Drives
-        all_drives = SharedDriveAccount.objects.all().order_by("-priority", "-is_active", "name")
+        all_drives = SharedDriveAccount.objects.all().order_by(
+            "-priority", "-is_active", "name"
+        )
         stats["total_drives"] = all_drives.count()
         stats["active_drives"] = all_drives.filter(is_active=True).count()
         stats["healthy_drives"] = all_drives.filter(health_status="healthy").count()
         stats["warning_drives"] = all_drives.filter(health_status="warning").count()
-        stats["critical_drives"] = all_drives.filter(health_status__in=["critical", "full"]).count()
-        
+        stats["critical_drives"] = all_drives.filter(
+            health_status__in=["critical", "full"]
+        ).count()
+
         for d in all_drives:
             stats["total_files"] += d.current_file_count
             stats["total_size_gb"] += d.total_size_gb
 
-        drives = list(all_drives[:50].values(
-            "id", "name", "drive_id", "owner_email", "max_files", "current_file_count",
-            "total_size_gb", "is_active", "health_status", "priority", "last_health_check",
-            "provider__name"
-        ))
+        drives = list(
+            all_drives[:50].values(
+                "id",
+                "name",
+                "drive_id",
+                "owner_email",
+                "max_files",
+                "current_file_count",
+                "total_size_gb",
+                "is_active",
+                "health_status",
+                "priority",
+                "last_health_check",
+                "provider__name",
+            )
+        )
 
         stats["service_accounts"] = SA.objects.count()
-        service_accounts = list(SA.objects.all()[:50].values(
-            "id", "name", "email", "is_active", "used_quota_today_gb", "daily_quota_gb"
-        ))
+        service_accounts = list(
+            SA.objects.all()[:50].values(
+                "id",
+                "name",
+                "email",
+                "is_active",
+                "used_quota_today_gb",
+                "daily_quota_gb",
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load storage data: %s", exc)
         providers = []
@@ -167,7 +205,7 @@ def admin_suite_storage_files(request: HttpRequest) -> HttpResponse:
                 if sf:
                     sf.is_deleted = True
                     sf.save(update_fields=["is_deleted"])
-                    message = f"File marked as deleted."
+                    message = "File marked as deleted."
         except Exception as exc:
             logger.warning("Storage file action failed: %s", exc)
             message = f"Action failed: {exc}"
@@ -178,12 +216,20 @@ def admin_suite_storage_files(request: HttpRequest) -> HttpResponse:
         qs = StoredFile.objects.filter(is_deleted=False).select_related("drive")
         if query:
             qs = qs.filter(original_filename__icontains=query)
-        
+
         total_count = qs.count()
-        files = list(qs.order_by("-created_at")[offset:offset + page_size].values(
-            "id", "original_filename", "file_size", "mime_type", "checksum_sha256",
-            "drive__name", "created_at", "download_count"
-        ))
+        files = list(
+            qs.order_by("-created_at")[offset : offset + page_size].values(
+                "id",
+                "original_filename",
+                "file_size",
+                "mime_type",
+                "checksum_sha256",
+                "drive__name",
+                "created_at",
+                "download_count",
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load files: %s", exc)
 
@@ -230,7 +276,7 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
                 name = (request.POST.get("name") or "").strip()[:128]
                 provider_type = request.POST.get("provider_type")
                 account_email = (request.POST.get("account_email") or "").strip()[:255]
-                
+
                 if name and provider_type:
                     provider = CloudStorageProvider.objects.create(
                         name=name,
@@ -239,26 +285,33 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
                         status="pending",
                         is_active=True,
                     )
-                    message = f"Provider '{name}' created. Configure credentials to activate."
+                    message = (
+                        f"Provider '{name}' created. Configure credentials to activate."
+                    )
 
             elif action == "configure_google_service_account":
                 provider_id = request.POST.get("provider_id")
                 sa_json = request.POST.get("service_account_json", "").strip()
-                
+
                 provider = CloudStorageProvider.objects.filter(pk=provider_id).first()
                 if provider and sa_json:
                     try:
                         import json
+
                         sa_data = json.loads(sa_json)
                         result = provisioner.provision_google_service_account(
                             provider=provider,
                             service_account_info=sa_data,
                         )
                         if result.get("success"):
-                            provider.service_account_json_path = result.get("credentials_path", "")
+                            provider.service_account_json_path = result.get(
+                                "credentials_path", ""
+                            )
                             provider.status = "active"
                             provider.save()
-                            message = f"Service account configured: {result.get('email')}"
+                            message = (
+                                f"Service account configured: {result.get('email')}"
+                            )
                         else:
                             message = f"Failed: {result.get('error')}"
                     except json.JSONDecodeError:
@@ -267,11 +320,12 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
             elif action == "bulk_upload_service_accounts":
                 provider_id = request.POST.get("provider_id")
                 sa_json_array = request.POST.get("service_accounts_json", "").strip()
-                
+
                 provider = CloudStorageProvider.objects.filter(pk=provider_id).first()
                 if provider and sa_json_array:
                     try:
                         import json
+
                         sa_list = json.loads(sa_json_array)
                         if isinstance(sa_list, list):
                             result = provisioner.bulk_provision_google_service_accounts(
@@ -307,7 +361,9 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
                 if provider:
                     provider.is_active = not provider.is_active
                     provider.save(update_fields=["is_active"])
-                    message = f"Provider {'enabled' if provider.is_active else 'disabled'}."
+                    message = (
+                        f"Provider {'enabled' if provider.is_active else 'disabled'}."
+                    )
 
             elif action == "delete_provider":
                 provider_id = request.POST.get("provider_id")
@@ -324,7 +380,7 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
                 bucket = request.POST.get("bucket_name", "").strip()
                 region = request.POST.get("region", "us-east-1").strip()
                 endpoint = request.POST.get("endpoint_url", "").strip()
-                
+
                 provider = CloudStorageProvider.objects.filter(pk=provider_id).first()
                 if provider and access_key and secret_key and bucket:
                     result = provisioner.provision_s3_compatible(
@@ -344,7 +400,7 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
                 provider_id = request.POST.get("provider_id")
                 email = request.POST.get("mega_email", "").strip()
                 password = request.POST.get("mega_password", "").strip()
-                
+
                 provider = CloudStorageProvider.objects.filter(pk=provider_id).first()
                 if provider and email and password:
                     result = provisioner.provision_mega(
@@ -362,7 +418,7 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
                 client_id = request.POST.get("client_id", "").strip()
                 client_secret = request.POST.get("client_secret", "").strip()
                 tenant_id = request.POST.get("tenant_id", "common").strip()
-                
+
                 provider = CloudStorageProvider.objects.filter(pk=provider_id).first()
                 if provider and client_id and client_secret:
                     result = provisioner.provision_onedrive(
@@ -381,7 +437,7 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
                 app_key = request.POST.get("app_key", "").strip()
                 app_secret = request.POST.get("app_secret", "").strip()
                 access_token = request.POST.get("access_token", "").strip()
-                
+
                 provider = CloudStorageProvider.objects.filter(pk=provider_id).first()
                 if provider and app_key and app_secret:
                     result = provisioner.provision_dropbox(
@@ -403,12 +459,27 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
     try:
         from apps.storage.models import CloudStorageProvider
 
-        providers = list(CloudStorageProvider.objects.all().order_by("-is_active", "-priority", "name").values(
-            "id", "name", "provider", "auth_type", "account_email", "account_id",
-            "status", "is_active", "total_space_bytes", "used_space_bytes",
-            "daily_transfer_limit_gb", "used_transfer_today_gb",
-            "last_sync_at", "last_error", "created_at"
-        ))
+        providers = list(
+            CloudStorageProvider.objects.all()
+            .order_by("-is_active", "-priority", "name")
+            .values(
+                "id",
+                "name",
+                "provider",
+                "auth_type",
+                "account_email",
+                "account_id",
+                "status",
+                "is_active",
+                "total_space_bytes",
+                "used_space_bytes",
+                "daily_transfer_limit_gb",
+                "used_transfer_today_gb",
+                "last_sync_at",
+                "last_error",
+                "created_at",
+            )
+        )
         provider_choices = CloudStorageProvider.PROVIDER_CHOICES
         auth_type_choices = CloudStorageProvider.AUTH_TYPE_CHOICES
     except Exception as exc:
@@ -435,7 +506,9 @@ def admin_suite_storage_providers(request: HttpRequest) -> HttpResponse:
 
 @csrf_protect
 @staff_member_required
-def admin_suite_storage_provider_detail(request: HttpRequest, provider_id: str) -> HttpResponse:
+def admin_suite_storage_provider_detail(
+    request: HttpRequest, provider_id: str
+) -> HttpResponse:
     """Detailed view for a single cloud storage provider."""
     if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
         raise _ADMIN_DISABLED
@@ -446,7 +519,7 @@ def admin_suite_storage_provider_detail(request: HttpRequest, provider_id: str) 
     service_accounts = []
 
     try:
-        from apps.storage.models import CloudStorageProvider, SharedDriveAccount, ServiceAccount as SA
+        from apps.storage.models import CloudStorageProvider
 
         provider = CloudStorageProvider.objects.filter(pk=provider_id).first()
         if not provider:
@@ -465,17 +538,34 @@ def admin_suite_storage_provider_detail(request: HttpRequest, provider_id: str) 
             )
 
         # Load related data
-        shared_drives = list(provider.shared_drives.all().values(
-            "id", "name", "drive_id", "owner_email", "max_files",
-            "current_file_count", "total_size_gb", "is_active", "health_status"
-        ))
-        
+        shared_drives = list(
+            provider.shared_drives.all().values(
+                "id",
+                "name",
+                "drive_id",
+                "owner_email",
+                "max_files",
+                "current_file_count",
+                "total_size_gb",
+                "is_active",
+                "health_status",
+            )
+        )
+
         # Get service accounts from shared drives
         for drive in provider.shared_drives.all():
-            sa_list = list(drive.service_accounts.all()[:20].values(
-                "id", "name", "email", "is_active", "is_banned",
-                "used_quota_today_gb", "daily_quota_gb", "last_used_at"
-            ))
+            sa_list = list(
+                drive.service_accounts.all()[:20].values(
+                    "id",
+                    "name",
+                    "email",
+                    "is_active",
+                    "is_banned",
+                    "used_quota_today_gb",
+                    "daily_quota_gb",
+                    "last_used_at",
+                )
+            )
             service_accounts.extend(sa_list)
 
     except Exception as exc:
@@ -506,6 +596,7 @@ def admin_suite_storage_provider_detail(request: HttpRequest, provider_id: str) 
 # FIRMWARES MANAGEMENT
 # =============================================================================
 
+
 @csrf_protect
 @staff_member_required
 def admin_suite_firmwares(request: HttpRequest) -> HttpResponse:
@@ -531,13 +622,22 @@ def admin_suite_firmwares(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.firmwares.models import Brand, Model, Variant, BrandCreationRequest, ModelCreationRequest
+            from apps.firmwares.models import (
+                Brand,
+                BrandCreationRequest,
+                Model,
+                ModelCreationRequest,
+                Variant,
+            )
 
             if action == "approve_brand":
                 req_id = request.POST.get("request_id")
-                bcr = BrandCreationRequest.objects.filter(pk=req_id, status="pending").first()
+                bcr = BrandCreationRequest.objects.filter(
+                    pk=req_id, status="pending"
+                ).first()
                 if bcr:
                     from django.utils.text import slugify
+
                     Brand.objects.create(name=bcr.name, slug=slugify(bcr.name))
                     bcr.status = "approved"
                     bcr.reviewed_by = request.user
@@ -545,17 +645,22 @@ def admin_suite_firmwares(request: HttpRequest) -> HttpResponse:
                     message = f"Brand '{bcr.name}' approved and created."
             elif action == "reject_brand":
                 req_id = request.POST.get("request_id")
-                bcr = BrandCreationRequest.objects.filter(pk=req_id, status="pending").first()
+                bcr = BrandCreationRequest.objects.filter(
+                    pk=req_id, status="pending"
+                ).first()
                 if bcr:
                     bcr.status = "rejected"
                     bcr.reviewed_by = request.user
                     bcr.notes = request.POST.get("notes", "")
-                    bcr.save(update_fields=["status", "reviewed_by", "reviewed_at", "notes"])
-                    message = f"Brand request rejected."
+                    bcr.save(
+                        update_fields=["status", "reviewed_by", "reviewed_at", "notes"]
+                    )
+                    message = "Brand request rejected."
             elif action == "create_brand":
                 name = (request.POST.get("name") or "").strip()[:128]
                 if name:
                     from django.utils.text import slugify
+
                     Brand.objects.create(name=name, slug=slugify(name))
                     message = f"Brand '{name}' created."
             elif action == "create_model":
@@ -563,6 +668,7 @@ def admin_suite_firmwares(request: HttpRequest) -> HttpResponse:
                 name = (request.POST.get("name") or "").strip()[:128]
                 if brand_id and name:
                     from django.utils.text import slugify
+
                     brand = Brand.objects.filter(pk=brand_id).first()
                     if brand:
                         Model.objects.create(brand=brand, name=name, slug=slugify(name))
@@ -573,37 +679,59 @@ def admin_suite_firmwares(request: HttpRequest) -> HttpResponse:
 
     # Load data
     try:
-        from apps.firmwares.models import Brand, Model, Variant, BrandCreationRequest, ModelCreationRequest, VariantCreationRequest
+        from apps.firmwares.models import (
+            Brand,
+            BrandCreationRequest,
+            Model,
+            ModelCreationRequest,
+            Variant,
+            VariantCreationRequest,
+        )
 
         stats["total_brands"] = Brand.objects.count()
         stats["total_models"] = Model.objects.count()
         stats["total_variants"] = Variant.objects.count()
-        stats["pending_brand_requests"] = BrandCreationRequest.objects.filter(status="pending").count()
-        stats["pending_model_requests"] = ModelCreationRequest.objects.filter(status="pending").count()
-        stats["pending_variant_requests"] = VariantCreationRequest.objects.filter(status="pending").count()
+        stats["pending_brand_requests"] = BrandCreationRequest.objects.filter(
+            status="pending"
+        ).count()
+        stats["pending_model_requests"] = ModelCreationRequest.objects.filter(
+            status="pending"
+        ).count()
+        stats["pending_variant_requests"] = VariantCreationRequest.objects.filter(
+            status="pending"
+        ).count()
 
         # Try to get ROM count
         try:
             from apps.firmwares.models import StockROM
+
             stats["total_roms"] = StockROM.objects.count()
         except Exception:
             pass
 
-        recent_brands = list(Brand.objects.order_by("-created_at")[:10].values("id", "name", "slug", "created_at"))
-        recent_models = list(Model.objects.select_related("brand").order_by("-created_at")[:10].values(
-            "id", "name", "slug", "brand__name", "created_at"
-        ))
+        recent_brands = list(
+            Brand.objects.order_by("-created_at")[:10].values(
+                "id", "name", "slug", "created_at"
+            )
+        )
+        recent_models = list(
+            Model.objects.select_related("brand")
+            .order_by("-created_at")[:10]
+            .values("id", "name", "slug", "brand__name", "created_at")
+        )
 
         # Pending requests
-        pending_brand_reqs = list(BrandCreationRequest.objects.filter(status="pending").order_by("-created_at")[:10].values(
-            "id", "name", "created_at", "requested_by__email"
-        ))
-        pending_model_reqs = list(ModelCreationRequest.objects.filter(status="pending").order_by("-created_at")[:10].values(
-            "id", "name", "brand__name", "created_at", "requested_by__email"
-        ))
-        pending_requests = [
-            {"type": "brand", **r} for r in pending_brand_reqs
-        ] + [
+        pending_brand_reqs = list(
+            BrandCreationRequest.objects.filter(status="pending")
+            .order_by("-created_at")[:10]
+            .values("id", "name", "created_at", "requested_by__email")
+        )
+        pending_model_reqs = list(
+            ModelCreationRequest.objects.filter(status="pending")
+            .order_by("-created_at")[:10]
+            .values("id", "name", "brand__name", "created_at", "requested_by__email")
+        )
+        pending_requests = [{"type": "brand", **r} for r in pending_brand_reqs] + [
             {"type": "model", **r} for r in pending_model_reqs
         ]
     except Exception as exc:
@@ -647,8 +775,9 @@ def admin_suite_firmwares_brands(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.firmwares.models import Brand
             from django.utils.text import slugify
+
+            from apps.firmwares.models import Brand
 
             if action == "create":
                 name = (request.POST.get("name") or "").strip()[:128]
@@ -663,24 +792,29 @@ def admin_suite_firmwares_brands(request: HttpRequest) -> HttpResponse:
                 brand_id = request.POST.get("brand_id")
                 name = (request.POST.get("name") or "").strip()[:128]
                 if brand_id and name:
-                    Brand.objects.filter(pk=brand_id).update(name=name, slug=slugify(name))
+                    Brand.objects.filter(pk=brand_id).update(
+                        name=name, slug=slugify(name)
+                    )
                     message = "Brand updated."
         except Exception as exc:
             logger.warning("Brand action failed: %s", exc)
             message = f"Action failed: {exc}"
 
     try:
-        from apps.firmwares.models import Brand
         from django.db.models import Count
+
+        from apps.firmwares.models import Brand
 
         qs = Brand.objects.annotate(model_count=Count("models"))
         if query:
             qs = qs.filter(name__icontains=query)
-        
+
         total_count = qs.count()
-        brands = list(qs.order_by("name")[offset:offset + page_size].values(
-            "id", "name", "slug", "model_count", "created_at"
-        ))
+        brands = list(
+            qs.order_by("name")[offset : offset + page_size].values(
+                "id", "name", "slug", "model_count", "created_at"
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load brands: %s", exc)
 
@@ -726,8 +860,9 @@ def admin_suite_firmwares_models(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.firmwares.models import Model, Brand
             from django.utils.text import slugify
+
+            from apps.firmwares.models import Brand, Model
 
             if action == "create":
                 brand_id = request.POST.get("brand_id")
@@ -745,21 +880,32 @@ def admin_suite_firmwares_models(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.firmwares.models import Model, Brand
         from django.db.models import Count
 
+        from apps.firmwares.models import Brand, Model
+
         brands = list(Brand.objects.order_by("name").values("id", "name"))
-        
-        qs = Model.objects.select_related("brand").annotate(variant_count=Count("variants"))
+
+        qs = Model.objects.select_related("brand").annotate(
+            variant_count=Count("variants")
+        )
         if query:
             qs = qs.filter(name__icontains=query)
         if brand_filter:
             qs = qs.filter(brand_id=brand_filter)
-        
+
         total_count = qs.count()
-        models_list = list(qs.order_by("brand__name", "name")[offset:offset + page_size].values(
-            "id", "name", "slug", "brand__id", "brand__name", "variant_count", "created_at"
-        ))
+        models_list = list(
+            qs.order_by("brand__name", "name")[offset : offset + page_size].values(
+                "id",
+                "name",
+                "slug",
+                "brand__id",
+                "brand__name",
+                "variant_count",
+                "created_at",
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load models: %s", exc)
 
@@ -789,6 +935,7 @@ def admin_suite_firmwares_models(request: HttpRequest) -> HttpResponse:
 # =============================================================================
 # ENHANCED ADS MANAGEMENT
 # =============================================================================
+
 
 @csrf_protect
 @staff_member_required
@@ -823,7 +970,9 @@ def admin_suite_ads_campaigns(request: HttpRequest) -> HttpResponse:
                 if camp:
                     camp.is_active = not camp.is_active
                     camp.save(update_fields=["is_active"])
-                    message = f"Campaign {'activated' if camp.is_active else 'deactivated'}."
+                    message = (
+                        f"Campaign {'activated' if camp.is_active else 'deactivated'}."
+                    )
             elif action == "delete":
                 campaign_id = request.POST.get("campaign_id")
                 Campaign.objects.filter(pk=campaign_id).delete()
@@ -838,11 +987,20 @@ def admin_suite_ads_campaigns(request: HttpRequest) -> HttpResponse:
         qs = Campaign.objects.all()
         if query:
             qs = qs.filter(name__icontains=query)
-        
-        total_count = qs.count()
-        campaigns = list(qs.order_by("-created_at")[offset:offset + page_size].values(
-            "id", "name", "is_active", "budget", "spent", "start_date", "end_date", "created_at"
-        ))
+
+        qs.count()
+        campaigns = list(
+            qs.order_by("-created_at")[offset : offset + page_size].values(
+                "id",
+                "name",
+                "is_active",
+                "budget",
+                "spent",
+                "start_date",
+                "end_date",
+                "created_at",
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load campaigns: %s", exc)
 
@@ -900,7 +1058,9 @@ def admin_suite_ads_placements(request: HttpRequest) -> HttpResponse:
                 if pl:
                     pl.is_active = not pl.is_active
                     pl.save(update_fields=["is_active"])
-                    message = f"Placement {'activated' if pl.is_active else 'deactivated'}."
+                    message = (
+                        f"Placement {'activated' if pl.is_active else 'deactivated'}."
+                    )
             elif action == "delete":
                 placement_id = request.POST.get("placement_id")
                 AdPlacement.objects.filter(pk=placement_id).update(is_deleted=True)
@@ -912,10 +1072,21 @@ def admin_suite_ads_placements(request: HttpRequest) -> HttpResponse:
     try:
         from apps.ads.models import AdPlacement
 
-        placements = list(AdPlacement.objects.filter(is_deleted=False).order_by("name").values(
-            "id", "name", "slug", "page_context", "is_active", "is_enabled",
-            "allowed_types", "allowed_sizes", "created_at"
-        ))
+        placements = list(
+            AdPlacement.objects.filter(is_deleted=False)
+            .order_by("name")
+            .values(
+                "id",
+                "name",
+                "slug",
+                "page_context",
+                "is_active",
+                "is_enabled",
+                "allowed_types",
+                "allowed_sizes",
+                "created_at",
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load placements: %s", exc)
 
@@ -957,7 +1128,9 @@ def admin_suite_ads_creatives(request: HttpRequest) -> HttpResponse:
                 if cr:
                     cr.is_active = not cr.is_active
                     cr.save(update_fields=["is_active"])
-                    message = f"Creative {'activated' if cr.is_active else 'deactivated'}."
+                    message = (
+                        f"Creative {'activated' if cr.is_active else 'deactivated'}."
+                    )
         except Exception as exc:
             logger.warning("Creative action failed: %s", exc)
             message = f"Action failed: {exc}"
@@ -965,9 +1138,13 @@ def admin_suite_ads_creatives(request: HttpRequest) -> HttpResponse:
     try:
         from apps.ads.models import AdCreative
 
-        creatives = list(AdCreative.objects.filter(is_deleted=False).order_by("-created_at")[:100].values(
-            "id", "name", "creative_type", "is_active", "is_enabled", "created_at"
-        ))
+        creatives = list(
+            AdCreative.objects.filter(is_deleted=False)
+            .order_by("-created_at")[:100]
+            .values(
+                "id", "name", "creative_type", "is_active", "is_enabled", "created_at"
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load creatives: %s", exc)
 
@@ -1008,23 +1185,36 @@ def admin_suite_ads_analytics(request: HttpRequest) -> HttpResponse:
     recent_events = []
 
     try:
-        from apps.ads.models import AdEvent, AdPlacement
-        from django.utils import timezone
         from django.db.models import Count
+        from django.utils import timezone
+
+        from apps.ads.models import AdEvent, AdPlacement
 
         now = timezone.now()
         day_ago = now - timezone.timedelta(hours=24)
         week_ago = now - timezone.timedelta(days=7)
 
-        stats["total_impressions"] = AdEvent.objects.filter(event_type="impression").count()
+        stats["total_impressions"] = AdEvent.objects.filter(
+            event_type="impression"
+        ).count()
         stats["total_clicks"] = AdEvent.objects.filter(event_type="click").count()
-        stats["impressions_24h"] = AdEvent.objects.filter(event_type="impression", created_at__gte=day_ago).count()
-        stats["clicks_24h"] = AdEvent.objects.filter(event_type="click", created_at__gte=day_ago).count()
-        stats["impressions_7d"] = AdEvent.objects.filter(event_type="impression", created_at__gte=week_ago).count()
-        stats["clicks_7d"] = AdEvent.objects.filter(event_type="click", created_at__gte=week_ago).count()
+        stats["impressions_24h"] = AdEvent.objects.filter(
+            event_type="impression", created_at__gte=day_ago
+        ).count()
+        stats["clicks_24h"] = AdEvent.objects.filter(
+            event_type="click", created_at__gte=day_ago
+        ).count()
+        stats["impressions_7d"] = AdEvent.objects.filter(
+            event_type="impression", created_at__gte=week_ago
+        ).count()
+        stats["clicks_7d"] = AdEvent.objects.filter(
+            event_type="click", created_at__gte=week_ago
+        ).count()
 
         if stats["total_impressions"] > 0:
-            stats["ctr"] = round((stats["total_clicks"] / stats["total_impressions"]) * 100, 2)
+            stats["ctr"] = round(
+                (stats["total_clicks"] / stats["total_impressions"]) * 100, 2
+            )
 
         top_placements = list(
             AdPlacement.objects.filter(is_deleted=False)
@@ -1061,15 +1251,15 @@ def admin_suite_ads_analytics(request: HttpRequest) -> HttpResponse:
 
 __all__ = [
     # Storage
-    'admin_suite_storage',
-    'admin_suite_storage_files',
+    "admin_suite_storage",
+    "admin_suite_storage_files",
     # Firmwares
-    'admin_suite_firmwares',
-    'admin_suite_firmwares_brands',
-    'admin_suite_firmwares_models',
+    "admin_suite_firmwares",
+    "admin_suite_firmwares_brands",
+    "admin_suite_firmwares_models",
     # Ads Enhanced
-    'admin_suite_ads_campaigns',
-    'admin_suite_ads_placements',
-    'admin_suite_ads_creatives',
-    'admin_suite_ads_analytics',
+    "admin_suite_ads_campaigns",
+    "admin_suite_ads_placements",
+    "admin_suite_ads_creatives",
+    "admin_suite_ads_analytics",
 ]

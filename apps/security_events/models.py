@@ -7,10 +7,18 @@ from django.db import models
 class SecurityEvent(models.Model):
     type = models.CharField(max_length=64)
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="security_events"
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="security_events",
     )
     device = models.ForeignKey(
-        "devices.Device", null=True, blank=True, on_delete=models.SET_NULL, related_name="security_events"
+        "devices.Device",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="security_events",
     )
     ip = models.GenericIPAddressField(null=True, blank=True)
     metadata = models.JSONField(default=dict, blank=True)

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
+
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
-from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
 
 from apps.devices.models import Device, DeviceEvent
 from apps.devices.utils.device_fingerprint import make_os_fingerprint
@@ -32,6 +33,7 @@ def device_events(request: HttpRequest) -> HttpResponse:
 # ---------------------------------------------------------------------
 # Device payload API (collect JS fingerprint and store in session)
 # ---------------------------------------------------------------------
+
 
 @require_POST
 @csrf_protect
@@ -72,21 +74,29 @@ def device_payload_view(request: HttpRequest) -> JsonResponse:
             ua = request.META.get("HTTP_USER_AGENT", "")
             # 1. Calculate Weak Fingerprint (Empty payload)
             weak_fp, _ = make_os_fingerprint(request.user.id, ua, {})
-            
+
             # 2. Calculate Strong Fingerprint (With current payload)
             strong_fp, _ = make_os_fingerprint(request.user.id, ua, clean)
 
             # Only migrate if they are different (i.e., payload actually adds entropy)
             if weak_fp != strong_fp:
                 # Find the weak device
-                weak_device = Device.objects.filter(user=request.user, os_fingerprint=weak_fp).first()
-                strong_device = Device.objects.filter(user=request.user, os_fingerprint=strong_fp).first()
-                
+                weak_device = Device.objects.filter(
+                    user=request.user, os_fingerprint=weak_fp
+                ).first()
+                strong_device = Device.objects.filter(
+                    user=request.user, os_fingerprint=strong_fp
+                ).first()
+
                 if weak_device:
                     if not strong_device:
                         # Case 1: Weak exists, Strong does not -> Upgrade Weak to Strong
                         weak_device.os_fingerprint = strong_fp
-                        current_meta = weak_device.metadata if isinstance(weak_device.metadata, dict) else {}
+                        current_meta = (
+                            weak_device.metadata
+                            if isinstance(weak_device.metadata, dict)
+                            else {}
+                        )
                         weak_device.metadata = {**current_meta, "payload": clean}
                         weak_device.save(update_fields=["os_fingerprint", "metadata"])
                     else:
@@ -95,7 +105,10 @@ def device_payload_view(request: HttpRequest) -> JsonResponse:
                         weak_device.delete()
         except Exception as e:
             import logging
-            logging.getLogger(__name__).debug(f"Device fingerprint migration skipped: {e}")
+
+            logging.getLogger(__name__).debug(
+                f"Device fingerprint migration skipped: {e}"
+            )
 
     return JsonResponse({"ok": True})
 
@@ -113,10 +126,11 @@ def acknowledge_new_device(request: HttpRequest) -> HttpResponse:
 
     If dismiss_only=true, just mark the popup as shown without trusting the device.
     """
-    from apps.devices.services import resolve_or_create_device
-    from apps.devices.models import Device
-    from apps.devices.utils.device_fingerprint import make_os_fingerprint
     import logging
+
+    from apps.devices.models import Device
+    from apps.devices.services import resolve_or_create_device
+    from apps.devices.utils.device_fingerprint import make_os_fingerprint
 
     logger = logging.getLogger(__name__)
 
@@ -149,7 +163,9 @@ def acknowledge_new_device(request: HttpRequest) -> HttpResponse:
     pending_uuid = frontend_fp or request.session.get("pending_device_prompt_uuid")
     pending_device = None
     if pending_uuid:
-        pending_device = Device.objects.filter(user=request.user, os_fingerprint=pending_uuid).first()
+        pending_device = Device.objects.filter(
+            user=request.user, os_fingerprint=pending_uuid
+        ).first()
 
     # 2. Calculate the current (Strong) fingerprint
     payload = getattr(request, "device_payload", {}) or {}
@@ -160,14 +176,20 @@ def acknowledge_new_device(request: HttpRequest) -> HttpResponse:
 
     # 3. Handle fingerprint upgrade scenario (Weak -> Strong)
     if pending_device and pending_device.os_fingerprint != current_fp:
-        logger.debug(f"Fingerprint mismatch: pending={pending_device.os_fingerprint[:16]}... current={current_fp[:16]}...")
+        logger.debug(
+            f"Fingerprint mismatch: pending={pending_device.os_fingerprint[:16]}... current={current_fp[:16]}..."
+        )
 
         # Check if the "Strong" device already exists
-        strong_device = Device.objects.filter(user=request.user, os_fingerprint=current_fp).first()
+        strong_device = Device.objects.filter(
+            user=request.user, os_fingerprint=current_fp
+        ).first()
 
         if strong_device:
             # Strong device exists. Use it and delete the weak one.
-            logger.debug(f"Upgrading: deleting weak device {pending_device.id}, using strong device {strong_device.id}")
+            logger.debug(
+                f"Upgrading: deleting weak device {pending_device.id}, using strong device {strong_device.id}"
+            )
             pending_device.delete()
             final_device = strong_device
         else:
@@ -187,11 +209,15 @@ def acknowledge_new_device(request: HttpRequest) -> HttpResponse:
     # 4. Fallback: If no pending device found, try current fingerprint or resolve/create
     if not final_device:
         # Try to find device by current fingerprint
-        final_device = Device.objects.filter(user=request.user, os_fingerprint=current_fp).first()
+        final_device = Device.objects.filter(
+            user=request.user, os_fingerprint=current_fp
+        ).first()
 
         if not final_device:
             try:
-                final_device, _, _ = resolve_or_create_device(request, request.user, service_name="acknowledge")
+                final_device, _, _ = resolve_or_create_device(
+                    request, request.user, service_name="acknowledge"
+                )
             except Exception as e:
                 logger.warning(f"Failed to resolve/create device: {e}")
 
@@ -199,7 +225,9 @@ def acknowledge_new_device(request: HttpRequest) -> HttpResponse:
     if final_device:
         final_device.is_trusted = True
         final_device.save(update_fields=["is_trusted"])
-        logger.info(f"Device {final_device.id} marked as trusted for user {request.user.id}")
+        logger.info(
+            f"Device {final_device.id} marked as trusted for user {request.user.id}"
+        )
     else:
         logger.warning(f"No device found to trust for user {request.user.id}")
         return JsonResponse({"ok": False, "error": "Device not found"}, status=400)

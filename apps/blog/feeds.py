@@ -1,11 +1,10 @@
-
 from __future__ import annotations
 
 from django.contrib.syndication.views import Feed
+from django.http import HttpRequest, JsonResponse
 from django.urls import reverse
-from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
-from django.http import JsonResponse, HttpRequest
 from django.utils import timezone
+from django.utils.feedgenerator import Atom1Feed, Rss201rev2Feed
 
 from .models import Post, PostStatus
 
@@ -70,5 +69,3 @@ def json_feed(request: HttpRequest):
         "items": items,
     }
     return JsonResponse(feed)
-
-

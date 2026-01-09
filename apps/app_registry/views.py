@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.http import JsonResponse
@@ -18,5 +17,3 @@ def registry_detail(request, app_id: str):
     if not entry:
         return JsonResponse({"error": "not_found"}, status=404)
     return JsonResponse(entry)
-
-

@@ -5,8 +5,8 @@ import logging
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
-from apps.users.services.rate_limit import allow_action
 from apps.core.utils.ip import get_client_ip
+from apps.users.services.rate_limit import allow_action
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +37,14 @@ class PasswordResetThrottleMiddleware(MiddlewareMixin):
             if not allow_action(per_combo_key, max_attempts=3, window_seconds=300):
                 allowed = False
             # Per-email longer window to prevent cross-IP spamming
-            if allowed and not allow_action(per_email_key, max_attempts=10, window_seconds=3600):
+            if allowed and not allow_action(
+                per_email_key, max_attempts=10, window_seconds=3600
+            ):
                 allowed = False
             # Per-IP global guard
-            if allowed and not allow_action(per_ip_key, max_attempts=10, window_seconds=900):
+            if allowed and not allow_action(
+                per_ip_key, max_attempts=10, window_seconds=900
+            ):
                 allowed = False
         except Exception as exc:
             logger.warning("Reset throttle backend failure: %s", exc)
@@ -49,9 +53,14 @@ class PasswordResetThrottleMiddleware(MiddlewareMixin):
         if not allowed:
             if request.headers.get("Accept", "").startswith("application/json"):
                 return JsonResponse(
-                    {"ok": False, "error": "Too many reset attempts. Try again in a few minutes."},
+                    {
+                        "ok": False,
+                        "error": "Too many reset attempts. Try again in a few minutes.",
+                    },
                     status=429,
                 )
-            return HttpResponse("Too many reset attempts. Try again in a few minutes.", status=429)
+            return HttpResponse(
+                "Too many reset attempts. Try again in a few minutes.", status=429
+            )
 
         return None

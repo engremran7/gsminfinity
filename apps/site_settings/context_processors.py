@@ -1,4 +1,3 @@
-
 """
 Enterprise-grade Site Settings Context Processor (FINAL, SYNC-ONLY)
 
@@ -14,7 +13,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Any, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.cache import cache
@@ -32,7 +32,7 @@ CACHE_KEY_PREFIX = "active_site_settings"
 # ---------------------------------------------------------------------
 # KEY HELPERS
 # ---------------------------------------------------------------------
-def _safe_domain_key(domain: Optional[str]) -> str:
+def _safe_domain_key(domain: str | None) -> str:
     """Convert domain to cache key (collision-resistant, no unsafe chars)."""
     safe = (domain or "global").strip().lower()
     digest = hashlib.sha256(safe.encode("utf-8")).hexdigest()[:16]
@@ -71,7 +71,7 @@ def _file_url_or_default(file_field, default_static_path: str) -> str:
 # ---------------------------------------------------------------------
 # SERIALIZER (pure sync, full defensive)
 # ---------------------------------------------------------------------
-def _safe_defaults() -> Dict[str, Any]:
+def _safe_defaults() -> dict[str, Any]:
     """Central default payload (no recursion)."""
     return {
         "id": None,
@@ -107,7 +107,7 @@ def _safe_defaults() -> Dict[str, Any]:
     }
 
 
-def _serialize(obj: Any) -> Dict[str, Any]:
+def _serialize(obj: Any) -> dict[str, Any]:
     """Convert ORM object to dict (fully isolated, exception-proof)."""
 
     if obj is None:
@@ -184,9 +184,7 @@ def _serialize(obj: Any) -> Dict[str, Any]:
             "recaptcha_enabled": bool(getattr(obj, "recaptcha_enabled", False)),
             # Feature toggles (admin controlled)
             "enable_blog": bool(getattr(obj, "enable_blog", False)),
-            "enable_blog_comments": bool(
-                getattr(obj, "enable_blog_comments", False)
-            ),
+            "enable_blog_comments": bool(getattr(obj, "enable_blog_comments", False)),
             # Ads/SEO toggles (for template gating)
             "seo_enabled": bool(getattr(obj, "seo_enabled", False)),
             "auto_meta_enabled": bool(getattr(obj, "auto_meta_enabled", False)),
@@ -209,7 +207,7 @@ def _serialize(obj: Any) -> Dict[str, Any]:
         return _safe_defaults()
 
 
-def _merge_app_settings(payload: Dict[str, Any]) -> Dict[str, Any]:
+def _merge_app_settings(payload: dict[str, Any]) -> dict[str, Any]:
     """
     Overlay per-app settings resolved via AppService onto the payload.
     Keeps payload keys stable for templates while using decentralized settings.
@@ -224,7 +222,10 @@ def _merge_app_settings(payload: Dict[str, Any]) -> Dict[str, Any]:
                     "ads_enabled": ads.get("ads_enabled", False),
                     "affiliate_enabled": ads.get("affiliate_enabled", False),
                     "ad_networks_enabled": ads.get("ad_networks_enabled", False),
-                    "ad_aggressiveness_level": ads.get("ad_aggressiveness_level", merged.get("ad_aggressiveness_level", "balanced")),
+                    "ad_aggressiveness_level": ads.get(
+                        "ad_aggressiveness_level",
+                        merged.get("ad_aggressiveness_level", "balanced"),
+                    ),
                 }
             )
         elif ads_api is None:
@@ -322,13 +323,13 @@ def _load_sync(site):
 # ---------------------------------------------------------------------
 # MAIN CONTEXT PROCESSOR (FULLY SYNC, FULLY SAFE)
 # ---------------------------------------------------------------------
-def site_settings(request: HttpRequest) -> Dict[str, Any]:
+def site_settings(request: HttpRequest) -> dict[str, Any]:
     try:
         # 1. Determine Auth status (Request-specific, cannot be cached with site settings)
         is_authenticated = False
         try:
-            user = getattr(request, 'user', None)
-            if user is not None and getattr(user, 'is_authenticated', False):
+            user = getattr(request, "user", None)
+            if user is not None and getattr(user, "is_authenticated", False):
                 is_authenticated = True
         except Exception:
             pass
@@ -395,7 +396,5 @@ def site_settings(request: HttpRequest) -> Dict[str, Any]:
 
 
 # Alias (keeps backwards compatibility)
-def global_settings(request: HttpRequest) -> Dict[str, Any]:
+def global_settings(request: HttpRequest) -> dict[str, Any]:
     return site_settings(request)
-
-

@@ -7,18 +7,17 @@ Views for:
 - AI (Endpoints, Knowledge Bases, Workflows)
 - Core (Feature Toggles)
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse
 from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.http import require_POST
 
-from .views_shared import _render_admin, _make_breadcrumb, _ADMIN_DISABLED
+from .views_shared import _ADMIN_DISABLED, _make_breadcrumb, _render_admin
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +25,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # I18N / LOCALIZATION MANAGEMENT
 # =============================================================================
+
 
 @csrf_protect
 @staff_member_required
@@ -75,22 +75,35 @@ def admin_suite_i18n(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.i18n.models import Language, TranslationKey, Translation, MissingTranslation
+        from apps.i18n.models import (
+            Language,
+            MissingTranslation,
+            Translation,
+            TranslationKey,
+        )
 
         all_languages = Language.objects.all().order_by("-is_active", "name")
         stats["total_languages"] = all_languages.count()
         stats["active_languages"] = all_languages.filter(is_active=True).count()
         stats["total_keys"] = TranslationKey.objects.count()
         stats["total_translations"] = Translation.objects.count()
-        stats["missing_translations"] = MissingTranslation.objects.filter(is_resolved=False).count()
+        stats["missing_translations"] = MissingTranslation.objects.filter(
+            is_resolved=False
+        ).count()
 
         if stats["total_keys"] > 0 and stats["active_languages"] > 0:
             expected = stats["total_keys"] * stats["active_languages"]
-            stats["translation_coverage"] = round((stats["total_translations"] / expected) * 100, 1) if expected > 0 else 0
+            stats["translation_coverage"] = (
+                round((stats["total_translations"] / expected) * 100, 1)
+                if expected > 0
+                else 0
+            )
 
-        languages = list(all_languages[:50].values(
-            "id", "code", "name", "native_name", "is_active", "is_rtl", "flag_emoji"
-        ))
+        languages = list(
+            all_languages[:50].values(
+                "id", "code", "name", "native_name", "is_active", "is_rtl", "flag_emoji"
+            )
+        )
 
         recent_missing = list(
             MissingTranslation.objects.filter(is_resolved=False)
@@ -141,7 +154,7 @@ def admin_suite_i18n_translations(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.i18n.models import Translation, TranslationKey, Language
+            from apps.i18n.models import Language, Translation, TranslationKey
 
             if action == "save_translation":
                 key_id = request.POST.get("key_id")
@@ -151,8 +164,7 @@ def admin_suite_i18n_translations(request: HttpRequest) -> HttpResponse:
                 lang = Language.objects.filter(pk=lang_id).first()
                 if key and lang:
                     Translation.objects.update_or_create(
-                        key=key, language=lang,
-                        defaults={"value": value}
+                        key=key, language=lang, defaults={"value": value}
                     )
                     message = "Translation saved."
         except Exception as exc:
@@ -160,20 +172,30 @@ def admin_suite_i18n_translations(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.i18n.models import Translation, TranslationKey, Language
+        from apps.i18n.models import Language, Translation, TranslationKey
 
-        languages = list(Language.objects.filter(is_active=True).order_by("name").values("id", "code", "name"))
-        
+        languages = list(
+            Language.objects.filter(is_active=True)
+            .order_by("name")
+            .values("id", "code", "name")
+        )
+
         qs = TranslationKey.objects.all()
         if query:
             qs = qs.filter(key__icontains=query)
-        
+
         total_count = qs.count()
-        keys = list(qs.order_by("key")[offset:offset + page_size].values("id", "key", "context", "created_at"))
+        keys = list(
+            qs.order_by("key")[offset : offset + page_size].values(
+                "id", "key", "context", "created_at"
+            )
+        )
 
         # Get translations for these keys
         key_ids = [k["id"] for k in keys]
-        trans_qs = Translation.objects.filter(key_id__in=key_ids).select_related("language")
+        trans_qs = Translation.objects.filter(key_id__in=key_ids).select_related(
+            "language"
+        )
         translations = {}
         for t in trans_qs:
             if t.key_id not in translations:
@@ -210,6 +232,7 @@ def admin_suite_i18n_translations(request: HttpRequest) -> HttpResponse:
 # DEVICES MANAGEMENT (Extended)
 # =============================================================================
 
+
 @csrf_protect
 @staff_member_required
 def admin_suite_devices_settings(request: HttpRequest) -> HttpResponse:
@@ -224,13 +247,15 @@ def admin_suite_devices_settings(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.devices.models import DeviceSettings, DevicePolicy
+            from apps.devices.models import DevicePolicy, DeviceSettings
 
             if action == "save_settings":
                 ds = DeviceSettings.get_solo()
                 ds.max_devices_per_user = int(request.POST.get("max_devices", 5))
                 ds.device_timeout_days = int(request.POST.get("timeout_days", 30))
-                ds.require_device_verification = bool(request.POST.get("require_verification"))
+                ds.require_device_verification = bool(
+                    request.POST.get("require_verification")
+                )
                 ds.save()
                 message = "Device settings saved."
             elif action == "create_policy":
@@ -255,12 +280,14 @@ def admin_suite_devices_settings(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.devices.models import DeviceSettings, DevicePolicy, Device
+        from apps.devices.models import DevicePolicy, DeviceSettings
 
         device_settings = DeviceSettings.get_solo()
-        policies = list(DevicePolicy.objects.all().order_by("app_label").values(
-            "id", "app_label", "max_devices", "is_active", "created_at"
-        ))
+        policies = list(
+            DevicePolicy.objects.all()
+            .order_by("app_label")
+            .values("id", "app_label", "max_devices", "is_active", "created_at")
+        )
     except Exception as exc:
         logger.debug("Failed to load device settings: %s", exc)
 
@@ -285,6 +312,7 @@ def admin_suite_devices_settings(request: HttpRequest) -> HttpResponse:
 # =============================================================================
 # AI MANAGEMENT (Extended)
 # =============================================================================
+
 
 @csrf_protect
 @staff_member_required
@@ -333,10 +361,22 @@ def admin_suite_ai_endpoints(request: HttpRequest) -> HttpResponse:
     try:
         from apps.ai.models import AIEndpoint
 
-        endpoints = list(AIEndpoint.objects.all().order_by("-is_active", "name").values(
-            "id", "name", "provider", "model_id", "endpoint_url", "is_active",
-            "total_requests", "total_tokens", "average_latency_ms", "created_at"
-        ))
+        endpoints = list(
+            AIEndpoint.objects.all()
+            .order_by("-is_active", "name")
+            .values(
+                "id",
+                "name",
+                "provider",
+                "model_id",
+                "endpoint_url",
+                "is_active",
+                "total_requests",
+                "total_tokens",
+                "average_latency_ms",
+                "created_at",
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load AI endpoints: %s", exc)
 
@@ -378,7 +418,9 @@ def admin_suite_ai_knowledge(request: HttpRequest) -> HttpResponse:
                 if kb:
                     kb.is_active = not kb.is_active
                     kb.save(update_fields=["is_active"])
-                    message = f"Knowledge base {'enabled' if kb.is_active else 'disabled'}."
+                    message = (
+                        f"Knowledge base {'enabled' if kb.is_active else 'disabled'}."
+                    )
             elif action == "create_kb":
                 name = (request.POST.get("name") or "").strip()[:128]
                 description = (request.POST.get("description") or "").strip()
@@ -396,10 +438,20 @@ def admin_suite_ai_knowledge(request: HttpRequest) -> HttpResponse:
     try:
         from apps.ai.models import AIKnowledgeBase
 
-        knowledge_bases = list(AIKnowledgeBase.objects.all().order_by("-is_active", "name").values(
-            "id", "name", "description", "is_active", "document_count", "total_chunks",
-            "last_indexed_at", "created_at"
-        ))
+        knowledge_bases = list(
+            AIKnowledgeBase.objects.all()
+            .order_by("-is_active", "name")
+            .values(
+                "id",
+                "name",
+                "description",
+                "is_active",
+                "document_count",
+                "total_chunks",
+                "last_indexed_at",
+                "created_at",
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load AI knowledge bases: %s", exc)
 
@@ -450,14 +502,25 @@ def admin_suite_ai_workflows(request: HttpRequest) -> HttpResponse:
     try:
         from apps.ai.models import AIWorkflow, AIWorkflowRun
 
-        workflows = list(AIWorkflow.objects.all().order_by("-is_active", "name").values(
-            "id", "name", "description", "is_active", "trigger_type", "created_at"
-        ))
+        workflows = list(
+            AIWorkflow.objects.all()
+            .order_by("-is_active", "name")
+            .values(
+                "id", "name", "description", "is_active", "trigger_type", "created_at"
+            )
+        )
 
         recent_runs = list(
             AIWorkflowRun.objects.select_related("workflow")
             .order_by("-started_at")[:30]
-            .values("id", "workflow__name", "status", "started_at", "completed_at", "error_message")
+            .values(
+                "id",
+                "workflow__name",
+                "status",
+                "started_at",
+                "completed_at",
+                "error_message",
+            )
         )
     except Exception as exc:
         logger.debug("Failed to load AI workflows: %s", exc)
@@ -484,6 +547,7 @@ def admin_suite_ai_workflows(request: HttpRequest) -> HttpResponse:
 # CORE / FEATURE TOGGLES
 # =============================================================================
 
+
 @csrf_protect
 @staff_member_required
 def admin_suite_features(request: HttpRequest) -> HttpResponse:
@@ -504,7 +568,10 @@ def admin_suite_features(request: HttpRequest) -> HttpResponse:
                 fs = FeatureSettings.get_solo()
                 # Update all boolean feature flags from POST
                 for field in fs._meta.get_fields():
-                    if hasattr(field, 'get_internal_type') and field.get_internal_type() == 'BooleanField':
+                    if (
+                        hasattr(field, "get_internal_type")
+                        and field.get_internal_type() == "BooleanField"
+                    ):
                         field_name = field.name
                         if field_name in request.POST:
                             setattr(fs, field_name, True)
@@ -520,16 +587,23 @@ def admin_suite_features(request: HttpRequest) -> HttpResponse:
         from apps.core.models import FeatureSettings
 
         feature_settings = FeatureSettings.get_solo()
-        
+
         # Build list of feature fields for template (can't access _meta in templates)
         for field in feature_settings._meta.get_fields():
-            if hasattr(field, 'get_internal_type') and field.get_internal_type() == 'BooleanField':
-                feature_fields.append({
-                    'name': field.name,
-                    'verbose_name': getattr(field, 'verbose_name', field.name).replace('_', ' ').title(),
-                    'help_text': getattr(field, 'help_text', ''),
-                    'value': getattr(feature_settings, field.name, False),
-                })
+            if (
+                hasattr(field, "get_internal_type")
+                and field.get_internal_type() == "BooleanField"
+            ):
+                feature_fields.append(
+                    {
+                        "name": field.name,
+                        "verbose_name": getattr(field, "verbose_name", field.name)
+                        .replace("_", " ")
+                        .title(),
+                        "help_text": getattr(field, "help_text", ""),
+                        "value": getattr(feature_settings, field.name, False),
+                    }
+                )
     except Exception as exc:
         logger.debug("Failed to load feature settings: %s", exc)
 
@@ -553,6 +627,7 @@ def admin_suite_features(request: HttpRequest) -> HttpResponse:
 # =============================================================================
 # BLOG MANAGEMENT (Extended)
 # =============================================================================
+
 
 @csrf_protect
 @staff_member_required
@@ -582,7 +657,9 @@ def admin_suite_blog_posts(request: HttpRequest) -> HttpResponse:
                 if post:
                     post.is_published = not post.is_published
                     post.save(update_fields=["is_published"])
-                    message = f"Post {'published' if post.is_published else 'unpublished'}."
+                    message = (
+                        f"Post {'published' if post.is_published else 'unpublished'}."
+                    )
             elif action == "delete_post":
                 post_id = request.POST.get("post_id")
                 Post.objects.filter(pk=post_id).delete()
@@ -592,10 +669,12 @@ def admin_suite_blog_posts(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.blog.models import Post, Category
+        from apps.blog.models import Category, Post
 
-        categories = list(Category.objects.all().order_by("name").values("id", "name", "slug"))
-        
+        categories = list(
+            Category.objects.all().order_by("name").values("id", "name", "slug")
+        )
+
         qs = Post.objects.select_related("author", "category").all()
         if query:
             qs = qs.filter(title__icontains=query)
@@ -603,12 +682,22 @@ def admin_suite_blog_posts(request: HttpRequest) -> HttpResponse:
             qs = qs.filter(is_published=True)
         elif status_filter == "draft":
             qs = qs.filter(is_published=False)
-        
+
         total_count = qs.count()
-        posts = list(qs.order_by("-created_at")[offset:offset + page_size].values(
-            "id", "title", "slug", "author__email", "category__name", "is_published",
-            "is_featured", "view_count", "created_at", "published_at"
-        ))
+        posts = list(
+            qs.order_by("-created_at")[offset : offset + page_size].values(
+                "id",
+                "title",
+                "slug",
+                "author__email",
+                "category__name",
+                "is_published",
+                "is_featured",
+                "view_count",
+                "created_at",
+                "published_at",
+            )
+        )
     except Exception as exc:
         logger.debug("Failed to load blog posts: %s", exc)
 
@@ -638,6 +727,7 @@ def admin_suite_blog_posts(request: HttpRequest) -> HttpResponse:
 # =============================================================================
 # CRAWLER GUARD MANAGEMENT
 # =============================================================================
+
 
 @csrf_protect
 @staff_member_required
@@ -679,16 +769,27 @@ def admin_suite_crawler_rules(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.crawler_guard.models import CrawlerRule, CrawlerLog
+        from apps.crawler_guard.models import CrawlerLog, CrawlerRule
 
-        rules = list(CrawlerRule.objects.all().order_by("-is_active", "name").values(
-            "id", "name", "user_agent_pattern", "ip_pattern", "action", "is_active",
-            "hit_count", "created_at"
-        ))
+        rules = list(
+            CrawlerRule.objects.all()
+            .order_by("-is_active", "name")
+            .values(
+                "id",
+                "name",
+                "user_agent_pattern",
+                "ip_pattern",
+                "action",
+                "is_active",
+                "hit_count",
+                "created_at",
+            )
+        )
 
         recent_logs = list(
-            CrawlerLog.objects.order_by("-created_at")[:50]
-            .values("id", "user_agent", "ip_address", "path", "action_taken", "created_at")
+            CrawlerLog.objects.order_by("-created_at")[:50].values(
+                "id", "user_agent", "ip_address", "path", "action_taken", "created_at"
+            )
         )
     except Exception as exc:
         logger.debug("Failed to load crawler rules: %s", exc)
@@ -713,18 +814,18 @@ def admin_suite_crawler_rules(request: HttpRequest) -> HttpResponse:
 
 __all__ = [
     # i18n
-    'admin_suite_i18n',
-    'admin_suite_i18n_translations',
+    "admin_suite_i18n",
+    "admin_suite_i18n_translations",
     # Devices
-    'admin_suite_devices_settings',
+    "admin_suite_devices_settings",
     # AI Extended
-    'admin_suite_ai_endpoints',
-    'admin_suite_ai_knowledge',
-    'admin_suite_ai_workflows',
+    "admin_suite_ai_endpoints",
+    "admin_suite_ai_knowledge",
+    "admin_suite_ai_workflows",
     # Core
-    'admin_suite_features',
+    "admin_suite_features",
     # Blog Extended
-    'admin_suite_blog_posts',
+    "admin_suite_blog_posts",
     # Crawler Guard
-    'admin_suite_crawler_rules',
+    "admin_suite_crawler_rules",
 ]

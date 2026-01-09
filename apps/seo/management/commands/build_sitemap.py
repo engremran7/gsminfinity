@@ -1,12 +1,11 @@
-
 from __future__ import annotations
 
+from django.contrib.sites.models import Site
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from django.contrib.sites.models import Site
 
-from apps.seo.models import SitemapEntry
 from apps.blog.models import Post, PostStatus
+from apps.seo.models import SitemapEntry
 
 
 class Command(BaseCommand):
@@ -33,6 +32,6 @@ class Command(BaseCommand):
                 },
             )
             total += 1
-        self.stdout.write(self.style.SUCCESS(f"Sitemap build complete. Entries: {total}"))
-
-
+        self.stdout.write(
+            self.style.SUCCESS(f"Sitemap build complete. Entries: {total}")
+        )

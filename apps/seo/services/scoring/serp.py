@@ -1,13 +1,11 @@
-
 from __future__ import annotations
 
 import logging
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
 
-def serp_analyze(meta_title: str, meta_description: str) -> Dict[str, float]:
+def serp_analyze(meta_title: str, meta_description: str) -> dict[str, float]:
     """
     Placeholder SERP analyzer that returns a simple heuristic score.
     """
@@ -20,5 +18,3 @@ def serp_analyze(meta_title: str, meta_description: str) -> Dict[str, float]:
     except Exception as exc:
         logger.warning("serp_analyze failed: %s", exc)
         return {"serp_score": 0.0}
-
-

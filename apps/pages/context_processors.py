@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any
 
 
-def navigation_pages(request) -> Dict[str, Any]:
+def navigation_pages(request) -> dict[str, Any]:
     """
     Provide a lightweight list of published pages for the header.
     Kept small to avoid large DB hits and works without raising.
     """
-    items: List[Dict[str, str]] = []
+    items: list[dict[str, str]] = []
     exclude_slugs = {"privacy", "terms", "cookies"}
     try:
         from apps.pages.models import Page  # type: ignore
@@ -18,7 +18,9 @@ def navigation_pages(request) -> Dict[str, Any]:
             items.append(
                 {
                     "title": p.title or "Page",
-                    "url": getattr(p, "get_absolute_url", lambda: f"/pages/{p.slug}/")(),
+                    "url": getattr(
+                        p, "get_absolute_url", lambda: f"/pages/{p.slug}/"
+                    )(),
                 }
             )
     except Exception:

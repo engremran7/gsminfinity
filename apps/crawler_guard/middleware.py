@@ -1,9 +1,8 @@
-
 from __future__ import annotations
 
 import fnmatch
 import hashlib
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
@@ -37,11 +36,12 @@ class CrawlerGuardMiddleware:
         headers_hash = self._hash_headers(request)
         user_agent = request.META.get("HTTP_USER_AGENT", "")
 
-        response: Optional[HttpResponse] = None
+        response: HttpResponse | None = None
         action_taken = "allow"
 
         is_known_bot = any(
-            b in (user_agent or "").lower() for b in ["googlebot", "bingbot", "duckduckbot", "slurp"]
+            b in (user_agent or "").lower()
+            for b in ["googlebot", "bingbot", "duckduckbot", "slurp"]
         )
 
         if rule:
@@ -51,7 +51,9 @@ class CrawlerGuardMiddleware:
                 response = HttpResponseForbidden("Request blocked.")
             elif rule.action == "throttle":
                 if over_limit and not is_known_bot:
-                    response = JsonResponse({"detail": "Too many requests."}, status=429)
+                    response = JsonResponse(
+                        {"detail": "Too many requests."}, status=429
+                    )
                 else:
                     action_taken = "allow"
             elif rule.action == "challenge" and not is_known_bot:
@@ -79,7 +81,7 @@ class CrawlerGuardMiddleware:
 
         return self.get_response(request)
 
-    def _match_rule(self, path: str) -> Optional[CrawlerRule]:
+    def _match_rule(self, path: str) -> CrawlerRule | None:
         try:
             rules = CrawlerRule.objects.filter(is_enabled=True).order_by("-priority")
             for rule in rules:
@@ -89,7 +91,7 @@ class CrawlerGuardMiddleware:
             return None
         return None
 
-    def _resolve_device_identifier(self, request) -> Optional[str]:
+    def _resolve_device_identifier(self, request) -> str | None:
         """
         Best-effort device identifier using devices API if enabled.
         """
@@ -117,9 +119,9 @@ class CrawlerGuardMiddleware:
         self,
         *,
         ip: str,
-        device_identifier: Optional[str],
+        device_identifier: str | None,
         path: str,
-        rule: Optional[CrawlerRule],
+        rule: CrawlerRule | None,
         action_taken: str,
         user_agent: str,
         headers_hash: str,
@@ -143,7 +145,13 @@ class CrawlerGuardMiddleware:
             # Fail-open without blocking request
             pass
 
-    def _over_limit(self, rule: CrawlerRule, ip: str, device_identifier: Optional[str], headers_hash: str) -> bool:
+    def _over_limit(
+        self,
+        rule: CrawlerRule,
+        ip: str,
+        device_identifier: str | None,
+        headers_hash: str,
+    ) -> bool:
         if not rule.requests_per_minute:
             return False
         keys = [f"cg:{rule.id}:ip:{ip}"]
@@ -166,5 +174,3 @@ class CrawlerGuardMiddleware:
             if current > rule.requests_per_minute:
                 return True
         return False
-
-

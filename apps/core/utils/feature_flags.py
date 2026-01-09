@@ -1,21 +1,20 @@
-
 from __future__ import annotations
 
 import functools
-from typing import Optional, Any
-from django.core.cache import cache
+from typing import Any
 
 from apps.core.app_service import AppService
 
 
 @functools.lru_cache(maxsize=1)
-def get_settings() -> Optional[Any]:
+def get_settings() -> Any | None:
     """
     Small, process-local cache to avoid hitting the DB on every flag check.
     Uses lazy import to avoid circular dependency.
     """
     try:
         from apps.site_settings.models import SiteSettings
+
         return SiteSettings.get_solo()
     except Exception:
         return None
@@ -112,5 +111,3 @@ def reset_cache() -> None:
         get_settings.cache_clear()  # type: ignore[attr-defined]
     except Exception:
         return
-
-

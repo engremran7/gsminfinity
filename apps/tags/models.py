@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.db import models
@@ -17,16 +16,28 @@ from apps.core.models import SoftDeleteModel, TimestampedModel
 
 
 class Tag(TimestampedModel, SoftDeleteModel):
-    name = models.CharField(max_length=64, unique=True, help_text="Use concise, reusable names.")
+    name = models.CharField(
+        max_length=64, unique=True, help_text="Use concise, reusable names."
+    )
     normalized_name = models.CharField(max_length=64, blank=True)
     slug = models.SlugField(max_length=80, unique=True, blank=True)
-    description = models.TextField(blank=True, default="", help_text="Explain when to use this tag.")
-    synonyms = models.JSONField(default=list, blank=True, help_text="Comma-separated alternatives users might search.")
+    description = models.TextField(
+        blank=True, default="", help_text="Explain when to use this tag."
+    )
+    synonyms = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Comma-separated alternatives users might search.",
+    )
     usage_count = models.PositiveIntegerField(default=0)
     co_occurrence = models.JSONField(default=dict, blank=True)
     is_active = models.BooleanField(default=True)
-    ai_suggested = models.BooleanField(default=False, help_text="True if suggested by AI and not yet curated.")
-    is_curated = models.BooleanField(default=False, help_text="True if reviewed/approved by staff.")
+    ai_suggested = models.BooleanField(
+        default=False, help_text="True if suggested by AI and not yet curated."
+    )
+    is_curated = models.BooleanField(
+        default=False, help_text="True if reviewed/approved by staff."
+    )
     merge_into = models.ForeignKey(
         "self",
         null=True,
@@ -43,20 +54,43 @@ class Tag(TimestampedModel, SoftDeleteModel):
         related_name="children",
         help_text="Optional parent for hierarchical taxonomies.",
     )
-    path_cache = models.CharField(max_length=255, blank=True, default="", help_text="Cached materialized path for fast tree queries.")
-    ai_score = models.FloatField(default=0.0, help_text="Confidence when AI suggested this tag.")
-    content_hash = models.CharField(max_length=64, blank=True, default="", help_text="Last content hash used for AI suggestions.")
+    path_cache = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Cached materialized path for fast tree queries.",
+    )
+    ai_score = models.FloatField(
+        default=0.0, help_text="Confidence when AI suggested this tag."
+    )
+    content_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        help_text="Last content hash used for AI suggestions.",
+    )
     last_suggested_at = models.DateTimeField(null=True, blank=True)
-    suggestions = models.JSONField(default=list, blank=True, help_text="Recent AI suggestions with scores/rationales.")
-    importance = models.IntegerField(default=0, help_text="Boost for curated/priority tags.")
-    synonyms_text = models.TextField(blank=True, default="", help_text="Editable comma-separated synonyms.")
+    suggestions = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Recent AI suggestions with scores/rationales.",
+    )
+    importance = models.IntegerField(
+        default=0, help_text="Boost for curated/priority tags."
+    )
+    synonyms_text = models.TextField(
+        blank=True, default="", help_text="Editable comma-separated synonyms."
+    )
 
     class Meta:
         ordering = ["name"]
         indexes = [
             models.Index(fields=["normalized_name"], name="tag_normalized_idx"),
             models.Index(fields=["slug"], name="tag_slug_idx"),
-            models.Index(fields=["is_active", "importance", "-usage_count"], name="tag_active_importance_idx"),
+            models.Index(
+                fields=["is_active", "importance", "-usage_count"],
+                name="tag_active_importance_idx",
+            ),
             models.Index(fields=["merge_into"], name="tag_merge_into_idx"),
             models.Index(fields=["parent"], name="tag_parent_idx"),
             models.Index(fields=["path_cache"], name="tag_path_idx"),

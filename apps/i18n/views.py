@@ -1,16 +1,20 @@
-
 from __future__ import annotations
 
 import json
-from typing import Any, Dict
-
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse, HttpResponseBadRequest
 import logging
-from django.views.decorators.http import require_GET, require_http_methods, require_POST
-from django.views.decorators.csrf import csrf_protect
+from typing import Any
 
-from apps.i18n.api import bundle, locale_for_request, register_manifest, theme_for_request
+from django.contrib.auth.decorators import user_passes_test
+from django.http import HttpResponseBadRequest, JsonResponse
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
+
+from apps.i18n.api import (
+    bundle,
+    locale_for_request,
+    register_manifest,
+    theme_for_request,
+)
 from apps.i18n.models import LanguageProfile, Locale
 from apps.i18n.translation_provider import get_translator
 
@@ -29,7 +33,16 @@ def bundle_view(request):
         return JsonResponse(data)
     except Exception as exc:
         logger.warning("bundle_view fallback: %s", exc)
-        return JsonResponse({"app_id": "", "locale": "en", "values": {}, "version": 1, "direction": "ltr"}, status=200)
+        return JsonResponse(
+            {
+                "app_id": "",
+                "locale": "en",
+                "values": {},
+                "version": 1,
+                "direction": "ltr",
+            },
+            status=200,
+        )
 
 
 @require_GET
@@ -42,7 +55,10 @@ def theme_view(request):
         return JsonResponse(data)
     except Exception as exc:
         logger.warning("theme_view fallback: %s", exc)
-        return JsonResponse({"theme": "fallback", "mode": "light", "tokens": {}, "direction": "ltr"}, status=200)
+        return JsonResponse(
+            {"theme": "fallback", "mode": "light", "tokens": {}, "direction": "ltr"},
+            status=200,
+        )
 
 
 def _staff_required(user):
@@ -57,7 +73,7 @@ def manifest_view(request):
     Validates app_id, locales, and namespaces against configured profiles/locales.
     """
     try:
-        payload: Dict[str, Any] = json.loads(request.body or "{}")
+        payload: dict[str, Any] = json.loads(request.body or "{}")
     except Exception:
         return HttpResponseBadRequest("Invalid JSON")
 
@@ -82,9 +98,13 @@ def manifest_view(request):
     allowed_locale_codes = set(Locale.objects.values_list("code", flat=True))
     invalid_locales = [l for l in supported_locales if l not in allowed_locale_codes]
     if invalid_locales:
-        return HttpResponseBadRequest(f"Unsupported locales: {', '.join(invalid_locales)}")
+        return HttpResponseBadRequest(
+            f"Unsupported locales: {', '.join(invalid_locales)}"
+        )
     if default_locale not in allowed_locale_codes:
-        return HttpResponseBadRequest(f"Default locale {default_locale} is not supported")
+        return HttpResponseBadRequest(
+            f"Default locale {default_locale} is not supported"
+        )
 
     # Validate app_id/site_id combo exists or will exist in LanguageProfile
     lp = LanguageProfile.objects.filter(app_id=app_id, site_id=site_id).first()
@@ -127,5 +147,3 @@ def translate_texts(request):
     translator = get_translator()
     translated = translator.translate(texts, target=target, source=source)
     return JsonResponse({"items": translated})
-
-

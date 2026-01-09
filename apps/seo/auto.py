@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from typing import Iterable, List, Tuple
+from collections.abc import Iterable
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -10,7 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
-from apps.seo.models import SEOModel, Metadata, SchemaEntry
+from apps.seo.models import Metadata, SchemaEntry, SEOModel
 from apps.seo.models_settings import SeoAutomationSettings
 from apps.tags.models import Tag
 
@@ -61,7 +61,9 @@ def _get_setting(name: str, default):
         return getattr(settings, name, default)
 
 
-def suggest_tags(texts: Iterable[str], max_tags: int = 8, min_len: int = 4) -> List[Tuple[str, float]]:
+def suggest_tags(
+    texts: Iterable[str], max_tags: int = 8, min_len: int = 4
+) -> list[tuple[str, float]]:
     """
     Very lightweight keyword extractor: counts frequent words > min_len, excludes stopwords.
     Returns list of (tag, score).
@@ -119,10 +121,21 @@ def ensure_article_schema(post) -> None:
                     "@type": "Article",
                     "headline": post.title,
                     "description": post.seo_description or post.summary or "",
-                    "datePublished": (post.publish_at or post.published_at or timezone.now()).isoformat(),
+                    "datePublished": (
+                        post.publish_at or post.published_at or timezone.now()
+                    ).isoformat(),
                     "dateModified": (post.updated_at or timezone.now()).isoformat(),
-                    "author": {"@type": "Person", "name": getattr(getattr(post, "author", None), "get_full_name", lambda: "")() or getattr(getattr(post, "author", None), "username", "")},
-                    "mainEntityOfPage": {"@type": "WebPage", "@id": ensure_canonical(post)},
+                    "author": {
+                        "@type": "Person",
+                        "name": getattr(
+                            getattr(post, "author", None), "get_full_name", lambda: ""
+                        )()
+                        or getattr(getattr(post, "author", None), "username", ""),
+                    },
+                    "mainEntityOfPage": {
+                        "@type": "WebPage",
+                        "@id": ensure_canonical(post),
+                    },
                 },
             },
         )
@@ -144,9 +157,24 @@ def ensure_breadcrumb_schema(post) -> None:
                     "@context": "https://schema.org",
                     "@type": "BreadcrumbList",
                     "itemListElement": [
-                        {"@type": "ListItem", "position": 1, "name": "Home", "item": "/"},
-                        {"@type": "ListItem", "position": 2, "name": "Blog", "item": "/blog/"},
-                        {"@type": "ListItem", "position": 3, "name": post.title, "item": ensure_canonical(post)},
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "Home",
+                            "item": "/",
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": "Blog",
+                            "item": "/blog/",
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 3,
+                            "name": post.title,
+                            "item": ensure_canonical(post),
+                        },
                     ],
                 },
             },
@@ -162,7 +190,8 @@ def apply_auto_tags(post, max_tags: int = 6) -> list[Tag]:
     suggestions = []
     # Try AI first
     try:
-        from apps.ai.services import test_completion, get_settings
+        from apps.ai.services import get_settings, test_completion
+
         ai_settings = get_settings()
         if ai_settings.get("ai_enabled"):
             prompt = f"Generate {max_tags} relevant tags for the following blog post. Return ONLY a comma-separated list of tags.\n\nTitle: {post.title}\nSummary: {post.summary}\n\nTags:"
@@ -175,7 +204,9 @@ def apply_auto_tags(post, max_tags: int = 6) -> list[Tag]:
         pass
 
     if not suggestions:
-        suggestions = suggest_tags([post.title, post.summary or "", post.body], max_tags=max_tags)
+        suggestions = suggest_tags(
+            [post.title, post.summary or "", post.body], max_tags=max_tags
+        )
 
     attached: list[Tag] = []
     suggest_only = _get_setting("suggest_only", False)

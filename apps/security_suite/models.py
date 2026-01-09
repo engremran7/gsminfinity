@@ -30,7 +30,12 @@ class SecurityConfig(SingletonModel):
 
     crawler_default_action = models.CharField(
         max_length=12,
-        choices=[("allow", "Allow"), ("throttle", "Throttle"), ("block", "Block"), ("challenge", "Challenge")],
+        choices=[
+            ("allow", "Allow"),
+            ("throttle", "Throttle"),
+            ("block", "Block"),
+            ("challenge", "Challenge"),
+        ],
         default="allow",
     )
 

@@ -15,10 +15,13 @@ class PagesConfig(AppConfig):
             register_sitemap("static", StaticViewsSitemap)
         except Exception:
             pass
-        
+
         # Register signal handlers for homepage widget cache invalidation
         try:
-            import apps.pages.signal_handlers
+            pass
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"Failed to register pages signal handlers: {e}")
+
+            logging.getLogger(__name__).warning(
+                f"Failed to register pages signal handlers: {e}"
+            )

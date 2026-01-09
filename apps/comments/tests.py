@@ -1,8 +1,8 @@
-
 from __future__ import annotations
 
-from unittest.mock import patch, MagicMock
 import os
+from unittest.mock import patch
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
@@ -14,20 +14,27 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.blog.models import Post, PostStatus, BlogSettings
+from apps.blog.models import BlogSettings, Post, PostStatus
 from apps.site_settings.models import SiteSettings
+
 from .models import Comment
 
 User = get_user_model()
 
 
-@override_settings(ALLOWED_HOSTS=["testserver", "localhost"], ROOT_URLCONF="app.urls", SECURE_SSL_REDIRECT=False)
+@override_settings(
+    ALLOWED_HOSTS=["testserver", "localhost"],
+    ROOT_URLCONF="app.urls",
+    SECURE_SSL_REDIRECT=False,
+)
 class CommentModerationTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         # Patch the AI behavior service at class level to avoid JSON serialization issues
-        cls.ai_patcher = patch("apps.ai_behavior.services.record_insight", return_value=None)
+        cls.ai_patcher = patch(
+            "apps.ai_behavior.services.record_insight", return_value=None
+        )
         cls.ai_patcher.start()
 
     @classmethod
@@ -57,9 +64,12 @@ class CommentModerationTests(TestCase):
     @patch("apps.consent.decorators.consent_check", return_value=True)
     @patch("apps.comments.views._has_comments_consent", return_value=True)
     @patch("apps.comments.views.classify_comment")
-    def test_add_comment_marks_spam_on_high_toxicity(self, mock_classify, mock_consent, mock_decorator_consent):
+    def test_add_comment_marks_spam_on_high_toxicity(
+        self, mock_classify, mock_consent, mock_decorator_consent
+    ):
         # Mock the moderation result with high toxicity
         from types import SimpleNamespace
+
         mock_classify.return_value = SimpleNamespace(
             label="spam",
             score=0.9,
@@ -79,7 +89,9 @@ class CommentModerationTests(TestCase):
 
     @patch("apps.consent.decorators.consent_check", return_value=True)
     @patch("apps.comments.views._has_comments_consent", return_value=True)
-    def test_list_comments_excludes_non_approved(self, mock_consent, mock_decorator_consent):
+    def test_list_comments_excludes_non_approved(
+        self, mock_consent, mock_decorator_consent
+    ):
         approved = Comment.objects.create(
             post=self.post,
             user=self.user,
@@ -102,7 +114,9 @@ class CommentModerationTests(TestCase):
         self.assertEqual(len(ids), 1)
 
     def test_moderation_actions(self):
-        staff = User.objects.create_user(email="staff@example.com", password="pass", is_staff=True)
+        staff = User.objects.create_user(
+            email="staff@example.com", password="pass", is_staff=True
+        )
         self.client.force_login(staff)
         comment = Comment.objects.create(
             post=self.post,
@@ -117,5 +131,3 @@ class CommentModerationTests(TestCase):
         comment.refresh_from_db()
         self.assertEqual(comment.status, Comment.Status.APPROVED)
         self.assertTrue(comment.is_approved)
-
-

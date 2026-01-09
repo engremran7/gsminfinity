@@ -1,4 +1,3 @@
-
 """
 apps.users.services.rate_limit
 ------------------------------
@@ -16,7 +15,7 @@ Lightweight, cache-based rate limiter for authentication and signup actions.
 import logging
 import time
 from contextlib import nullcontext
-from typing import ContextManager, List
+from typing import ContextManager
 
 from django.core.cache import cache
 
@@ -59,7 +58,7 @@ def allow_action(
 
     with _acquire_bucket_lock(key, lock_timeout):
         try:
-            bucket: List[float] = cache.get(key, [])
+            bucket: list[float] = cache.get(key, [])
             if not isinstance(bucket, list):
                 logger.warning(
                     "Corrupted rate-limit bucket detected for %s; resetting.", key
@@ -131,12 +130,10 @@ def get_attempt_count(key: str, window_seconds: int = 300) -> int:
     """
     try:
         now = time.time()
-        bucket: List[float] = cache.get(key, [])
+        bucket: list[float] = cache.get(key, [])
         if not isinstance(bucket, list):
             return 0
         return len([t for t in bucket if now - t <= window_seconds])
     except Exception as exc:
         logger.warning("Failed to read attempt count for %s: %s", key, exc)
         return 0
-
-

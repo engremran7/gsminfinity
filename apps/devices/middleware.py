@@ -5,9 +5,9 @@ from django.shortcuts import redirect
 from django.urls import reverse
 
 from apps.devices.services import (
-    enforce_device_policy_for_service,
-    attach_device_cookie,
     DevicePolicyError,
+    attach_device_cookie,
+    enforce_device_policy_for_service,
 )
 
 
@@ -47,28 +47,34 @@ class DeviceEnforcementMiddleware:
             return self.get_response(request)
 
         try:
-            ok, result = enforce_device_policy_for_service(request, request.user, service_name="request")
+            ok, result = enforce_device_policy_for_service(
+                request, request.user, service_name="request"
+            )
             request.device = result.get("device")
             request.device_new = result.get("is_new", False)
             inner_ctx = result.get("context", {})
 
             response = self.get_response(request)
             attach_device_cookie(response, result.get("device"))
-            
+
             # Update popup data if it exists (to ensure counts are fresh)
             if request.session.get("new_device_popup"):
                 try:
                     device_obj = result.get("device")
                     # Force raw fingerprint update
-                    dev_name_update = getattr(device_obj, "display_name", "") or getattr(device_obj, "os_fingerprint", "New Device")
-                    
-                    request.session["new_device_popup"].update({
-                        "device_name": dev_name_update,
-                        "remaining_devices": inner_ctx.get("remaining_devices"),
-                        "current_count": inner_ctx.get("current_device_count"),
-                        "max_devices": inner_ctx.get("max_devices"),
-                        "quota_reset_days": inner_ctx.get("quota_reset_days"),
-                    })
+                    dev_name_update = getattr(
+                        device_obj, "display_name", ""
+                    ) or getattr(device_obj, "os_fingerprint", "New Device")
+
+                    request.session["new_device_popup"].update(
+                        {
+                            "device_name": dev_name_update,
+                            "remaining_devices": inner_ctx.get("remaining_devices"),
+                            "current_count": inner_ctx.get("current_device_count"),
+                            "max_devices": inner_ctx.get("max_devices"),
+                            "quota_reset_days": inner_ctx.get("quota_reset_days"),
+                        }
+                    )
                     request.session.modified = True
                 except Exception:
                     pass
@@ -98,7 +104,9 @@ class DeviceEnforcementMiddleware:
                     # Only show popup if we haven't shown it for this device before
                     try:
                         # Use raw fingerprint as requested
-                        dev_name = getattr(device, "display_name", "") or getattr(device, "os_fingerprint", "New Device")
+                        dev_name = getattr(device, "display_name", "") or getattr(
+                            device, "os_fingerprint", "New Device"
+                        )
 
                         # Store data for the new device popup
                         request.session["new_device_popup"] = {
@@ -116,13 +124,24 @@ class DeviceEnforcementMiddleware:
         except DevicePolicyError as exc:
             reason = exc.reason
             if reason == "device_key_required":
-                messages.error(request, "Device fingerprint is required. Refresh the page to register this device.")
+                messages.error(
+                    request,
+                    "Device fingerprint is required. Refresh the page to register this device.",
+                )
                 return redirect("users:devices")
             if reason in {"untrusted_new_device", "mfa_required", "mfa_required_risk"}:
                 messages.error(request, "New device requires approval or MFA.")
                 return redirect("users:device_approval_needed")
-            if reason in {"device_quota_exceeded", "limit_reached", "user_window_quota", "monthly_device_quota", "yearly_device_quota"}:
-                messages.error(request, "Device limit reached. Remove an old device to continue.")
+            if reason in {
+                "device_quota_exceeded",
+                "limit_reached",
+                "user_window_quota",
+                "monthly_device_quota",
+                "yearly_device_quota",
+            }:
+                messages.error(
+                    request, "Device limit reached. Remove an old device to continue."
+                )
                 return redirect("users:device_eviction")
             if reason == "blocked_device":
                 messages.error(request, "This device is blocked. Contact support.")

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.utils.deprecation import MiddlewareMixin
@@ -14,6 +13,6 @@ class LocaleMiddleware(MiddlewareMixin):
     def process_request(self, request):
         locale = locale_for_request(request, app_id="core", site_id=None)
         request.locale = locale
-        request.direction = "rtl" if locale.startswith(("ar", "ur", "fa", "ps")) else "ltr"
-
-
+        request.direction = (
+            "rtl" if locale.startswith(("ar", "ur", "fa", "ps")) else "ltr"
+        )

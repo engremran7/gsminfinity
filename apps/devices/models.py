@@ -1,8 +1,6 @@
-
 from __future__ import annotations
 
 import uuid
-from typing import Any, Optional
 
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -24,12 +22,18 @@ class Device(models.Model):
         db_index=True,  # CRITICAL: Heavily queried in my_devices view
     )
     # OS fingerprint (primary identity, per user per OS)
-    os_fingerprint = models.CharField(max_length=128, db_index=True, blank=True, default="")
+    os_fingerprint = models.CharField(
+        max_length=128, db_index=True, blank=True, default=""
+    )
     os_name = models.CharField(max_length=50, blank=True, default="")
     os_version = models.CharField(max_length=50, blank=True, default="")
     # Legacy fields kept for compatibility; not used for identity
-    hardware_uuid = models.CharField(max_length=128, db_index=True, blank=True, default="")
-    device_key_id = models.CharField(max_length=128, db_index=True, blank=True, default="")
+    hardware_uuid = models.CharField(
+        max_length=128, db_index=True, blank=True, default=""
+    )
+    device_key_id = models.CharField(
+        max_length=128, db_index=True, blank=True, default=""
+    )
     key_algorithm = models.CharField(
         max_length=20,
         choices=[("ES256", "ES256"), ("Ed25519", "Ed25519")],
@@ -51,18 +55,25 @@ class Device(models.Model):
     metadata = models.JSONField(default=dict, blank=True)
     max_privilege_level = models.CharField(
         max_length=20,
-        choices=[("normal", "Normal"), ("restricted", "Restricted"), ("blocked", "Blocked")],
+        choices=[
+            ("normal", "Normal"),
+            ("restricted", "Restricted"),
+            ("blocked", "Blocked"),
+        ],
         default="normal",
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["user", "os_fingerprint"], name="device_user_os_fingerprint_unique"
+                fields=["user", "os_fingerprint"],
+                name="device_user_os_fingerprint_unique",
             )
         ]
         indexes = [
-            models.Index(fields=["user", "os_fingerprint"], name="device_user_osfp_idx"),
+            models.Index(
+                fields=["user", "os_fingerprint"], name="device_user_osfp_idx"
+            ),
             models.Index(fields=["is_blocked"], name="device_blocked_idx"),
             models.Index(fields=["last_seen_at"], name="device_last_seen_idx"),
             models.Index(fields=["risk_score"], name="device_risk_idx"),
@@ -187,7 +198,11 @@ class DeviceEvent(models.Model):
         Device, null=True, blank=True, on_delete=models.SET_NULL, related_name="events"
     )
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="device_events"
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="device_events",
     )
     event_type = models.CharField(max_length=50, choices=EVENT_CHOICES)
     ip = models.CharField(max_length=64, blank=True, default="")
@@ -210,5 +225,3 @@ class DeviceEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.event_type} @ {self.created_at}"
-
-

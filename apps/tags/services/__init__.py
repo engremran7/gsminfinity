@@ -1,5 +1,6 @@
 """Service layer initialization"""
-from apps.tags.services.tagging_service import TaggingService
-from apps.tags.services.tag_service import TagService
 
-__all__ = ['TaggingService', 'TagService']
+from apps.tags.services.tag_service import TagService
+from apps.tags.services.tagging_service import TaggingService
+
+__all__ = ["TaggingService", "TagService"]

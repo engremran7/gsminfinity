@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import logging
@@ -21,13 +20,12 @@ def connect_signals():
     """
     from . import services
     from .tasks import enqueue_pending_for_account
-    from .models import SocialAccount
-    
+
     # Only connect blog signals if blog app is installed (modularity)
-    if apps.is_installed('apps.blog'):
+    if apps.is_installed("apps.blog"):
         try:
             from apps.blog.models import Post, PostStatus
-            
+
             @receiver(post_save, sender=Post)
             def on_post_publish(sender, instance, **kwargs):
                 if instance.status != PostStatus.PUBLISHED:
@@ -35,15 +33,18 @@ def connect_signals():
                 try:
                     services.fanout_post_publish(instance)
                 except Exception:
-                    logger.exception("Failed to enqueue distribution plan for post %s", instance.pk)
+                    logger.exception(
+                        "Failed to enqueue distribution plan for post %s", instance.pk
+                    )
         except Exception as e:
             logger.debug(f"Blog integration not available: {e}")
-    
+
         try:
             count = enqueue_pending_for_account(instance)
             if count:
-                logger.info("distribution.jobs.enqueued", extra={"channel": instance.channel, "count": count})
+                logger.info(
+                    "distribution.jobs.enqueued",
+                    extra={"channel": instance.channel, "count": count},
+                )
         except Exception:
             logger.exception("Failed to enqueue jobs for channel %s", instance.channel)
-
-

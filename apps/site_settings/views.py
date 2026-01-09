@@ -1,4 +1,3 @@
-
 """
 apps.site_settings.views
 Enterprise-grade Views for GSMInfinity Site & Tenant Settings.
@@ -15,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.sites.shortcuts import get_current_site
@@ -37,7 +36,7 @@ log = logging.getLogger(__name__)
 # =====================================================================================
 
 
-def _settings_snapshot(obj: Any) -> Dict[str, Any]:
+def _settings_snapshot(obj: Any) -> dict[str, Any]:
     """
     Convert a SiteSettings instance into a pure dict.
     Completely defensive → never throws exceptions.
@@ -56,9 +55,7 @@ def _settings_snapshot(obj: Any) -> Dict[str, Any]:
                 getattr(obj, "rate_limit_window_seconds", 300)
             ),
             "enable_blog": bool(getattr(obj, "enable_blog", True)),
-            "enable_blog_comments": bool(
-                getattr(obj, "enable_blog_comments", True)
-            ),
+            "enable_blog_comments": bool(getattr(obj, "enable_blog_comments", True)),
             # Branding / theme keys used by base.html and JS bootstrap
             "primary_color": getattr(obj, "primary_color", "#0d6efd"),
             "secondary_color": getattr(obj, "secondary_color", "#6c757d"),
@@ -150,7 +147,7 @@ def _settings_snapshot(obj: Any) -> Dict[str, Any]:
 # =====================================================================================
 
 
-def _get_settings(request: Optional[HttpRequest] = None) -> Dict[str, Any]:
+def _get_settings(request: HttpRequest | None = None) -> dict[str, Any]:
     """
     Return final effective settings (global only).
     Fully defensive: never raises, always returns stable dict.
@@ -334,5 +331,3 @@ def legacy_cookies_redirect(request: HttpRequest):
         return redirect(reverse("pages:page", kwargs={"slug": "cookies"}))
     except Exception:
         raise Http404()
-
-

@@ -1,10 +1,9 @@
-
 from __future__ import annotations
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any
 
-from apps.ads.models import AdEvent, AdPlacement, AdCreative, Campaign
+from apps.ads.models import AdCreative, AdEvent, AdPlacement, Campaign
 from apps.core.utils import feature_flags
 from apps.core.utils.logging import log_event
 
@@ -13,11 +12,11 @@ logger = logging.getLogger(__name__)
 
 def record_event(
     event_type: str,
-    placement: Optional[AdPlacement] = None,
-    creative: Optional[AdCreative] = None,
-    campaign: Optional[Campaign] = None,
+    placement: AdPlacement | None = None,
+    creative: AdCreative | None = None,
+    campaign: Campaign | None = None,
     user=None,
-    request_meta: Optional[Dict[str, Any]] = None,
+    request_meta: dict[str, Any] | None = None,
 ):
     if not feature_flags.ads_enabled():
         return
@@ -55,5 +54,3 @@ def record_event(
         )
     except Exception:
         logger.warning("record_event failed", exc_info=True)
-
-

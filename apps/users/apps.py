@@ -1,4 +1,3 @@
-
 """
 apps.users.apps
 Application configuration for GSMInfinity's Users module.
@@ -50,7 +49,7 @@ class UsersConfig(AppConfig):
             import apps.users.signals  # noqa: F401
         except Exception as exc:
             logger.warning("Failed to import users signals: %s", exc)
-        
+
         # Import signal handlers for cross-app communication
         try:
             from . import signal_handlers  # noqa: F401
@@ -86,5 +85,3 @@ class UsersConfig(AppConfig):
         # Must remain non-blocking and ORM-safe.
         logger.debug("UsersConfig.ready() completed successfully.")
         return
-
-

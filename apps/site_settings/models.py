@@ -1,4 +1,3 @@
-
 """
 Enterprise-grade Site & Tenant Settings
 
@@ -15,7 +14,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
@@ -95,7 +94,7 @@ class SiteSettings(SingletonModel):
     default_language = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=50, default="UTC")
     enable_localization = models.BooleanField(default=False)
-    
+
     # Featured languages shown in header dropdown (comma-separated codes)
     # Example: "en,ar,fr,de,es,zh,ja,ko,ru,pt"
     featured_languages = models.CharField(
@@ -113,10 +112,18 @@ class SiteSettings(SingletonModel):
         default=False,
         help_text="Enable only if TLS is enforced by reverse proxy",
     )
-    pages_enabled = models.BooleanField(default=True, help_text="Enable dynamic pages app for public pages.")
-    sitemap_enabled = models.BooleanField(default=True, help_text="Expose sitemap.xml for published pages.")
-    sitemap_index_enabled = models.BooleanField(default=True, help_text="Expose sitemap_index.xml for published pages.")
-    sitemap_page_size = models.PositiveIntegerField(default=2000, help_text="Max URLs per sitemap chunk.")
+    pages_enabled = models.BooleanField(
+        default=True, help_text="Enable dynamic pages app for public pages."
+    )
+    sitemap_enabled = models.BooleanField(
+        default=True, help_text="Expose sitemap.xml for published pages."
+    )
+    sitemap_index_enabled = models.BooleanField(
+        default=True, help_text="Expose sitemap_index.xml for published pages."
+    )
+    sitemap_page_size = models.PositiveIntegerField(
+        default=2000, help_text="Max URLs per sitemap chunk."
+    )
 
     # ------------------------------------------------------------------
     # Email (Gmail App Password)
@@ -125,7 +132,9 @@ class SiteSettings(SingletonModel):
         default=False,
         help_text="Use Gmail SMTP with an app password (recommended). When disabled, falls back to environment settings.",
     )
-    gmail_username = models.EmailField(blank=True, default="", help_text="Gmail address used for SMTP AUTH.")
+    gmail_username = models.EmailField(
+        blank=True, default="", help_text="Gmail address used for SMTP AUTH."
+    )
     gmail_app_password = models.CharField(
         max_length=128,
         blank=True,
@@ -170,7 +179,7 @@ class SiteSettings(SingletonModel):
     require_mfa = models.BooleanField(default=False)
     require_profile_completion = models.BooleanField(
         default=True,
-        help_text="Require social auth users to complete profile before accessing the site"
+        help_text="Require social auth users to complete profile before accessing the site",
     )
 
     mfa_totp_issuer = models.CharField(max_length=50, default="Site")
@@ -401,7 +410,3 @@ class SiteSettingsVerificationFileLink(models.Model):
                 fields=["site_settings", "verification_file"], name="site_file_link_idx"
             )
         ]
-
-
-
-

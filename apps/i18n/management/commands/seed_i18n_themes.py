@@ -1,13 +1,16 @@
-
 from __future__ import annotations
-
-import json
-from typing import List, Optional
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from apps.i18n.models import AppManifest, FontRegistry, LanguageProfile, Locale, Theme, ThemeAssignment
+from apps.i18n.models import (
+    AppManifest,
+    FontRegistry,
+    LanguageProfile,
+    Locale,
+    Theme,
+    ThemeAssignment,
+)
 
 
 class Command(BaseCommand):
@@ -39,21 +42,31 @@ class Command(BaseCommand):
         self.stdout.write(self.style.MIGRATE_HEADING("Seeding locales..."))
         for code in locale_codes:
             defaults = {
-                "name": settings.LANGUAGES_DICT.get(code, code) if hasattr(settings, "LANGUAGES_DICT") else code,
-                "direction": "rtl" if code.startswith(("ar", "ur", "fa", "ps")) else "ltr",
+                "name": settings.LANGUAGES_DICT.get(code, code)
+                if hasattr(settings, "LANGUAGES_DICT")
+                else code,
+                "direction": "rtl"
+                if code.startswith(("ar", "ur", "fa", "ps"))
+                else "ltr",
             }
             obj, created = Locale.objects.get_or_create(code=code, defaults=defaults)
             self._log(obj, created)
 
-        self.stdout.write(self.style.MIGRATE_HEADING("Seeding default Nastaleeq font registry..."))
+        self.stdout.write(
+            self.style.MIGRATE_HEADING("Seeding default Nastaleeq font registry...")
+        )
         font_defaults = {
             "family": "Jameel Noori Nastaleeq",
             "urls": ["/static/fonts/jameel-noori-nastaleeq.woff2"],
             "weight_map": {"400": "normal", "700": "bold"},
             "font_display": "swap",
-            "is_default_for_locales": [c for c in locale_codes if c.startswith(("ar", "ur", "fa"))],
+            "is_default_for_locales": [
+                c for c in locale_codes if c.startswith(("ar", "ur", "fa"))
+            ],
         }
-        font, created = FontRegistry.objects.get_or_create(code="jameel-noori-nastaleeq", defaults=font_defaults)
+        font, created = FontRegistry.objects.get_or_create(
+            code="jameel-noori-nastaleeq", defaults=font_defaults
+        )
         self._log(font, created)
 
         self.stdout.write(self.style.MIGRATE_HEADING("Seeding language profiles..."))
@@ -91,14 +104,14 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("i18n seeding complete."))
 
-    def _get_locales(self, arg: Optional[str]) -> List[str]:
+    def _get_locales(self, arg: str | None) -> list[str]:
         if arg:
             return [c.strip() for c in arg.split(",") if c.strip()]
         if hasattr(settings, "LANGUAGES") and settings.LANGUAGES:
             return [code for code, _ in settings.LANGUAGES]
         return ["en", "ur", "ar"]
 
-    def _get_apps(self, arg: Optional[str]) -> List[str]:
+    def _get_apps(self, arg: str | None) -> list[str]:
         if arg:
             return [a.strip() for a in arg.split(",") if a.strip()]
         return ["core", "users", "blog", "comments", "tags"]
@@ -107,7 +120,7 @@ class Command(BaseCommand):
         msg = f"{'Created' if created else 'Exists'}: {obj}"
         self.stdout.write(f"  - {msg}")
 
-    def _seed_themes(self, app_ids: List[str], site_id: Optional[str]):
+    def _seed_themes(self, app_ids: list[str], site_id: str | None):
         """
         Create a curated set of enterprise-friendly themes and assign global defaults.
         """
@@ -126,7 +139,9 @@ class Command(BaseCommand):
                     },
                     "radii": {"md": "14px"},
                     "shadows": {"elevation": "0 18px 40px rgba(37,99,235,0.15)"},
-                    "typography": {"fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}},
+                    "typography": {
+                        "fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}
+                    },
                 },
             },
             {
@@ -143,7 +158,9 @@ class Command(BaseCommand):
                     },
                     "radii": {"md": "12px"},
                     "shadows": {"elevation": "0 22px 46px rgba(0,0,0,0.65)"},
-                    "typography": {"fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}},
+                    "typography": {
+                        "fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}
+                    },
                 },
             },
             {
@@ -160,7 +177,9 @@ class Command(BaseCommand):
                     },
                     "radii": {"md": "16px"},
                     "shadows": {"elevation": "0 16px 36px rgba(16,185,129,0.18)"},
-                    "typography": {"fonts": {"base": "Manrope, Inter, system-ui, sans-serif"}},
+                    "typography": {
+                        "fonts": {"base": "Manrope, Inter, system-ui, sans-serif"}
+                    },
                 },
             },
             {
@@ -177,7 +196,9 @@ class Command(BaseCommand):
                     },
                     "radii": {"md": "14px"},
                     "shadows": {"elevation": "0 20px 44px rgba(139,92,246,0.35)"},
-                    "typography": {"fonts": {"base": "Space Grotesk, Inter, system-ui, sans-serif"}},
+                    "typography": {
+                        "fonts": {"base": "Space Grotesk, Inter, system-ui, sans-serif"}
+                    },
                 },
             },
             {
@@ -194,7 +215,9 @@ class Command(BaseCommand):
                     },
                     "radii": {"md": "18px"},
                     "shadows": {"elevation": "0 14px 32px rgba(249,115,22,0.25)"},
-                    "typography": {"fonts": {"base": "Sora, Inter, system-ui, sans-serif"}},
+                    "typography": {
+                        "fonts": {"base": "Sora, Inter, system-ui, sans-serif"}
+                    },
                 },
             },
             {
@@ -211,7 +234,9 @@ class Command(BaseCommand):
                     },
                     "radii": {"md": "12px"},
                     "shadows": {"elevation": "0 20px 40px rgba(59,130,246,0.3)"},
-                    "typography": {"fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}},
+                    "typography": {
+                        "fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}
+                    },
                 },
             },
             {
@@ -228,7 +253,9 @@ class Command(BaseCommand):
                     },
                     "radii": {"md": "14px"},
                     "shadows": {"elevation": "0 12px 28px rgba(217,119,6,0.22)"},
-                    "typography": {"fonts": {"base": "IBM Plex Sans, Inter, system-ui, sans-serif"}},
+                    "typography": {
+                        "fonts": {"base": "IBM Plex Sans, Inter, system-ui, sans-serif"}
+                    },
                 },
             },
             {
@@ -245,7 +272,9 @@ class Command(BaseCommand):
                     },
                     "radii": {"md": "12px"},
                     "shadows": {"elevation": "0 20px 44px rgba(34,197,94,0.28)"},
-                    "typography": {"fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}},
+                    "typography": {
+                        "fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}
+                    },
                 },
             },
             {
@@ -262,7 +291,9 @@ class Command(BaseCommand):
                     },
                     "radii": {"md": "0px"},
                     "shadows": {"elevation": "none"},
-                    "typography": {"fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}},
+                    "typography": {
+                        "fonts": {"base": "Inter, 'Segoe UI', system-ui, sans-serif"}
+                    },
                 },
             },
         ]
@@ -288,5 +319,3 @@ class Command(BaseCommand):
                     scope="global",
                     defaults={},
                 )
-
-

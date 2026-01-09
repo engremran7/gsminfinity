@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import json
@@ -85,8 +84,15 @@ def execute_view(request: HttpRequest) -> JsonResponse:
     run = api.execute(
         workflow,
         inputs,
-        request.user if hasattr(request, "user") and request.user.is_authenticated else None,
+        request.user
+        if hasattr(request, "user") and request.user.is_authenticated
+        else None,
     )
-    return JsonResponse({"ok": True, "run_id": run.id, "status": run.status, "output": run.output_payload})
-
-
+    return JsonResponse(
+        {
+            "ok": True,
+            "run_id": run.id,
+            "status": run.status,
+            "output": run.output_payload,
+        }
+    )

@@ -4,8 +4,8 @@ from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.site_settings.models import SiteSettings
 from apps.seo.models_settings import SeoAutomationSettings
+from apps.site_settings.models import SiteSettings
 
 from .models import Tag
 

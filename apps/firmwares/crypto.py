@@ -1,4 +1,5 @@
 import base64
+
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -7,7 +8,9 @@ from django.core.exceptions import ImproperlyConfigured
 def _load_fernet_key() -> bytes:
     key = getattr(settings, "FERNET_KEY", None)
     if not key:
-        raise ImproperlyConfigured("FERNET_KEY must be set (urlsafe base64 32-byte key)")
+        raise ImproperlyConfigured(
+            "FERNET_KEY must be set (urlsafe base64 32-byte key)"
+        )
     try:
         raw = base64.urlsafe_b64decode(key)
     except Exception as exc:  # pragma: no cover - defensive

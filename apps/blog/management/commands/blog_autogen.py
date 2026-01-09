@@ -18,7 +18,9 @@ class Command(BaseCommand):
     help = "Generate blog posts from the AI topic queue. Autopublishes when AI succeeds; drafts on failure."
 
     def add_arguments(self, parser: CommandParser) -> None:
-        parser.add_argument("--limit", type=int, default=3, help="Max topics to process this run.")
+        parser.add_argument(
+            "--limit", type=int, default=3, help="Max topics to process this run."
+        )
         parser.add_argument(
             "--draft-only",
             action="store_true",
@@ -41,13 +43,17 @@ class Command(BaseCommand):
 
         if seed:
             topics = autoplan_topics(seed, count=limit)
-            self.stdout.write(self.style.SUCCESS(f"Queued {len(topics)} AI topics from seed."))
+            self.stdout.write(
+                self.style.SUCCESS(f"Queued {len(topics)} AI topics from seed.")
+            )
 
         processed_today = AutoTopic.objects.filter(
             updated_at__date=today, status__in=["running", "succeeded", "failed"]
         ).count()
         if processed_today >= daily_cap:
-            self.stdout.write(self.style.WARNING("Daily autogen cap reached; skipping run."))
+            self.stdout.write(
+                self.style.WARNING("Daily autogen cap reached; skipping run.")
+            )
             return
         limit = min(limit, daily_cap - processed_today)
 
@@ -62,15 +68,27 @@ class Command(BaseCommand):
                 post = generate_post_from_topic(topic, autopublish=autopublish)
                 processed += 1
                 state = "published" if post.is_published else "draft"
-                self.stdout.write(self.style.SUCCESS(f"{topic.topic} -> {state} ({post.slug})"))
+                self.stdout.write(
+                    self.style.SUCCESS(f"{topic.topic} -> {state} ({post.slug})")
+                )
             except Exception as exc:
                 failures += 1
                 topic.status = "failed"
                 topic.retry_count = (topic.retry_count or 0) + 1
                 topic.last_attempt_at = timezone.now()
                 topic.last_error = str(exc)[:500]
-                topic.save(update_fields=["status", "last_error", "retry_count", "last_attempt_at", "updated_at"])
+                topic.save(
+                    update_fields=[
+                        "status",
+                        "last_error",
+                        "retry_count",
+                        "last_attempt_at",
+                        "updated_at",
+                    ]
+                )
                 logger.exception("blog_autogen failed for %s", topic.topic)
                 self.stderr.write(self.style.ERROR(f"Failed {topic.topic}: {exc}"))
 
-        self.stdout.write(self.style.SUCCESS(f"Processed {processed} topics; failures: {failures}"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Processed {processed} topics; failures: {failures}")
+        )

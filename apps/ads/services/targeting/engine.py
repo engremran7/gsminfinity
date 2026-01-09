@@ -1,7 +1,6 @@
-
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any
 
 from apps.ads.models import AdPlacement, Campaign
 from apps.core.utils import feature_flags
@@ -11,16 +10,15 @@ def is_ads_enabled() -> bool:
     return feature_flags.ads_enabled()
 
 
-def campaign_allowed(campaign: Campaign, context: Dict[str, Any]) -> bool:
+def campaign_allowed(campaign: Campaign, context: dict[str, Any]) -> bool:
     if not campaign.is_live():
         return False
     if not feature_flags.ads_enabled():
         return False
     # Consent-aware: block personalized campaigns when ads consent not granted
     consent_val = context.get("consent_ads")
-    consent_granted = (
-        consent_val is True
-        or (isinstance(consent_val, str) and consent_val.lower() in {"1", "true", "yes"})
+    consent_granted = consent_val is True or (
+        isinstance(consent_val, str) and consent_val.lower() in {"1", "true", "yes"}
     )
     if not consent_granted and campaign.type in {"affiliate", "network", "direct"}:
         return False
@@ -38,5 +36,3 @@ def campaign_allowed(campaign: Campaign, context: Dict[str, Any]) -> bool:
 
 def placement_allowed(placement: AdPlacement) -> bool:
     return placement.is_enabled and placement.is_active and not placement.is_deleted
-
-

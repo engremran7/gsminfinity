@@ -1,4 +1,3 @@
-
 """
 apps.consent.admin
 Enterprise-grade, hardened GDPR/CCPA admin interface.
@@ -9,7 +8,7 @@ from __future__ import annotations
 
 import csv
 import json
-from typing import Iterable
+from collections.abc import Iterable
 
 from django.contrib import admin
 from django.db import transaction
@@ -361,5 +360,3 @@ class ConsentLogAdmin(admin.ModelAdmin):
         except Exception:
             pass
         return "Anonymous"
-
-

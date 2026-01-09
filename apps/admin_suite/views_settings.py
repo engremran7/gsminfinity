@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from .views_shared import *
-from .views_shared import _render_admin, _make_breadcrumb
+from .views_shared import _make_breadcrumb, _render_admin
+
 
 # Extracted views_settings views from legacy views.py
 @staff_member_required
@@ -59,9 +60,10 @@ def admin_suite_settings(request: HttpRequest) -> HttpResponse:
     }
     try:
         from security_suite.security import conf as sec_conf
-        from security_suite.security_devices import conf as dev_conf
         from security_suite.security_bots import conf as bot_conf
+        from security_suite.security_devices import conf as dev_conf
         from security_suite.security_risk import conf as risk_conf
+
         from apps.core.models import AppRegistry
 
         reg = AppRegistry.get_solo()
@@ -70,13 +72,21 @@ def admin_suite_settings(request: HttpRequest) -> HttpResponse:
                 "devices_enabled": dev_conf.get("PERSISTENCE_ENABLED", True),
                 "bots_enabled": bot_conf.get("ENABLED", True),
                 "risk_enabled": risk_conf.get("ENABLED", True),
-                "login_policy": sec_conf.get("DEFAULT_LOGIN_RISK_POLICY", "mfa_if_high"),
+                "login_policy": sec_conf.get(
+                    "DEFAULT_LOGIN_RISK_POLICY", "mfa_if_high"
+                ),
                 "ads_enabled": bool(getattr(reg, "ads_enabled", True)),
                 "seo_enabled": bool(getattr(reg, "seo_enabled", True)),
                 "comments_enabled": bool(getattr(reg, "comments_enabled", True)),
-                "distribution_enabled": bool(getattr(reg, "distribution_enabled", True)),
-                "device_identity_enabled": bool(getattr(reg, "device_identity_enabled", True)),
-                "crawler_guard_enabled": bool(getattr(reg, "crawler_guard_enabled", True)),
+                "distribution_enabled": bool(
+                    getattr(reg, "distribution_enabled", True)
+                ),
+                "device_identity_enabled": bool(
+                    getattr(reg, "device_identity_enabled", True)
+                ),
+                "crawler_guard_enabled": bool(
+                    getattr(reg, "crawler_guard_enabled", True)
+                ),
                 "ai_behavior_enabled": bool(getattr(reg, "ai_behavior_enabled", True)),
             }
         )
@@ -92,7 +102,9 @@ def admin_suite_settings(request: HttpRequest) -> HttpResponse:
             "message": message,
         },
         nav_active="settings",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Settings", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("Settings", None)
+        ),
     )
 
 
@@ -111,7 +123,9 @@ def admin_suite_settings_edit(request: HttpRequest) -> HttpResponse:
         enable_signup = forms.BooleanField(required=False)
         maintenance_mode = forms.BooleanField(required=False)
         force_https = forms.BooleanField(required=False)
-        cache_ttl_seconds = forms.IntegerField(required=False, min_value=60, max_value=86400)
+        cache_ttl_seconds = forms.IntegerField(
+            required=False, min_value=60, max_value=86400
+        )
 
     instance = None
     initial = {}
@@ -184,8 +198,9 @@ def admin_suite_consent(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.consent.models import ConsentPolicy
             from django.utils import timezone
+
+            from apps.consent.models import ConsentPolicy
 
             if action == "create_policy":
                 ConsentPolicy.objects.create(
@@ -212,8 +227,9 @@ def admin_suite_consent(request: HttpRequest) -> HttpResponse:
             logger.warning("Admin suite consent action failed: %s", exc)
 
     try:
-        from apps.consent.models import ConsentPolicy, ConsentDecision, ConsentEvent
         from django.utils import timezone
+
+        from apps.consent.models import ConsentDecision, ConsentEvent, ConsentPolicy
 
         stats["policies_total"] = ConsentPolicy.objects.count()
         stats["policies_active"] = ConsentPolicy.objects.filter(is_active=True).count()
@@ -225,7 +241,9 @@ def admin_suite_consent(request: HttpRequest) -> HttpResponse:
         )
 
         since = timezone.now() - timezone.timedelta(hours=24)
-        stats["decisions_24h"] = ConsentDecision.objects.filter(created_at__gte=since).count()
+        stats["decisions_24h"] = ConsentDecision.objects.filter(
+            created_at__gte=since
+        ).count()
         decisions = list(
             ConsentDecision.objects.select_related("user", "policy")
             .order_by("-created_at")[:10]
@@ -255,7 +273,9 @@ def admin_suite_consent(request: HttpRequest) -> HttpResponse:
             "events": events,
         },
         nav_active="consent",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Consent", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("Consent", None)
+        ),
         subtitle="Policies, decisions, and banner health",
     )
 
@@ -269,7 +289,9 @@ def admin_suite_email_settings(request: HttpRequest) -> HttpResponse:
     class EmailForm(forms.Form):
         gmail_enabled = forms.BooleanField(required=False)
         gmail_username = forms.EmailField(required=False)
-        gmail_app_password = forms.CharField(widget=forms.PasswordInput(render_value=False), required=False)
+        gmail_app_password = forms.CharField(
+            widget=forms.PasswordInput(render_value=False), required=False
+        )
         gmail_from_email = forms.EmailField(required=False)
 
     instance = None
@@ -330,5 +352,9 @@ def admin_suite_email_settings(request: HttpRequest) -> HttpResponse:
     )
 
 
-__all__ = ['admin_suite_settings', 'admin_suite_settings_edit', 'admin_suite_consent', 'admin_suite_email_settings']
-
+__all__ = [
+    "admin_suite_settings",
+    "admin_suite_settings_edit",
+    "admin_suite_consent",
+    "admin_suite_email_settings",
+]

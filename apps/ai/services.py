@@ -1,19 +1,24 @@
-
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, List
+from typing import Any
 
-from django.utils import timezone
 from django.conf import settings
+from django.utils import timezone
 
 from apps.ai.clients import AIProviderConfig, AIProviderError, send_chat
-from apps.ai.models import AISettings, KnowledgeSource, ModelEndpoint, PipelineRun, Workflow
+from apps.ai.models import (
+    AISettings,
+    KnowledgeSource,
+    ModelEndpoint,
+    PipelineRun,
+    Workflow,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def get_settings() -> Dict[str, Any]:
+def get_settings() -> dict[str, Any]:
     try:
         s = AISettings.get_solo()
         return {
@@ -82,18 +87,18 @@ def _build_config() -> AIProviderConfig:
     )
 
 
-def test_completion(prompt: str) -> Dict[str, Any]:
+def test_completion(prompt: str) -> dict[str, Any]:
     cfg = _build_config()
     if not cfg.api_key:
         raise AIProviderError("API key is not configured")
-    messages: List[Dict[str, str]] = [
+    messages: list[dict[str, str]] = [
         {"role": "system", "content": "You are a concise assistant."},
         {"role": "user", "content": prompt},
     ]
     return send_chat(cfg, messages)
 
 
-def run_workflow(workflow_name: str, payload: Dict[str, Any], user=None) -> PipelineRun:
+def run_workflow(workflow_name: str, payload: dict[str, Any], user=None) -> PipelineRun:
     wf = Workflow.objects.filter(name=workflow_name, is_active=True).first()
     requester = user if getattr(user, "is_authenticated", False) else None
 
@@ -104,7 +109,10 @@ def run_workflow(workflow_name: str, payload: Dict[str, Any], user=None) -> Pipe
             requested_by=requester,
             input_payload=payload or {},
             status="failed",
-            output_payload={"error": "Workflow not found or inactive", "requested": workflow_name},
+            output_payload={
+                "error": "Workflow not found or inactive",
+                "requested": workflow_name,
+            },
             started_at=timezone.now(),
             finished_at=timezone.now(),
         )
@@ -129,7 +137,9 @@ def run_workflow(workflow_name: str, payload: Dict[str, Any], user=None) -> Pipe
     return run
 
 
-def register_knowledge_source(name: str, source_type: str, location: str, metadata: Optional[Dict[str, Any]] = None) -> KnowledgeSource:
+def register_knowledge_source(
+    name: str, source_type: str, location: str, metadata: dict[str, Any] | None = None
+) -> KnowledgeSource:
     return KnowledgeSource.objects.create(
         name=name,
         source_type=source_type,
@@ -138,18 +148,21 @@ def register_knowledge_source(name: str, source_type: str, location: str, metada
     )
 
 
-def list_models(kind: str | None = None) -> Dict[str, Any]:
+def list_models(kind: str | None = None) -> dict[str, Any]:
     qs = ModelEndpoint.objects.filter(is_active=True)
     if kind:
         qs = qs.filter(kind=kind)
     return {
         "models": [
-            {"name": m.name, "kind": m.kind, "provider": m.provider, "endpoint": m.endpoint}
+            {
+                "name": m.name,
+                "kind": m.kind,
+                "provider": m.provider,
+                "endpoint": m.endpoint,
+            }
             for m in qs
         ]
     }
 
 
 __all__ = ["get_settings", "run_workflow", "register_knowledge_source", "list_models"]
-
-

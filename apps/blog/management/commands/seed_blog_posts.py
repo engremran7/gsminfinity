@@ -2,9 +2,11 @@
 Management command to create dummy blog posts WITHOUT tags.
 This is for testing auto-tagging functionality.
 """
+
 import random
-from django.core.management.base import BaseCommand
+
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -491,39 +493,38 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        from apps.blog.models import Post, PostStatus, Category
-        
+        from apps.blog.models import Category, Post, PostStatus
+
         count = min(options["count"], len(BLOG_TOPICS))
-        
+
         # Get or create admin user
         admin_user = User.objects.filter(is_superuser=True).first()
         if not admin_user:
             admin_user = User.objects.filter(is_staff=True).first()
         if not admin_user:
             admin_user = User.objects.first()
-        
+
         if not admin_user:
             self.stdout.write(self.style.ERROR("No users found. Create a user first."))
             return
-        
+
         # Get or create default category
         category, _ = Category.objects.get_or_create(
-            name="Technology",
-            defaults={"slug": "technology"}
+            name="Technology", defaults={"slug": "technology"}
         )
-        
+
         created_count = 0
-        
+
         for i, topic in enumerate(BLOG_TOPICS[:count]):
             title = topic["title"]
             slug = slugify(title)
-            
+
             # Check if post already exists
             if Post.objects.filter(slug=slug).exists():
                 self.stdout.write(f"  Skipping (exists): {title}")
                 continue
-            
-            post = Post.objects.create(
+
+            Post.objects.create(
                 title=title,
                 slug=slug,
                 summary=topic["summary"],
@@ -538,13 +539,21 @@ class Command(BaseCommand):
                 allow_comments=True,
                 featured=i < 3,  # First 3 are featured
             )
-            
+
             # Explicitly DO NOT add any tags
             # This is intentional for testing auto-tagging
-            
+
             created_count += 1
             self.stdout.write(self.style.SUCCESS(f"✓ Created: {title}"))
-        
+
         self.stdout.write("")
-        self.stdout.write(self.style.SUCCESS(f"Done! Created {created_count} blog posts without tags."))
-        self.stdout.write(self.style.WARNING("These posts have NO tags - test auto-tagging to see if tags are added."))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Done! Created {created_count} blog posts without tags."
+            )
+        )
+        self.stdout.write(
+            self.style.WARNING(
+                "These posts have NO tags - test auto-tagging to see if tags are added."
+            )
+        )

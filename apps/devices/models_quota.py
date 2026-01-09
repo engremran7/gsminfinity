@@ -12,8 +12,12 @@ class UserDeviceQuota(models.Model):
         ("12m", "12 Months"),
     ]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="device_quotas")
-    max_devices = models.PositiveIntegerField(null=True, blank=True, help_text="Override max devices; null = default")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="device_quotas"
+    )
+    max_devices = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Override max devices; null = default"
+    )
     window = models.CharField(max_length=4, choices=WINDOW_CHOICES, default="6m")
     last_reset_at = models.DateTimeField(default=timezone.now)
     notes = models.TextField(blank=True, default="")

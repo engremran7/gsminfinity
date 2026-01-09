@@ -1,4 +1,3 @@
-
 """
 apps.consent.views
 Enterprise-grade Consent API Endpoints.
@@ -16,24 +15,23 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
-from apps.consent.models import ConsentRecord, ConsentDecision, ConsentEvent
-from apps.consent.utils import (
-    consent_cache_key,
-    get_active_policy,
-    resolve_site_domain,
-    hash_ip,
-    hash_ua,
-    serialize_policy,
-)
-from apps.core.utils.ip import get_client_ip
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import transaction
 from django.http import HttpRequest, JsonResponse
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_GET, require_POST
+
+from apps.consent.models import ConsentDecision, ConsentEvent
+from apps.consent.utils import (
+    consent_cache_key,
+    get_active_policy,
+    resolve_site_domain,
+    serialize_policy,
+)
+from apps.core.utils.ip import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +48,7 @@ _MAX_PAYLOAD_BYTES = 1_048_576  # 1MB limit to prevent abuse
 # ---------------------------------------------------------------
 
 
-def _safe_json_parse(request: HttpRequest) -> Dict[str, Any]:
+def _safe_json_parse(request: HttpRequest) -> dict[str, Any]:
     """
     Safely parse JSON or form payloads.
 
@@ -85,8 +83,8 @@ def _safe_json_parse(request: HttpRequest) -> Dict[str, Any]:
 
 
 def _sanitize_categories(
-    policy_snapshot: Dict[str, Any], user_data: Dict[str, Any]
-) -> Dict[str, bool]:
+    policy_snapshot: dict[str, Any], user_data: dict[str, Any]
+) -> dict[str, bool]:
     """
     Convert user categories → {slug: bool}, enforcing required categories as True.
 
@@ -99,7 +97,7 @@ def _sanitize_categories(
         }
       }
     """
-    result: Dict[str, bool] = {}
+    result: dict[str, bool] = {}
 
     try:
         for slug, meta in policy_snapshot.items():
@@ -148,7 +146,11 @@ def get_consent_status(request: HttpRequest) -> JsonResponse:
             )
         policy = serialize_policy(policy_obj) or {}
         version = str(policy.get("version") or getattr(policy_obj, "version", "") or "")
-        categories = policy.get("categories_snapshot") or getattr(policy_obj, "categories_snapshot", {}) or {}
+        categories = (
+            policy.get("categories_snapshot")
+            or getattr(policy_obj, "categories_snapshot", {})
+            or {}
+        )
 
         return JsonResponse(
             {
@@ -205,8 +207,14 @@ def update_consent(request: HttpRequest) -> JsonResponse:
             )
 
         policy = serialize_policy(policy_obj) or {}
-        snapshot = policy.get("categories_snapshot") or getattr(policy_obj, "categories_snapshot", {}) or {}
-        policy_version = str(policy.get("version") or getattr(policy_obj, "version", "") or "")
+        snapshot = (
+            policy.get("categories_snapshot")
+            or getattr(policy_obj, "categories_snapshot", {})
+            or {}
+        )
+        policy_version = str(
+            policy.get("version") or getattr(policy_obj, "version", "") or ""
+        )
 
         # 3) Sanitize categories
         sanitized = _sanitize_categories(snapshot, data)
@@ -225,7 +233,9 @@ def update_consent(request: HttpRequest) -> JsonResponse:
                     ip=get_client_ip(request) or "",
                     ua=request.META.get("HTTP_USER_AGENT", ""),
                 )
-                decision.save(update_fields=["categories", "ip_hash", "user_agent_hash", "user"])
+                decision.save(
+                    update_fields=["categories", "ip_hash", "user_agent_hash", "user"]
+                )
 
                 ConsentEvent.objects.create(
                     decision=decision,
@@ -273,5 +283,3 @@ def update_consent(request: HttpRequest) -> JsonResponse:
     except Exception as exc:
         logger.exception("update_consent unexpected failure → %s", exc)
         return JsonResponse({"ok": False, "error": "internal_error"}, status=500)
-
-

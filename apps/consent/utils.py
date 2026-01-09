@@ -1,13 +1,13 @@
-
 from __future__ import annotations
 
 import hashlib
 import os
-from typing import Optional, Tuple
 
 from django.conf import settings
 
-CONSENT_SALT = os.environ.get("CONSENT_HASH_SALT", getattr(settings, "CONSENT_HASH_SALT", "gsm-default-salt")).encode(
+CONSENT_SALT = os.environ.get(
+    "CONSENT_HASH_SALT", getattr(settings, "CONSENT_HASH_SALT", "gsm-default-salt")
+).encode(
     "utf-8",
     "ignore",
 )
@@ -28,7 +28,7 @@ def check(scope: str, request) -> bool:
     if not state:
         return False
 
-    scope_val: Optional[bool] = None
+    scope_val: bool | None = None
     if isinstance(state, dict):
         scope_val = state.get(f"{scope}_enabled")
         if scope_val is None:
@@ -110,9 +110,11 @@ def consent_cache_key(domain: str = "") -> str:
 
 
 def resolve_site_domain(request) -> str:
-    return getattr(request, "site_domain", "") or request.get_host() if hasattr(
-        request, "get_host"
-    ) else ""
+    return (
+        getattr(request, "site_domain", "") or request.get_host()
+        if hasattr(request, "get_host")
+        else ""
+    )
 
 
 def hash_ip(ip: str) -> str:
@@ -125,7 +127,7 @@ def hash_ua(ua: str) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def consent_cookie_settings() -> Tuple[str, dict]:
+def consent_cookie_settings() -> tuple[str, dict]:
     """
     Returns (cookie_name, options) so views/middleware share the same policy.
     """
@@ -158,5 +160,3 @@ def set_consent_cookie(response, value) -> None:
     except Exception:
         # Defensive: avoid breaking the response path
         pass
-
-

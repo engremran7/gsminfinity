@@ -13,10 +13,18 @@ from . import views_shared as _shared
 
 # Export core helpers for backward compatibility
 __all__ = []
-_shared_exports = ("logger", "_ADMIN_DISABLED", "_ADMIN_LOGIN_URL", "STAFF_ONLY", "_make_breadcrumb", "_render_admin")
+_shared_exports = (
+    "logger",
+    "_ADMIN_DISABLED",
+    "_ADMIN_LOGIN_URL",
+    "STAFF_ONLY",
+    "_make_breadcrumb",
+    "_render_admin",
+)
 for name in _shared_exports:
     globals()[name] = getattr(_shared, name)
     __all__.append(name)
+
 
 def _auto_import_view_modules() -> None:
     base_pkg = __package__ or "apps.admin_suite"
@@ -33,18 +41,17 @@ def _auto_import_view_modules() -> None:
             globals()[attr] = getattr(module, attr)
         __all__.extend(exported)
 
+
 _auto_import_view_modules()
 
 # Explicitly re-export new views if auto-import misses them (e.g. due to caching)
-from .views_content import admin_suite_blog_categories, admin_suite_pending_approval
-from .views_users import admin_suite_user_sessions, admin_suite_staff_users
-from .views_security import admin_suite_security_events
 
-__all__.extend([
-    "admin_suite_blog_categories",
-    "admin_suite_pending_approval",
-    "admin_suite_user_sessions",
-    "admin_suite_staff_users",
-    "admin_suite_security_events",
-])
-
+__all__.extend(
+    [
+        "admin_suite_blog_categories",
+        "admin_suite_pending_approval",
+        "admin_suite_user_sessions",
+        "admin_suite_staff_users",
+        "admin_suite_security_events",
+    ]
+)

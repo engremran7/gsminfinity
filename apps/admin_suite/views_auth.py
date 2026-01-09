@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .views_shared import *
-from .views_shared import _render_admin, _make_breadcrumb
+from .views_shared import _make_breadcrumb, _render_admin
 
 # Extracted views_auth views from legacy views.py
 
@@ -25,7 +25,9 @@ class AdminSuiteLoginView(LoginView):
 
     def dispatch(self, request: HttpRequest, *args, **kwargs):
         # If already authenticated but not staff, log out and force fresh login instead of redirecting to user dashboard.
-        if request.user.is_authenticated and not getattr(request.user, "is_staff", False):
+        if request.user.is_authenticated and not getattr(
+            request.user, "is_staff", False
+        ):
             messages.warning(
                 request,
                 "Admin access requires a staff account. Please sign in with a staff user.",
@@ -39,7 +41,9 @@ class AdminSuiteLoginView(LoginView):
         cache_key = self._attempt_key()
         attempts = cache.get(cache_key, 0)
         if attempts >= self.throttle_limit:
-            messages.error(request, "Too many login attempts. Please wait and try again.")
+            messages.error(
+                request, "Too many login attempts. Please wait and try again."
+            )
             return self.form_invalid(self.get_form())
         resp = super().dispatch(request, *args, **kwargs)
         return resp
@@ -67,7 +71,9 @@ class AdminSuiteLoginView(LoginView):
         if user and getattr(user, "is_staff", False):
             # Optionally shorten session for admin area
             try:
-                self.request.session.set_expiry(getattr(settings, "ADMIN_SESSION_AGE", 3600))
+                self.request.session.set_expiry(
+                    getattr(settings, "ADMIN_SESSION_AGE", 3600)
+                )
             except Exception:
                 pass
             # Force security question setup on first staff login
@@ -101,13 +107,18 @@ def admin_suite_security_question(request: HttpRequest) -> HttpResponse:
         except Exception:
             pass
 
-    identifier = (request.POST.get("identifier") or request.GET.get("identifier") or "").strip()
+    identifier = (
+        request.POST.get("identifier") or request.GET.get("identifier") or ""
+    ).strip()
     user_obj = None
     sq = None
     User = get_user_model()
     if identifier:
         try:
-            user_obj = User.objects.filter(models.Q(email__iexact=identifier) | models.Q(username__iexact=identifier)).first()
+            user_obj = User.objects.filter(
+                models.Q(email__iexact=identifier)
+                | models.Q(username__iexact=identifier)
+            ).first()
             if user_obj:
                 sq = getattr(user_obj, "security_question", None)
                 if sq and not sq.is_active:
@@ -273,7 +284,9 @@ def admin_suite_security_question_setup(request: HttpRequest) -> HttpResponse:
         "admin_suite/security_question_setup.html",
         {"form": form, "message": message, "existing": existing},
         nav_active="settings",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Security Question", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("Security Question", None)
+        ),
         subtitle="Set a recovery question for admin password reset",
     )
 

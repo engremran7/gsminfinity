@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from .views_shared import *
-from .views_shared import _render_admin, _make_breadcrumb
+from .views_shared import _make_breadcrumb, _render_admin
+
 
 # Extracted views_content views from legacy views.py
 class PageForm(forms.ModelForm):
@@ -28,7 +29,9 @@ class PageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        base_class = "border border-slate-300 rounded px-2 py-1 w-full bg-white text-slate-900"
+        base_class = (
+            "border border-slate-300 rounded px-2 py-1 w-full bg-white text-slate-900"
+        )
         for name, field in self.fields.items():
             if name in {"include_in_sitemap"}:
                 continue
@@ -88,7 +91,9 @@ def admin_suite_pages(request: HttpRequest) -> HttpResponse:
         "published": Page.objects.filter(status="published").count(),
         "drafts": Page.objects.filter(status="draft").count(),
         "archived": Page.objects.filter(status="archived").count(),
-        "sitemap": Page.objects.filter(include_in_sitemap=True, status="published").count(),
+        "sitemap": Page.objects.filter(
+            include_in_sitemap=True, status="published"
+        ).count(),
     }
 
     return _render_admin(
@@ -102,7 +107,9 @@ def admin_suite_pages(request: HttpRequest) -> HttpResponse:
             "message": message,
         },
         nav_active="pages",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Pages", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("Pages", None)
+        ),
         subtitle="Pages (public) management",
     )
 
@@ -116,7 +123,7 @@ def admin_suite_blog(request: HttpRequest) -> HttpResponse:
         raise _ADMIN_DISABLED
 
     try:
-        from apps.blog.models import Post, PostStatus, Category
+        from apps.blog.models import Category, Post, PostStatus
     except Exception:
         raise Http404("Blog module not installed")
 
@@ -138,32 +145,62 @@ def admin_suite_blog(request: HttpRequest) -> HttpResponse:
             ]
             widgets = {
                 "publish_at": forms.DateTimeInput(
-                    attrs={"type": "datetime-local", "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}
+                    attrs={
+                        "type": "datetime-local",
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900",
+                    }
                 ),
                 "summary": forms.Textarea(
-                    attrs={"rows": 2, "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}
+                    attrs={
+                        "rows": 2,
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900",
+                    }
                 ),
                 "body": forms.Textarea(
-                    attrs={"rows": 8, "class": "w-full border rounded px-2 py-2 bg-white text-slate-900"}
+                    attrs={
+                        "rows": 8,
+                        "class": "w-full border rounded px-2 py-2 bg-white text-slate-900",
+                    }
                 ),
                 "title": forms.TextInput(
-                    attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}
+                    attrs={
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"
+                    }
                 ),
                 "slug": forms.TextInput(
-                    attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}
+                    attrs={
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"
+                    }
                 ),
                 "seo_title": forms.TextInput(
-                    attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}
+                    attrs={
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"
+                    }
                 ),
                 "seo_description": forms.Textarea(
-                    attrs={"rows": 2, "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}
+                    attrs={
+                        "rows": 2,
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900",
+                    }
                 ),
                 "canonical_url": forms.URLInput(
-                    attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}
+                    attrs={
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"
+                    }
                 ),
-                "status": forms.Select(attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}),
-                "category": forms.Select(attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}),
-                "featured": forms.CheckboxInput(attrs={"class": "h-4 w-4 text-primary"}),
+                "status": forms.Select(
+                    attrs={
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"
+                    }
+                ),
+                "category": forms.Select(
+                    attrs={
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"
+                    }
+                ),
+                "featured": forms.CheckboxInput(
+                    attrs={"class": "h-4 w-4 text-primary"}
+                ),
             }
 
     message = ""
@@ -223,12 +260,14 @@ def admin_suite_blog(request: HttpRequest) -> HttpResponse:
     seo_health = {}
     if edit_post:
         try:
-            from apps.seo.auto import suggest_tags, ensure_canonical
+            from apps.seo.auto import ensure_canonical, suggest_tags
 
-            suggested_tags = suggest_tags([edit_post.title, edit_post.summary or "", edit_post.body], max_tags=6)
+            suggested_tags = suggest_tags(
+                [edit_post.title, edit_post.summary or "", edit_post.body], max_tags=6
+            )
             seo_health = {
                 "title_len": len(edit_post.title or ""),
-                "desc_len": len((edit_post.seo_description or edit_post.summary or "")),
+                "desc_len": len(edit_post.seo_description or edit_post.summary or ""),
                 "word_count": len((edit_post.body or "").split()),
                 "tag_count": edit_post.tags.count(),
                 "canonical": ensure_canonical(edit_post) or "",
@@ -251,7 +290,9 @@ def admin_suite_blog(request: HttpRequest) -> HttpResponse:
             "seo_health": seo_health,
         },
         nav_active="blog",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Blog", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("Blog", None)
+        ),
         subtitle="Blog posts management",
     )
 
@@ -275,9 +316,21 @@ def admin_suite_blog_categories(request: HttpRequest) -> HttpResponse:
             model = Category
             fields = ["name", "slug", "parent"]
             widgets = {
-                "name": forms.TextInput(attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}),
-                "slug": forms.TextInput(attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}),
-                "parent": forms.Select(attrs={"class": "w-full border rounded px-2 py-1 bg-white text-slate-900"}),
+                "name": forms.TextInput(
+                    attrs={
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"
+                    }
+                ),
+                "slug": forms.TextInput(
+                    attrs={
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"
+                    }
+                ),
+                "parent": forms.Select(
+                    attrs={
+                        "class": "w-full border rounded px-2 py-1 bg-white text-slate-900"
+                    }
+                ),
             }
 
     message = ""
@@ -286,7 +339,7 @@ def admin_suite_blog_categories(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         category_id = request.POST.get("category_id")
-        
+
         if action == "delete" and category_id:
             try:
                 Category.objects.get(pk=category_id).delete()
@@ -294,7 +347,9 @@ def admin_suite_blog_categories(request: HttpRequest) -> HttpResponse:
             except Exception as exc:
                 message = f"Delete failed: {exc}"
         elif action == "save":
-            instance = Category.objects.filter(pk=category_id).first() if category_id else None
+            instance = (
+                Category.objects.filter(pk=category_id).first() if category_id else None
+            )
             form = CategoryForm(request.POST, instance=instance)
             if form.is_valid():
                 form.save()
@@ -304,7 +359,9 @@ def admin_suite_blog_categories(request: HttpRequest) -> HttpResponse:
                 message = "Please correct errors."
 
     if request.method == "GET" and request.GET.get("category_id"):
-        edit_category = Category.objects.filter(pk=request.GET.get("category_id")).first()
+        edit_category = Category.objects.filter(
+            pk=request.GET.get("category_id")
+        ).first()
 
     form = CategoryForm(instance=edit_category)
     categories = list(Category.objects.order_by("name"))
@@ -319,7 +376,11 @@ def admin_suite_blog_categories(request: HttpRequest) -> HttpResponse:
             "message": message,
         },
         nav_active="blog",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Blog", "admin_suite:admin_suite_blog"), ("Categories", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"),
+            ("Blog", "admin_suite:admin_suite_blog"),
+            ("Categories", None),
+        ),
         subtitle="Blog categories",
     )
 
@@ -344,7 +405,9 @@ def admin_suite_content(request: HttpRequest) -> HttpResponse:
         from apps.blog.models import Post, PostStatus
 
         stats["posts_total"] = Post.objects.count()
-        stats["posts_published"] = Post.objects.filter(status=PostStatus.PUBLISHED).count()
+        stats["posts_published"] = Post.objects.filter(
+            status=PostStatus.PUBLISHED
+        ).count()
         stats["posts_draft"] = Post.objects.filter(status=PostStatus.DRAFT).count()
         posts = list(
             Post.objects.filter(status=PostStatus.PUBLISHED)
@@ -357,8 +420,12 @@ def admin_suite_content(request: HttpRequest) -> HttpResponse:
     try:
         from apps.comments.models import Comment
 
-        stats["comments_pending"] = Comment.objects.filter(status=Comment.Status.PENDING).count()
-        stats["comments_spam"] = Comment.objects.filter(status=Comment.Status.SPAM).count()
+        stats["comments_pending"] = Comment.objects.filter(
+            status=Comment.Status.PENDING
+        ).count()
+        stats["comments_spam"] = Comment.objects.filter(
+            status=Comment.Status.SPAM
+        ).count()
         comments = list(
             Comment.objects.filter(status=Comment.Status.PENDING)
             .order_by("-created_at")[:10]
@@ -376,7 +443,9 @@ def admin_suite_content(request: HttpRequest) -> HttpResponse:
             "comments": comments,
         },
         nav_active="content",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Content", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("Content", None)
+        ),
         subtitle="Posts, comments, and moderation status",
     )
 
@@ -400,8 +469,9 @@ def admin_suite_marketing(request: HttpRequest) -> HttpResponse:
 
     # Ads snapshot
     try:
-        from apps.ads.models import AdPlacement, AdCreative, AdEvent
         from django.utils import timezone
+
+        from apps.ads.models import AdCreative, AdEvent, AdPlacement
 
         stats["placements"] = AdPlacement.objects.count()
         stats["creatives"] = AdCreative.objects.count()
@@ -443,7 +513,9 @@ def admin_suite_marketing(request: HttpRequest) -> HttpResponse:
             "redirects": redirects,
         },
         nav_active="marketing",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Marketing", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("Marketing", None)
+        ),
         subtitle="Ads and SEO snapshots",
     )
 
@@ -489,7 +561,9 @@ def admin_suite_ai(request: HttpRequest) -> HttpResponse:
             "message": message,
         },
         nav_active="ai",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("AI", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("AI", None)
+        ),
         subtitle="AI settings and health checks",
     )
 
@@ -526,7 +600,7 @@ def admin_suite_distribution(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.distribution.models import SocialAccount, SharePlan, ShareJob
+            from apps.distribution.models import ShareJob, SharePlan, SocialAccount
 
             if action == "disable_account":
                 aid = request.POST.get("account_id")
@@ -573,8 +647,14 @@ def admin_suite_distribution(request: HttpRequest) -> HttpResponse:
             message = "Action failed."
 
     try:
-        from apps.distribution.models import SocialAccount, SharePlan, ShareJob, ShareLog
         from django.utils import timezone
+
+        from apps.distribution.models import (
+            ShareJob,
+            ShareLog,
+            SharePlan,
+            SocialAccount,
+        )
 
         stats["accounts"] = SocialAccount.objects.count()
         stats["plans"] = SharePlan.objects.count()
@@ -589,12 +669,18 @@ def admin_suite_distribution(request: HttpRequest) -> HttpResponse:
         if query:
             from django.db.models import Q
 
-            account_qs = account_qs.filter(Q(channel__icontains=query) | Q(account_name__icontains=query))
-            plan_qs = plan_qs.filter(Q(name__icontains=query) | Q(description__icontains=query))
+            account_qs = account_qs.filter(
+                Q(channel__icontains=query) | Q(account_name__icontains=query)
+            )
+            plan_qs = plan_qs.filter(
+                Q(name__icontains=query) | Q(description__icontains=query)
+            )
             jobs_qs = ShareJob.objects.order_by("-created_at").filter(
                 Q(channel__icontains=query) | Q(status__icontains=query)
             )
-            logs_qs = ShareLog.objects.order_by("-created_at").filter(Q(level__icontains=query) | Q(message__icontains=query))
+            logs_qs = ShareLog.objects.order_by("-created_at").filter(
+                Q(level__icontains=query) | Q(message__icontains=query)
+            )
         else:
             jobs_qs = ShareJob.objects.order_by("-created_at")
             logs_qs = ShareLog.objects.order_by("-created_at")
@@ -635,7 +721,9 @@ def admin_suite_distribution(request: HttpRequest) -> HttpResponse:
             "page_size": page_size,
         },
         nav_active="distribution",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Distribution", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("Distribution", None)
+        ),
         subtitle="Accounts, plans, jobs, and logs",
     )
 
@@ -668,7 +756,7 @@ def admin_suite_ads(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.ads.models import AdPlacement, AdCreative
+            from apps.ads.models import AdCreative, AdPlacement
 
             if action == "disable_placement":
                 pid = request.POST.get("placement_id")
@@ -712,8 +800,9 @@ def admin_suite_ads(request: HttpRequest) -> HttpResponse:
             message = "Action failed."
 
     try:
-        from apps.ads.models import AdPlacement, AdCreative, AdEvent
         from django.utils import timezone
+
+        from apps.ads.models import AdCreative, AdEvent, AdPlacement
 
         stats["placements"] = AdPlacement.objects.count()
         stats["creatives"] = AdCreative.objects.count()
@@ -731,7 +820,9 @@ def admin_suite_ads(request: HttpRequest) -> HttpResponse:
             from django.db.models import Q
 
             placement_qs = placement_qs.filter(
-                Q(name__icontains=query) | Q(slug__icontains=query) | Q(page_context__icontains=query)
+                Q(name__icontains=query)
+                | Q(slug__icontains=query)
+                | Q(page_context__icontains=query)
             )
             creative_qs = creative_qs.filter(
                 Q(name__icontains=query) | Q(creative_type__icontains=query)
@@ -798,6 +889,7 @@ def admin_suite_tags(request: HttpRequest) -> HttpResponse:
         action = request.POST.get("action")
         try:
             import nh3
+
             from apps.tags.models import Tag
 
             name = nh3.clean(request.POST.get("name", ""), tags=set())
@@ -830,7 +922,9 @@ def admin_suite_tags(request: HttpRequest) -> HttpResponse:
 
             qs = qs.filter(Q(name__icontains=query) | Q(slug__icontains=query))
         tags = list(
-            qs[offset : offset + page_size].values("id", "name", "slug", "usage_count", "is_curated")
+            qs[offset : offset + page_size].values(
+                "id", "name", "slug", "usage_count", "is_curated"
+            )
         )
     except Exception as exc:
         logger.debug("Admin suite tags snapshot failed: %s", exc)
@@ -940,8 +1034,12 @@ def admin_suite_seo(request: HttpRequest) -> HttpResponse:
         if query:
             from django.db.models import Q
 
-            redirect_qs = redirect_qs.filter(Q(source__icontains=query) | Q(target__icontains=query))
-            sitemap_qs = sitemap_qs.filter(Q(url__icontains=query) | Q(changefreq__icontains=query))
+            redirect_qs = redirect_qs.filter(
+                Q(source__icontains=query) | Q(target__icontains=query)
+            )
+            sitemap_qs = sitemap_qs.filter(
+                Q(url__icontains=query) | Q(changefreq__icontains=query)
+            )
 
         redirects = list(
             redirect_qs[offset : offset + page_size].values(
@@ -962,7 +1060,9 @@ def admin_suite_seo(request: HttpRequest) -> HttpResponse:
                 "suggest_only": bool(getattr(cfg, "suggest_only", False)),
                 "tag_sitemap_enabled": bool(getattr(cfg, "tag_sitemap_enabled", True)),
                 "comment_nofollow": bool(getattr(cfg, "comment_nofollow", True)),
-                "comment_bump_lastmod": bool(getattr(cfg, "comment_bump_lastmod", True)),
+                "comment_bump_lastmod": bool(
+                    getattr(cfg, "comment_bump_lastmod", True)
+                ),
             }
         except Exception:
             seo_settings = {}
@@ -1015,7 +1115,9 @@ def admin_suite_registry(request: HttpRequest) -> HttpResponse:
             "registry": registry,
         },
         nav_active="registry",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("App Registry", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("App Registry", None)
+        ),
         subtitle="App flags and feature registry (read-only snapshot)",
     )
 
@@ -1033,7 +1135,11 @@ def admin_suite_comments(request: HttpRequest) -> HttpResponse:
     action = request.POST.get("action") if request.method == "POST" else ""
     comment_id = request.POST.get("comment_id") if request.method == "POST" else None
 
-    if request.method == "POST" and comment_id and action in {"approve", "reject", "spam"}:
+    if (
+        request.method == "POST"
+        and comment_id
+        and action in {"approve", "reject", "spam"}
+    ):
         try:
             from apps.comments.models import Comment
 
@@ -1076,7 +1182,9 @@ def admin_suite_comments(request: HttpRequest) -> HttpResponse:
         from apps.comments.models import Comment
 
         offset = (page - 1) * page_size
-        qs = Comment.objects.filter(status=Comment.Status.PENDING).order_by("-created_at")
+        qs = Comment.objects.filter(status=Comment.Status.PENDING).order_by(
+            "-created_at"
+        )
         pending_comments = list(
             qs[offset : offset + page_size].values(
                 "id", "user_id", "body", "created_at", "post_id"
@@ -1130,6 +1238,7 @@ def admin_suite_pending_approval(request: HttpRequest) -> HttpResponse:
     # Pending comments
     try:
         from apps.comments.models import Comment
+
         pending_items["comments"] = list(
             Comment.objects.filter(is_approved=False, is_spam=False)
             .order_by("-created_at")[:20]
@@ -1141,6 +1250,7 @@ def admin_suite_pending_approval(request: HttpRequest) -> HttpResponse:
     # Pending blog posts
     try:
         from apps.blog.models import Post
+
         pending_items["posts"] = list(
             Post.objects.filter(status="pending")
             .order_by("-created_at")[:20]
@@ -1168,17 +1278,16 @@ def admin_suite_pending_approval(request: HttpRequest) -> HttpResponse:
 
 
 __all__ = [
-    'admin_suite_pages',
-    'admin_suite_blog',
-    'admin_suite_content',
-    'admin_suite_marketing',
-    'admin_suite_ai',
-    'admin_suite_ads',
-    'admin_suite_tags',
-    'admin_suite_seo',
-    'admin_suite_registry',
-    'admin_suite_comments',
-    'admin_suite_pending_approval',
-    'PageForm',
+    "admin_suite_pages",
+    "admin_suite_blog",
+    "admin_suite_content",
+    "admin_suite_marketing",
+    "admin_suite_ai",
+    "admin_suite_ads",
+    "admin_suite_tags",
+    "admin_suite_seo",
+    "admin_suite_registry",
+    "admin_suite_comments",
+    "admin_suite_pending_approval",
+    "PageForm",
 ]
-

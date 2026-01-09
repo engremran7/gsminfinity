@@ -1,9 +1,8 @@
-
 from __future__ import annotations
 
 from django import forms
 
-from .models import Post, Category
+from .models import Category, Post
 
 
 class CategoryForm(forms.ModelForm):
@@ -11,9 +10,21 @@ class CategoryForm(forms.ModelForm):
         model = Category
         fields = ["name", "slug", "parent"]
         widgets = {
-            "name": forms.TextInput(attrs={"class": "w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"}),
-            "slug": forms.TextInput(attrs={"class": "w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"}),
-            "parent": forms.Select(attrs={"class": "w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"}),
+            "name": forms.TextInput(
+                attrs={
+                    "class": "w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                }
+            ),
+            "slug": forms.TextInput(
+                attrs={
+                    "class": "w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                }
+            ),
+            "parent": forms.Select(
+                attrs={
+                    "class": "w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20"
+                }
+            ),
         }
 
 
@@ -42,6 +53,7 @@ class PostForm(forms.ModelForm):
             "publish_at": forms.DateTimeInput(
                 attrs={"type": "datetime-local", "class": "form-control"}
             ),
-            "seo_description": forms.Textarea(attrs={"rows": 2, "class": "form-control"}),
+            "seo_description": forms.Textarea(
+                attrs={"rows": 2, "class": "form-control"}
+            ),
         }
-

@@ -1,4 +1,3 @@
-
 """
 apps.users.services.recaptcha
 
@@ -19,15 +18,16 @@ import hashlib
 import json
 import logging
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
-from apps.site_settings.models import SiteSettings
 from django.conf import settings as django_settings
 from django.core.cache import cache
 from requests import Response
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import RequestException, Timeout
+
+from apps.site_settings.models import SiteSettings
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +63,9 @@ def _safe_decimal(value: Any, default: Decimal = Decimal("0")) -> Decimal:
 
 def verify_recaptcha(
     token: str,
-    remote_ip: Optional[str] = None,
+    remote_ip: str | None = None,
     action: str = "login",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Verify a Google reCAPTCHA token using configuration from SiteSettings.
 
@@ -88,7 +88,7 @@ def verify_recaptcha(
 
     recaptcha_enabled: bool = bool(getattr(settings_obj, "recaptcha_enabled", False))
     recaptcha_mode: str = str(getattr(settings_obj, "recaptcha_mode", "off")).lower()
-    private_key: Optional[str] = getattr(settings_obj, "recaptcha_private_key", None)
+    private_key: str | None = getattr(settings_obj, "recaptcha_private_key", None)
 
     # ----------------------------------------------------------
     # Step 2. Skip if disabled
@@ -113,7 +113,7 @@ def verify_recaptcha(
     # ----------------------------------------------------------
     cache_key = f"recaptcha:{action}:{_token_digest(token)}"
     try:
-        cached: Optional[Dict[str, Any]] = cache.get(cache_key)
+        cached: dict[str, Any] | None = cache.get(cache_key)
         if cached is not None:
             logger.debug("reCAPTCHA: using cached result for %s", action)
             return cached
@@ -123,7 +123,7 @@ def verify_recaptcha(
     # ----------------------------------------------------------
     # Step 5. Build request payload
     # ----------------------------------------------------------
-    payload: Dict[str, str] = {"secret": private_key, "response": token}
+    payload: dict[str, str] = {"secret": private_key, "response": token}
     if remote_ip:
         payload["remoteip"] = remote_ip
 
@@ -158,10 +158,10 @@ def verify_recaptcha(
     # Step 7. Validate response integrity
     # ----------------------------------------------------------
     success: bool = bool(data.get("success", False))
-    hostname: Optional[str] = data.get("hostname")
+    hostname: str | None = data.get("hostname")
     error_codes: list[str] = list(data.get("error-codes", []) or [])
 
-    expected_host: Optional[str] = getattr(
+    expected_host: str | None = getattr(
         django_settings, "RECAPTCHA_EXPECTED_HOSTNAME", None
     )
     if expected_host and hostname and hostname != expected_host:
@@ -181,7 +181,7 @@ def verify_recaptcha(
         )
         valid = success and score >= threshold
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "ok": bool(valid),
             "score": float(score),
             "errors": error_codes,
@@ -215,4 +215,3 @@ def verify_recaptcha(
         logger.debug("reCAPTCHA: cache.set failed for %s → %s", cache_key, exc)
 
     return result
-

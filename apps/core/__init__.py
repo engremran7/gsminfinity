@@ -1,4 +1,3 @@
-
 """
 Core application package for GSMInfinity.
 
@@ -7,5 +6,3 @@ and safe in management commands, migrations, and tests.
 """
 
 __all__: list[str] = []
-
-

@@ -1,14 +1,12 @@
-
 from __future__ import annotations
 
 import logging
 import re
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
 
-def readability_score(text: str) -> Dict[str, float]:
+def readability_score(text: str) -> dict[str, float]:
     """
     Lightweight readability heuristic (Flesch-like).
     """
@@ -23,5 +21,3 @@ def readability_score(text: str) -> Dict[str, float]:
     except Exception as exc:
         logger.warning("readability_score failed: %s", exc)
         return {"readability": 0.0}
-
-

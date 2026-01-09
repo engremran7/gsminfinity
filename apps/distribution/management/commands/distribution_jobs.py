@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand, CommandError
-from django.utils import timezone
+from django.db import models
 
 from apps.distribution.api import get_settings
 from apps.distribution.models import ShareJob
 from apps.distribution.tasks import deliver_job
-from django.db import models
 
 
 class Command(BaseCommand):
@@ -15,16 +14,22 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         subparsers = parser.add_subparsers(dest="action", required=True)
 
-        retry = subparsers.add_parser("retry", help="Retry failed jobs or a specific id")
+        retry = subparsers.add_parser(
+            "retry", help="Retry failed jobs or a specific id"
+        )
         retry.add_argument("--id", type=int, help="Specific job id")
-        retry.add_argument("--status", default="failed", help="Status to retry (default=failed)")
+        retry.add_argument(
+            "--status", default="failed", help="Status to retry (default=failed)"
+        )
         retry.add_argument("--limit", type=int, default=50, help="Max jobs to retry")
 
         cancel = subparsers.add_parser("cancel", help="Cancel a job by id")
         cancel.add_argument("--id", type=int, required=True)
 
         requeue = subparsers.add_parser("requeue", help="Requeue pending/queued jobs")
-        requeue.add_argument("--status", default="pending", help="Status to requeue (pending/queued)")
+        requeue.add_argument(
+            "--status", default="pending", help="Status to requeue (pending/queued)"
+        )
         requeue.add_argument("--limit", type=int, default=50)
 
         stats = subparsers.add_parser("stats", help="Show job counts by status")

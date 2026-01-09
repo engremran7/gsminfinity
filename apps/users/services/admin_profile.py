@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from django.contrib.auth import get_user_model
-from django.db.models import QuerySet
 
 User = get_user_model()
 
 
-def get_user_profile(user_id: str) -> Dict[str, Any]:
+def get_user_profile(user_id: str) -> dict[str, Any]:
     """
     Aggregate user profile data for admin views:
     - CustomUser base fields
@@ -16,7 +15,7 @@ def get_user_profile(user_id: str) -> Dict[str, Any]:
     - Devices + recent events
     - Behavior insights (risk)
     """
-    profile: Dict[str, Any] = {
+    profile: dict[str, Any] = {
         "user": None,
         "email_addresses": [],
         "social_accounts": [],
@@ -35,7 +34,9 @@ def get_user_profile(user_id: str) -> Dict[str, Any]:
         from allauth.account.models import EmailAddress
 
         profile["email_addresses"] = list(
-            EmailAddress.objects.filter(user=user).values("email", "verified", "primary")
+            EmailAddress.objects.filter(user=user).values(
+                "email", "verified", "primary"
+            )
         )
     except Exception:
         profile["email_addresses"] = []

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from apps.core import ai_client
@@ -16,5 +15,3 @@ def generate_metadata(text: str, user) -> dict:
         "meta_description": description,
         "focus_keywords": [k.strip() for k in keywords.split(",") if k.strip()],
     }
-
-

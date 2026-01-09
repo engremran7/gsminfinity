@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.conf import settings
@@ -20,9 +19,15 @@ class BehaviorInsight(models.Model):
     ]
 
     related_user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="behavior_insights"
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="behavior_insights",
     )
-    device_identifier = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    device_identifier = models.CharField(
+        max_length=64, blank=True, null=True, db_index=True
+    )
     related_ip = models.CharField(max_length=45, blank=True, null=True, db_index=True)
     severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default="low")
     recommendation = models.TextField()
@@ -40,5 +45,3 @@ class BehaviorInsight(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.severity} insight ({self.status})"
-
-

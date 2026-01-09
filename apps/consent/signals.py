@@ -1,4 +1,3 @@
-
 """
 apps.consent.signals
 
@@ -15,13 +14,14 @@ Enterprise-grade signal handlers for consent management.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
-from apps.consent.models import ConsentRecord
-from apps.consent.utils import get_active_policy, resolve_site_domain
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.db import transaction
 from django.dispatch import receiver
+
+from apps.consent.models import ConsentRecord
+from apps.consent.utils import get_active_policy, resolve_site_domain
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
-def _safe_session_key(request) -> Optional[str]:
+def _safe_session_key(request) -> str | None:
     """Return session key if available, else None."""
     try:
         return getattr(getattr(request, "session", None), "session_key", None)
@@ -187,5 +187,3 @@ def clear_session_consent(sender: Any, request, user: Any, **kwargs) -> None:
 
     except Exception as exc:
         logger.debug("clear_session_consent: unexpected failure → %s", exc)
-
-

@@ -1,15 +1,15 @@
-
 from __future__ import annotations
 
-from typing import Any, Dict
-from django.http import JsonResponse, HttpRequest, Http404
+from typing import Any
+
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import Http404, HttpRequest, JsonResponse
 from django.views.decorators.http import require_POST
 
 from apps.distribution.models import DistributionSettings
 
 
-def get_settings() -> Dict[str, Any]:
+def get_settings() -> dict[str, Any]:
     """
     Resolve distribution settings from the singleton model with safe defaults.
     """
@@ -46,5 +46,3 @@ def api_send_test(request: HttpRequest, slug: str):
 
 
 __all__ = ["get_settings", "api_send_test"]
-
-

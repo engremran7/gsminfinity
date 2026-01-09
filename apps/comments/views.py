@@ -1,8 +1,14 @@
-
 from __future__ import annotations
 
+from datetime import timedelta
+
+import requests
+from django.conf import settings
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
 from django.core.paginator import Paginator
+from django.db.models import F
 from django.http import (
     HttpRequest,
     HttpResponse,
@@ -11,26 +17,18 @@ from django.http import (
     JsonResponse,
 )
 from django.shortcuts import get_object_or_404, redirect
-from django.views.decorators.http import require_GET, require_POST
-from apps.consent.decorators import consent_required
 from django.utils import timezone
-from django.db.models import F
-from django.contrib.admin.views.decorators import staff_member_required
-from datetime import timedelta
-import requests
-from django.conf import settings
-from django.core.mail import send_mail
-from urllib.parse import urlencode
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.blog.models import Post
-from apps.core.views import _get_site_settings_snapshot
-from apps.core.app_service import AppService
-from .models import Comment
-from apps.core import ai_client
 from apps.comments.services.moderation import classify_comment
-from apps.core.utils import feature_flags
+from apps.consent.decorators import consent_required
+from apps.core.app_service import AppService
 from apps.core.utils.ip import get_client_ip
+from apps.core.views import _get_site_settings_snapshot
 from apps.users.services.rate_limit import allow_action
+
+from .models import Comment
 
 
 @login_required
@@ -40,18 +38,30 @@ def add_comment(request: HttpRequest, slug: str) -> HttpResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
         blog_api = AppService.get("blog")
-        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+        blog_settings = (
+            blog_api.get_settings()
+            if blog_api and hasattr(blog_api, "get_settings")
+            else {}
+        )
     except Exception:
         blog_settings = {}
     try:
         comment_api = AppService.get("comments")
-        comment_settings = comment_api.get_settings() if comment_api and hasattr(comment_api, "get_settings") else {}
+        comment_settings = (
+            comment_api.get_settings()
+            if comment_api and hasattr(comment_api, "get_settings")
+            else {}
+        )
     except Exception:
         comment_api = None
         comment_settings = {}
-    if not comment_settings.get("enable_comments", False if comment_api is None else True):
+    if not comment_settings.get(
+        "enable_comments", False if comment_api is None else True
+    ):
         return HttpResponseBadRequest("Comments are disabled.")
-    if not blog_settings.get("enable_blog", settings_snapshot.get("enable_blog")) or not blog_settings.get(
+    if not blog_settings.get(
+        "enable_blog", settings_snapshot.get("enable_blog")
+    ) or not blog_settings.get(
         "enable_blog_comments", settings_snapshot.get("enable_blog_comments")
     ):
         return HttpResponseBadRequest("Comments are disabled.")
@@ -90,18 +100,30 @@ def list_comments(request: HttpRequest, slug: str) -> JsonResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
         blog_api = AppService.get("blog")
-        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+        blog_settings = (
+            blog_api.get_settings()
+            if blog_api and hasattr(blog_api, "get_settings")
+            else {}
+        )
     except Exception:
         blog_settings = {}
     try:
         comment_api = AppService.get("comments")
-        comment_settings = comment_api.get_settings() if comment_api and hasattr(comment_api, "get_settings") else {}
+        comment_settings = (
+            comment_api.get_settings()
+            if comment_api and hasattr(comment_api, "get_settings")
+            else {}
+        )
     except Exception:
         comment_api = None
         comment_settings = {}
-    if not comment_settings.get("enable_comments", False if comment_api is None else True):
+    if not comment_settings.get(
+        "enable_comments", False if comment_api is None else True
+    ):
         return JsonResponse({"error": "comments_disabled"}, status=403)
-    if not blog_settings.get("enable_blog", settings_snapshot.get("enable_blog")) or not blog_settings.get(
+    if not blog_settings.get(
+        "enable_blog", settings_snapshot.get("enable_blog")
+    ) or not blog_settings.get(
         "enable_blog_comments", settings_snapshot.get("enable_blog_comments")
     ):
         return JsonResponse({"error": "comments_disabled"}, status=403)
@@ -132,6 +154,7 @@ def list_comments(request: HttpRequest, slug: str) -> JsonResponse:
     paginator = Paginator(qs, 10)
     page_number = request.GET.get("page") or 1
     page_obj = paginator.get_page(page_number)
+
     def serialize(comment):
         children = [
             serialize(child)
@@ -149,7 +172,8 @@ def list_comments(request: HttpRequest, slug: str) -> JsonResponse:
             "children": children,
             "metadata": comment.metadata or {},
             "status": comment.status,
-            "is_owner": request.user.is_authenticated and request.user.id == comment.user_id,
+            "is_owner": request.user.is_authenticated
+            and request.user.id == comment.user_id,
         }
 
     payload = [serialize(c) for c in page_obj]
@@ -175,18 +199,30 @@ def add_comment_json(request: HttpRequest, slug: str) -> JsonResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
         blog_api = AppService.get("blog")
-        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+        blog_settings = (
+            blog_api.get_settings()
+            if blog_api and hasattr(blog_api, "get_settings")
+            else {}
+        )
     except Exception:
         blog_settings = {}
     try:
         comment_api = AppService.get("comments")
-        comment_settings = comment_api.get_settings() if comment_api and hasattr(comment_api, "get_settings") else {}
+        comment_settings = (
+            comment_api.get_settings()
+            if comment_api and hasattr(comment_api, "get_settings")
+            else {}
+        )
     except Exception:
         comment_api = None
         comment_settings = {}
-    if not comment_settings.get("enable_comments", False if comment_api is None else True):
+    if not comment_settings.get(
+        "enable_comments", False if comment_api is None else True
+    ):
         return JsonResponse({"error": "Comments are disabled."}, status=400)
-    if not blog_settings.get("enable_blog", settings_snapshot.get("enable_blog")) or not blog_settings.get(
+    if not blog_settings.get(
+        "enable_blog", settings_snapshot.get("enable_blog")
+    ) or not blog_settings.get(
         "enable_blog_comments", settings_snapshot.get("enable_blog_comments")
     ):
         return JsonResponse({"error": "Comments are disabled."}, status=400)
@@ -253,7 +289,11 @@ def add_comment_json(request: HttpRequest, slug: str) -> JsonResponse:
     )
     msg = "Comment posted"
     if status != Comment.Status.APPROVED:
-        msg = "Submitted for review" if status == Comment.Status.PENDING else "Flagged as spam"
+        msg = (
+            "Submitted for review"
+            if status == Comment.Status.PENDING
+            else "Flagged as spam"
+        )
     _notify_post_author(comment, request)
     _notify_parent_commenter(parent, comment, request)
     return JsonResponse(
@@ -326,7 +366,9 @@ def edit_comment(request: HttpRequest, comment_id: int) -> JsonResponse:
         return JsonResponse({"error": "forbidden"}, status=403)
 
     # Grace window: 24 hours after creation unless staff
-    if not request.user.is_staff and comment.created_at < timezone.now() - timedelta(hours=24):
+    if not request.user.is_staff and comment.created_at < timezone.now() - timedelta(
+        hours=24
+    ):
         return JsonResponse({"error": "edit_window_expired"}, status=400)
 
     body = (request.POST.get("body") or "").strip()
@@ -424,7 +466,9 @@ def _check_akismet(request: HttpRequest, body: str, post: Post) -> bool:
     Optional Akismet spam check. Returns True if flagged as spam.
     """
     api_key = getattr(settings, "AKISMET_API_KEY", None)
-    blog_url = getattr(settings, "AKISMET_BLOG_URL", None) or getattr(settings, "SITE_URL", None)
+    blog_url = getattr(settings, "AKISMET_BLOG_URL", None) or getattr(
+        settings, "SITE_URL", None
+    )
     if not api_key or not blog_url:
         return False
     try:
@@ -441,7 +485,11 @@ def _check_akismet(request: HttpRequest, body: str, post: Post) -> bool:
             "comment_content": body,
             "permalink": request.build_absolute_uri(post.get_absolute_url()),
         }
-        resp = requests.post(f"https://{api_key}.rest.akismet.com/1.1/comment-check", data=data, timeout=5)
+        resp = requests.post(
+            f"https://{api_key}.rest.akismet.com/1.1/comment-check",
+            data=data,
+            timeout=5,
+        )
         resp.raise_for_status()
         result = resp.text.strip().lower()
         return result == "true"
@@ -476,7 +524,9 @@ def _notify_post_author(comment: Comment, request: HttpRequest) -> None:
         return
 
 
-def _notify_parent_commenter(parent: Comment | None, comment: Comment, request: HttpRequest) -> None:
+def _notify_parent_commenter(
+    parent: Comment | None, comment: Comment, request: HttpRequest
+) -> None:
     """
     Notify parent commenter on reply (best-effort).
     """
@@ -505,9 +555,22 @@ def _notify_parent_commenter(parent: Comment | None, comment: Comment, request: 
 
 @staff_member_required(login_url="admin_suite:admin_suite_login")
 def moderation_queue(request: HttpRequest) -> HttpResponse:
-    pending = Comment.objects.filter(status=Comment.Status.PENDING, is_deleted=False).order_by("-created_at")[:50]
-    recent = Comment.objects.filter(status__in=[Comment.Status.APPROVED, Comment.Status.REJECTED, Comment.Status.SPAM], is_deleted=False).order_by("-created_at")[:50]
-    return render(request, "comments/moderation_panel.html", {"pending_comments": pending, "recent_comments": recent})
+    pending = Comment.objects.filter(
+        status=Comment.Status.PENDING, is_deleted=False
+    ).order_by("-created_at")[:50]
+    recent = Comment.objects.filter(
+        status__in=[
+            Comment.Status.APPROVED,
+            Comment.Status.REJECTED,
+            Comment.Status.SPAM,
+        ],
+        is_deleted=False,
+    ).order_by("-created_at")[:50]
+    return render(
+        request,
+        "comments/moderation_panel.html",
+        {"pending_comments": pending, "recent_comments": recent},
+    )
 
 
 @staff_member_required(login_url="admin_suite:admin_suite_login")
@@ -527,5 +590,3 @@ def moderation_action(request: HttpRequest) -> HttpResponse:
         comment.is_approved = False
     comment.save(update_fields=["status", "is_approved"])
     return redirect("comments:moderation_queue")
-
-

@@ -1,4 +1,3 @@
-
 # apps/users/auth_backends.py
 """
 Enterprise-grade multi-identifier authentication backend for GSMInfinity.
@@ -14,7 +13,8 @@ Enterprise-grade multi-identifier authentication backend for GSMInfinity.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
@@ -49,10 +49,10 @@ class MultiFieldAuthBackend(ModelBackend):
     def authenticate(
         self,
         request=None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
         **kwargs,
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """
         Authenticate using email, username, or phone.
         Returns user instance or None.
@@ -128,7 +128,7 @@ class MultiFieldAuthBackend(ModelBackend):
     # ------------------------------------------------------------------
     # User Retrieval
     # ------------------------------------------------------------------
-    def get_user(self, user_id: Any) -> Optional[Any]:
+    def get_user(self, user_id: Any) -> Any | None:
         """
         Retrieve user safely for session authentication.
         """
@@ -141,4 +141,3 @@ class MultiFieldAuthBackend(ModelBackend):
         except Exception as exc:
             logger.exception("get_user failed for id=%s → %s", user_id, exc)
             return None
-

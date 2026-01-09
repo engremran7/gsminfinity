@@ -2,10 +2,10 @@
 Firmware Admin Auto-Fill System
 Automatically fills missing fields using AI and internet data
 """
+
 import logging
-from django.db import models
+
 from django.core.cache import cache
-import requests
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class FirmwareAutoFill:
         """
         Auto-fill brand information from internet sources
         """
-        cache_key = f'brand_autofill_{brand_name.lower()}'
+        cache_key = f"brand_autofill_{brand_name.lower()}"
         cached = cache.get(cache_key)
         if cached:
             return cached
@@ -49,7 +49,7 @@ class FirmwareAutoFill:
         """
         Auto-fill model information
         """
-        cache_key = f'model_autofill_{brand_name}_{model_name}'.lower()
+        cache_key = f"model_autofill_{brand_name}_{model_name}".lower()
         cached = cache.get(cache_key)
         if cached:
             return cached
@@ -71,11 +71,13 @@ class FirmwareAutoFill:
             return {}
 
     @classmethod
-    def autofill_variant(cls, brand_name: str, model_name: str, region: str = None) -> dict:
+    def autofill_variant(
+        cls, brand_name: str, model_name: str, region: str = None
+    ) -> dict:
         """
         Auto-fill variant information
         """
-        cache_key = f'variant_autofill_{brand_name}_{model_name}_{region}'.lower()
+        cache_key = f"variant_autofill_{brand_name}_{model_name}_{region}".lower()
         cached = cache.get(cache_key)
         if cached:
             return cached
@@ -122,7 +124,9 @@ class FirmwareAutoFill:
             return {}
 
     @classmethod
-    def _fetch_variant_from_gsmarena(cls, brand_name: str, model_name: str, region: str) -> dict:
+    def _fetch_variant_from_gsmarena(
+        cls, brand_name: str, model_name: str, region: str
+    ) -> dict:
         """
         Fetch variant data from GSMArena
         """
@@ -142,9 +146,10 @@ class FirmwareAutoFill:
             # Try to use AI services if available
             try:
                 from apps.ai.services import test_completion
+
                 response = test_completion(prompt)
-                if response and 'content' in response:
-                    data = cls._parse_ai_response(response['content'])
+                if response and "content" in response:
+                    data = cls._parse_ai_response(response["content"])
                     return data
             except Exception as ai_error:
                 logger.warning(f"AI service not available: {ai_error}")
@@ -162,10 +167,10 @@ class FirmwareAutoFill:
         """
         # Simple parsing - can be enhanced
         data = {}
-        lines = response.split('\n')
+        lines = response.split("\n")
         for line in lines:
-            if ':' in line:
-                key, value = line.split(':', 1)
+            if ":" in line:
+                key, value = line.split(":", 1)
                 data[key.strip().lower()] = value.strip()
         return data
 
@@ -177,41 +182,35 @@ def autofill_on_save(sender, instance, created, **kwargs):
     if not created:
         return  # Only autofill on creation
 
-    if sender.__name__ == 'Brand':
+    if sender.__name__ == "Brand":
         # Auto-fill brand fields
         if not instance.description:
             data = FirmwareAutoFill.autofill_brand(instance.name)
-            instance.description = data.get('description', '')
-            instance.save(update_fields=['description'])
+            instance.description = data.get("description", "")
+            instance.save(update_fields=["description"])
 
-    elif sender.__name__ == 'Model':
+    elif sender.__name__ == "Model":
         # Auto-fill model fields
         if not instance.marketing_name or not instance.model_code:
-            data = FirmwareAutoFill.autofill_model(
-                instance.brand.name,
-                instance.name
-            )
+            data = FirmwareAutoFill.autofill_model(instance.brand.name, instance.name)
             if not instance.marketing_name:
-                instance.marketing_name = data.get('marketing_name', instance.name)
+                instance.marketing_name = data.get("marketing_name", instance.name)
             if not instance.model_code:
-                instance.model_code = data.get('model_code', '')
+                instance.model_code = data.get("model_code", "")
             if not instance.description:
-                instance.description = data.get('description', '')
-            instance.save(update_fields=['marketing_name', 'model_code', 'description'])
+                instance.description = data.get("description", "")
+            instance.save(update_fields=["marketing_name", "model_code", "description"])
 
-    elif sender.__name__ == 'Variant':
+    elif sender.__name__ == "Variant":
         # Auto-fill variant fields
         if not instance.chipset or not instance.ram_options:
             data = FirmwareAutoFill.autofill_variant(
-                instance.model.brand.name,
-                instance.model.name,
-                instance.region
+                instance.model.brand.name, instance.model.name, instance.region
             )
             if not instance.chipset:
-                instance.chipset = data.get('chipset', '')
+                instance.chipset = data.get("chipset", "")
             if not instance.ram_options:
-                instance.ram_options = data.get('ram_options', [])
+                instance.ram_options = data.get("ram_options", [])
             if not instance.storage_options:
-                instance.storage_options = data.get('storage_options', [])
-            instance.save(update_fields=['chipset', 'ram_options', 'storage_options'])
-
+                instance.storage_options = data.get("storage_options", [])
+            instance.save(update_fields=["chipset", "ram_options", "storage_options"])

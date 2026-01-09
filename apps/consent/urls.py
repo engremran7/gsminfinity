@@ -1,4 +1,3 @@
-
 from django.urls import path
 
 from . import views
@@ -12,5 +11,3 @@ urlpatterns = [
     path("reject_all/", views.reject_all, name="reject_all"),
     path("accept/", views.accept, name="accept"),
 ]
-
-

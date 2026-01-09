@@ -12,7 +12,11 @@ app_name = "site_settings"
 urlpatterns = [
     path("", views.site_settings_view, name="site_settings"),
     path("info/", views.settings_info, name="settings_info"),
-    path("verification/<str:filename>/", views.verification_file, name="verification_file"),
+    path(
+        "verification/<str:filename>/",
+        views.verification_file,
+        name="verification_file",
+    ),
     # Legacy legal aliases -> redirect to pages app if present
     path(
         "privacy/",

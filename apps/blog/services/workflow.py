@@ -1,10 +1,8 @@
-
 from __future__ import annotations
 
 import enum
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 from django.db import transaction
 from django.utils import timezone
@@ -57,5 +55,3 @@ def archive(post: Post, user=None) -> WorkflowResult:
         post.status = PostStatus.ARCHIVED
         post.save(update_fields=["status", "updated_at"])
     return WorkflowResult(ok=True, status=post.status, message="Archived")
-
-

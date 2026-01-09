@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
-from typing import Dict, Tuple
 
 
 @dataclass
@@ -35,7 +34,9 @@ def parse_os_from_ua(ua: str) -> OSInfo:
     return OSInfo("Unknown", "")
 
 
-def make_os_fingerprint(user_id: int, ua: str, payload: Dict[str, str] | None) -> Tuple[str, OSInfo]:
+def make_os_fingerprint(
+    user_id: int, ua: str, payload: dict[str, str] | None
+) -> tuple[str, OSInfo]:
     """
     Generate a stable OS-level fingerprint.
     CRITICAL: Does NOT include user_id in the hash, so the same physical device
@@ -44,7 +45,7 @@ def make_os_fingerprint(user_id: int, ua: str, payload: Dict[str, str] | None) -
     """
     p = payload or {}
     os_info = parse_os_from_ua(ua or "")
-    
+
     # We use hardware traits + OS info to identify the "machine"
     # Browser variations (Chrome vs Firefox) should ideally produce the same
     # fingerprint if they expose the same hardware info (screen, cores, gpu).

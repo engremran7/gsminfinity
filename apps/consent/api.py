@@ -1,4 +1,3 @@
-
 """
 apps.consent.api
 
@@ -31,11 +30,10 @@ try:
     # Canonical JSON API implementations
     from .api.views import get_consent_status, update_consent
 
-except Exception as exc:
+except Exception:
     # Boot-safe fallback:
     # We intentionally DO NOT raise errors here because Django may import
     # this module during ASGI/WSGI initialization or migrations.
     # Exposing "None" keeps the import path intact without silent breakage.
     get_consent_status = None  # type: ignore
     update_consent = None  # type: ignore
-

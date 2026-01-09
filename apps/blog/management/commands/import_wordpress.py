@@ -4,12 +4,12 @@ import html
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from apps.blog.models import Post, PostStatus, Category
+from apps.blog.models import Category, Post, PostStatus
 from apps.tags.models import Tag
-from django.contrib.auth import get_user_model
 
 
 class Command(BaseCommand):
@@ -17,8 +17,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("wxr_path", help="Path to WordPress XML export")
-        parser.add_argument("--author-email", help="Email of author to assign", default=None)
-        parser.add_argument("--status", help="Default status for imported posts", default="published")
+        parser.add_argument(
+            "--author-email", help="Email of author to assign", default=None
+        )
+        parser.add_argument(
+            "--status", help="Default status for imported posts", default="published"
+        )
 
     def handle(self, *args, **options):
         path = options["wxr_path"]
@@ -54,8 +58,16 @@ class Command(BaseCommand):
             body = item.findtext("content:encoded", namespaces=ns) or ""
             post_date = item.findtext("wp:post_date", namespaces=ns) or ""
             status = item.findtext("wp:status", namespaces=ns) or default_status
-            cats = [c.text for c in item.findall("category") if c.get("domain") == "category"]
-            tags = [c.text for c in item.findall("category") if c.get("domain") == "post_tag"]
+            cats = [
+                c.text
+                for c in item.findall("category")
+                if c.get("domain") == "category"
+            ]
+            tags = [
+                c.text
+                for c in item.findall("category")
+                if c.get("domain") == "post_tag"
+            ]
 
             dt = timezone.now()
             try:

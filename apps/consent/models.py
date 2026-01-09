@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.conf import settings
@@ -15,8 +14,15 @@ class ConsentPolicy(models.Model):
     cache_ttl_seconds = models.IntegerField(default=86400)
     text = models.TextField(blank=True, default="")
     categories_snapshot = models.JSONField(default=dict, blank=True)
-    public_slug = models.SlugField(max_length=100, blank=True, default="", help_text="Slug for public page hosting (e.g., 'privacy').")
-    public_url = models.URLField(blank=True, default="", help_text="Override URL if hosted externally.")
+    public_slug = models.SlugField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Slug for public page hosting (e.g., 'privacy').",
+    )
+    public_url = models.URLField(
+        blank=True, default="", help_text="Override URL if hosted externally."
+    )
     effective_from = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -28,7 +34,7 @@ class ConsentPolicy(models.Model):
         return f"Policy {self.version} ({'active' if self.is_active else 'inactive'})"
 
     @classmethod
-    def get_active(cls, domain: str = "") -> "ConsentPolicy | None":
+    def get_active(cls, domain: str = "") -> ConsentPolicy | None:
         """
         Return the currently active consent policy for the given domain (or any
         domain when omitted). Mirrors logic in utils.get_active_policy but keeps
@@ -41,9 +47,13 @@ class ConsentPolicy(models.Model):
 
 
 class ConsentDecision(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
     session_id = models.CharField(max_length=64, blank=True, default="")
-    policy = models.ForeignKey(ConsentPolicy, null=True, blank=True, on_delete=models.SET_NULL)
+    policy = models.ForeignKey(
+        ConsentPolicy, null=True, blank=True, on_delete=models.SET_NULL
+    )
     categories = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     ip_hash = models.CharField(max_length=64, blank=True, default="")
@@ -60,8 +70,16 @@ class ConsentDecision(models.Model):
 
 
 class ConsentEvent(models.Model):
-    decision = models.ForeignKey(ConsentDecision, null=True, blank=True, on_delete=models.SET_NULL, related_name="events")
-    policy = models.ForeignKey(ConsentPolicy, null=True, blank=True, on_delete=models.SET_NULL)
+    decision = models.ForeignKey(
+        ConsentDecision,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="events",
+    )
+    policy = models.ForeignKey(
+        ConsentPolicy, null=True, blank=True, on_delete=models.SET_NULL
+    )
     categories = models.JSONField(default=dict, blank=True)
     event_type = models.CharField(max_length=32, default="accepted")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -114,5 +132,3 @@ class ConsentCategory(models.Model):
         managed = False
         db_table = "consent_consentcategory"
         ordering = ["index", "slug"]
-
-

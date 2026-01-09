@@ -1,4 +1,3 @@
-
 """
 apps.core.middleware.security_headers
 
@@ -15,7 +14,7 @@ from __future__ import annotations
 
 import logging
 import secrets
-from typing import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
@@ -44,7 +43,7 @@ class SecurityHeadersMiddleware:
     def __call__(self, request: HttpRequest) -> HttpResponse:
         # Create per-request nonce (used in inline scripts/styles if templates add it)
         nonce = secrets.token_urlsafe(16)
-        setattr(request, "csp_nonce", nonce)
+        request.csp_nonce = nonce
 
         response = self.get_response(request)
 
@@ -131,5 +130,3 @@ class SecurityHeadersMiddleware:
                 seen.add(src)
                 deduped.append(src)
         return deduped
-
-

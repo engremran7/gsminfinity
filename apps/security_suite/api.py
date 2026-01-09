@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict
 
 from django.db import DatabaseError
 
@@ -20,7 +19,7 @@ def get_security_config():
         return None
 
 
-def security_settings_snapshot() -> Dict[str, object]:
+def security_settings_snapshot() -> dict[str, object]:
     cfg = get_security_config()
     if not cfg:
         return {}
@@ -38,7 +37,7 @@ def security_settings_snapshot() -> Dict[str, object]:
     }
 
 
-def get_device_quota_policy() -> Dict[str, object]:
+def get_device_quota_policy() -> dict[str, object]:
     cfg = get_security_config()
     if not cfg or not cfg.device_quota_enforcement_enabled:
         return {"enforcement_enabled": False}

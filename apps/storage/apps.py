@@ -2,11 +2,10 @@ from django.apps import AppConfig
 
 
 class StorageConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.storage'
-    verbose_name = 'Cloud Storage Management'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "apps.storage"
+    verbose_name = "Cloud Storage Management"
 
     def ready(self):
         # Import signals to register handlers
-        import apps.storage.signals
-        import apps.storage.signal_handlers
+        pass

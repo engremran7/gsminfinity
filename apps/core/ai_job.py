@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.conf import settings
@@ -13,9 +12,13 @@ class AIJob(models.Model):
         ("failed", "Failed"),
     ]
 
-    entity_type = models.CharField(max_length=100, help_text="e.g., seo.link, tag.suggestion")
+    entity_type = models.CharField(
+        max_length=100, help_text="e.g., seo.link, tag.suggestion"
+    )
     entity_id = models.CharField(max_length=64, blank=True, null=True)
-    task_type = models.CharField(max_length=100, help_text="e.g., embed, moderate, translate")
+    task_type = models.CharField(
+        max_length=100, help_text="e.g., embed, moderate, translate"
+    )
     payload = models.JSONField(default=dict, blank=True)
     result = models.JSONField(default=dict, blank=True)
     error = models.TextField(blank=True, default="")
@@ -31,11 +34,11 @@ class AIJob(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["entity_type", "task_type"], name="ai_job_entity_task_idx"),
+            models.Index(
+                fields=["entity_type", "task_type"], name="ai_job_entity_task_idx"
+            ),
             models.Index(fields=["status"], name="ai_job_status_idx"),
         ]
 
     def __str__(self) -> str:
         return f"{self.task_type} ({self.status})"
-
-

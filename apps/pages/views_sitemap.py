@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from django.contrib.sitemaps.views import index, sitemap
+from django.contrib.sites.models import Site
 from django.http import Http404
 from django.template.response import TemplateResponse
-from django.contrib.sites.models import Site
 
 from apps.site_settings.models import SiteSettings
 
@@ -58,7 +58,9 @@ def sitemap_all_view(request):
 
     sitemaps = get_sitemaps()
     host = request.get_host() or ""
-    protocol = "https" if getattr(settings, "force_https", False) else request.scheme or "http"
+    protocol = (
+        "https" if getattr(settings, "force_https", False) else request.scheme or "http"
+    )
     # Use runtime host to avoid default example.com during local/dev usage
     site = Site(domain=host, name=host) if host else Site.objects.get_current()
     urls = []

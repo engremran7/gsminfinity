@@ -1,8 +1,6 @@
-
 from django.urls import path
 
-from . import views
-from . import feeds
+from . import feeds, views
 
 app_name = "blog"
 
@@ -13,7 +11,11 @@ urlpatterns = [
     path("create/", views.post_create, name="post_create"),
     path("category/create/", views.category_create, name="category_create"),
     path("archives/<int:year>/", views.post_archive_year, name="post_archive_year"),
-    path("archives/<int:year>/<int:month>/", views.post_archive_month, name="post_archive_month"),
+    path(
+        "archives/<int:year>/<int:month>/",
+        views.post_archive_month,
+        name="post_archive_month",
+    ),
     path("feed/rss/", feeds.LatestRssFeed(), name="feed_rss"),
     path("feed/atom/", feeds.LatestAtomFeed(), name="feed_atom"),
     path("feed/json/", feeds.json_feed, name="feed_json"),
@@ -24,7 +26,11 @@ urlpatterns = [
     path("api/posts/<slug:slug>/related/", views.api_related, name="api_related"),
     path("api/autosave/", views.post_autosave, name="post_autosave"),
     path("api/preview/", views.post_preview, name="post_preview"),
-    path("api/widgets/trending-tags/", views.widget_trending_tags, name="widget_trending_tags"),
+    path(
+        "api/widgets/trending-tags/",
+        views.widget_trending_tags,
+        name="widget_trending_tags",
+    ),
     path("api/widgets/latest/", views.widget_latest_posts, name="widget_latest_posts"),
     path("api/widgets/top/", views.widget_top_posts, name="widget_top_posts"),
     path("api/posts/public/", views.posts_api_public, name="posts_api_public"),
@@ -32,5 +38,3 @@ urlpatterns = [
     path("post/<int:pk>/bookmark/", views.post_bookmark, name="post_bookmark"),
     path("<slug:slug>/", views.post_detail, name="post_detail"),
 ]
-
-

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.db import models
@@ -23,7 +22,9 @@ class KeywordProvider(models.Model):
 
 
 class KeywordSuggestion(models.Model):
-    provider = models.ForeignKey(KeywordProvider, on_delete=models.CASCADE, related_name="suggestions")
+    provider = models.ForeignKey(
+        KeywordProvider, on_delete=models.CASCADE, related_name="suggestions"
+    )
     keyword = models.CharField(max_length=128)
     normalized = models.CharField(max_length=128, db_index=True)
     score = models.FloatField(default=0.0)
@@ -41,5 +42,3 @@ class KeywordSuggestion(models.Model):
 
     def __str__(self):
         return f"{self.keyword} ({self.provider})"
-
-

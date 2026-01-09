@@ -2,14 +2,12 @@
 Celery/Django-Q tasks for tag operations.
 Background processing for analytics, trending, and notifications.
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Optional
-from django.core.mail import send_mail
-from django.conf import settings
+
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 
 from apps.tags.models import Tag
 from apps.tags.services.tag_service import TagService
@@ -73,16 +71,16 @@ def update_all_tag_analytics():
     Run daily via cron/celery beat.
     """
     service = TagService()
-    
+
     # Get all active tags
     tags = Tag.objects.filter(is_active=True, is_deleted=False)
-    
+
     for tag in tags:
         try:
             service.update_tag_analytics(tag.id)
         except Exception as e:
             logger.error(f"Failed to update analytics for tag {tag.id}: {e}")
-    
+
     logger.info(f"Updated analytics for {tags.count()} tags")
 
 
@@ -92,21 +90,19 @@ def discover_tag_relationships():
     Run weekly to find new relationships.
     """
     service = TagService()
-    
+
     # Get popular tags
     tags = Tag.objects.filter(
-        is_active=True,
-        is_deleted=False,
-        usage_count__gte=10
+        is_active=True, is_deleted=False, usage_count__gte=10
     ).order_by("-usage_count")[:100]
-    
+
     relationships_created = 0
-    
+
     for tag in tags:
         try:
             # Discover related tags
             related = service.discover_related_tags(tag, min_co_occurrence=3)
-            
+
             # Create relationships
             for related_tag, count in related[:10]:  # Top 10
                 strength = min(1.0, count / 10.0)  # Normalize to 0-1
@@ -114,13 +110,13 @@ def discover_tag_relationships():
                     from_tag=tag,
                     to_tag=related_tag,
                     relationship_type="related",
-                    strength=strength
+                    strength=strength,
                 )
                 relationships_created += 1
-                
+
         except Exception as e:
             logger.error(f"Failed to discover relationships for tag {tag.id}: {e}")
-    
+
     logger.info(f"Discovered {relationships_created} tag relationships")
 
 

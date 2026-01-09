@@ -1,4 +1,3 @@
-
 """
 GSMInfinity - Custom Allauth Signup & Onboarding Forms
 ------------------------------------------------------
@@ -11,8 +10,9 @@ GSMInfinity - Custom Allauth Signup & Onboarding Forms
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
+from allauth.account.forms import ChangePasswordForm
 from django import forms
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.password_validation import validate_password
@@ -20,7 +20,6 @@ from django.core.exceptions import ValidationError
 from django.http import HttpRequest
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
-from allauth.account.forms import ChangePasswordForm
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -168,19 +167,19 @@ class CustomSignupForm(forms.Form):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if not phone:
             return ""
-        
+
         # Remove any non-digit characters
         phone_digits = "".join(c for c in phone if c.isdigit())
-        
+
         if len(phone_digits) < 6:
             raise ValidationError(_("Phone number must be at least 6 digits."))
         if len(phone_digits) > 15:
             raise ValidationError(_("Phone number cannot exceed 15 digits."))
-        
+
         # Check for uniqueness
         if User.objects.filter(phone=phone_digits).exists():
             raise ValidationError(_("This phone number is already registered."))
-        
+
         return phone_digits
 
     def clean(self) -> dict[str, Any]:
@@ -215,7 +214,9 @@ class CustomSignupForm(forms.Form):
                 user.verification_code = user.generate_verification_code()
                 logger.debug("Generated verification code for %s", user.email)
             except Exception as exc:
-                logger.warning("Verification code generation failed for %s: %s", user.email, exc)
+                logger.warning(
+                    "Verification code generation failed for %s: %s", user.email, exc
+                )
 
         password = self.cleaned_data.get("password1")
         user.set_password(password)
@@ -273,7 +274,7 @@ class TellUsAboutYouForm(forms.Form):
             }
         ),
     )
-    
+
     country = forms.CharField(
         max_length=2,
         required=False,
@@ -284,7 +285,7 @@ class TellUsAboutYouForm(forms.Form):
             }
         ),
     )
-    
+
     phone_country_code = forms.CharField(
         max_length=5,
         required=False,
@@ -295,7 +296,7 @@ class TellUsAboutYouForm(forms.Form):
             }
         ),
     )
-    
+
     phone = forms.CharField(
         max_length=20,
         required=False,
@@ -334,7 +335,13 @@ class TellUsAboutYouForm(forms.Form):
         ),
     )
 
-    def __init__(self, *args: Any, user: Optional[Any] = None, request: Optional[HttpRequest] = None, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        user: Any | None = None,
+        request: HttpRequest | None = None,
+        **kwargs: Any,
+    ) -> None:
         self.user = user
         self.request = request
         super().__init__(*args, **kwargs)
@@ -363,15 +370,15 @@ class TellUsAboutYouForm(forms.Form):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if not phone:
             return ""
-        
+
         # Remove any non-digit characters
         phone_digits = "".join(c for c in phone if c.isdigit())
-        
+
         if len(phone_digits) < 6:
             raise ValidationError(_("Phone number must be at least 6 digits."))
         if len(phone_digits) > 15:
             raise ValidationError(_("Phone number cannot exceed 15 digits."))
-        
+
         # Check for uniqueness
         UserModel = get_user_model()
         qs = UserModel.objects.filter(phone=phone_digits)
@@ -379,7 +386,7 @@ class TellUsAboutYouForm(forms.Form):
             qs = qs.exclude(pk=self.user.pk)
         if qs.exists():
             raise ValidationError(_("This phone number is already registered."))
-        
+
         return phone_digits
 
     def clean_country(self) -> str:
@@ -440,7 +447,7 @@ class CustomChangePasswordForm(ChangePasswordForm):
         if self.user and self.user.has_usable_password():
             oldpassword = (self.cleaned_data.get("oldpassword") or "").strip()
             if not oldpassword or not self.user.check_password(oldpassword):
-                raise ValidationError(_("The current password you entered is incorrect."))
+                raise ValidationError(
+                    _("The current password you entered is incorrect.")
+                )
         return cleaned
-
-

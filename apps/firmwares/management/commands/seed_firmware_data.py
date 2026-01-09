@@ -13,57 +13,170 @@ Usage: python manage.py seed_firmware_data [--brands=100] [--clear]
 import random
 import uuid
 from datetime import date, timedelta
+
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
-from django.utils import timezone
 
 from apps.firmwares.models import (
-    Brand, Model, Variant,
-    OfficialFirmware, EngineeringFirmware, ReadbackFirmware,
-    ModifiedFirmware, OtherFirmware
+    Brand,
+    EngineeringFirmware,
+    Model,
+    ModifiedFirmware,
+    OfficialFirmware,
+    OtherFirmware,
+    ReadbackFirmware,
+    Variant,
 )
-
 
 # Realistic brand data
 BRANDS_DATA = [
     # Major smartphone brands
-    "Samsung", "Apple", "Xiaomi", "Huawei", "Oppo", "Vivo", "OnePlus", "Realme",
-    "Motorola", "Nokia", "LG", "Sony", "Google", "Asus", "Lenovo", "ZTE",
-    "Meizu", "Honor", "Tecno", "Infinix", "Itel", "Alcatel", "TCL", "HTC",
-    "BlackBerry", "Sharp", "Panasonic", "Kyocera", "Coolpad", "Gionee",
+    "Samsung",
+    "Apple",
+    "Xiaomi",
+    "Huawei",
+    "Oppo",
+    "Vivo",
+    "OnePlus",
+    "Realme",
+    "Motorola",
+    "Nokia",
+    "LG",
+    "Sony",
+    "Google",
+    "Asus",
+    "Lenovo",
+    "ZTE",
+    "Meizu",
+    "Honor",
+    "Tecno",
+    "Infinix",
+    "Itel",
+    "Alcatel",
+    "TCL",
+    "HTC",
+    "BlackBerry",
+    "Sharp",
+    "Panasonic",
+    "Kyocera",
+    "Coolpad",
+    "Gionee",
     # Chinese brands
-    "LeEco", "Nubia", "Red Magic", "Black Shark", "iQOO", "Poco", "Redmi",
-    "Camon", "Spark", "Hot", "Note", "Phantom", "Zero",
+    "LeEco",
+    "Nubia",
+    "Red Magic",
+    "Black Shark",
+    "iQOO",
+    "Poco",
+    "Redmi",
+    "Camon",
+    "Spark",
+    "Hot",
+    "Note",
+    "Phantom",
+    "Zero",
     # Regional brands
-    "Micromax", "Lava", "Karbonn", "Intex", "Spice", "BLU", "Cubot", "Umidigi",
-    "Doogee", "Oukitel", "Ulefone", "Blackview", "AGM", "Cat", "Ruggear",
+    "Micromax",
+    "Lava",
+    "Karbonn",
+    "Intex",
+    "Spice",
+    "BLU",
+    "Cubot",
+    "Umidigi",
+    "Doogee",
+    "Oukitel",
+    "Ulefone",
+    "Blackview",
+    "AGM",
+    "Cat",
+    "Ruggear",
     # Feature phone brands
-    "iTel", "Symphony", "Walton", "RFL", "Maximus", "Winstar", "Colors",
+    "iTel",
+    "Symphony",
+    "Walton",
+    "RFL",
+    "Maximus",
+    "Winstar",
+    "Colors",
     # Japanese brands
-    "Fujitsu", "NEC", "Toshiba", "Casio",
+    "Fujitsu",
+    "NEC",
+    "Toshiba",
+    "Casio",
     # Korean brands
-    "Pantech", "SKY",
+    "Pantech",
+    "SKY",
     # Tablet brands
-    "Wacom", "Chuwi", "Teclast", "Alldocube",
+    "Wacom",
+    "Chuwi",
+    "Teclast",
+    "Alldocube",
     # Chinese ODM
-    "Elephone", "Vernee", "Leagoo", "Homtom", "Bluboo", "UMI", "Maze",
+    "Elephone",
+    "Vernee",
+    "Leagoo",
+    "Homtom",
+    "Bluboo",
+    "UMI",
+    "Maze",
     # Emerging brands
-    "Nothing", "Fairphone", "Essential", "Razer", "ROG",
+    "Nothing",
+    "Fairphone",
+    "Essential",
+    "Razer",
+    "ROG",
     # Budget brands
-    "Wiko", "Archos", "Prestigio", "BQ", "Fly",
+    "Wiko",
+    "Archos",
+    "Prestigio",
+    "BQ",
+    "Fly",
     # Smart device brands
-    "Amazon", "Facebook", "Oculus", "Garmin", "Fitbit",
+    "Amazon",
+    "Facebook",
+    "Oculus",
+    "Garmin",
+    "Fitbit",
     # Tablet-focused
-    "Huion", "XP-Pen", "Gaomon",
+    "Huion",
+    "XP-Pen",
+    "Gaomon",
     # Premium brands
-    "Vertu", "8848", "Tonino Lamborghini", "Porsche Design",
+    "Vertu",
+    "8848",
+    "Tonino Lamborghini",
+    "Porsche Design",
 ]
 
 # Model name patterns per brand type
 MODEL_PATTERNS = {
-    "Samsung": ["Galaxy S{n}", "Galaxy A{n}", "Galaxy M{n}", "Galaxy F{n}", "Galaxy Note {n}", "Galaxy Z Fold {n}", "Galaxy Z Flip {n}"],
-    "Apple": ["iPhone {n}", "iPhone {n} Pro", "iPhone {n} Pro Max", "iPhone SE ({n})", "iPad Pro {n}", "iPad Air {n}"],
-    "Xiaomi": ["Mi {n}", "Mi {n} Pro", "Mi {n} Ultra", "Mi Mix {n}", "Mi Note {n}", "Xiaomi {n}T", "Xiaomi {n}T Pro"],
+    "Samsung": [
+        "Galaxy S{n}",
+        "Galaxy A{n}",
+        "Galaxy M{n}",
+        "Galaxy F{n}",
+        "Galaxy Note {n}",
+        "Galaxy Z Fold {n}",
+        "Galaxy Z Flip {n}",
+    ],
+    "Apple": [
+        "iPhone {n}",
+        "iPhone {n} Pro",
+        "iPhone {n} Pro Max",
+        "iPhone SE ({n})",
+        "iPad Pro {n}",
+        "iPad Air {n}",
+    ],
+    "Xiaomi": [
+        "Mi {n}",
+        "Mi {n} Pro",
+        "Mi {n} Ultra",
+        "Mi Mix {n}",
+        "Mi Note {n}",
+        "Xiaomi {n}T",
+        "Xiaomi {n}T Pro",
+    ],
     "Huawei": ["P{n}", "P{n} Pro", "Mate {n}", "Mate {n} Pro", "Nova {n}", "Y{n}"],
     "Oppo": ["Find X{n}", "Reno {n}", "Reno {n} Pro", "A{n}", "F{n}"],
     "Vivo": ["X{n}", "X{n} Pro", "V{n}", "Y{n}", "S{n}"],
@@ -78,55 +191,143 @@ MODEL_PATTERNS = {
 # Chipset data
 CHIPSETS = {
     "Qualcomm": [
-        "Snapdragon 8 Gen 3", "Snapdragon 8 Gen 2", "Snapdragon 8+ Gen 1", "Snapdragon 8 Gen 1",
-        "Snapdragon 888+", "Snapdragon 888", "Snapdragon 870", "Snapdragon 865+", "Snapdragon 865",
-        "Snapdragon 7+ Gen 2", "Snapdragon 7 Gen 1", "Snapdragon 778G+", "Snapdragon 778G",
-        "Snapdragon 6 Gen 1", "Snapdragon 695", "Snapdragon 680", "Snapdragon 665",
-        "Snapdragon 4 Gen 2", "Snapdragon 480+", "Snapdragon 480",
+        "Snapdragon 8 Gen 3",
+        "Snapdragon 8 Gen 2",
+        "Snapdragon 8+ Gen 1",
+        "Snapdragon 8 Gen 1",
+        "Snapdragon 888+",
+        "Snapdragon 888",
+        "Snapdragon 870",
+        "Snapdragon 865+",
+        "Snapdragon 865",
+        "Snapdragon 7+ Gen 2",
+        "Snapdragon 7 Gen 1",
+        "Snapdragon 778G+",
+        "Snapdragon 778G",
+        "Snapdragon 6 Gen 1",
+        "Snapdragon 695",
+        "Snapdragon 680",
+        "Snapdragon 665",
+        "Snapdragon 4 Gen 2",
+        "Snapdragon 480+",
+        "Snapdragon 480",
     ],
     "MediaTek": [
-        "Dimensity 9300", "Dimensity 9200+", "Dimensity 9200", "Dimensity 9000+", "Dimensity 9000",
-        "Dimensity 8300", "Dimensity 8200", "Dimensity 8100", "Dimensity 8000",
-        "Dimensity 7200", "Dimensity 7050", "Dimensity 6100+", "Dimensity 6080",
-        "Helio G99", "Helio G96", "Helio G88", "Helio G85", "Helio G35", "Helio P35",
+        "Dimensity 9300",
+        "Dimensity 9200+",
+        "Dimensity 9200",
+        "Dimensity 9000+",
+        "Dimensity 9000",
+        "Dimensity 8300",
+        "Dimensity 8200",
+        "Dimensity 8100",
+        "Dimensity 8000",
+        "Dimensity 7200",
+        "Dimensity 7050",
+        "Dimensity 6100+",
+        "Dimensity 6080",
+        "Helio G99",
+        "Helio G96",
+        "Helio G88",
+        "Helio G85",
+        "Helio G35",
+        "Helio P35",
     ],
     "Samsung": [
-        "Exynos 2400", "Exynos 2200", "Exynos 2100", "Exynos 1480", "Exynos 1380", "Exynos 1280",
-        "Exynos 990", "Exynos 9825", "Exynos 9820",
+        "Exynos 2400",
+        "Exynos 2200",
+        "Exynos 2100",
+        "Exynos 1480",
+        "Exynos 1380",
+        "Exynos 1280",
+        "Exynos 990",
+        "Exynos 9825",
+        "Exynos 9820",
     ],
     "Apple": [
-        "A17 Pro", "A17", "A16 Bionic", "A15 Bionic", "A14 Bionic", "A13 Bionic", "A12 Bionic",
-        "M2", "M1",
+        "A17 Pro",
+        "A17",
+        "A16 Bionic",
+        "A15 Bionic",
+        "A14 Bionic",
+        "A13 Bionic",
+        "A12 Bionic",
+        "M2",
+        "M1",
     ],
     "HiSilicon": [
-        "Kirin 9000s", "Kirin 9000", "Kirin 990", "Kirin 985", "Kirin 980", "Kirin 970",
-        "Kirin 820", "Kirin 810", "Kirin 710",
+        "Kirin 9000s",
+        "Kirin 9000",
+        "Kirin 990",
+        "Kirin 985",
+        "Kirin 980",
+        "Kirin 970",
+        "Kirin 820",
+        "Kirin 810",
+        "Kirin 710",
     ],
     "Unisoc": [
-        "Tiger T820", "Tiger T770", "Tiger T760", "Tiger T700", "Tiger T616", "Tiger T612", "Tiger T610",
-        "SC9863A", "SC7731E",
+        "Tiger T820",
+        "Tiger T770",
+        "Tiger T760",
+        "Tiger T700",
+        "Tiger T616",
+        "Tiger T612",
+        "Tiger T610",
+        "SC9863A",
+        "SC7731E",
     ],
     "Google": [
-        "Tensor G3", "Tensor G2", "Tensor G1",
+        "Tensor G3",
+        "Tensor G2",
+        "Tensor G1",
     ],
 }
 
 # Region codes
 REGIONS = [
-    ("GLB", "Global"), ("US", "USA"), ("EU", "Europe"), ("CN", "China"),
-    ("IN", "India"), ("KR", "Korea"), ("JP", "Japan"), ("TW", "Taiwan"),
-    ("RU", "Russia"), ("BR", "Brazil"), ("LATAM", "Latin America"),
-    ("MEA", "Middle East & Africa"), ("SEA", "Southeast Asia"),
+    ("GLB", "Global"),
+    ("US", "USA"),
+    ("EU", "Europe"),
+    ("CN", "China"),
+    ("IN", "India"),
+    ("KR", "Korea"),
+    ("JP", "Japan"),
+    ("TW", "Taiwan"),
+    ("RU", "Russia"),
+    ("BR", "Brazil"),
+    ("LATAM", "Latin America"),
+    ("MEA", "Middle East & Africa"),
+    ("SEA", "Southeast Asia"),
 ]
 
 # Android versions
 ANDROID_VERSIONS = [
-    "14.0", "13.0", "12.0", "12L", "11.0", "10.0", "9.0", "8.1", "8.0", "7.1", "7.0"
+    "14.0",
+    "13.0",
+    "12.0",
+    "12L",
+    "11.0",
+    "10.0",
+    "9.0",
+    "8.1",
+    "8.0",
+    "7.1",
+    "7.0",
 ]
 
 # RAM/Storage options
 RAM_OPTIONS = [[4], [6], [8], [12], [16], [4, 6], [6, 8], [8, 12], [8, 12, 16]]
-STORAGE_OPTIONS = [[64], [128], [256], [512], [64, 128], [128, 256], [256, 512], [128, 256, 512]]
+STORAGE_OPTIONS = [
+    [64],
+    [128],
+    [256],
+    [512],
+    [64, 128],
+    [128, 256],
+    [256, 512],
+    [128, 256, 512],
+]
 
 
 class Command(BaseCommand):
@@ -134,20 +335,25 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--brands", type=int, default=100,
-            help="Number of brands to create (default: 100)"
+            "--brands",
+            type=int,
+            default=100,
+            help="Number of brands to create (default: 100)",
         )
         parser.add_argument(
-            "--models-per-brand", type=int, default=5,
-            help="Average models per brand (default: 5)"
+            "--models-per-brand",
+            type=int,
+            default=5,
+            help="Average models per brand (default: 5)",
         )
         parser.add_argument(
-            "--firmwares", type=int, default=500,
-            help="Number of firmware files to create (default: 500)"
+            "--firmwares",
+            type=int,
+            default=500,
+            help="Number of firmware files to create (default: 500)",
         )
         parser.add_argument(
-            "--clear", action="store_true",
-            help="Clear existing data before seeding"
+            "--clear", action="store_true", help="Clear existing data before seeding"
         )
 
     def handle(self, *args, **options):
@@ -195,48 +401,75 @@ class Command(BaseCommand):
         self.stdout.write(f"  Models: {Model.objects.count()}")
         self.stdout.write(f"  Variants: {Variant.objects.count()}")
         self.stdout.write(f"  Official Firmwares: {OfficialFirmware.objects.count()}")
-        self.stdout.write(f"  Engineering Firmwares: {EngineeringFirmware.objects.count()}")
+        self.stdout.write(
+            f"  Engineering Firmwares: {EngineeringFirmware.objects.count()}"
+        )
         self.stdout.write(f"  Readback Firmwares: {ReadbackFirmware.objects.count()}")
         self.stdout.write(f"  Modified Firmwares: {ModifiedFirmware.objects.count()}")
         self.stdout.write(f"  Other Firmwares: {OtherFirmware.objects.count()}")
 
     def _create_brands(self, count: int) -> list:
         brands = []
-        brand_names = BRANDS_DATA[:count] if count <= len(BRANDS_DATA) else BRANDS_DATA + [f"Brand{i}" for i in range(count - len(BRANDS_DATA))]
-        
+        brand_names = (
+            BRANDS_DATA[:count]
+            if count <= len(BRANDS_DATA)
+            else BRANDS_DATA + [f"Brand{i}" for i in range(count - len(BRANDS_DATA))]
+        )
+
         for name in brand_names[:count]:
             slug = slugify(name)
             brand, created = Brand.objects.get_or_create(
-                slug=slug,
-                defaults={"name": name}
+                slug=slug, defaults={"name": name}
             )
             if created:
                 brands.append(brand)
-        
+
         return brands
 
     def _create_models(self, brands: list, avg_per_brand: int) -> list:
         models = []
-        
+
         for brand in brands:
             # Get patterns for this brand
             patterns = MODEL_PATTERNS.get(brand.name, MODEL_PATTERNS["default"])
-            
+
             # Randomize number of models (avg_per_brand +/- 2)
             num_models = max(1, random.randint(avg_per_brand - 2, avg_per_brand + 2))
-            
+
             for i in range(num_models):
                 pattern = random.choice(patterns)
                 # Use different number ranges
-                num = random.choice([str(i) for i in range(1, 20)] + ["10", "11", "12", "13", "14", "15", "20", "21", "22", "23", "24", "50", "60", "70", "80", "90", "100", "200"])
-                
+                num = random.choice(
+                    [str(i) for i in range(1, 20)]
+                    + [
+                        "10",
+                        "11",
+                        "12",
+                        "13",
+                        "14",
+                        "15",
+                        "20",
+                        "21",
+                        "22",
+                        "23",
+                        "24",
+                        "50",
+                        "60",
+                        "70",
+                        "80",
+                        "90",
+                        "100",
+                        "200",
+                    ]
+                )
+
                 name = pattern.format(n=num)
                 slug = slugify(name)
-                
+
                 # Avoid duplicates
                 if Model.objects.filter(brand=brand, slug=slug).exists():
                     continue
-                
+
                 model = Model.objects.create(
                     brand=brand,
                     name=name,
@@ -248,32 +481,32 @@ class Command(BaseCommand):
                     is_active=random.random() > 0.1,  # 90% active
                 )
                 models.append(model)
-        
+
         return models
 
     def _create_variants(self, models: list) -> list:
         variants = []
-        
+
         for model in models:
             # Create 1-4 variants per model
             num_variants = random.randint(1, 4)
             used_regions = set()
-            
-            for i in range(num_variants):
+
+            for _i in range(num_variants):
                 # Pick a region
                 available_regions = [r for r in REGIONS if r[0] not in used_regions]
                 if not available_regions:
                     break
-                
+
                 region_code, region_name = random.choice(available_regions)
                 used_regions.add(region_code)
-                
+
                 # Pick a chipset based on brand
                 chipset = self._get_chipset_for_brand(model.brand.name)
-                
+
                 name = region_name
                 slug = slugify(f"{model.name}-{region_code}")
-                
+
                 variant = Variant.objects.create(
                     model=model,
                     name=name,
@@ -286,13 +519,13 @@ class Command(BaseCommand):
                     is_active=model.is_active,
                 )
                 variants.append(variant)
-        
+
         return variants
 
     def _create_firmwares(self, variants: list, count: int) -> int:
         if not variants:
             return 0
-        
+
         firmware_types = [
             (OfficialFirmware, 0.5),  # 50% official
             (EngineeringFirmware, 0.2),  # 20% engineering
@@ -300,26 +533,27 @@ class Command(BaseCommand):
             (ModifiedFirmware, 0.15),  # 15% modified
             (OtherFirmware, 0.05),  # 5% other
         ]
-        
+
         created = 0
         for _ in range(count):
             # Pick a random variant
             variant = random.choice(variants)
             model = variant.model
             brand = model.brand
-            
+
             # Pick firmware type based on weights
             fw_type = random.choices(
-                [t[0] for t in firmware_types],
-                weights=[t[1] for t in firmware_types]
+                [t[0] for t in firmware_types], weights=[t[1] for t in firmware_types]
             )[0]
-            
+
             # Generate firmware data
             android_ver = random.choice(ANDROID_VERSIONS)
             build_date = self._random_release_date()
-            
+
             fw_data = {
-                "original_file_name": self._generate_filename(brand.name, model.name, variant.region, android_ver),
+                "original_file_name": self._generate_filename(
+                    brand.name, model.name, variant.region, android_ver
+                ),
                 "stored_file_path": f"/storage/firmwares/{brand.slug}/{model.slug}/{uuid.uuid4()}.zip",
                 "brand": brand,
                 "model": model,
@@ -332,24 +566,31 @@ class Command(BaseCommand):
                 "file_size": random.randint(500_000_000, 8_000_000_000),  # 500MB to 8GB
                 "file_hash": uuid.uuid4().hex + uuid.uuid4().hex[:32],
                 "partitions": self._generate_partitions(),
-                "is_password_protected": random.random() < 0.1,  # 10% password protected
+                "is_password_protected": random.random()
+                < 0.1,  # 10% password protected
                 "download_count": random.randint(0, 50000),
                 "view_count": random.randint(0, 100000),
                 "is_verified": random.random() > 0.3,  # 70% verified
                 "is_active": random.random() > 0.1,  # 90% active
             }
-            
+
             # Add subtype for certain firmware types
             if fw_type == EngineeringFirmware:
-                fw_data["subtype"] = random.choice(["Factory", "QC", "Debug", "Test", "PreRelease"])
+                fw_data["subtype"] = random.choice(
+                    ["Factory", "QC", "Debug", "Test", "PreRelease"]
+                )
             elif fw_type == ModifiedFirmware:
-                fw_data["subtype"] = random.choice(["Root", "Custom ROM", "Debloated", "Optimized"])
+                fw_data["subtype"] = random.choice(
+                    ["Root", "Custom ROM", "Debloated", "Optimized"]
+                )
             elif fw_type == OtherFirmware:
-                fw_data["subtype"] = random.choice(["Recovery", "TWRP", "Bootloader", "Kernel"])
-            
+                fw_data["subtype"] = random.choice(
+                    ["Recovery", "TWRP", "Bootloader", "Kernel"]
+                )
+
             fw_type.objects.create(**fw_data)
             created += 1
-        
+
         return created
 
     def _generate_model_code(self, brand_name: str) -> str:
@@ -378,17 +619,25 @@ class Command(BaseCommand):
             "Apple": CHIPSETS["Apple"],
             "Samsung": CHIPSETS["Samsung"] + CHIPSETS["Qualcomm"],
             "Huawei": CHIPSETS["HiSilicon"] + CHIPSETS["Qualcomm"],
-            "Honor": CHIPSETS["HiSilicon"] + CHIPSETS["Qualcomm"] + CHIPSETS["MediaTek"],
+            "Honor": CHIPSETS["HiSilicon"]
+            + CHIPSETS["Qualcomm"]
+            + CHIPSETS["MediaTek"],
             "Google": CHIPSETS["Google"],
         }
-        
-        chipset_list = brand_chipsets.get(brand_name, CHIPSETS["Qualcomm"] + CHIPSETS["MediaTek"] + CHIPSETS["Unisoc"])
+
+        chipset_list = brand_chipsets.get(
+            brand_name, CHIPSETS["Qualcomm"] + CHIPSETS["MediaTek"] + CHIPSETS["Unisoc"]
+        )
         return random.choice(chipset_list)
 
-    def _generate_filename(self, brand: str, model: str, region: str, android: str) -> str:
+    def _generate_filename(
+        self, brand: str, model: str, region: str, android: str
+    ) -> str:
         safe_brand = brand.replace(" ", "_")
         safe_model = model.replace(" ", "_")
-        version = f"V{random.randint(1, 15)}.{random.randint(0, 9)}.{random.randint(0, 99)}"
+        version = (
+            f"V{random.randint(1, 15)}.{random.randint(0, 9)}.{random.randint(0, 99)}"
+        )
         return f"{safe_brand}_{safe_model}_{region}_Android{android}_{version}.zip"
 
     def _generate_build_number(self) -> str:
@@ -397,10 +646,31 @@ class Command(BaseCommand):
 
     def _generate_partitions(self) -> list:
         all_partitions = [
-            "boot", "recovery", "system", "vendor", "product", "odm",
-            "userdata", "cache", "metadata", "vbmeta", "dtbo", "super",
-            "modem", "persist", "misc", "aboot", "cmnlib", "keymaster",
-            "rpm", "tz", "hyp", "devcfg", "dsp", "bluetooth", "logo",
+            "boot",
+            "recovery",
+            "system",
+            "vendor",
+            "product",
+            "odm",
+            "userdata",
+            "cache",
+            "metadata",
+            "vbmeta",
+            "dtbo",
+            "super",
+            "modem",
+            "persist",
+            "misc",
+            "aboot",
+            "cmnlib",
+            "keymaster",
+            "rpm",
+            "tz",
+            "hyp",
+            "devcfg",
+            "dsp",
+            "bluetooth",
+            "logo",
         ]
         num_partitions = random.randint(5, 15)
         return random.sample(all_partitions, num_partitions)

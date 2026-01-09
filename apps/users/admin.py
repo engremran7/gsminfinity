@@ -1,4 +1,3 @@
-
 # apps/users/admin.py
 """
 apps.users.admin
@@ -23,14 +22,12 @@ while preserving your export features.
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Optional
 
 from django.contrib import admin, messages
 from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -177,11 +174,12 @@ class CustomUserAdmin(BaseAdminClass):
     # Admin action: mark selected users as email verified
     # ------------------------------------------------------------------
     @admin.action(description="Mark selected users as email verified (set now)")
-    def mark_email_verified(self, request: HttpRequest, queryset: QuerySet[CustomUser]) -> None:
+    def mark_email_verified(
+        self, request: HttpRequest, queryset: QuerySet[CustomUser]
+    ) -> None:
         """Mark selected users as email verified with optional allauth sync."""
-        updated = (
-            queryset.filter(email_verified_at__isnull=True)
-            .update(email_verified_at=timezone.now())
+        updated = queryset.filter(email_verified_at__isnull=True).update(
+            email_verified_at=timezone.now()
         )
         # Sync allauth EmailAddress if installed
         try:
@@ -201,7 +199,9 @@ class CustomUserAdmin(BaseAdminClass):
             self.message_user(request, _("No users updated."), messages.INFO)
 
     @admin.action(description="Clear email verification (set to unverified)")
-    def clear_email_verification(self, request: HttpRequest, queryset: QuerySet[CustomUser]) -> None:
+    def clear_email_verification(
+        self, request: HttpRequest, queryset: QuerySet[CustomUser]
+    ) -> None:
         """Remove email verification status from selected users."""
         count = queryset.update(email_verified_at=None, verification_code="")
         try:
@@ -369,13 +369,16 @@ try:
         """Manage Users app configuration independently."""
 
         fieldsets = (
-            (_("Access & Flows"), {"fields": ("enable_signup", "enable_password_reset")}),
+            (
+                _("Access & Flows"),
+                {"fields": ("enable_signup", "enable_password_reset")},
+            ),
             (
                 _("Notifications System"),
                 {
                     "fields": ("enable_notifications",),
-                    "description": "Master switch for all notifications. When disabled, no notifications will be sent."
-                }
+                    "description": "Master switch for all notifications. When disabled, no notifications will be sent.",
+                },
             ),
             (
                 _("Security"),
@@ -390,29 +393,27 @@ try:
             ),
             (
                 _("reCAPTCHA"),
-                {
-                    "fields": (
-                    )
-                },
+                {"fields": ()},
             ),
             (_("Profile Completion"), {"fields": ("required_profile_fields",)}),
             (_("Payments"), {"fields": ("enable_payments",)}),
         )
-        
+
         readonly_fields = ("notification_stats",)
 
         def has_add_permission(self, request):
             return False
-        
+
         def notification_stats(self, obj):
             """Display notification system statistics."""
             from django.utils.html import format_html
+
             try:
                 total_users = CustomUser.objects.filter(is_active=True).count()
                 prefs_count = NotificationPreferences.objects.count()
                 push_count = PushSubscription.objects.filter(is_active=True).count()
                 unread_notifs = Notification.objects.filter(is_read=False).count()
-                
+
                 return format_html(
                     "<strong>System Status:</strong><br/>"
                     "✅ Active Users: {}<br/>"
@@ -464,52 +465,62 @@ class NotificationPreferencesAdmin(BaseAdminClass):
     )
 
     search_fields = ("user__email", "user__username", "user__full_name")
-    
+
     readonly_fields = ("user", "created_at", "updated_at")
-    
+
     fieldsets = (
-        (_("User"), {
-            "fields": ("user", "created_at", "updated_at")
-        }),
-        (_("Email Notifications"), {
-            "fields": (
-                "email_frequency",
-                "email_comments",
-                "email_replies",
-                "email_mentions",
-                "email_new_posts",
-                "email_security",
-            ),
-            "description": "Control when and what type of email notifications to send"
-        }),
-        (_("Web Notifications"), {
-            "fields": (
-                "web_comments",
-                "web_awards",
-                "web_moderation",
-                "web_system",
-            ),
-            "description": "Control in-app notification types"
-        }),
-        (_("Push Notifications"), {
-            "fields": ("push_enabled",),
-            "description": "Browser push notifications status"
-        }),
-        (_("Quiet Hours"), {
-            "fields": (
-                "quiet_hours_enabled",
-                "quiet_hours_start",
-                "quiet_hours_end",
-            ),
-            "description": "Mute non-critical notifications during specific hours"
-        }),
+        (_("User"), {"fields": ("user", "created_at", "updated_at")}),
+        (
+            _("Email Notifications"),
+            {
+                "fields": (
+                    "email_frequency",
+                    "email_comments",
+                    "email_replies",
+                    "email_mentions",
+                    "email_new_posts",
+                    "email_security",
+                ),
+                "description": "Control when and what type of email notifications to send",
+            },
+        ),
+        (
+            _("Web Notifications"),
+            {
+                "fields": (
+                    "web_comments",
+                    "web_awards",
+                    "web_moderation",
+                    "web_system",
+                ),
+                "description": "Control in-app notification types",
+            },
+        ),
+        (
+            _("Push Notifications"),
+            {
+                "fields": ("push_enabled",),
+                "description": "Browser push notifications status",
+            },
+        ),
+        (
+            _("Quiet Hours"),
+            {
+                "fields": (
+                    "quiet_hours_enabled",
+                    "quiet_hours_start",
+                    "quiet_hours_end",
+                ),
+                "description": "Mute non-critical notifications during specific hours",
+            },
+        ),
     )
 
     ordering = ("-updated_at",)
     list_per_page = 50
     date_hierarchy = "updated_at"
     save_on_top = True
-    
+
     actions = [
         "enable_all_email",
         "disable_all_email",
@@ -752,24 +763,31 @@ class PushSubscriptionAdmin(BaseAdminClass):
     )
 
     fieldsets = (
-        (_("User & Device"), {
-            "fields": ("user", "device_name", "user_agent", "is_active")
-        }),
-        (_("Subscription Details"), {
-            "fields": ("endpoint", "p256dh", "auth", "subscription_details"),
-            "classes": ("collapse",),
-            "description": "Web Push subscription technical details"
-        }),
-        (_("Timestamps"), {
-            "fields": ("created_at", "last_used_at"),
-        }),
+        (
+            _("User & Device"),
+            {"fields": ("user", "device_name", "user_agent", "is_active")},
+        ),
+        (
+            _("Subscription Details"),
+            {
+                "fields": ("endpoint", "p256dh", "auth", "subscription_details"),
+                "classes": ("collapse",),
+                "description": "Web Push subscription technical details",
+            },
+        ),
+        (
+            _("Timestamps"),
+            {
+                "fields": ("created_at", "last_used_at"),
+            },
+        ),
     )
 
     ordering = ("-created_at",)
     list_per_page = 50
     date_hierarchy = "created_at"
     save_on_top = True
-    
+
     actions = [
         "activate_selected",
         "deactivate_selected",
@@ -819,6 +837,7 @@ class PushSubscriptionAdmin(BaseAdminClass):
     @admin.display(description=_("Subscription Info"))
     def subscription_details(self, obj: PushSubscription):
         from django.utils.html import format_html
+
         return format_html(
             "<strong>Endpoint:</strong><br/>{}<br/><br/>"
             "<strong>P256DH Key:</strong><br/>{}<br/><br/>"
@@ -829,7 +848,9 @@ class PushSubscriptionAdmin(BaseAdminClass):
             obj.p256dh[:50] + "..." if len(obj.p256dh) > 50 else obj.p256dh,
             obj.auth[:50] + "..." if len(obj.auth) > 50 else obj.auth,
             "✅ Active" if obj.is_active else "❌ Inactive",
-            obj.last_used_at.strftime("%Y-%m-%d %H:%M:%S") if obj.last_used_at else "Never",
+            obj.last_used_at.strftime("%Y-%m-%d %H:%M:%S")
+            if obj.last_used_at
+            else "Never",
         )
 
     # Bulk Actions
@@ -864,7 +885,7 @@ class PushSubscriptionAdmin(BaseAdminClass):
         """Send a test notification to selected subscriptions."""
         try:
             from apps.users.services.notifications import send_notification
-            
+
             success_count = 0
             for subscription in queryset.filter(is_active=True):
                 try:
@@ -878,7 +899,7 @@ class PushSubscriptionAdmin(BaseAdminClass):
                     success_count += 1
                 except Exception as exc:
                     logger.warning("Failed to send test notification: %s", exc)
-            
+
             self.message_user(
                 request,
                 _("Sent test notifications to %d subscriptions.") % success_count,
@@ -893,15 +914,13 @@ class PushSubscriptionAdmin(BaseAdminClass):
         """Remove subscriptions inactive for 30+ days."""
         try:
             from datetime import timedelta
+
             threshold = timezone.now() - timedelta(days=30)
-            
-            old_inactive = queryset.filter(
-                is_active=False,
-                last_used_at__lt=threshold
-            )
+
+            old_inactive = queryset.filter(is_active=False, last_used_at__lt=threshold)
             count = old_inactive.count()
             old_inactive.delete()
-            
+
             self.message_user(
                 request,
                 _("Deleted %d old inactive subscriptions.") % count,
@@ -915,8 +934,8 @@ class PushSubscriptionAdmin(BaseAdminClass):
 # ==============================================================================
 # Social Account Provider Admin (Enhanced)
 # ==============================================================================
-from allauth.socialaccount.models import SocialApp
 from allauth.socialaccount.admin import SocialAppAdmin as BaseSocialAppAdmin
+from allauth.socialaccount.models import SocialApp
 
 # Unregister the default admin
 admin.site.unregister(SocialApp)
@@ -925,59 +944,75 @@ admin.site.unregister(SocialApp)
 @admin.register(SocialApp)
 class EnhancedSocialAppAdmin(BaseSocialAppAdmin):
     """Enhanced admin for social authentication providers with helpful documentation."""
-    
-    list_display = ("name", "provider", "status_display", "sites_list", "modified_display")
+
+    list_display = (
+        "name",
+        "provider",
+        "status_display",
+        "sites_list",
+        "modified_display",
+    )
     list_filter = ("provider",)
     search_fields = ("name", "provider", "client_id")
     filter_horizontal = ("sites",)
-    
+
     fieldsets = (
-        (None, {
-            "fields": ("provider", "name"),
-            "description": "Configure OAuth providers for social authentication.",
-        }),
-        ("OAuth Credentials", {
-            "fields": ("client_id", "secret", "key"),
-            "description": (
-                "Get OAuth credentials from provider developer consoles:<br>"
-                "• <strong>Google:</strong> <a href='https://console.cloud.google.com/apis/credentials' target='_blank'>Google Cloud Console</a><br>"
-                "• <strong>Facebook:</strong> <a href='https://developers.facebook.com/apps/' target='_blank'>Facebook Developers</a><br>"
-                "• <strong>Microsoft:</strong> <a href='https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade' target='_blank'>Azure Portal</a><br>"
-                "• <strong>GitHub:</strong> <a href='https://github.com/settings/developers' target='_blank'>GitHub Settings</a>"
-            ),
-        }),
-        ("Configuration", {
-            "fields": ("sites", "settings"),
-            "description": "Select which sites this provider is enabled for.",
-        }),
+        (
+            None,
+            {
+                "fields": ("provider", "name"),
+                "description": "Configure OAuth providers for social authentication.",
+            },
+        ),
+        (
+            "OAuth Credentials",
+            {
+                "fields": ("client_id", "secret", "key"),
+                "description": (
+                    "Get OAuth credentials from provider developer consoles:<br>"
+                    "• <strong>Google:</strong> <a href='https://console.cloud.google.com/apis/credentials' target='_blank'>Google Cloud Console</a><br>"
+                    "• <strong>Facebook:</strong> <a href='https://developers.facebook.com/apps/' target='_blank'>Facebook Developers</a><br>"
+                    "• <strong>Microsoft:</strong> <a href='https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade' target='_blank'>Azure Portal</a><br>"
+                    "• <strong>GitHub:</strong> <a href='https://github.com/settings/developers' target='_blank'>GitHub Settings</a>"
+                ),
+            },
+        ),
+        (
+            "Configuration",
+            {
+                "fields": ("sites", "settings"),
+                "description": "Select which sites this provider is enabled for.",
+            },
+        ),
     )
-    
+
     def status_display(self, obj):
         """Show if provider has valid-looking credentials."""
         if obj.client_id.startswith("your-") or len(obj.client_id) < 10:
             return "⚠️ Test/Placeholder"
         return "✓ Configured"
+
     status_display.short_description = "Status"
-    
+
     def sites_list(self, obj):
         """Display associated sites."""
         sites = obj.sites.all()
         if not sites:
             return "❌ No sites"
         return ", ".join(site.domain for site in sites[:3])
+
     sites_list.short_description = "Sites"
-    
+
     def modified_display(self, obj):
         """Show when last modified."""
         if hasattr(obj, "modified"):
             return obj.modified.strftime("%Y-%m-%d %H:%M")
         return "-"
+
     modified_display.short_description = "Last Modified"
-    
+
     def get_readonly_fields(self, request, obj=None):
         """Make provider readonly when editing existing apps."""
         if obj:  # editing existing
             return ("provider",)
         return ()
-
-

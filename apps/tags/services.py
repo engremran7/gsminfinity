@@ -1,23 +1,21 @@
-
 from __future__ import annotations
 
 import hashlib
-from typing import Iterable, List, Dict
-from django.db import transaction, models
-from django.utils import timezone
 
-from apps.tags.models import Tag
-from apps.core import ai
-from apps.core import ai_client
-from apps.tags.models_keyword import KeywordProvider, KeywordSuggestion
+from django.db import transaction
+from django.utils import timezone
 from django.utils.text import slugify
+
+from apps.core import ai_client
+from apps.tags.models import Tag
+from apps.tags.models_keyword import KeywordProvider, KeywordSuggestion
 
 
 def _normalize(text: str) -> str:
     return " ".join((text or "").lower().strip().split())
 
 
-def suggest_tags_from_text(text: str, limit: int = 10) -> List[Dict[str, str]]:
+def suggest_tags_from_text(text: str, limit: int = 10) -> list[dict[str, str]]:
     text = (text or "").strip()
     if not text:
         return []
@@ -56,7 +54,9 @@ def merge_tags(source: Tag, target: Tag, user=None) -> None:
         source.is_active = False
         source.deleted_at = timezone.now()
         source.deleted_by = user
-        source.save(update_fields=["merge_into", "is_active", "deleted_at", "deleted_by"])
+        source.save(
+            update_fields=["merge_into", "is_active", "deleted_at", "deleted_by"]
+        )
         # Update target usage
         target.usage_count = getattr(target, "posts", Tag.objects.none()).count()
         target.save(update_fields=["usage_count"])
@@ -75,7 +75,7 @@ def compute_content_hash(text: str) -> str:
     return hashlib.sha256((text or "").encode("utf-8", errors="ignore")).hexdigest()
 
 
-def store_suggestions(tag: Tag, suggestions: List[Dict], content_hash: str) -> None:
+def store_suggestions(tag: Tag, suggestions: list[dict], content_hash: str) -> None:
     tag.suggestions = suggestions
     tag.content_hash = content_hash
     tag.last_suggested_at = timezone.now()
@@ -90,7 +90,7 @@ def jaccard(a: str, b: str) -> float:
     return len(sa & sb) / len(sa | sb)
 
 
-def fetch_external_keywords(provider: KeywordProvider) -> List[Dict[str, str]]:
+def fetch_external_keywords(provider: KeywordProvider) -> list[dict[str, str]]:
     """
     Stub for external keyword fetch; replace with real API calls per provider.config.
     Stores suggestions and returns normalized list for review.
@@ -102,7 +102,9 @@ def fetch_external_keywords(provider: KeywordProvider) -> List[Dict[str, str]]:
     return []
 
 
-def store_keyword_suggestions(provider: KeywordProvider, keywords: List[Dict[str, str]]) -> None:
+def store_keyword_suggestions(
+    provider: KeywordProvider, keywords: list[dict[str, str]]
+) -> None:
     now = timezone.now()
     for kw in keywords:
         norm = _normalize(kw.get("keyword", ""))
@@ -169,5 +171,3 @@ def auto_tag_post(post, allow_create: bool = True, max_tags: int = 5) -> list[Ta
         except Exception:
             continue
     return attached
-
-

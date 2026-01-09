@@ -1,5 +1,7 @@
 from django.contrib import admin
+
 from apps.devices.models_quota import UserDeviceQuota
+
 
 @admin.register(UserDeviceQuota)
 class UserDeviceQuotaAdmin(admin.ModelAdmin):

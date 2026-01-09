@@ -1,4 +1,3 @@
-
 from django.conf import settings
 from django.db import models
 from solo.models import SingletonModel
@@ -77,13 +76,15 @@ class AppRegistry(SingletonModel):
     """
 
     seo_enabled = models.BooleanField(
-        default=True, help_text="Turn SEO module on/off (meta tags, schema, link tools)."
+        default=True,
+        help_text="Turn SEO module on/off (meta tags, schema, link tools).",
     )
     ads_enabled = models.BooleanField(
         default=True, help_text="Turn Ads module on/off (slots, rotation, tracking)."
     )
     tags_enabled = models.BooleanField(
-        default=True, help_text="Turn Tags module on/off (taxonomy, tag pages, tag APIs)."
+        default=True,
+        help_text="Turn Tags module on/off (taxonomy, tag pages, tag APIs).",
     )
     blog_enabled = models.BooleanField(
         default=True, help_text="Turn Blog module on/off (posts, feeds, public views)."
@@ -95,10 +96,12 @@ class AppRegistry(SingletonModel):
         default=True, help_text="Turn Distribution module on/off (syndication/sharing)."
     )
     users_enabled = models.BooleanField(
-        default=True, help_text="Turn Users module on/off (auth, profile, notifications)."
+        default=True,
+        help_text="Turn Users module on/off (auth, profile, notifications).",
     )
     device_identity_enabled = models.BooleanField(
-        default=True, help_text="Turn Device Identity on/off (fingerprint/login policy)."
+        default=True,
+        help_text="Turn Device Identity on/off (fingerprint/login policy).",
     )
     crawler_guard_enabled = models.BooleanField(
         default=True, help_text="Turn Crawler Guard on/off (anti-scraping middleware)."
@@ -107,10 +110,12 @@ class AppRegistry(SingletonModel):
         default=True, help_text="Turn AI Behavior Engine on/off (risk insights)."
     )
     i18n_themes_enabled = models.BooleanField(
-        default=True, help_text="Turn i18n + Themes on/off (runtime tokens + translations)."
+        default=True,
+        help_text="Turn i18n + Themes on/off (runtime tokens + translations).",
     )
     ai_enabled = models.BooleanField(
-        default=True, help_text="Turn AI Platform on/off (models, workflows, knowledge)."
+        default=True,
+        help_text="Turn AI Platform on/off (models, workflows, knowledge).",
     )
 
     class Meta:
@@ -118,6 +123,3 @@ class AppRegistry(SingletonModel):
 
     def __str__(self) -> str:
         return "App Registry"
-
-
-

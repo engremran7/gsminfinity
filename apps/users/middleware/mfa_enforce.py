@@ -1,8 +1,7 @@
-
 from __future__ import annotations
 
 import logging
-from typing import Iterable
+from collections.abc import Iterable
 
 from django.shortcuts import redirect
 from django.urls import resolve, reverse
@@ -79,11 +78,11 @@ class EnforceMfaMiddleware:
         # Check if user has MFA devices enrolled
         try:
             from apps.users.models import MFADevice
-            
+
             has_active_device = MFADevice.objects.filter(
-                user=user, is_active=True, device_type='totp'
+                user=user, is_active=True, device_type="totp"
             ).exists()
-            
+
             if not has_active_device:
                 # User needs to set up MFA
                 try:
@@ -91,7 +90,7 @@ class EnforceMfaMiddleware:
                 except Exception:
                     logger.debug("MFA setup URL not configured yet")
                     return self.get_response(request)
-            
+
             # Check if MFA has been verified this session
             mfa_verified = request.session.get("mfa_verified", False)
             if not mfa_verified:
@@ -101,12 +100,10 @@ class EnforceMfaMiddleware:
                 except Exception:
                     logger.debug("MFA verify URL not configured yet")
                     return self.get_response(request)
-                    
+
         except ImportError:
             logger.warning("MFADevice model not available")
         except Exception as e:
             logger.error(f"Error checking MFA status: {e}")
 
         return self.get_response(request)
-
-

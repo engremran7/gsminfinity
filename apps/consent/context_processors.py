@@ -1,4 +1,3 @@
-
 """
 apps.consent.context_processors
 
@@ -14,17 +13,18 @@ Injects consent state and metadata into all Django templates.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
-from apps.consent.models import ConsentPolicy
 from django.conf import settings
 from django.http import HttpRequest
 from django.utils.functional import SimpleLazyObject
 
+from apps.consent.models import ConsentPolicy
+
 logger = logging.getLogger(__name__)
 
 
-def consent_context(request: HttpRequest) -> Dict[str, Any]:
+def consent_context(request: HttpRequest) -> dict[str, Any]:
     """
     Canonical consent context for templates.
 
@@ -53,8 +53,8 @@ def consent_context(request: HttpRequest) -> Dict[str, Any]:
     try:
         raw = getattr(request, "consent_categories", {}) or {}
 
-        cookie_map: Dict[str, bool] = {}
-        canonical: Dict[str, Dict[str, Any]] = {}
+        cookie_map: dict[str, bool] = {}
+        canonical: dict[str, dict[str, Any]] = {}
 
         # -----------------------------
         # Build canonical structured map
@@ -100,7 +100,7 @@ def consent_context(request: HttpRequest) -> Dict[str, Any]:
         # ---------------------------
         # Construct final safe context
         # ---------------------------
-        ctx: Dict[str, Any] = {
+        ctx: dict[str, Any] = {
             "has_cookie_consent": bool(getattr(request, "has_cookie_consent", False)),
             "cookie_consent_categories": cookie_map,
             "consent_categories": canonical,  # canonical, banner-safe
@@ -143,4 +143,3 @@ def consent_context(request: HttpRequest) -> Dict[str, Any]:
             "consent_cookie_samesite": "Lax",
             "consent_cookie_max_age": 31536000,
         }
-

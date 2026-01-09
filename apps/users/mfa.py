@@ -1,4 +1,3 @@
-
 """
 apps.users.mfa
 
@@ -21,7 +20,6 @@ import hmac
 import logging
 import secrets
 import time
-from typing import Optional
 from urllib.parse import quote_plus
 
 from apps.site_settings.models import SiteSettings
@@ -106,7 +104,7 @@ class TOTPService:
         secret: str,
         period: int = 30,
         digits: int = 6,
-        at_time: Optional[int] = None,
+        at_time: int | None = None,
     ) -> str:
         """
         Generate TOTP code for current time or custom timestamp.
@@ -184,10 +182,7 @@ class MFAEnforcer:
         """
         try:
             s = SiteSettings.get_solo()
-            return (
-                getattr(s, "mfa_totp_issuer", None)
-                or DEFAULT_ISSUER
-            )
+            return getattr(s, "mfa_totp_issuer", None) or DEFAULT_ISSUER
         except Exception:
             logger.warning("Failed to read MFA issuer; using default.")
             return DEFAULT_ISSUER
@@ -196,10 +191,10 @@ class MFAEnforcer:
     def provisioning_uri(
         secret: str,
         user_email: str,
-        label: Optional[str] = None,
+        label: str | None = None,
         digits: int = 6,
         period: int = 30,
-        issuer: Optional[str] = None,
+        issuer: str | None = None,
     ) -> str:
         """
         Build otpauth:// URI for QR provisioning.
@@ -264,5 +259,3 @@ def compare_hmac_secret(stored_hmac: str, candidate_secret: str, pepper: str) ->
 
 
 __all__ = ["TOTPService", "MFAEnforcer", "hmac_store_secret", "compare_hmac_secret"]
-
-

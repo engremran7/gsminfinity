@@ -1,4 +1,3 @@
-
 # apps/users/models.py
 """
 apps/users/models.py
@@ -18,16 +17,15 @@ import logging
 import re
 import secrets
 import string
-from typing import Any, Dict, Optional
+from typing import Any
 
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
     PermissionsMixin,
 )
-from django.contrib.auth.hashers import make_password, check_password
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.utils import timezone
 from django.utils.text import slugify
@@ -49,10 +47,10 @@ class CustomUserManager(BaseUserManager):
     def _create_user(
         self,
         email: str,
-        username: Optional[str],
-        password: Optional[str],
+        username: str | None,
+        password: str | None,
         **extra_fields: Any,
-    ) -> "CustomUser":
+    ) -> CustomUser:
         if not email:
             raise ValueError("An email address is required.")
         email = self.normalize_email(email).strip().lower()
@@ -70,10 +68,10 @@ class CustomUserManager(BaseUserManager):
     def create_user(
         self,
         email: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
         **extra_fields: Any,
-    ) -> "CustomUser":
+    ) -> CustomUser:
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         extra_fields.setdefault("is_active", True)
@@ -82,10 +80,10 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(
         self,
         email: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
         **extra_fields: Any,
-    ) -> "CustomUser":
+    ) -> CustomUser:
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("is_active", True)
@@ -114,27 +112,27 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=150, blank=True, default="")
 
     # Profile with enhanced location/phone
-    bio = models.TextField(max_length=500, blank=True, default="", help_text="Short biography")
+    bio = models.TextField(
+        max_length=500, blank=True, default="", help_text="Short biography"
+    )
     country = models.CharField(
         max_length=2,
         blank=True,
         default="",
-        help_text="ISO 3166-1 alpha-2 country code (auto-detected from IP)"
+        help_text="ISO 3166-1 alpha-2 country code (auto-detected from IP)",
     )
     country_detected_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text="When the country was auto-detected from IP"
+        null=True, blank=True, help_text="When the country was auto-detected from IP"
     )
     phone_country_code = models.CharField(
         max_length=5,
         blank=True,
         default="",
-        help_text="Phone country code (e.g., +1, +44, +966)"
+        help_text="Phone country code (e.g., +1, +44, +966)",
     )
     phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
     currency = models.CharField(max_length=10, null=True, blank=True)
-    
+
     class Roles(models.TextChoices):
         ADMIN = "admin", "Admin"
         EDITOR = "editor", "Editor"
@@ -149,7 +147,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     can_create_blog_posts = models.BooleanField(
         default=False,
-        help_text="Allow this user to create blog posts (individual permission override)"
+        help_text="Allow this user to create blog posts (individual permission override)",
     )
 
     # Credits (deprecated - kept for legacy compatibility)
@@ -222,7 +220,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         try:
             super().save(*args, **kwargs)
         except Exception as exc:
-            logger.exception("Failed to save user %s : %s", getattr(self, "email", None), exc)
+            logger.exception(
+                "Failed to save user %s : %s", getattr(self, "email", None), exc
+            )
             raise
 
     # ============================================================
@@ -230,8 +230,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     # ============================================================
     def get_full_name(self) -> str:
         """Return the full name or username as fallback."""
-        return self.full_name or self.username or self.email.split('@')[0]
-    
+        return self.full_name or self.username or self.email.split("@")[0]
+
     @property
     def is_verified(self) -> bool:
         return bool(self.email_verified_at)
@@ -263,10 +263,10 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def can_create_posts(self) -> bool:
         """Check if user can create blog posts based on role, staff status, or explicit permission."""
         return (
-            self.is_staff or 
-            self.is_superuser or 
-            self.can_create_blog_posts or 
-            self.has_role(self.Roles.AUTHOR, self.Roles.EDITOR, self.Roles.ADMIN)
+            self.is_staff
+            or self.is_superuser
+            or self.can_create_blog_posts
+            or self.has_role(self.Roles.AUTHOR, self.Roles.EDITOR, self.Roles.ADMIN)
         )
 
     def mark_email_verified(self) -> None:
@@ -319,7 +319,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         try:
             self.save(update_fields=["verification_code", "verification_code_sent_at"])
         except Exception as exc:
-            logger.exception("Verification code save failed for %s : %s", self.email, exc)
+            logger.exception(
+                "Verification code save failed for %s : %s", self.email, exc
+            )
         return code
 
     def increment_unlock(self) -> None:
@@ -337,7 +339,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
                 self.save(update_fields=["credits"])
             except Exception as exc:
                 logger.exception("Credit update failed: %s", exc)
-
 
 
 # --------------------------------------------------------------------------
@@ -382,15 +383,24 @@ class Notification(models.Model):
     url = models.URLField(max_length=500, blank=True, null=True)
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default="info")
     channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES, default="web")
-    action_type = models.CharField(max_length=20, choices=ACTION_TYPE_CHOICES, default="system", help_text="Type of action that triggered notification")
-    icon = models.CharField(max_length=50, blank=True, help_text="Icon name for UI display (e.g., comment, heart, bell)")
+    action_type = models.CharField(
+        max_length=20,
+        choices=ACTION_TYPE_CHOICES,
+        default="system",
+        help_text="Type of action that triggered notification",
+    )
+    icon = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Icon name for UI display (e.g., comment, heart, bell)",
+    )
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="triggered_notifications",
-        help_text="User who triggered this notification"
+        help_text="User who triggered this notification",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
@@ -418,7 +428,7 @@ class Notification(models.Model):
             except Exception as exc:
                 logger.exception("Failed to mark notification read: %s", exc)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.pk,
             "title": self.title,
@@ -431,10 +441,10 @@ class Notification(models.Model):
             "read_at": self.read_at.isoformat() if self.read_at else None,
         }
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self) -> dict[str, Any]:
         return self.to_dict()
 
-    def author_schema(self) -> Dict[str, Any]:
+    def author_schema(self) -> dict[str, Any]:
         """Basic author schema info for SEO."""
         return {
             "@type": "Person",
@@ -498,7 +508,7 @@ class Announcement(models.Model):
             except Exception as exc:
                 logger.exception("Failed to deactivate expired announcement: %s", exc)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.pk,
             "title": self.title,
@@ -513,7 +523,7 @@ class Announcement(models.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self) -> dict[str, Any]:
         return self.to_dict()
 
 
@@ -574,7 +584,9 @@ class SecurityQuestion(models.Model):
         on_delete=models.CASCADE,
         related_name="security_question",
     )
-    question_key = models.CharField(max_length=50, choices=QUESTION_CHOICES, default="first_pet")
+    question_key = models.CharField(
+        max_length=50, choices=QUESTION_CHOICES, default="first_pet"
+    )
     custom_question = models.CharField(max_length=255, blank=True, default="")
     answer_hash = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
@@ -609,79 +621,81 @@ class MFADevice(models.Model):
     Stores user MFA device enrollment for TOTP-based 2FA.
     Secret is encrypted at rest using Fernet.
     """
-    
+
     DEVICE_TYPE_CHOICES = [
-        ('totp', 'TOTP Authenticator App'),
-        ('backup', 'Backup Codes'),
+        ("totp", "TOTP Authenticator App"),
+        ("backup", "Backup Codes"),
     ]
-    
+
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='mfa_devices'
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mfa_devices"
     )
-    device_type = models.CharField(max_length=16, choices=DEVICE_TYPE_CHOICES, default='totp')
-    name = models.CharField(max_length=64, default='Authenticator App')
-    
+    device_type = models.CharField(
+        max_length=16, choices=DEVICE_TYPE_CHOICES, default="totp"
+    )
+    name = models.CharField(max_length=64, default="Authenticator App")
+
     # Encrypted TOTP secret (base32 encoded)
-    secret_encrypted = models.CharField(max_length=512, blank=True, default='')
-    
+    secret_encrypted = models.CharField(max_length=512, blank=True, default="")
+
     # Backup codes (JSON list of hashed codes) - only for device_type='backup'
     backup_codes_hash = models.JSONField(default=list, blank=True)
-    
+
     is_primary = models.BooleanField(default=False, help_text="Primary MFA device")
     is_active = models.BooleanField(default=True)
-    
+
     # Tracking
     last_used_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = "MFA Device"
         verbose_name_plural = "MFA Devices"
         indexes = [
-            models.Index(fields=['user', 'is_active'], name='mfa_user_active_idx'),
+            models.Index(fields=["user", "is_active"], name="mfa_user_active_idx"),
         ]
-    
+
     def __str__(self) -> str:
         return f"MFA {self.get_device_type_display()} for {self.user.email}"
-    
+
     @classmethod
     def get_fernet(cls):
         """
         Get Fernet instance for MFA secret encryption/decryption.
-        
+
         Uses dedicated MFA_ENCRYPTION_KEY if available, falls back to SECRET_KEY.
         Having a separate key allows SECRET_KEY rotation without invalidating MFA.
         """
-        from cryptography.fernet import Fernet
-        from django.conf import settings
         import base64
         import hashlib
         import warnings
-        
+
+        from cryptography.fernet import Fernet
+        from django.conf import settings
+
         # Use dedicated MFA key if available, fallback to SECRET_KEY
-        mfa_key = getattr(settings, 'MFA_ENCRYPTION_KEY', None)
+        mfa_key = getattr(settings, "MFA_ENCRYPTION_KEY", None)
         if not mfa_key:
             # Fallback for backwards compatibility
             if not settings.DEBUG:
                 warnings.warn(
                     "MFA_ENCRYPTION_KEY not configured. Using SECRET_KEY as fallback. "
                     "Set MFA_ENCRYPTION_KEY in production for key rotation safety.",
-                    UserWarning
+                    UserWarning,
+                    stacklevel=2,
                 )
             mfa_key = settings.SECRET_KEY
-        
+
         # Derive a Fernet key from the source key
         key = hashlib.sha256(mfa_key.encode()).digest()
         fernet_key = base64.urlsafe_b64encode(key)
         return Fernet(fernet_key)
-    
+
     def set_secret(self, raw_secret: str) -> None:
         """Encrypt and store the TOTP secret."""
         if not raw_secret:
-            self.secret_encrypted = ''
+            self.secret_encrypted = ""
             return
         try:
             fernet = self.get_fernet()
@@ -689,8 +703,8 @@ class MFADevice(models.Model):
         except Exception as e:
             logger.error(f"Failed to encrypt MFA secret: {e}")
             raise ValueError("Failed to encrypt MFA secret")
-    
-    def get_secret(self) -> Optional[str]:
+
+    def get_secret(self) -> str | None:
         """Decrypt and return the TOTP secret."""
         if not self.secret_encrypted:
             return None
@@ -700,46 +714,46 @@ class MFADevice(models.Model):
         except Exception as e:
             logger.error(f"Failed to decrypt MFA secret: {e}")
             return None
-    
+
     def verify_code(self, code: str) -> bool:
         """Verify a TOTP code against this device."""
         from apps.users.mfa import TOTPService
-        
+
         secret = self.get_secret()
         if not secret:
             return False
-        
+
         is_valid = TOTPService.verify(secret, code)
         if is_valid:
             self.last_used_at = timezone.now()
-            self.save(update_fields=['last_used_at'])
+            self.save(update_fields=["last_used_at"])
         return is_valid
-    
+
     def generate_backup_codes(self, count: int = 10) -> list:
         """Generate and store backup codes. Returns unhashed codes for user."""
         codes = []
         hashed_codes = []
-        
+
         for _ in range(count):
             code = secrets.token_hex(4).upper()  # 8-char hex code
             codes.append(code)
             hashed_codes.append(make_password(code))
-        
+
         self.backup_codes_hash = hashed_codes
-        self.device_type = 'backup'
-        self.save(update_fields=['backup_codes_hash', 'device_type'])
+        self.device_type = "backup"
+        self.save(update_fields=["backup_codes_hash", "device_type"])
         return codes
-    
+
     def verify_backup_code(self, code: str) -> bool:
         """Verify and consume a backup code."""
-        code = (code or '').strip().upper()
-        
+        code = (code or "").strip().upper()
+
         for i, hashed in enumerate(self.backup_codes_hash):
             if check_password(code, hashed):
                 # Remove used code
                 self.backup_codes_hash.pop(i)
                 self.last_used_at = timezone.now()
-                self.save(update_fields=['backup_codes_hash', 'last_used_at'])
+                self.save(update_fields=["backup_codes_hash", "last_used_at"])
                 return True
         return False
 
@@ -749,99 +763,127 @@ class MFADevice(models.Model):
 # --------------------------------------------------------------------------
 class NotificationPreferences(models.Model):
     """User notification preferences for granular control over notification channels and types."""
-    
+
     FREQUENCY_CHOICES = [
-        ('instant', 'Instant'),
-        ('hourly', 'Hourly Digest'),
-        ('daily', 'Daily Digest'),
-        ('weekly', 'Weekly Digest'),
-        ('never', 'Never'),
+        ("instant", "Instant"),
+        ("hourly", "Hourly Digest"),
+        ("daily", "Daily Digest"),
+        ("weekly", "Weekly Digest"),
+        ("never", "Never"),
     ]
-    
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='notification_preferences'
+        related_name="notification_preferences",
     )
-    
+
     # Email notification toggles
-    email_comments = models.BooleanField(default=True, help_text="Email when someone comments on your posts")
-    email_replies = models.BooleanField(default=True, help_text="Email when someone replies to your comments")
-    email_mentions = models.BooleanField(default=True, help_text="Email when someone mentions you")
-    email_new_posts = models.BooleanField(default=False, help_text="Email about new blog posts")
-    email_security = models.BooleanField(default=True, help_text="Email for security alerts (always enabled)")
-    email_frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='instant')
-    
+    email_comments = models.BooleanField(
+        default=True, help_text="Email when someone comments on your posts"
+    )
+    email_replies = models.BooleanField(
+        default=True, help_text="Email when someone replies to your comments"
+    )
+    email_mentions = models.BooleanField(
+        default=True, help_text="Email when someone mentions you"
+    )
+    email_new_posts = models.BooleanField(
+        default=False, help_text="Email about new blog posts"
+    )
+    email_security = models.BooleanField(
+        default=True, help_text="Email for security alerts (always enabled)"
+    )
+    email_frequency = models.CharField(
+        max_length=10, choices=FREQUENCY_CHOICES, default="instant"
+    )
+
     # Web notification toggles
-    web_comments = models.BooleanField(default=True, help_text="Web notifications for comment interactions")
-    web_awards = models.BooleanField(default=True, help_text="Web notifications for awards and achievements")
-    web_moderation = models.BooleanField(default=True, help_text="Web notifications for moderation updates")
-    web_system = models.BooleanField(default=True, help_text="Web notifications for system announcements")
-    
+    web_comments = models.BooleanField(
+        default=True, help_text="Web notifications for comment interactions"
+    )
+    web_awards = models.BooleanField(
+        default=True, help_text="Web notifications for awards and achievements"
+    )
+    web_moderation = models.BooleanField(
+        default=True, help_text="Web notifications for moderation updates"
+    )
+    web_system = models.BooleanField(
+        default=True, help_text="Web notifications for system announcements"
+    )
+
     # Push notification toggle
-    push_enabled = models.BooleanField(default=False, help_text="Enable browser push notifications")
-    
+    push_enabled = models.BooleanField(
+        default=False, help_text="Enable browser push notifications"
+    )
+
     # Quiet hours
-    quiet_hours_enabled = models.BooleanField(default=False, help_text="Mute notifications during quiet hours")
-    quiet_hours_start = models.TimeField(default='22:00', help_text="Start of quiet hours")
-    quiet_hours_end = models.TimeField(default='08:00', help_text="End of quiet hours")
-    
+    quiet_hours_enabled = models.BooleanField(
+        default=False, help_text="Mute notifications during quiet hours"
+    )
+    quiet_hours_start = models.TimeField(
+        default="22:00", help_text="Start of quiet hours"
+    )
+    quiet_hours_end = models.TimeField(default="08:00", help_text="End of quiet hours")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = "Notification Preferences"
         verbose_name_plural = "Notification Preferences"
-    
+
     def __str__(self) -> str:
         return f"Preferences for {self.user.email}"
-    
+
     def is_quiet_hours_now(self) -> bool:
         """Check if current time is within quiet hours."""
         if not self.quiet_hours_enabled:
             return False
-        
-        from datetime import time
+
         current_time = timezone.now().time()
-        
+
         if self.quiet_hours_start < self.quiet_hours_end:
             # Normal range (e.g., 22:00 - 23:59)
             return self.quiet_hours_start <= current_time <= self.quiet_hours_end
         else:
             # Overnight range (e.g., 22:00 - 08:00)
-            return current_time >= self.quiet_hours_start or current_time <= self.quiet_hours_end
-    
+            return (
+                current_time >= self.quiet_hours_start
+                or current_time <= self.quiet_hours_end
+            )
+
     def should_send_email(self, notification_type: str) -> bool:
         """Check if email should be sent for this notification type."""
-        if self.email_frequency == 'never':
+        if self.email_frequency == "never":
             return False
-        
+
         # Security always sent
-        if notification_type == 'security':
+        if notification_type == "security":
             return True
-        
+
         # Check specific type preferences
         type_map = {
-            'comment': self.email_comments,
-            'reply': self.email_replies,
-            'mention': self.email_mentions,
-            'post': self.email_new_posts,
+            "comment": self.email_comments,
+            "reply": self.email_replies,
+            "mention": self.email_mentions,
+            "post": self.email_new_posts,
         }
-        
+
         return type_map.get(notification_type, False)
-    
+
     def should_send_web(self, notification_type: str) -> bool:
         """Check if web notification should be sent for this notification type."""
         type_map = {
-            'comment': self.web_comments,
-            'reply': self.web_comments,
-            'reaction': self.web_comments,
-            'vote': self.web_comments,
-            'award': self.web_awards,
-            'moderation': self.web_moderation,
-            'system': self.web_system,
+            "comment": self.web_comments,
+            "reply": self.web_comments,
+            "reaction": self.web_comments,
+            "vote": self.web_comments,
+            "award": self.web_awards,
+            "moderation": self.web_moderation,
+            "system": self.web_system,
         }
-        
+
         return type_map.get(notification_type, True)
 
 
@@ -850,43 +892,42 @@ class NotificationPreferences(models.Model):
 # --------------------------------------------------------------------------
 class PushSubscription(models.Model):
     """Store push notification subscriptions for web push."""
-    
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='push_subscriptions'
+        related_name="push_subscriptions",
     )
-    
+
     # Web Push subscription details
     endpoint = models.URLField(max_length=500, unique=True)
     p256dh = models.CharField(max_length=255, help_text="Encryption key")
     auth = models.CharField(max_length=255, help_text="Authentication secret")
-    
+
     # Metadata
     user_agent = models.CharField(max_length=500, blank=True)
     device_name = models.CharField(max_length=255, blank=True)
     is_active = models.BooleanField(default=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     last_used_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = "Push Subscription"
         verbose_name_plural = "Push Subscriptions"
         indexes = [
-            models.Index(fields=['user', 'is_active'], name='push_user_active_idx'),
+            models.Index(fields=["user", "is_active"], name="push_user_active_idx"),
         ]
-    
+
     def __str__(self) -> str:
         return f"Push subscription for {self.user.email} ({self.device_name or 'Unknown device'})"
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dict for pywebpush library."""
         return {
-            'endpoint': self.endpoint,
-            'keys': {
-                'p256dh': self.p256dh,
-                'auth': self.auth,
-            }
+            "endpoint": self.endpoint,
+            "keys": {
+                "p256dh": self.p256dh,
+                "auth": self.auth,
+            },
         }
-

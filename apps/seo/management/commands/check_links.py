@@ -1,8 +1,7 @@
-
 from __future__ import annotations
 
 import urllib.request
-from urllib.error import URLError, HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -46,6 +45,6 @@ class Command(BaseCommand):
                 entry.last_checked_at = timezone.now()
                 entry.save(update_fields=["last_status", "last_checked_at"])
                 bad += 1
-        self.stdout.write(self.style.SUCCESS(f"Checked {entries.count()} URLs. OK: {ok}, Bad: {bad}"))
-
-
+        self.stdout.write(
+            self.style.SUCCESS(f"Checked {entries.count()} URLs. OK: {ok}, Bad: {bad}")
+        )

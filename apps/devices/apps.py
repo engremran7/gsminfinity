@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.apps import AppConfig
@@ -16,5 +15,3 @@ class DevicesConfig(AppConfig):
         except Exception:
             # Keep startup resilient; log via default logger inside signals if needed.
             pass
-
-

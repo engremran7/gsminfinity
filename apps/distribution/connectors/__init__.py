@@ -1,13 +1,11 @@
-
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
 from typing import Protocol
 
-from apps.distribution.models import ShareJob, ShareLog
 from apps.distribution.api import get_settings
-from apps.distribution.models import SocialAccount
+from apps.distribution.models import ShareJob, ShareLog, SocialAccount
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +43,9 @@ class StubConnector:
     channel: str = "stub"
 
     def send(self, job: ShareJob) -> ConnectorResult:  # pragma: no cover - thin wrapper
-        return ConnectorResult(ok=False, message=f"Connector not implemented for {job.channel}")
+        return ConnectorResult(
+            ok=False, message=f"Connector not implemented for {job.channel}"
+        )
 
 
 class LoggingConnector(StubConnector):
@@ -62,7 +62,7 @@ def connector_for(channel: str) -> Connector:
     """
     Returns the connector implementation for a channel; falls back to StubConnector.
     """
-    from . import social, messaging, email, dev, search, feeds
+    from . import dev, email, feeds, messaging, search, social
 
     mapping = {
         "twitter": social.TwitterConnector(),
@@ -96,7 +96,9 @@ def connector_for(channel: str) -> Connector:
 def dispatch(job: ShareJob) -> ConnectorResult:
     cfg = get_settings()
     # Honor indexing toggle
-    if job.channel in {"google_indexing", "bing_indexing"} and not cfg.get("allow_indexing_jobs", False):
+    if job.channel in {"google_indexing", "bing_indexing"} and not cfg.get(
+        "allow_indexing_jobs", False
+    ):
         return ConnectorResult(
             ok=True,
             status_override="skipped",
@@ -127,7 +129,9 @@ def dispatch(job: ShareJob) -> ConnectorResult:
     account = job.account
     if job.channel in account_required:
         if not account or not getattr(account, "is_active", False):
-            has_account = SocialAccount.objects.filter(channel=job.channel, is_active=True).exists()
+            has_account = SocialAccount.objects.filter(
+                channel=job.channel, is_active=True
+            ).exists()
             if not has_account:
                 return ConnectorResult(
                     ok=True,
@@ -156,8 +160,8 @@ def dispatch(job: ShareJob) -> ConnectorResult:
     if isinstance(connector, StubConnector):
         result.ok = True
         result.status_override = "skipped"
-        result.message = result.message or f"Connector not implemented for {job.channel}"
+        result.message = (
+            result.message or f"Connector not implemented for {job.channel}"
+        )
     _log(job, result)
     return result
-
-

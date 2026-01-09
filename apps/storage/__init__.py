@@ -16,14 +16,14 @@ Usage:
     from django.apps import apps
     if apps.is_installed('apps.storage'):
         from apps.storage.helpers import FirmwareStorageHelper
-        
+
         # Upload firmware
         location = FirmwareStorageHelper.upload_firmware(
             firmware_object=firmware,
             local_path="/path/to/file.zip",
             brand_name="Samsung"
         )
-        
+
         # Request download
         session = FirmwareStorageHelper.request_download(
             user=request.user,
@@ -36,20 +36,24 @@ For complete integration examples, see:
 
 # Public API exports
 __all__ = [
-    'FirmwareStorageHelper',
-    'StorageProvider',
-    'GoogleDriveStorageAdapter',
+    "FirmwareStorageHelper",
+    "StorageProvider",
+    "GoogleDriveStorageAdapter",
 ]
+
 
 # Lazy imports to avoid circular dependencies
 def __getattr__(name):
-    if name == 'FirmwareStorageHelper':
+    if name == "FirmwareStorageHelper":
         from .helpers import FirmwareStorageHelper
+
         return FirmwareStorageHelper
-    elif name == 'StorageProvider':
+    elif name == "StorageProvider":
         from .interfaces import StorageProvider
+
         return StorageProvider
-    elif name == 'GoogleDriveStorageAdapter':
+    elif name == "GoogleDriveStorageAdapter":
         from .adapters import GoogleDriveStorageAdapter
+
         return GoogleDriveStorageAdapter
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

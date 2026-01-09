@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from apps.site_settings.models import SiteSettings
+
 from .models import Page
 
 logger = logging.getLogger(__name__)
@@ -59,95 +60,110 @@ def home_landing(request: HttpRequest) -> HttpResponse:
     - Stats: Brands, Models, Firmwares, Downloads, Auto/Manual Blogs
     - Search bar for quick navigation
     - Latest/trending firmwares
-    - Latest/trending blog posts  
+    - Latest/trending blog posts
     - Most requested firmwares
     - Auto-managed ad placements
-    
+
     Optimized with caching via HomePageWidgetService
     """
     from django.apps import apps
     from django.db.models import Sum
+
     from .widgets import HomePageWidgetService
-    
+
     # Get stats for homepage
     stats = {
-        'brands_count': 0, 
-        'models_count': 0, 
-        'firmwares_count': 0,
-        'total_downloads': 0,
-        'auto_blogs_count': 0,
-        'manual_blogs_count': 0,
+        "brands_count": 0,
+        "models_count": 0,
+        "firmwares_count": 0,
+        "total_downloads": 0,
+        "auto_blogs_count": 0,
+        "manual_blogs_count": 0,
     }
-    
+
     try:
         # Firmware stats
-        if apps.is_installed('apps.firmwares'):
-            Brand = apps.get_model('firmwares', 'Brand')
-            Model = apps.get_model('firmwares', 'Model')
-            OfficialFirmware = apps.get_model('firmwares', 'OfficialFirmware')
-            EngineeringFirmware = apps.get_model('firmwares', 'EngineeringFirmware')
-            ReadbackFirmware = apps.get_model('firmwares', 'ReadbackFirmware')
-            ModifiedFirmware = apps.get_model('firmwares', 'ModifiedFirmware')
-            OtherFirmware = apps.get_model('firmwares', 'OtherFirmware')
-            
+        if apps.is_installed("apps.firmwares"):
+            Brand = apps.get_model("firmwares", "Brand")
+            Model = apps.get_model("firmwares", "Model")
+            OfficialFirmware = apps.get_model("firmwares", "OfficialFirmware")
+            EngineeringFirmware = apps.get_model("firmwares", "EngineeringFirmware")
+            ReadbackFirmware = apps.get_model("firmwares", "ReadbackFirmware")
+            ModifiedFirmware = apps.get_model("firmwares", "ModifiedFirmware")
+            OtherFirmware = apps.get_model("firmwares", "OtherFirmware")
+
             # Brand doesn't have is_active, count all brands
-            stats['brands_count'] = Brand.objects.count()
-            stats['models_count'] = Model.objects.filter(is_active=True).count()
-            
+            stats["brands_count"] = Brand.objects.count()
+            stats["models_count"] = Model.objects.filter(is_active=True).count()
+
             # Count all active firmwares
-            stats['firmwares_count'] = sum([
-                OfficialFirmware.objects.filter(is_active=True).count(),
-                EngineeringFirmware.objects.filter(is_active=True).count(),
-                ReadbackFirmware.objects.filter(is_active=True).count(),
-                ModifiedFirmware.objects.filter(is_active=True).count(),
-                OtherFirmware.objects.filter(is_active=True).count(),
-            ])
-            
+            stats["firmwares_count"] = sum(
+                [
+                    OfficialFirmware.objects.filter(is_active=True).count(),
+                    EngineeringFirmware.objects.filter(is_active=True).count(),
+                    ReadbackFirmware.objects.filter(is_active=True).count(),
+                    ModifiedFirmware.objects.filter(is_active=True).count(),
+                    OtherFirmware.objects.filter(is_active=True).count(),
+                ]
+            )
+
             # Total downloads across all firmware types
             total_downloads = 0
-            for fw_model in [OfficialFirmware, EngineeringFirmware, ReadbackFirmware, ModifiedFirmware, OtherFirmware]:
-                downloads = fw_model.objects.filter(is_active=True).aggregate(total=Sum('download_count'))['total']
+            for fw_model in [
+                OfficialFirmware,
+                EngineeringFirmware,
+                ReadbackFirmware,
+                ModifiedFirmware,
+                OtherFirmware,
+            ]:
+                downloads = fw_model.objects.filter(is_active=True).aggregate(
+                    total=Sum("download_count")
+                )["total"]
                 if downloads:
                     total_downloads += downloads
-            stats['total_downloads'] = total_downloads
-            
+            stats["total_downloads"] = total_downloads
+
         # Blog stats
-        if apps.is_installed('apps.blog'):
-            Post = apps.get_model('blog', 'Post')
-            stats['auto_blogs_count'] = Post.objects.filter(is_published=True, is_ai_generated=True).count()
-            stats['manual_blogs_count'] = Post.objects.filter(is_published=True, is_ai_generated=False).count()
-            
+        if apps.is_installed("apps.blog"):
+            Post = apps.get_model("blog", "Post")
+            stats["auto_blogs_count"] = Post.objects.filter(
+                is_published=True, is_ai_generated=True
+            ).count()
+            stats["manual_blogs_count"] = Post.objects.filter(
+                is_published=True, is_ai_generated=False
+            ).count()
+
     except Exception as e:
         logger.warning(f"Error fetching homepage stats: {e}")
-    
+
     # Get all widget data in single optimized call
     widget_config = {
-        'latest_firmwares': 8,      # Left column
-        'trending_firmwares': 8,     # Left column
-        'most_requested': 8,         # Left column
-        'latest_blogs': 6,           # Right column
-        'trending_blogs': 6,         # Right column
-        'layout': 'dual_column',
+        "latest_firmwares": 8,  # Left column
+        "trending_firmwares": 8,  # Left column
+        "most_requested": 8,  # Left column
+        "latest_blogs": 6,  # Right column
+        "trending_blogs": 6,  # Right column
+        "layout": "dual_column",
     }
-    
+
     homepage_data = HomePageWidgetService.get_homepage_data(widget_config)
-    
+
     # Organize into left/right columns for template
     context = {
-        'stats': stats,
-        'left_column': {
-            'latest_firmwares': homepage_data['latest_firmwares'],
-            'trending_firmwares': homepage_data['trending_firmwares'],
-            'most_requested': homepage_data['most_requested_firmwares'],
+        "stats": stats,
+        "left_column": {
+            "latest_firmwares": homepage_data["latest_firmwares"],
+            "trending_firmwares": homepage_data["trending_firmwares"],
+            "most_requested": homepage_data["most_requested_firmwares"],
         },
-        'right_column': {
-            'latest_blogs': homepage_data['latest_blogs'],
-            'trending_blogs': homepage_data['trending_blogs'],
+        "right_column": {
+            "latest_blogs": homepage_data["latest_blogs"],
+            "trending_blogs": homepage_data["trending_blogs"],
         },
-        'ad_placements': homepage_data['ad_placements'],
-        'cache_timestamp': homepage_data.get('cache_timestamp'),
+        "ad_placements": homepage_data["ad_placements"],
+        "cache_timestamp": homepage_data.get("cache_timestamp"),
     }
-    
+
     return render(
         request,
         "pages/home_landing.html",

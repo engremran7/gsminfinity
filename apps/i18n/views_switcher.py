@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.conf import settings
@@ -29,16 +28,22 @@ def switch_locale(request):
         fallback_url = reverse("home")
     except Exception:
         fallback_url = "/"
-    
+
     # Security: Validate referer to prevent open redirect attacks
     referer = request.META.get("HTTP_REFERER", "")
-    if referer and url_has_allowed_host_and_scheme(referer, allowed_hosts=settings.ALLOWED_HOSTS):
+    if referer and url_has_allowed_host_and_scheme(
+        referer, allowed_hosts=settings.ALLOWED_HOSTS
+    ):
         redirect_url = referer
     else:
         redirect_url = fallback_url
-    
+
     resp = HttpResponseRedirect(redirect_url)
-    cookie_opts = {"max_age": 60 * 60 * 24 * 365, "samesite": "Lax", "secure": not settings.DEBUG}
+    cookie_opts = {
+        "max_age": 60 * 60 * 24 * 365,
+        "samesite": "Lax",
+        "secure": not settings.DEBUG,
+    }
     resp.set_cookie("lang", locale, **cookie_opts)
     resp.set_cookie("django_language", locale, **cookie_opts)
     return resp

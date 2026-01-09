@@ -1,4 +1,3 @@
-
 """
 apps.consent.middleware
 
@@ -17,7 +16,9 @@ from __future__ import annotations
 import json
 import logging
 from types import SimpleNamespace
-from typing import Any, Dict, Optional, Set, Tuple
+
+from django.conf import settings
+from django.http import HttpRequest, HttpResponse
 
 from apps.consent.models import ConsentRecord
 from apps.consent.utils import (
@@ -27,8 +28,6 @@ from apps.consent.utils import (
     resolve_site_domain,
     serialize_policy,
 )
-from django.conf import settings
-from django.http import HttpRequest, HttpResponse
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +174,7 @@ class ConsentMiddleware:
             "version": request.consent_version,
             "active": bool(policy_payload),
             "has_consent": request.has_cookie_consent,
-            "required": sorted(list(required)),
+            "required": sorted(required),
             "site": site_domain,
         }
 
@@ -217,7 +216,7 @@ class ConsentMiddleware:
     # ---------------------------------------------------------------------
     def _get_consent_record(
         self, request: HttpRequest, policy_version: str, site_domain: str
-    ) -> Optional[ConsentRecord]:
+    ) -> ConsentRecord | None:
         """
         Retrieve ConsentRecord applying database-accurate filters.
         """
@@ -225,7 +224,10 @@ class ConsentMiddleware:
 
         # Get the policy object matching the version
         from apps.consent.models import ConsentPolicy
-        policy = ConsentPolicy.objects.filter(version=policy_version, is_active=True).first()
+
+        policy = ConsentPolicy.objects.filter(
+            version=policy_version, is_active=True
+        ).first()
         if not policy:
             return None
 
@@ -237,12 +239,12 @@ class ConsentMiddleware:
             else:
                 lookup["user__isnull"] = True
                 # Use session_id instead of session_key
-                lookup["session_id"] = getattr(request.session, "session_key", None) or ""
+                lookup["session_id"] = (
+                    getattr(request.session, "session_key", None) or ""
+                )
 
             return (
-                ConsentRecord.objects.filter(**lookup)
-                .order_by("-created_at")
-                .first()
+                ConsentRecord.objects.filter(**lookup).order_by("-created_at").first()
             )
         except Exception as exc:
             logger.debug("ConsentMiddleware: ORM lookup failed -> %s", exc)
@@ -250,11 +252,11 @@ class ConsentMiddleware:
 
     # ---------------------------------------------------------------------
     def _build_baseline_categories(
-        self, policy_payload: Optional[dict]
-    ) -> Tuple[Dict[str, bool], Set[str]]:
+        self, policy_payload: dict | None
+    ) -> tuple[dict[str, bool], set[str]]:
         """Build baseline categories purely from the JSON snapshot."""
-        categories: Dict[str, bool] = {}
-        required: Set[str] = set()
+        categories: dict[str, bool] = {}
+        required: set[str] = set()
 
         try:
             snap = (
@@ -277,9 +279,8 @@ class ConsentMiddleware:
 
     # ---------------------------------------------------------------------
     def _apply_consent_record(
-        self, categories: Dict[str, bool], required: Set[str], record: ConsentRecord
-    ) -> Tuple[Dict[str, bool], bool]:
-
+        self, categories: dict[str, bool], required: set[str], record: ConsentRecord
+    ) -> tuple[dict[str, bool], bool]:
         try:
             accepted = record.accepted_categories or {}
         except Exception:
@@ -305,7 +306,7 @@ class ConsentMiddleware:
     #  RESPONSE HOOK — cookie writer
     # =====================================================================
     def process_response(
-        self, request: HttpRequest, response: HttpResponse, policy_payload: Optional[dict]
+        self, request: HttpRequest, response: HttpResponse, policy_payload: dict | None
     ) -> HttpResponse:
         """
         Write cookie storing accepted categories - best effort.
@@ -322,7 +323,7 @@ class ConsentMiddleware:
             return response
 
         # Only set cookie if user has given consent (has a record in DB)
-        if not getattr(request, 'has_cookie_consent', False):
+        if not getattr(request, "has_cookie_consent", False):
             return response
 
         try:
@@ -342,5 +343,3 @@ class ConsentMiddleware:
             logger.debug("ConsentMiddleware: process_response error -> %s", exc)
 
         return response
-
-

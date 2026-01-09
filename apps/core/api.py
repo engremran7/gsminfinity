@@ -1,13 +1,12 @@
-
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.pagination import PageNumberPagination
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +40,12 @@ class BaseAPIView(APIView):
         page = paginator.paginate_queryset(queryset, self.request, view=self)
         return page, paginator
 
-    def ok(self, data: Dict[str, Any] | None = None, status_code: int = status.HTTP_200_OK) -> Response:
+    def ok(
+        self, data: dict[str, Any] | None = None, status_code: int = status.HTTP_200_OK
+    ) -> Response:
         return Response({"ok": True, **(data or {})}, status=status_code)
 
-    def error(self, error: str, status_code: int = status.HTTP_400_BAD_REQUEST) -> Response:
+    def error(
+        self, error: str, status_code: int = status.HTTP_400_BAD_REQUEST
+    ) -> Response:
         return Response({"ok": False, "error": error}, status=status_code)
-
-

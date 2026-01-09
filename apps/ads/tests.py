@@ -1,13 +1,19 @@
-
 from __future__ import annotations
 
 from unittest.mock import patch
+
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from apps.ads.models import AdPlacement, AdCreative, Campaign, PlacementAssignment, AdsSettings
-from apps.site_settings.models import SiteSettings
+from apps.ads.models import (
+    AdCreative,
+    AdPlacement,
+    AdsSettings,
+    Campaign,
+    PlacementAssignment,
+)
 from apps.ads.services.rotation.engine import choose_creative
+from apps.site_settings.models import SiteSettings
 
 
 @override_settings(
@@ -59,7 +65,9 @@ class AdsApiTests(TestCase):
         # If ok=False, the response has an error structure
         if payload.get("ok", True) is False:
             self.fail(f"fill_ad failed: {payload.get('error')}")
-        self.assertIn("creative", payload, f"Expected 'creative' in payload, got: {payload}")
+        self.assertIn(
+            "creative", payload, f"Expected 'creative' in payload, got: {payload}"
+        )
         # creative is a dict with the creative details including 'creative' ID
         creative_data = payload["creative"]
         self.assertEqual(creative_data["creative"], creative.id)
@@ -122,5 +130,3 @@ class AdsApiTests(TestCase):
         context = {"consent_ads": "0", "page_context": placement.page_context}
         selected = choose_creative(placement, context)
         self.assertIsNone(selected)
-
-

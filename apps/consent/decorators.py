@@ -1,8 +1,7 @@
-
 from __future__ import annotations
 
+from collections.abc import Iterable
 from functools import wraps
-from typing import Iterable
 
 from django.http import HttpResponseForbidden
 
@@ -25,11 +24,9 @@ def consent_required(scopes: Iterable[str]):
         def _wrapped(request, *args, **kwargs):
             for scope in required:
                 if not consent_check(scope, request):
-                    return HttpResponseForbidden("Consent required: %s" % scope)
+                    return HttpResponseForbidden(f"Consent required: {scope}")
             return view_func(request, *args, **kwargs)
 
         return _wrapped
 
     return decorator
-
-

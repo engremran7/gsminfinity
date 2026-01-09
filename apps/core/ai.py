@@ -1,10 +1,10 @@
-
 from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
 
 from django.conf import settings
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class AiRequest:
     prompt: str
     context: str = ""
-    constraints: Dict[str, Any] | None = None
+    constraints: dict[str, Any] | None = None
     labels: Sequence[str] | None = None
 
     def with_context(self) -> str:
@@ -51,7 +51,12 @@ class CoreAiService:
         )
 
     def generate_text(
-        self, prompt: str, *, context: str = "", constraints: Dict[str, Any] | None = None, user=None
+        self,
+        prompt: str,
+        *,
+        context: str = "",
+        constraints: dict[str, Any] | None = None,
+        user=None,
     ) -> str:
         req = AiRequest(prompt=prompt, context=context, constraints=constraints)
         start = time.monotonic()
@@ -69,13 +74,17 @@ class CoreAiService:
         self, text: str, *, labels: Sequence[str] | None = None, user=None
     ) -> str:
         labels = labels or []
-        prompt = f"Classify the following text into one of the labels: {', '.join(labels)}"
+        prompt = (
+            f"Classify the following text into one of the labels: {', '.join(labels)}"
+        )
         req = AiRequest(prompt=prompt, context=text, labels=labels)
         start = time.monotonic()
         try:
             result = ai_client.generate_answer(question=req.with_context(), user=user)
             ok = bool(result)
-            self._measure("classify_text", start, ok, labels=list(labels), mock=self.mock_mode)
+            self._measure(
+                "classify_text", start, ok, labels=list(labels), mock=self.mock_mode
+            )
             return (result or "").strip()
         except Exception as exc:
             self._measure("classify_text_failed", start, False, error=str(exc))
@@ -86,7 +95,9 @@ class CoreAiService:
         # Placeholder deterministic embedding until provider wired; stable to keep tests idempotent.
         try:
             digest = text.encode("utf-8")[:256]
-            self._measure("embed_text", start, True, mock=self.mock_mode, length=len(digest))
+            self._measure(
+                "embed_text", start, True, mock=self.mock_mode, length=len(digest)
+            )
             return digest
         except Exception as exc:
             self._measure("embed_text_failed", start, False, error=str(exc))
@@ -97,13 +108,19 @@ class CoreAiService:
 core_ai = CoreAiService()
 
 
-def generate_text(prompt: str, context: str = "", constraints: Dict[str, Any] | None = None, user=None) -> str:
-    return core_ai.generate_text(prompt, context=context, constraints=constraints, user=user)
+def generate_text(
+    prompt: str, context: str = "", constraints: dict[str, Any] | None = None, user=None
+) -> str:
+    return core_ai.generate_text(
+        prompt, context=context, constraints=constraints, user=user
+    )
 
 
-def classify_text(text: str, labels: List[str] | None = None, user=None) -> str:
+def classify_text(text: str, labels: list[str] | None = None, user=None) -> str:
     result = core_ai.classify_text(text, labels=labels or [], user=user)
-    log_event(logger, "info", "ai.classify_text", labels=labels or [], result=result[:60])
+    log_event(
+        logger, "info", "ai.classify_text", labels=labels or [], result=result[:60]
+    )
     return result
 
 
@@ -116,7 +133,9 @@ def embed_text(text: str) -> bytes:
 # Safety-aware entrypoints -------------------------------------------------
 
 AI_HARD_TOKEN_CAP = 2048
-AI_MAX_CALLS_PER_MIN = 30  # simple in-memory throttle; replace with Redis/counters in prod
+AI_MAX_CALLS_PER_MIN = (
+    30  # simple in-memory throttle; replace with Redis/counters in prod
+)
 _ai_call_counts: dict[str, int] = {}
 
 
@@ -134,7 +153,9 @@ def _throttle(key: str) -> bool:
     return True
 
 
-def safe_generate_text(prompt: str, *, context: str = "", user=None, max_tokens: int = AI_HARD_TOKEN_CAP) -> str:
+def safe_generate_text(
+    prompt: str, *, context: str = "", user=None, max_tokens: int = AI_HARD_TOKEN_CAP
+) -> str:
     """
     Gateway for all AI generation with basic throttling and token cap.
     """
@@ -145,9 +166,9 @@ def safe_generate_text(prompt: str, *, context: str = "", user=None, max_tokens:
         prompt = prompt[: max_tokens // 2]
         context = context[: max_tokens // 2]
     try:
-        return core_ai.generate_text(prompt, context=context, constraints={"max_tokens": max_tokens}, user=user)
+        return core_ai.generate_text(
+            prompt, context=context, constraints={"max_tokens": max_tokens}, user=user
+        )
     except Exception as exc:
         log_event(logger, "warning", "ai.safe_generate_text.failed", error=str(exc))
         return ""
-
-

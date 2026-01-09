@@ -1,4 +1,3 @@
-
 """
 apps.core.exceptions
 
@@ -13,7 +12,7 @@ Enterprise-grade unified exception handling.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
@@ -42,7 +41,7 @@ log = logging.getLogger(__name__)
 # ============================================================
 #  Utility helpers
 # ============================================================
-def _is_json_request(request: Optional[HttpRequest]) -> bool:
+def _is_json_request(request: HttpRequest | None) -> bool:
     """Detect JSON or AJAX requests for correct response type."""
     if not request:
         return False
@@ -59,7 +58,7 @@ def _is_json_request(request: Optional[HttpRequest]) -> bool:
 def json_error_response(
     exc: Exception,
     code: int = 500,
-    request: Optional[HttpRequest] = None,
+    request: HttpRequest | None = None,
 ) -> JsonResponse:
     """
     Hardened JSON error response.
@@ -96,9 +95,9 @@ class EnterpriseExceptionHandler:
     @staticmethod
     def handle_api_exception(
         exc: Exception,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> JsonResponse:
-        request = context.get("request") if context else None
+        context.get("request") if context else None
         status_code: int
         response_data: dict[str, Any]
 
@@ -202,4 +201,3 @@ def handle_view_exception(
         status=code,
         content_type="text/plain; charset=utf-8",
     )
-

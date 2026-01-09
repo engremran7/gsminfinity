@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from .views_shared import *
-# Explicitly import underscore-prefixed helpers that star import omits
-from .views_shared import _render_admin, _make_breadcrumb, _ADMIN_DISABLED
 from django.utils import timezone
+
+from .views_shared import *
+
+# Explicitly import underscore-prefixed helpers that star import omits
+from .views_shared import _ADMIN_DISABLED, _make_breadcrumb, _render_admin
 
 __all__ = [
     "admin_suite_command_search",
@@ -16,6 +18,7 @@ __all__ = [
     "_make_breadcrumb",
     "_ADMIN_DISABLED",
 ]
+
 
 # Extracted views_security views from legacy views.py
 @staff_member_required
@@ -50,7 +53,11 @@ def admin_suite_command_search(request: HttpRequest) -> JsonResponse:
         ("Ads", "admin_suite:admin_suite_ads", "ads placements creatives"),
         ("SEO", "admin_suite:admin_suite_seo", "seo redirects sitemap"),
         ("Tags", "admin_suite:admin_suite_tags", "tags taxonomy"),
-        ("Distribution", "admin_suite:admin_suite_distribution", "distribution syndication"),
+        (
+            "Distribution",
+            "admin_suite:admin_suite_distribution",
+            "distribution syndication",
+        ),
         ("App Registry", "admin_suite:admin_suite_registry", "registry flags"),
         ("Settings", "admin_suite:admin_suite_settings", "settings site brand"),
     ]
@@ -68,6 +75,7 @@ def admin_suite_command_search(request: HttpRequest) -> JsonResponse:
         results.append({"label": label, "url": url, "tags": tags})
 
     return JsonResponse({"results": results[:25]})
+
 
 # =====================================================================
 # Admin Suite Shell
@@ -95,7 +103,9 @@ def admin_suite(request: HttpRequest) -> HttpResponse:
                 "devices_enabled": sec_conf.get("DEVICES_ENABLED", True),
                 "bots_enabled": sec_conf.get("BOTS_ENABLED", True),
                 "risk_enabled": sec_conf.get("RISK_ENABLED", True),
-                "login_policy": sec_conf.get("DEFAULT_LOGIN_RISK_POLICY", "mfa_if_high"),
+                "login_policy": sec_conf.get(
+                    "DEFAULT_LOGIN_RISK_POLICY", "mfa_if_high"
+                ),
             }
         )
     except Exception:
@@ -138,11 +148,17 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
         user_id = forms.IntegerField(required=False)
 
     class CrawlerRuleForm(forms.Form):
-        action = forms.ChoiceField(choices=[("enable", "enable"), ("disable", "disable"), ("create", "create")])
+        action = forms.ChoiceField(
+            choices=[("enable", "enable"), ("disable", "disable"), ("create", "create")]
+        )
         rule_id = forms.CharField(required=False)
         name = forms.CharField(required=False, max_length=100)
-        path_pattern = forms.RegexField(required=False, regex=r"^[\\w./*-]+$", max_length=255)
-        requests_per_minute = forms.IntegerField(required=False, min_value=1, max_value=6000)
+        path_pattern = forms.RegexField(
+            required=False, regex=r"^[\\w./*-]+$", max_length=255
+        )
+        requests_per_minute = forms.IntegerField(
+            required=False, min_value=1, max_value=6000
+        )
 
     message = ""
     registry_flags = {
@@ -159,7 +175,12 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
         if request.POST.get("insight_id"):
             insight_id = request.POST.get("insight_id")
             new_status = request.POST.get("status")
-            if insight_id and new_status in {"open", "approved", "rejected", "resolved"}:
+            if insight_id and new_status in {
+                "open",
+                "approved",
+                "rejected",
+                "resolved",
+            }:
                 try:
                     from apps.ai_behavior.models import BehaviorInsight
 
@@ -170,12 +191,23 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
                         message = f"Insight {insight_id} set to {new_status}."
                         logger.info(
                             "admin_suite_risk_insight",
-                            extra={"insight_id": insight_id, "status": new_status, "staff_user": getattr(request.user, "email", None)},
+                            extra={
+                                "insight_id": insight_id,
+                                "status": new_status,
+                                "staff_user": getattr(request.user, "email", None),
+                            },
                         )
                 except Exception as exc:
                     logger.warning("Admin suite risk action failed: %s", exc)
                     message = "Action failed."
-        elif action in {"block", "unblock", "trust", "untrust", "reset_quota", "delete"}:
+        elif action in {
+            "block",
+            "unblock",
+            "trust",
+            "untrust",
+            "reset_quota",
+            "delete",
+        }:
             try:
                 form = DeviceActionForm(request.POST)
                 if form.is_valid():
@@ -186,7 +218,9 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
                     from apps.devices.models_quota import UserDeviceQuota
 
                     if action == "reset_quota" and user_id:
-                        quota, _ = UserDeviceQuota.objects.get_or_create(user_id=user_id)
+                        quota, _ = UserDeviceQuota.objects.get_or_create(
+                            user_id=user_id
+                        )
                         quota.last_reset_at = timezone.now()
                         quota.save(update_fields=["last_reset_at"])
                         # Also delete all devices for this user to zero-out footprint
@@ -224,7 +258,9 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
                                     extra={
                                         "device_id": str(device_id),
                                         "action": action,
-                                        "staff_user": getattr(request.user, "email", None),
+                                        "staff_user": getattr(
+                                            request.user, "email", None
+                                        ),
                                     },
                                 )
                                 return redirect(f"{request.path}#devices")
@@ -280,7 +316,11 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
             try:
                 from apps.core.models import AppRegistry
 
-                if flag in {"device_identity_enabled", "crawler_guard_enabled", "ai_behavior_enabled"}:
+                if flag in {
+                    "device_identity_enabled",
+                    "crawler_guard_enabled",
+                    "ai_behavior_enabled",
+                }:
                     reg = AppRegistry.get_solo()
                     current = bool(getattr(reg, flag))
                     setattr(reg, flag, not current)
@@ -289,7 +329,11 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
                     message = f"{flag} set to {not current}"
                     logger.info(
                         "admin_suite_security_toggle_flag",
-                        extra={"flag": flag, "value": not current, "staff_user": getattr(request.user, "email", None)},
+                        extra={
+                            "flag": flag,
+                            "value": not current,
+                            "staff_user": getattr(request.user, "email", None),
+                        },
                     )
             except Exception as exc:
                 logger.warning("Admin suite security toggle failed: %s", exc)
@@ -300,18 +344,34 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
 
                 cfg = SecurityConfig.get_solo()
                 cfg.devices_enabled = bool(request.POST.get("devices_enabled"))
-                cfg.crawler_guard_enabled = bool(request.POST.get("crawler_guard_enabled"))
+                cfg.crawler_guard_enabled = bool(
+                    request.POST.get("crawler_guard_enabled")
+                )
                 cfg.mfa_enabled = bool(request.POST.get("mfa_enabled"))
                 cfg.login_risk_enabled = bool(request.POST.get("login_risk_enabled"))
-                cfg.device_quota_enforcement_enabled = bool(request.POST.get("device_quota_enforcement_enabled"))
+                cfg.device_quota_enforcement_enabled = bool(
+                    request.POST.get("device_quota_enforcement_enabled")
+                )
                 try:
-                    cfg.default_device_limit = max(1, int(request.POST.get("default_device_limit") or cfg.default_device_limit))
+                    cfg.default_device_limit = max(
+                        1,
+                        int(
+                            request.POST.get("default_device_limit")
+                            or cfg.default_device_limit
+                        ),
+                    )
                 except Exception:
                     pass
-                window = request.POST.get("default_device_window") or cfg.default_device_window
+                window = (
+                    request.POST.get("default_device_window")
+                    or cfg.default_device_window
+                )
                 if window in {"3m", "6m", "12m"}:
                     cfg.default_device_window = window
-                c_action = request.POST.get("crawler_default_action") or cfg.crawler_default_action
+                c_action = (
+                    request.POST.get("crawler_default_action")
+                    or cfg.crawler_default_action
+                )
                 if c_action in {"allow", "throttle", "block", "challenge"}:
                     cfg.crawler_default_action = c_action
                 tier = request.POST.get("security_tier") or cfg.security_tier
@@ -320,7 +380,9 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
                 mfa_policy = request.POST.get("mfa_policy") or cfg.mfa_policy
                 if mfa_policy in {"optional", "mfa_if_high", "required"}:
                     cfg.mfa_policy = mfa_policy
-                risk_policy = request.POST.get("login_risk_policy") or cfg.login_risk_policy
+                risk_policy = (
+                    request.POST.get("login_risk_policy") or cfg.login_risk_policy
+                )
                 if risk_policy in {"none", "info", "mfa_if_high", "block_if_high"}:
                     cfg.login_risk_policy = risk_policy
                 cfg.save()
@@ -337,13 +399,29 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
                 from apps.devices.models import DeviceConfig
 
                 cfg = DeviceConfig.get_solo()
-                cfg.basic_fingerprinting_enabled = bool(request.POST.get("basic_fingerprinting_enabled"))
-                cfg.enhanced_fingerprinting_enabled = bool(request.POST.get("enhanced_fingerprinting_enabled"))
-                cfg.enterprise_device_management_enabled = bool(request.POST.get("enterprise_device_management_enabled"))
-                cfg.strict_new_device_login = bool(request.POST.get("strict_new_device_login"))
-                cfg.require_mfa_on_new_device = bool(request.POST.get("require_mfa_on_new_device"))
+                cfg.basic_fingerprinting_enabled = bool(
+                    request.POST.get("basic_fingerprinting_enabled")
+                )
+                cfg.enhanced_fingerprinting_enabled = bool(
+                    request.POST.get("enhanced_fingerprinting_enabled")
+                )
+                cfg.enterprise_device_management_enabled = bool(
+                    request.POST.get("enterprise_device_management_enabled")
+                )
+                cfg.strict_new_device_login = bool(
+                    request.POST.get("strict_new_device_login")
+                )
+                cfg.require_mfa_on_new_device = bool(
+                    request.POST.get("require_mfa_on_new_device")
+                )
                 try:
-                    cfg.max_devices_default = max(1, int(request.POST.get("max_devices_default") or cfg.max_devices_default))
+                    cfg.max_devices_default = max(
+                        1,
+                        int(
+                            request.POST.get("max_devices_default")
+                            or cfg.max_devices_default
+                        ),
+                    )
                 except Exception:
                     pass
                 for field in ["monthly_device_quota", "yearly_device_quota"]:
@@ -357,11 +435,20 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
                             pass
                 try:
                     expiry = request.POST.get("device_expiry_days")
-                    cfg.device_expiry_days = int(expiry) if expiry not in {None, ""} else None
+                    cfg.device_expiry_days = (
+                        int(expiry) if expiry not in {None, ""} else None
+                    )
                 except Exception:
                     pass
                 try:
-                    cfg.risk_mfa_threshold = max(0, int(request.POST.get("risk_mfa_threshold") or cfg.risk_mfa_threshold or 75))
+                    cfg.risk_mfa_threshold = max(
+                        0,
+                        int(
+                            request.POST.get("risk_mfa_threshold")
+                            or cfg.risk_mfa_threshold
+                            or 75
+                        ),
+                    )
                 except Exception:
                     pass
                 cfg.save()
@@ -383,11 +470,33 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
     devices: list[Dict[str, Any]] = []
     rules: list[Dict[str, Any]] = []
     security_events: list[Dict[str, Any]] = []
-    device_window_choices = [("3m", "3 Months"), ("6m", "6 Months"), ("12m", "12 Months")]
-    security_tier_choices = [("basic", "Basic"), ("standard", "Standard"), ("strict", "Strict")]
-    mfa_policy_choices = [("optional", "Optional"), ("mfa_if_high", "MFA if High"), ("required", "Required")]
-    login_risk_policy_choices = [("none", "None"), ("info", "Info Only"), ("mfa_if_high", "MFA if High"), ("block_if_high", "Block if High")]
-    crawler_action_choices = [("allow", "Allow"), ("throttle", "Throttle"), ("block", "Block"), ("challenge", "Challenge")]
+    device_window_choices = [
+        ("3m", "3 Months"),
+        ("6m", "6 Months"),
+        ("12m", "12 Months"),
+    ]
+    security_tier_choices = [
+        ("basic", "Basic"),
+        ("standard", "Standard"),
+        ("strict", "Strict"),
+    ]
+    mfa_policy_choices = [
+        ("optional", "Optional"),
+        ("mfa_if_high", "MFA if High"),
+        ("required", "Required"),
+    ]
+    login_risk_policy_choices = [
+        ("none", "None"),
+        ("info", "Info Only"),
+        ("mfa_if_high", "MFA if High"),
+        ("block_if_high", "Block if High"),
+    ]
+    crawler_action_choices = [
+        ("allow", "Allow"),
+        ("throttle", "Throttle"),
+        ("block", "Block"),
+        ("challenge", "Challenge"),
+    ]
 
     # Pagination (devices)
     page = 1
@@ -411,11 +520,20 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
         device_events = list(
             DeviceEvent.objects.select_related("device")
             .order_by("-created_at")[:20]
-            .values("event_type", "success", "reason", "created_at", "device_id", "user_id", "ip", "geo_region", "metadata")
+            .values(
+                "event_type",
+                "success",
+                "reason",
+                "created_at",
+                "device_id",
+                "user_id",
+                "ip",
+                "geo_region",
+                "metadata",
+            )
         )
         devices = list(
-            Device.objects.order_by("-last_seen_at")
-            .values(
+            Device.objects.order_by("-last_seen_at").values(
                 "id",
                 "user_id",
                 "os_fingerprint",
@@ -434,7 +552,9 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
         from apps.crawler_guard.models import CrawlerEvent, CrawlerRule
 
         since = timezone.now() - timezone.timedelta(hours=24)
-        stats["crawler_events_24h"] = CrawlerEvent.objects.filter(created_at__gte=since).count()
+        stats["crawler_events_24h"] = CrawlerEvent.objects.filter(
+            created_at__gte=since
+        ).count()
         crawler_events = list(
             CrawlerEvent.objects.order_by("-created_at")[:10].values(
                 "ip", "action_taken", "path", "created_at"
@@ -442,7 +562,13 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
         )
         rules = list(
             CrawlerRule.objects.order_by("-priority", "name").values(
-                "id", "name", "path_pattern", "requests_per_minute", "action", "is_enabled", "priority"
+                "id",
+                "name",
+                "path_pattern",
+                "requests_per_minute",
+                "action",
+                "is_enabled",
+                "priority",
             )
         )
     except Exception as exc:
@@ -452,10 +578,16 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
     try:
         from apps.ai_behavior.models import BehaviorInsight
 
-        stats["risk_insights_open"] = BehaviorInsight.objects.filter(status="open").count()
+        stats["risk_insights_open"] = BehaviorInsight.objects.filter(
+            status="open"
+        ).count()
         risk_insights = list(
             BehaviorInsight.objects.order_by("-created_at")[:10].values(
-                "severity", "status", "created_at", "related_user_id", "device_identifier"
+                "severity",
+                "status",
+                "created_at",
+                "related_user_id",
+                "device_identifier",
             )
         )
     except Exception as exc:
@@ -479,11 +611,21 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
 
         cfg = DeviceConfig.get_solo()
         device_config = {
-            "basic_fingerprinting_enabled": bool(getattr(cfg, "basic_fingerprinting_enabled", True)),
-            "enhanced_fingerprinting_enabled": bool(getattr(cfg, "enhanced_fingerprinting_enabled", False)),
-            "enterprise_device_management_enabled": bool(getattr(cfg, "enterprise_device_management_enabled", False)),
-            "strict_new_device_login": bool(getattr(cfg, "strict_new_device_login", False)),
-            "require_mfa_on_new_device": bool(getattr(cfg, "require_mfa_on_new_device", False)),
+            "basic_fingerprinting_enabled": bool(
+                getattr(cfg, "basic_fingerprinting_enabled", True)
+            ),
+            "enhanced_fingerprinting_enabled": bool(
+                getattr(cfg, "enhanced_fingerprinting_enabled", False)
+            ),
+            "enterprise_device_management_enabled": bool(
+                getattr(cfg, "enterprise_device_management_enabled", False)
+            ),
+            "strict_new_device_login": bool(
+                getattr(cfg, "strict_new_device_login", False)
+            ),
+            "require_mfa_on_new_device": bool(
+                getattr(cfg, "require_mfa_on_new_device", False)
+            ),
             "max_devices_default": getattr(cfg, "max_devices_default", 5),
             "monthly_device_quota": getattr(cfg, "monthly_device_quota", None),
             "yearly_device_quota": getattr(cfg, "yearly_device_quota", None),
@@ -503,7 +645,9 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
             "crawler_guard_enabled": bool(getattr(cfg, "crawler_guard_enabled", False)),
             "mfa_enabled": bool(getattr(cfg, "mfa_enabled", True)),
             "login_risk_enabled": bool(getattr(cfg, "login_risk_enabled", False)),
-            "device_quota_enforcement_enabled": bool(getattr(cfg, "device_quota_enforcement_enabled", False)),
+            "device_quota_enforcement_enabled": bool(
+                getattr(cfg, "device_quota_enforcement_enabled", False)
+            ),
             "default_device_limit": getattr(cfg, "default_device_limit", 5),
             "default_device_window": getattr(cfg, "default_device_window", "12m"),
             "security_tier": getattr(cfg, "security_tier", "basic"),
@@ -578,7 +722,9 @@ def admin_suite_security(request: HttpRequest) -> HttpResponse:
             "crawler_action_choices": crawler_action_choices,
         },
         nav_active="security",
-        breadcrumb=_make_breadcrumb(("Admin Home", "admin_suite:admin_suite"), ("Security", None)),
+        breadcrumb=_make_breadcrumb(
+            ("Admin Home", "admin_suite:admin_suite"), ("Security", None)
+        ),
         subtitle="Devices, bots, and AI behavior/risk controls",
     )
 
@@ -620,10 +766,19 @@ def admin_suite_security_events(request: HttpRequest) -> HttpResponse:
     events = []
     try:
         from apps.security_events.models import SecurityEvent
+
         events = list(
             SecurityEvent.objects.select_related("user")
             .order_by("-created_at")[:100]
-            .values("id", "event_type", "severity", "ip_address", "user_agent", "created_at", "user__email")
+            .values(
+                "id",
+                "event_type",
+                "severity",
+                "ip_address",
+                "user_agent",
+                "created_at",
+                "user__email",
+            )
         )
     except Exception as exc:
         logger.warning("Failed to load security events: %s", exc)
@@ -642,5 +797,12 @@ def admin_suite_security_events(request: HttpRequest) -> HttpResponse:
     )
 
 
-__all__ = ['admin_suite_command_search', 'admin_suite', 'admin_suite_security', 'admin_suite_security_devices', 'admin_suite_security_crawlers', 'admin_suite_security_risk', 'admin_suite_security_events']
-
+__all__ = [
+    "admin_suite_command_search",
+    "admin_suite",
+    "admin_suite_security",
+    "admin_suite_security_devices",
+    "admin_suite_security_crawlers",
+    "admin_suite_security_risk",
+    "admin_suite_security_events",
+]

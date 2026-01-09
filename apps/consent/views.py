@@ -1,30 +1,34 @@
-
 from __future__ import annotations
 
 import json
 
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.http import HttpRequest, HttpResponse
-from django.views.decorators.http import require_POST, require_GET
-from django.http import JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import render
+from django.views.decorators.http import require_GET, require_POST
 
-from apps.consent.models import ConsentPolicy, ConsentDecision, ConsentEvent
-from apps.consent.utils import hash_ip, hash_ua, resolve_policy_url, set_consent_cookie
+from apps.consent.models import ConsentDecision, ConsentEvent, ConsentPolicy
+from apps.consent.utils import resolve_policy_url, set_consent_cookie
 from apps.core.utils.ip import get_client_ip
 
 
 @require_GET
 def privacy_center(request):
-    active_policy = ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    active_policy = (
+        ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    )
     decisions = ConsentDecision.objects.none()
     if active_policy:
         if request.user.is_authenticated:
-            decisions = ConsentDecision.objects.filter(user=request.user, policy=active_policy)
+            decisions = ConsentDecision.objects.filter(
+                user=request.user, policy=active_policy
+            )
         else:
             sid = request.session.session_key
             if sid:
-                decisions = ConsentDecision.objects.filter(session_id=sid, policy=active_policy)
+                decisions = ConsentDecision.objects.filter(
+                    session_id=sid, policy=active_policy
+                )
     return render(
         request,
         "consent/privacy_center.html",
@@ -43,7 +47,9 @@ def privacy_center_authed(request):
 
 @require_POST
 def accept_all(request: HttpRequest) -> HttpResponse:
-    policy = ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    policy = (
+        ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    )
     if not policy:
         return JsonResponse({"ok": False, "message": "No active policy"}, status=400)
     if not request.session.session_key:
@@ -51,14 +57,16 @@ def accept_all(request: HttpRequest) -> HttpResponse:
     snapshot = policy.categories_snapshot or {}
     if not snapshot:
         snapshot = {"functional": True}
-    categories = {k: True for k in snapshot.keys()}
+    categories = dict.fromkeys(snapshot.keys(), True)
     decision = ConsentDecision.objects.create(
         user=request.user if request.user.is_authenticated else None,
         session_id=request.session.session_key or "",
         policy=policy,
         categories=categories,
     )
-    decision.set_hashes(get_client_ip(request) or "", request.META.get("HTTP_USER_AGENT", ""))
+    decision.set_hashes(
+        get_client_ip(request) or "", request.META.get("HTTP_USER_AGENT", "")
+    )
     decision.save(update_fields=["ip_hash", "user_agent_hash"])
     ConsentEvent.objects.create(
         decision=decision,
@@ -75,7 +83,9 @@ def accept_all(request: HttpRequest) -> HttpResponse:
 
 @require_POST
 def reject_all(request: HttpRequest) -> HttpResponse:
-    policy = ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    policy = (
+        ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    )
     if not policy:
         return JsonResponse({"ok": False, "message": "No active policy"}, status=400)
     if not request.session.session_key:
@@ -96,7 +106,9 @@ def reject_all(request: HttpRequest) -> HttpResponse:
         policy=policy,
         categories=categories,
     )
-    decision.set_hashes(get_client_ip(request) or "", request.META.get("HTTP_USER_AGENT", ""))
+    decision.set_hashes(
+        get_client_ip(request) or "", request.META.get("HTTP_USER_AGENT", "")
+    )
     decision.save(update_fields=["ip_hash", "user_agent_hash"])
     ConsentEvent.objects.create(
         decision=decision,
@@ -113,7 +125,9 @@ def reject_all(request: HttpRequest) -> HttpResponse:
 
 @require_POST
 def accept(request: HttpRequest) -> HttpResponse:
-    policy = ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    policy = (
+        ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    )
     if not policy:
         return JsonResponse({"ok": False, "message": "No active policy"}, status=400)
     if not request.session.session_key:
@@ -140,7 +154,9 @@ def accept(request: HttpRequest) -> HttpResponse:
         policy=policy,
         categories=categories,
     )
-    decision.set_hashes(get_client_ip(request) or "", request.META.get("HTTP_USER_AGENT", ""))
+    decision.set_hashes(
+        get_client_ip(request) or "", request.META.get("HTTP_USER_AGENT", "")
+    )
     decision.save(update_fields=["ip_hash", "user_agent_hash"])
     ConsentEvent.objects.create(
         decision=decision,
@@ -160,7 +176,9 @@ def banner(request: HttpRequest) -> HttpResponse:
     Render the consent banner fragment for the frontend loader.
     Returns empty content if no active policy exists.
     """
-    policy = ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    policy = (
+        ConsentPolicy.objects.filter(is_active=True).order_by("-effective_from").first()
+    )
     if not policy:
         # Ensure we always have a minimal active policy so the banner can render
         policy, _ = ConsentPolicy.objects.get_or_create(
@@ -179,7 +197,7 @@ def banner(request: HttpRequest) -> HttpResponse:
         if not policy.is_active:
             policy.is_active = True
             policy.save(update_fields=["is_active"])
-    
+
     # Format categories for template with proper structure
     categories_snapshot = policy.categories_snapshot or {}
     formatted_categories = {}
@@ -188,7 +206,9 @@ def banner(request: HttpRequest) -> HttpResponse:
             formatted_categories[slug] = {
                 "name": meta.get("label", slug.replace("_", " ").title()),
                 "required": meta.get("required", False),
-                "checked": meta.get("required", False),  # Required categories checked by default
+                "checked": meta.get(
+                    "required", False
+                ),  # Required categories checked by default
             }
         else:
             formatted_categories[slug] = {
@@ -196,13 +216,12 @@ def banner(request: HttpRequest) -> HttpResponse:
                 "required": False,
                 "checked": False,
             }
-    
+
     ctx = {
         "policy": policy,
         "consent_categories": formatted_categories,
-        "consent_text": policy.banner_text or "We use cookies to improve your browsing experience.",
+        "consent_text": policy.banner_text
+        or "We use cookies to improve your browsing experience.",
         "consent_version": policy.version,
     }
     return render(request, "consent/includes/banner.html", ctx)
-
-

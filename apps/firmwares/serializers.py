@@ -1,6 +1,13 @@
-from rest_framework import serializers
 from django.core.validators import MinLengthValidator
-from .models import PendingFirmware, SchemaUpdateProposal, BrandCreationRequest, ModelCreationRequest, VariantCreationRequest
+from rest_framework import serializers
+
+from .models import (
+    BrandCreationRequest,
+    ModelCreationRequest,
+    PendingFirmware,
+    SchemaUpdateProposal,
+    VariantCreationRequest,
+)
 
 
 class PendingFirmwareUploadSerializer(serializers.Serializer):
@@ -8,8 +15,15 @@ class PendingFirmwareUploadSerializer(serializers.Serializer):
     model_id = serializers.IntegerField(required=False, allow_null=True)
     variant_id = serializers.IntegerField(required=False, allow_null=True)
     is_password_protected = serializers.BooleanField()
-    password = serializers.CharField(required=False, allow_blank=True, allow_null=True, validators=[MinLengthValidator(1)])
-    extra_info = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    password = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        validators=[MinLengthValidator(1)],
+    )
+    extra_info = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
     file = serializers.FileField()
 
 

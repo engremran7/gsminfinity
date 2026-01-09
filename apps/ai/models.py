@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.conf import settings
@@ -9,14 +8,14 @@ from solo.models import SingletonModel
 class AISettings(SingletonModel):
     """
     Global configuration singleton for the AI platform features.
-    
+
     AISettings is a singleton model (only one instance ever exists) that manages
     global AI feature toggles, default model configuration, and safety/security settings.
     This allows the AI app to be decentralized (independently configured in each
     service while maintaining global consistency).
-    
+
     Access via: AISettings.objects.get_solo()
-    
+
     Attributes:
         ai_enabled (BooleanField): Master switch to enable/disable all AI features.
         default_model (CharField): Default LLM model identifier (e.g., "deepseek-chat").
@@ -44,7 +43,7 @@ class AISettings(SingletonModel):
         retry_limit (PositiveSmallIntegerField): Max retries on transient failures.
         backoff_min_seconds (FloatField): Minimum delay between retries (exponential backoff).
         backoff_max_seconds (FloatField): Maximum delay between retries (exponential backoff cap).
-    
+
     Examples:
         >>> # Get singleton settings
         >>> settings = AISettings.objects.get_solo()
@@ -95,18 +94,18 @@ class AISettings(SingletonModel):
 class ModelEndpoint(models.Model):
     """
     Represents a registered AI model endpoint (LLM, embedding, vision, etc.).
-    
+
     ModelEndpoint stores configurations for external AI service connections. This
     allows the system to support multiple providers, models, and capabilities
     (text generation, embeddings, vision processing, speech). Endpoints can be
     enabled/disabled without deletion for audit trail.
-    
+
     Typical use cases:
     - Register multiple LLM providers for fallback/comparison
     - Store separate embedding model for vector search
     - Register vision model for image analysis
     - Support self-hosted model endpoints via custom base URL
-    
+
     Attributes:
         name (CharField): Unique identifier for this endpoint (e.g., "openai-gpt4", "local-llama2").
         kind (CharField): Type of endpoint - llm (text generation), embedding (vectors),
@@ -123,7 +122,7 @@ class ModelEndpoint(models.Model):
             Disabled endpoints won't be selected for new requests (for maintenance).
         created_at (DateTimeField): When this endpoint registration was created.
         updated_at (DateTimeField): When this endpoint was last updated.
-    
+
     Examples:
         >>> # Register OpenAI as LLM provider
         >>> openai_endpoint = ModelEndpoint.objects.create(
@@ -185,19 +184,19 @@ class ModelEndpoint(models.Model):
 class KnowledgeSource(models.Model):
     """
     Represents a knowledge base source for RAG (Retrieval-Augmented Generation).
-    
+
     KnowledgeSource defines where content comes from that can be augmented into
     LLM prompts via vector search or knowledge retrieval. This supports various
     source types: uploaded files, web URLs, databases, or log streams. Each source
     tracks indexing state for incremental updates.
-    
+
     Typical RAG workflow:
     1. Register KnowledgeSource (file, URL, DB)
     2. Content is indexed/embedded into vector database
     3. When user queries, system retrieves relevant chunks from source
     4. Augmented prompt = user query + relevant source context
     5. LLM generates response using context
-    
+
     Attributes:
         name (CharField): Human-readable source name (e.g., "API Documentation", "Blog Posts").
         source_type (CharField): Type of source - file (PDF, doc), url (web page),
@@ -217,7 +216,7 @@ class KnowledgeSource(models.Model):
         is_active (BooleanField): Whether this source is included in RAG search.
             Can disable without deletion for quick A/B testing.
         created_at (DateTimeField): When this source was registered.
-    
+
     Examples:
         >>> # Register PDF documentation
         >>> pdf_source = KnowledgeSource.objects.create(
@@ -274,7 +273,9 @@ class KnowledgeSource(models.Model):
     ]
 
     name = models.CharField(max_length=150)
-    source_type = models.CharField(max_length=20, choices=SOURCE_CHOICES, default="file")
+    source_type = models.CharField(
+        max_length=20, choices=SOURCE_CHOICES, default="file"
+    )
     location = models.TextField(help_text="URI/path/connection string")
     metadata = models.JSONField(default=dict, blank=True)
     last_indexed_at = models.DateTimeField(null=True, blank=True)
@@ -291,12 +292,12 @@ class KnowledgeSource(models.Model):
 class Workflow(models.Model):
     """
     Represents a declarative AI pipeline/workflow definition.
-    
+
     Workflow defines a reusable sequence of AI operations (prompts, tool calls,
     conditional logic, etc.) in a declarative format. Rather than hardcoding
     AI logic in Python, workflows can be defined as JSON/YAML and modified
     without code changes.
-    
+
     Typical workflow structure (as JSON):
     ```json
     {
@@ -325,14 +326,14 @@ class Workflow(models.Model):
         ]
     }
     ```
-    
+
     Workflows support:
     - Sequential steps with inputs/outputs
     - Conditional branching based on step results
     - Tool/function calling
     - Retry logic
     - Human-in-the-loop approval points
-    
+
     Attributes:
         name (CharField): Unique workflow identifier (e.g., "email-classification",
             "customer-support-route").
@@ -343,7 +344,7 @@ class Workflow(models.Model):
             Disabled workflows won't start new runs.
         created_at (DateTimeField): When this workflow was first created.
         updated_at (DateTimeField): When this workflow definition was last modified.
-    
+
     Examples:
         >>> # Create a simple workflow
         >>> workflow = Workflow.objects.create(
@@ -378,7 +379,9 @@ class Workflow(models.Model):
 
     name = models.CharField(max_length=150, unique=True)
     description = models.TextField(blank=True, default="")
-    definition = models.JSONField(default=dict, blank=True, help_text="Declarative steps, tools, routing rules.")
+    definition = models.JSONField(
+        default=dict, blank=True, help_text="Declarative steps, tools, routing rules."
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -393,21 +396,21 @@ class Workflow(models.Model):
 class PipelineRun(models.Model):
     """
     Represents a single execution/run of a workflow or AI agent.
-    
+
     PipelineRun is the execution log entry for workflow invocations. Each run
     tracks the input, output, status, timing, and metadata for audit trail,
     debugging, and monitoring purposes.
-    
+
     Typical lifecycle:
     1. Created in "queued" status with input_payload
     2. Worker picks up run and changes status to "running"
     3. Executes workflow steps, updates metadata with progress
     4. On success: output_payload populated, status="succeeded", finished_at set
     5. On failure: status="failed", error info in metadata, finished_at set
-    
+
     Runs can be filtered by status for dashboards, errors can be reviewed,
     and successful runs can be archived to archival storage.
-    
+
     Attributes:
         workflow (ForeignKey): The Workflow being executed. Nullable to support
             one-off runs without a template. Related name: runs.
@@ -426,11 +429,11 @@ class PipelineRun(models.Model):
             - For running: {"progress": 0.5, "current_step": "extract_intent", "logs": [...]}
             - For failed: {"error": "...", "error_type": "...", "stack_trace": "..."}
             - For success: {"duration_seconds": 12.5, "tokens_used": 450}
-    
+
     Meta:
         ordering: Most recent runs first
         indexes: On status and started_at for efficient filtering
-    
+
     Examples:
         >>> from django.utils import timezone
         >>> from datetime import timedelta
@@ -494,8 +497,12 @@ class PipelineRun(models.Model):
         ("failed", "Failed"),
     ]
 
-    workflow = models.ForeignKey(Workflow, null=True, blank=True, on_delete=models.SET_NULL, related_name="runs")
-    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    workflow = models.ForeignKey(
+        Workflow, null=True, blank=True, on_delete=models.SET_NULL, related_name="runs"
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
     input_payload = models.JSONField(default=dict, blank=True)
     output_payload = models.JSONField(default=dict, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="queued")
@@ -512,5 +519,3 @@ class PipelineRun(models.Model):
 
     def __str__(self) -> str:
         return f"Run {self.pk} ({self.status})"
-
-

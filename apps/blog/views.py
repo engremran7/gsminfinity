@@ -1,42 +1,39 @@
-
 from __future__ import annotations
-
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.core.paginator import Paginator
-from django.http import HttpRequest, HttpResponse, Http404, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_http_methods, require_POST, require_GET
-from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
-from django.views.decorators.cache import cache_page
-from django.template.loader import render_to_string
-from django.db.models import Q, Count, F
-from django.db import transaction, models
-from django.utils import timezone
-from django.contrib.contenttypes.models import ContentType
 
 import hashlib
 import logging
 
-from apps.core.views import _get_site_settings_snapshot
-from apps.core.app_service import AppService
-from .forms import PostForm, CategoryForm
-from .models import Post, PostStatus, Category, PostDraft, PostRevision
-from apps.tags.models import Tag
-from apps.tags import services as tag_services
-from apps.seo.models import SEOModel, Metadata
-from apps.core.utils import feature_flags
-from apps.users.models import CustomUser
-from apps.core import ai
-from apps.core import ai_client
-from apps.blog.services import ai_editor, workflow
-from apps.core.utils.logging import log_event
-from apps.i18n.services import resolve_locale
-from apps.blog.models import PostTranslation, CategoryTranslation, TagTranslation
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from django.core.paginator import Paginator
+from django.db import models, transaction
+from django.db.models import Count, Q, QuerySet
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from django.db.models import QuerySet
+from apps.blog.models import CategoryTranslation, PostTranslation, TagTranslation
+from apps.blog.services import ai_editor, workflow
+from apps.core import ai_client
+from apps.core.app_service import AppService
+from apps.core.utils import feature_flags
+from apps.core.utils.logging import log_event
+from apps.core.views import _get_site_settings_snapshot
+from apps.i18n.services import resolve_locale
+from apps.seo.models import Metadata, SEOModel
+from apps.tags import services as tag_services
+from apps.tags.models import Tag
+from apps.users.models import CustomUser
+
+from .forms import CategoryForm, PostForm
+from .models import Category, Post, PostDraft, PostRevision, PostStatus
 
 logger = logging.getLogger(__name__)
+
 
 def _sync_tag_usage(tags_qs: QuerySet) -> None:
     for tag in tags_qs:
@@ -51,11 +48,13 @@ def _sync_tag_usage(tags_qs: QuerySet) -> None:
             continue
 
 
-def _apply_translations_to_posts(posts: list | QuerySet, locale: str | None) -> list | QuerySet:
+def _apply_translations_to_posts(
+    posts: list | QuerySet, locale: str | None
+) -> list | QuerySet:
     """
     Apply translations to a list/queryset of posts for the given locale.
     Mutates objects in place for display purposes.
-    
+
     NOTE: Ensure posts queryset has .prefetch_related('tags') for optimal performance.
     """
     if not locale:
@@ -68,10 +67,16 @@ def _apply_translations_to_posts(posts: list | QuerySet, locale: str | None) -> 
         for pt in PostTranslation.objects.filter(post_id__in=post_ids, language=locale)
     }
     categories = {p.category_id for p in posts if getattr(p, "category_id", None)}
-    cat_translations = {
-        ct.category_id: ct
-        for ct in CategoryTranslation.objects.filter(category_id__in=categories, language=locale)
-    } if categories else {}
+    cat_translations = (
+        {
+            ct.category_id: ct
+            for ct in CategoryTranslation.objects.filter(
+                category_id__in=categories, language=locale
+            )
+        }
+        if categories
+        else {}
+    )
 
     # Collect tag IDs efficiently (assumes tags are prefetched)
     tag_ids = set()
@@ -86,11 +91,15 @@ def _apply_translations_to_posts(posts: list | QuerySet, locale: str | None) -> 
         except Exception:
             post_tags_map[p.id] = []
             continue
-    
-    tag_translations = {
-        tt.tag_id: tt
-        for tt in TagTranslation.objects.filter(tag_id__in=tag_ids, language=locale)
-    } if tag_ids else {}
+
+    tag_translations = (
+        {
+            tt.tag_id: tt
+            for tt in TagTranslation.objects.filter(tag_id__in=tag_ids, language=locale)
+        }
+        if tag_ids
+        else {}
+    )
 
     for p in posts:
         pt = translations.get(p.id)
@@ -102,7 +111,9 @@ def _apply_translations_to_posts(posts: list | QuerySet, locale: str | None) -> 
             p.seo_description = pt.seo_description or p.seo_description
         if p.category_id and p.category_id in cat_translations:
             try:
-                p.category.name = cat_translations[p.category_id].name or p.category.name
+                p.category.name = (
+                    cat_translations[p.category_id].name or p.category.name
+                )
             except Exception:
                 pass
         # Use cached tags instead of hitting p.tags.all() again
@@ -119,7 +130,11 @@ def _ensure_post_seo(post: Post, request: HttpRequest | None = None):
     """
     try:
         seo_api = AppService.get("seo")
-        seo_settings = seo_api.get_settings() if seo_api and hasattr(seo_api, "get_settings") else {}
+        seo_settings = (
+            seo_api.get_settings()
+            if seo_api and hasattr(seo_api, "get_settings")
+            else {}
+        )
         if not seo_settings.get("seo_enabled", True):
             return
     except Exception:
@@ -135,13 +150,19 @@ def _ensure_post_seo(post: Post, request: HttpRequest | None = None):
         settings_snapshot = _get_site_settings_snapshot()
         try:
             seo_api = AppService.get("seo")
-            seo_settings = seo_api.get_settings() if seo_api and hasattr(seo_api, "get_settings") else {}
+            seo_settings = (
+                seo_api.get_settings()
+                if seo_api and hasattr(seo_api, "get_settings")
+                else {}
+            )
         except Exception:
             seo_settings = {}
-        auto_meta = seo_settings.get("auto_meta_enabled", settings_snapshot.get("auto_meta_enabled", False))
+        auto_meta = seo_settings.get(
+            "auto_meta_enabled", settings_snapshot.get("auto_meta_enabled", False)
+        )
 
         content_hash = hashlib.sha256(
-            f"{post.title}|{post.summary}|{post.body}".encode("utf-8")
+            f"{post.title}|{post.summary}|{post.body}".encode()
         ).hexdigest()
         has_changes = meta.content_hash != content_hash
 
@@ -178,24 +199,37 @@ def post_list(request: HttpRequest) -> HttpResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
         blog_api = AppService.get("blog")
-        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+        blog_settings = (
+            blog_api.get_settings()
+            if blog_api and hasattr(blog_api, "get_settings")
+            else {}
+        )
     except Exception:
         blog_api = None
         blog_settings = {}
 
-    blog_enabled = blog_settings.get("enable_blog", False if blog_api is None else settings_snapshot.get("enable_blog", True))
+    blog_enabled = blog_settings.get(
+        "enable_blog",
+        False if blog_api is None else settings_snapshot.get("enable_blog", True),
+    )
     if not blog_enabled and not (request.user.is_staff or request.user.is_superuser):
         raise Http404("Blog is disabled.")
-    allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
+    allow_user_posts = blog_settings.get(
+        "allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False)
+    )
 
     now_ts = timezone.now()
     base_qs = Post.objects.select_related("author", "category").prefetch_related("tags")
     published_qs = base_qs.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
 
     # If owner/staff, also show their drafts/scheduled in manager context (not to the public)
-    show_unpublished = request.user.is_authenticated and (request.user.is_staff or allow_user_posts)
+    show_unpublished = request.user.is_authenticated and (
+        request.user.is_staff or allow_user_posts
+    )
     if show_unpublished:
-        own_unpublished = base_qs.filter(author=request.user, status__in=[PostStatus.DRAFT, PostStatus.SCHEDULED])
+        own_unpublished = base_qs.filter(
+            author=request.user, status__in=[PostStatus.DRAFT, PostStatus.SCHEDULED]
+        )
         posts = (published_qs | own_unpublished).distinct()
     else:
         posts = published_qs
@@ -225,7 +259,9 @@ def post_list(request: HttpRequest) -> HttpResponse:
     if tag:
         posts = posts.filter(Q(tags__slug=tag) | Q(tags__name__iexact=tag))
     if category_slug:
-        posts = posts.filter(Q(category__slug=category_slug) | Q(category__parent__slug=category_slug))
+        posts = posts.filter(
+            Q(category__slug=category_slug) | Q(category__parent__slug=category_slug)
+        )
     if author:
         posts = posts.filter(author__username=author)
     if date_from:
@@ -289,32 +325,42 @@ def post_list(request: HttpRequest) -> HttpResponse:
             .select_related("author")
             .order_by("-published_at")[:5]
         )
-    latest_posts = (
-        Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
-        .order_by("-published_at")[:5]
-    )
+    latest_posts = Post.objects.filter(
+        status=PostStatus.PUBLISHED, publish_at__lte=now_ts
+    ).order_by("-published_at")[:5]
     # Get featured post (most recent featured or latest published)
-    featured_post = Post.objects.filter(
-        status=PostStatus.PUBLISHED, 
-        publish_at__lte=now_ts,
-        featured=True
-    ).order_by('-published_at').first()
-    
+    featured_post = (
+        Post.objects.filter(
+            status=PostStatus.PUBLISHED, publish_at__lte=now_ts, featured=True
+        )
+        .order_by("-published_at")
+        .first()
+    )
+
     if not featured_post:
-        featured_post = Post.objects.filter(
-            status=PostStatus.PUBLISHED,
-            publish_at__lte=now_ts
-        ).order_by('-published_at').first()
-    
+        featured_post = (
+            Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
+            .order_by("-published_at")
+            .first()
+        )
+
     # Annotate categories with post count
-    from django.db.models import Count
-    categories_with_count = Category.objects.annotate(
-        post_count=Count('posts', filter=models.Q(posts__status=PostStatus.PUBLISHED, posts__publish_at__lte=now_ts))
-    ).select_related("parent").order_by("parent__name", "name")
-    
+    categories_with_count = (
+        Category.objects.annotate(
+            post_count=Count(
+                "posts",
+                filter=models.Q(
+                    posts__status=PostStatus.PUBLISHED, posts__publish_at__lte=now_ts
+                ),
+            )
+        )
+        .select_related("parent")
+        .order_by("parent__name", "name")
+    )
+
     # Get popular tags for sidebar
-    popular_tags = Tag.objects.filter(is_active=True).order_by('-usage_count')[:15]
-    
+    popular_tags = Tag.objects.filter(is_active=True).order_by("-usage_count")[:15]
+
     context = {
         "posts": page_obj,  # Pass page_obj directly for pagination
         "featured_post": featured_post,
@@ -332,7 +378,9 @@ def post_list(request: HttpRequest) -> HttpResponse:
         "date_from": date_from,
         "date_to": date_to,
         "categories": categories_with_count,
-        "selected_category": Category.objects.filter(slug=category_slug).first() if category_slug else None,
+        "selected_category": Category.objects.filter(slug=category_slug).first()
+        if category_slug
+        else None,
         "status_filters": [
             ("", "All"),
             (PostStatus.PUBLISHED, "Published"),
@@ -355,14 +403,23 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
         blog_api = AppService.get("blog")
-        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+        blog_settings = (
+            blog_api.get_settings()
+            if blog_api and hasattr(blog_api, "get_settings")
+            else {}
+        )
     except Exception:
         blog_api = None
         blog_settings = {}
-    blog_enabled = blog_settings.get("enable_blog", False if blog_api is None else settings_snapshot.get("enable_blog", True))
+    blog_enabled = blog_settings.get(
+        "enable_blog",
+        False if blog_api is None else settings_snapshot.get("enable_blog", True),
+    )
     if not blog_enabled and not (request.user.is_staff or request.user.is_superuser):
         raise Http404("Blog is disabled.")
-    allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
+    allow_user_posts = blog_settings.get(
+        "allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False)
+    )
 
     base_qs = Post.objects.select_related("author", "category").prefetch_related(
         "tags",
@@ -374,12 +431,17 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
         if not post.is_live:
             raise Http404("Post not published.")
     # Fix N+1: Use tag PKs instead of evaluating queryset
-    tag_ids = list(post.tags.values_list('id', flat=True))
-    related = Post.objects.filter(
-        tags__id__in=tag_ids,
-        status=PostStatus.PUBLISHED,
-        publish_at__lte=timezone.now(),
-    ).exclude(pk=post.pk).distinct().order_by("-published_at")[:4]
+    tag_ids = list(post.tags.values_list("id", flat=True))
+    related = (
+        Post.objects.filter(
+            tags__id__in=tag_ids,
+            status=PostStatus.PUBLISHED,
+            publish_at__lte=timezone.now(),
+        )
+        .exclude(pk=post.pk)
+        .distinct()
+        .order_by("-published_at")[:4]
+    )
     related_widget_html = render_to_string(
         "blog/partials/related_widget.html", {"posts": related}
     )
@@ -392,7 +454,9 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
     )
     if not trending_posts:
         trending_posts = list(
-            Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=timezone.now())
+            Post.objects.filter(
+                status=PostStatus.PUBLISHED, publish_at__lte=timezone.now()
+            )
             .select_related("author")
             .prefetch_related("tags")
             .order_by("-published_at")[:5]
@@ -400,7 +464,9 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
     _ensure_post_seo(post, request)
 
     # Tag cloud weights for sidebar (simple 3-tier scaling)
-    tag_cloud_raw = list(Tag.objects.filter(is_active=True).order_by("-usage_count")[:30])
+    tag_cloud_raw = list(
+        Tag.objects.filter(is_active=True).order_by("-usage_count")[:30]
+    )
     if tag_cloud_raw:
         max_usage = max([t.usage_count or 1 for t in tag_cloud_raw]) or 1
         for t in tag_cloud_raw:
@@ -421,7 +487,9 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
     if current_locale:
         _apply_translations_to_posts(trending_posts, current_locale)
         try:
-            t = PostTranslation.objects.filter(post=post, language=current_locale).first()
+            t = PostTranslation.objects.filter(
+                post=post, language=current_locale
+            ).first()
             if t:
                 post.title = t.title or post.title
                 post.summary = t.summary or post.summary
@@ -432,7 +500,9 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
             pass
         try:
             if post.category:
-                ct = CategoryTranslation.objects.filter(category=post.category, language=current_locale).first()
+                ct = CategoryTranslation.objects.filter(
+                    category=post.category, language=current_locale
+                ).first()
                 if ct:
                     post.category.name = ct.name or post.category.name
         except Exception:
@@ -441,7 +511,9 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
         try:
             translated_tags = {}
             for tag in post.tags.all():
-                tt = TagTranslation.objects.filter(tag=tag, language=current_locale).first()
+                tt = TagTranslation.objects.filter(
+                    tag=tag, language=current_locale
+                ).first()
                 if tt:
                     translated_tags[tag.id] = tt.name
             if translated_tags:
@@ -453,25 +525,35 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
 
     # Get comments for the post
     from apps.comments.models import Comment
-    comments = Comment.objects.filter(
-        post=post,
-        is_deleted=False,
-        parent__isnull=True  # Top-level comments only, replies are nested
-    ).select_related('user').order_by('-created_at')
-    
+
+    comments = (
+        Comment.objects.filter(
+            post=post,
+            is_deleted=False,
+            parent__isnull=True,  # Top-level comments only, replies are nested
+        )
+        .select_related("user")
+        .order_by("-created_at")
+    )
+
     # Get tag categories for the tags widget
-    tag_categories = Tag.CATEGORY_CHOICES if hasattr(Tag, 'CATEGORY_CHOICES') else []
-    
+    tag_categories = Tag.CATEGORY_CHOICES if hasattr(Tag, "CATEGORY_CHOICES") else []
+
     # Get popular tags for sidebar
-    popular_tags = Tag.objects.filter(is_active=True).order_by('-usage_count')[:10]
-    
+    popular_tags = Tag.objects.filter(is_active=True).order_by("-usage_count")[:10]
+
     # Get related posts based on tags
-    related_posts = Post.objects.filter(
-        tags__in=post.tags.all(),
-        status=PostStatus.PUBLISHED,
-        publish_at__lte=timezone.now(),
-    ).exclude(pk=post.pk).distinct().order_by('-published_at')[:3]
-    
+    related_posts = (
+        Post.objects.filter(
+            tags__in=post.tags.all(),
+            status=PostStatus.PUBLISHED,
+            publish_at__lte=timezone.now(),
+        )
+        .exclude(pk=post.pk)
+        .distinct()
+        .order_by("-published_at")[:3]
+    )
+
     return render(
         request,
         "blog/post_detail.html",
@@ -494,11 +576,15 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
 
 @require_GET
 def post_archive_year(request: HttpRequest, year: int) -> HttpResponse:
-    posts = Post.objects.filter(
-        status=PostStatus.PUBLISHED,
-        publish_at__year=year,
-        publish_at__lte=timezone.now(),
-    ).select_related("author", "category").prefetch_related("tags")
+    posts = (
+        Post.objects.filter(
+            status=PostStatus.PUBLISHED,
+            publish_at__year=year,
+            publish_at__lte=timezone.now(),
+        )
+        .select_related("author", "category")
+        .prefetch_related("tags")
+    )
     current_locale = resolve_locale(request, "blog")
     _apply_translations_to_posts(posts, current_locale)
     return render(
@@ -510,18 +596,27 @@ def post_archive_year(request: HttpRequest, year: int) -> HttpResponse:
 
 @require_GET
 def post_archive_month(request: HttpRequest, year: int, month: int) -> HttpResponse:
-    posts = Post.objects.filter(
-        status=PostStatus.PUBLISHED,
-        publish_at__year=year,
-        publish_at__month=month,
-        publish_at__lte=timezone.now(),
-    ).select_related("author", "category").prefetch_related("tags")
+    posts = (
+        Post.objects.filter(
+            status=PostStatus.PUBLISHED,
+            publish_at__year=year,
+            publish_at__month=month,
+            publish_at__lte=timezone.now(),
+        )
+        .select_related("author", "category")
+        .prefetch_related("tags")
+    )
     current_locale = resolve_locale(request, "blog")
     _apply_translations_to_posts(posts, current_locale)
     return render(
         request,
         "blog/archive_month.html",
-        {"posts": posts, "year": year, "month": month, "current_locale": current_locale},
+        {
+            "posts": posts,
+            "year": year,
+            "month": month,
+            "current_locale": current_locale,
+        },
     )
 
 
@@ -563,20 +658,34 @@ def manage_posts(request: HttpRequest) -> HttpResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
         blog_api = AppService.get("blog")
-        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+        blog_settings = (
+            blog_api.get_settings()
+            if blog_api and hasattr(blog_api, "get_settings")
+            else {}
+        )
     except Exception:
         blog_settings = {}
-    allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
+    allow_user_posts = blog_settings.get(
+        "allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False)
+    )
     if not (request.user.is_staff or request.user.is_superuser or allow_user_posts):
         raise Http404()
 
     base_qs = Post.objects.select_related("author", "category")
     if request.user.is_staff or request.user.is_superuser:
-        drafts = base_qs.filter(status=PostStatus.DRAFT).order_by("-updated_at", "-created_at")[:50]
-        scheduled = base_qs.filter(status=PostStatus.SCHEDULED).order_by("publish_at")[:50]
+        drafts = base_qs.filter(status=PostStatus.DRAFT).order_by(
+            "-updated_at", "-created_at"
+        )[:50]
+        scheduled = base_qs.filter(status=PostStatus.SCHEDULED).order_by("publish_at")[
+            :50
+        ]
     else:
-        drafts = base_qs.filter(author=request.user, status=PostStatus.DRAFT).order_by("-updated_at", "-created_at")[:50]
-        scheduled = base_qs.filter(author=request.user, status=PostStatus.SCHEDULED).order_by("publish_at")[:50]
+        drafts = base_qs.filter(author=request.user, status=PostStatus.DRAFT).order_by(
+            "-updated_at", "-created_at"
+        )[:50]
+        scheduled = base_qs.filter(
+            author=request.user, status=PostStatus.SCHEDULED
+        ).order_by("publish_at")[:50]
 
     return render(
         request,
@@ -599,7 +708,9 @@ def bulk_publish(request: HttpRequest) -> HttpResponse:
     if not ids:
         messages.info(request, "No posts selected.")
         return redirect("blog:manage_posts")
-    qs = Post.objects.filter(pk__in=ids, status__in=[PostStatus.DRAFT, PostStatus.SCHEDULED])
+    qs = Post.objects.filter(
+        pk__in=ids, status__in=[PostStatus.DRAFT, PostStatus.SCHEDULED]
+    )
     if not (request.user.is_staff or request.user.is_superuser):
         qs = qs.filter(author=request.user)
     updated = 0
@@ -608,7 +719,9 @@ def bulk_publish(request: HttpRequest) -> HttpResponse:
             post.status = PostStatus.PUBLISHED
             post.publish_at = timezone.now()
             post.published_at = timezone.now()
-            post.save(update_fields=["status", "publish_at", "published_at", "updated_at"])
+            post.save(
+                update_fields=["status", "publish_at", "published_at", "updated_at"]
+            )
             updated += 1
     try:
         log_event(
@@ -631,15 +744,24 @@ def post_create(request: HttpRequest) -> HttpResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
         blog_api = AppService.get("blog")
-        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+        blog_settings = (
+            blog_api.get_settings()
+            if blog_api and hasattr(blog_api, "get_settings")
+            else {}
+        )
     except Exception:
         blog_api = None
         blog_settings = {}
-    blog_enabled = blog_settings.get("enable_blog", False if blog_api is None else settings_snapshot.get("enable_blog", True))
+    blog_enabled = blog_settings.get(
+        "enable_blog",
+        False if blog_api is None else settings_snapshot.get("enable_blog", True),
+    )
     if not blog_enabled and not (request.user.is_staff or request.user.is_superuser):
         raise Http404("Blog is disabled.")
 
-    allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
+    allow_user_posts = blog_settings.get(
+        "allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False)
+    )
     # RBAC: allow staff, editors, authors; optionally allow authenticated users if toggle enabled.
     allowed = (
         request.user.is_staff
@@ -655,7 +777,11 @@ def post_create(request: HttpRequest) -> HttpResponse:
     instance = None
     if edit_slug:
         instance = get_object_or_404(Post, slug__iexact=edit_slug)
-        if not (request.user.is_staff or request.user.is_superuser or instance.author == request.user):
+        if not (
+            request.user.is_staff
+            or request.user.is_superuser
+            or instance.author == request.user
+        ):
             raise Http404()
 
     if request.method == "POST":
@@ -687,7 +813,11 @@ def post_create(request: HttpRequest) -> HttpResponse:
             return redirect("blog:post_detail", slug=post.slug)
     else:
         form = PostForm(instance=instance)
-    return render(request, "blog/post_form.html", {"form": form, "editing": bool(instance), "editing_post": instance})
+    return render(
+        request,
+        "blog/post_form.html",
+        {"form": form, "editing": bool(instance), "editing_post": instance},
+    )
 
 
 def category_create(request: HttpRequest) -> HttpResponse:
@@ -697,17 +827,26 @@ def category_create(request: HttpRequest) -> HttpResponse:
     settings_snapshot = _get_site_settings_snapshot()
     try:
         blog_api = AppService.get("blog")
-        blog_settings = blog_api.get_settings() if blog_api and hasattr(blog_api, "get_settings") else {}
+        blog_settings = (
+            blog_api.get_settings()
+            if blog_api and hasattr(blog_api, "get_settings")
+            else {}
+        )
     except Exception:
         blog_api = None
         blog_settings = {}
-    
-    blog_enabled = blog_settings.get("enable_blog", False if blog_api is None else settings_snapshot.get("enable_blog", True))
+
+    blog_enabled = blog_settings.get(
+        "enable_blog",
+        False if blog_api is None else settings_snapshot.get("enable_blog", True),
+    )
     if not blog_enabled and not (request.user.is_staff or request.user.is_superuser):
         raise Http404("Blog is disabled.")
 
-    allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
-    
+    allow_user_posts = blog_settings.get(
+        "allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False)
+    )
+
     # RBAC: allow staff, editors, authors; optionally allow authenticated users if toggle enabled.
     allowed = (
         request.user.is_staff
@@ -755,9 +894,15 @@ def api_posts(request: HttpRequest) -> JsonResponse:
 
 
 def api_related(request: HttpRequest, slug: str) -> JsonResponse:
-    post = get_object_or_404(Post, slug=slug, status=PostStatus.PUBLISHED, publish_at__lte=timezone.now())
+    post = get_object_or_404(
+        Post, slug=slug, status=PostStatus.PUBLISHED, publish_at__lte=timezone.now()
+    )
     related = (
-        Post.objects.filter(tags__in=post.tags.all(), status=PostStatus.PUBLISHED, publish_at__lte=timezone.now())
+        Post.objects.filter(
+            tags__in=post.tags.all(),
+            status=PostStatus.PUBLISHED,
+            publish_at__lte=timezone.now(),
+        )
         .exclude(pk=post.pk)
         .distinct()
         .order_by("-published_at")[:5]
@@ -785,7 +930,9 @@ def post_autosave(request: HttpRequest) -> JsonResponse:
         post_id=post_id or None,
         defaults={"data": data},
     )
-    return JsonResponse({"ok": True, "message": "Autosave stored", "draft_id": draft.id, "data": data})
+    return JsonResponse(
+        {"ok": True, "message": "Autosave stored", "draft_id": draft.id, "data": data}
+    )
 
 
 @login_required
@@ -808,7 +955,9 @@ def post_preview(request: HttpRequest) -> JsonResponse:
 
 def widget_trending_tags(request: HttpRequest) -> JsonResponse:
     tags = Tag.objects.order_by("-usage_count", "name")[:10]
-    items = [{"name": t.name, "slug": t.slug, "usage_count": t.usage_count} for t in tags]
+    items = [
+        {"name": t.name, "slug": t.slug, "usage_count": t.usage_count} for t in tags
+    ]
     return JsonResponse({"items": items})
 
 
@@ -920,7 +1069,9 @@ def api_workflow(request: HttpRequest, slug: str) -> JsonResponse:
             status=res.status,
             correlation_id=getattr(request, "correlation_id", None),
         )
-        return JsonResponse({"ok": res.ok, "status": res.status, "message": res.message})
+        return JsonResponse(
+            {"ok": res.ok, "status": res.status, "message": res.message}
+        )
     except Exception as exc:
         return JsonResponse({"ok": False, "error": str(exc)}, status=500)
 
@@ -957,32 +1108,30 @@ def post_like(request: HttpRequest, pk: int) -> JsonResponse:
     """
     try:
         post = get_object_or_404(Post, pk=pk)
-        
+
         # Check if user has already liked this post
         # Using a simple approach - you may want to create a PostLike model later
-        liked_posts = request.session.get('liked_posts', [])
-        
+        liked_posts = request.session.get("liked_posts", [])
+
         if pk in liked_posts:
             # Unlike
             liked_posts.remove(pk)
             post.likes_count = max(0, (post.likes_count or 0) - 1)
-            action = 'unliked'
+            action = "unliked"
         else:
             # Like
             liked_posts.append(pk)
             post.likes_count = (post.likes_count or 0) + 1
-            action = 'liked'
-        
-        request.session['liked_posts'] = liked_posts
-        post.save(update_fields=['likes_count'])
-        
-        return JsonResponse({
-            'ok': True,
-            'action': action,
-            'likes_count': post.likes_count
-        })
+            action = "liked"
+
+        request.session["liked_posts"] = liked_posts
+        post.save(update_fields=["likes_count"])
+
+        return JsonResponse(
+            {"ok": True, "action": action, "likes_count": post.likes_count}
+        )
     except Exception as exc:
-        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+        return JsonResponse({"ok": False, "error": str(exc)}, status=500)
 
 
 @login_required
@@ -992,29 +1141,25 @@ def post_bookmark(request: HttpRequest, pk: int) -> JsonResponse:
     Bookmark/unbookmark a blog post.
     """
     try:
-        post = get_object_or_404(Post, pk=pk)
-        
+        get_object_or_404(Post, pk=pk)
+
         # Check if user has already bookmarked this post
-        bookmarked_posts = request.session.get('bookmarked_posts', [])
-        
+        bookmarked_posts = request.session.get("bookmarked_posts", [])
+
         if pk in bookmarked_posts:
             # Remove bookmark
             bookmarked_posts.remove(pk)
-            action = 'unbookmarked'
+            action = "unbookmarked"
         else:
             # Add bookmark
             bookmarked_posts.append(pk)
-            action = 'bookmarked'
-        
-        request.session['bookmarked_posts'] = bookmarked_posts
+            action = "bookmarked"
+
+        request.session["bookmarked_posts"] = bookmarked_posts
         request.session.modified = True
-        
-        return JsonResponse({
-            'ok': True,
-            'action': action,
-            'is_bookmarked': pk in bookmarked_posts
-        })
+
+        return JsonResponse(
+            {"ok": True, "action": action, "is_bookmarked": pk in bookmarked_posts}
+        )
     except Exception as exc:
-        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
-
-
+        return JsonResponse({"ok": False, "error": str(exc)}, status=500)

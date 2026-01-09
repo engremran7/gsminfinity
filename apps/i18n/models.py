@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.conf import settings
@@ -50,7 +49,9 @@ class TranslationKey(models.Model):
     namespace = models.CharField(max_length=64, default="common", db_index=True)
     key = models.CharField(max_length=256, db_index=True)
     context = models.TextField(blank=True, default="")
-    workflow_state = models.CharField(max_length=20, choices=WORKFLOW_CHOICES, default="draft")
+    workflow_state = models.CharField(
+        max_length=20, choices=WORKFLOW_CHOICES, default="draft"
+    )
     version = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -80,7 +81,9 @@ class TranslationValue(models.Model):
         ("deprecated", "Deprecated"),
     ]
 
-    translation_key = models.ForeignKey(TranslationKey, on_delete=models.CASCADE, related_name="values")
+    translation_key = models.ForeignKey(
+        TranslationKey, on_delete=models.CASCADE, related_name="values"
+    )
     locale = models.CharField(max_length=16, db_index=True)
     message = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
@@ -148,10 +151,18 @@ class Theme(models.Model):
     site_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
     name = models.CharField(max_length=100)
     mode = models.CharField(max_length=20, choices=MODE_CHOICES, default="light")
-    inherits_from = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, related_name="children")
+    inherits_from = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="children",
+    )
     tokens = models.JSONField(default=dict, blank=True)
     locale_overrides = models.JSONField(default=dict, blank=True)
-    is_locked = models.BooleanField(default=False, help_text="Prevents overriding core brand tokens.")
+    is_locked = models.BooleanField(
+        default=False, help_text="Prevents overriding core brand tokens."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -175,7 +186,9 @@ class ThemeAssignment(models.Model):
         ("system", "System Preference"),
     ]
 
-    theme = models.ForeignKey(Theme, on_delete=models.CASCADE, related_name="assignments")
+    theme = models.ForeignKey(
+        Theme, on_delete=models.CASCADE, related_name="assignments"
+    )
     app_id = models.CharField(max_length=64, db_index=True)
     site_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
     route = models.CharField(max_length=256, blank=True, null=True)
@@ -230,5 +243,3 @@ class AuditLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.action} @ {self.created_at}"
-
-

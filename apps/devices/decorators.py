@@ -1,17 +1,16 @@
-
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Optional
 
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
 from apps.devices.services import (
+    DevicePolicyError,
     enforce_device_policy_for_login,
     enforce_device_policy_for_service,
-    DevicePolicyError,
 )
 
 
@@ -26,7 +25,7 @@ def audit_device_event(event_type: str = "login") -> Callable:
             user = getattr(request, "user", None)
             try:
                 _, ctx = enforce_device_policy_for_login(request, user)
-                setattr(request, "device", ctx.get("device"))
+                request.device = ctx.get("device")
             except DevicePolicyError as exc:
                 return JsonResponse({"ok": False, "reason": exc.reason}, status=403)
             return view_func(request, *args, **kwargs)
@@ -36,7 +35,9 @@ def audit_device_event(event_type: str = "login") -> Callable:
     return decorator
 
 
-def require_registered_device(service_name: str, redirect_url: Optional[str] = None) -> Callable:
+def require_registered_device(
+    service_name: str, redirect_url: str | None = None
+) -> Callable:
     """
     Decorator for sensitive views to enforce device policy.
     """
@@ -50,7 +51,7 @@ def require_registered_device(service_name: str, redirect_url: Optional[str] = N
 
             try:
                 _, ctx = enforce_device_policy_for_service(request, user, service_name)
-                setattr(request, "device", ctx.get("device"))
+                request.device = ctx.get("device")
             except DevicePolicyError as exc:
                 return JsonResponse({"ok": False, "reason": exc.reason}, status=403)
             return view_func(request, *args, **kwargs)
@@ -58,5 +59,3 @@ def require_registered_device(service_name: str, redirect_url: Optional[str] = N
         return _wrapped
 
     return decorator
-
-

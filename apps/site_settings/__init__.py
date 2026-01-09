@@ -1,4 +1,3 @@
-
 """
 Site settings application package.
 
@@ -7,5 +6,3 @@ All behaviour lives in apps.site_settings.apps / models / signals.
 """
 
 __all__: list[str] = []
-
-

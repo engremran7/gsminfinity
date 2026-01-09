@@ -1,4 +1,3 @@
-
 from django import template
 
 register = template.Library()
@@ -26,5 +25,3 @@ def format_categories(categories: dict) -> str:
     if not enabled:
         return "Functional (required)"
     return ", ".join(enabled)
-
-

@@ -1,4 +1,3 @@
-
 """
 apps.users.signals
 Centralized user-related signal handlers for GSMInfinity.
@@ -9,6 +8,7 @@ from __future__ import annotations
 import logging
 
 from allauth.account.signals import email_confirmed, user_signed_up
+
 try:
     from allauth.account.signals import password_changed, password_set
 except Exception:  # allauth version guard
@@ -178,6 +178,6 @@ def handle_user_logged_in(sender, request, user, **kwargs):
             channel="web",
         )
     except Exception as exc:
-        logger.debug("handle_user_logged_in notification skipped: %s", exc, exc_info=True)
-
-
+        logger.debug(
+            "handle_user_logged_in notification skipped: %s", exc, exc_info=True
+        )

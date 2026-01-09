@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.urls import path
@@ -25,4 +24,3 @@ urlpatterns = [
     path("mark/<int:pk>/", notification_mark_read, name="mark_read"),
     path("mark-all/", notification_mark_all_read, name="mark_all"),
 ]
-

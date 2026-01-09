@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 """
@@ -9,7 +8,7 @@ Simple dynamic app registry + resolver for micro-module APIs.
 
 import importlib
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from apps.core.models import AppRegistry
 
@@ -21,10 +20,10 @@ class AppService:
     Resolve per-app API modules dynamically, respecting AppRegistry.enable flags.
     """
 
-    _cache: Dict[str, Any] = {}
+    _cache: dict[str, Any] = {}
 
     @classmethod
-    def get(cls, app_label: str) -> Optional[Any]:
+    def get(cls, app_label: str) -> Any | None:
         key = app_label.strip().lower()
         if not key:
             return None
@@ -66,5 +65,3 @@ class AppService:
 
 
 __all__ = ["AppService"]
-
-

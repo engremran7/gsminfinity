@@ -1,20 +1,27 @@
 from __future__ import annotations
 
-from typing import List
-
 from django.core.management.base import BaseCommand
 
-from apps.blog.models import Post, Category
-from apps.tags.models import Tag
-from apps.blog.models import PostTranslation, CategoryTranslation, TagTranslation
+from apps.blog.models import (
+    Category,
+    CategoryTranslation,
+    Post,
+    PostTranslation,
+    TagTranslation,
+)
 from apps.i18n.translation_provider import get_translator
+from apps.tags.models import Tag
 
 
 class Command(BaseCommand):
     help = "Translate blog content (posts/categories/tags) into target languages using configured provider."
 
     def add_arguments(self, parser):
-        parser.add_argument("--langs", required=True, help="Comma-separated target languages, e.g. ar,es")
+        parser.add_argument(
+            "--langs",
+            required=True,
+            help="Comma-separated target languages, e.g. ar,es",
+        )
         parser.add_argument(
             "--force",
             action="store_true",
@@ -35,7 +42,7 @@ class Command(BaseCommand):
             return
         translator = get_translator()
 
-        def maybe_translate_texts(texts: List[str], lang: str) -> List[str]:
+        def maybe_translate_texts(texts: list[str], lang: str) -> list[str]:
             if not texts:
                 return texts
             try:
@@ -47,10 +54,21 @@ class Command(BaseCommand):
         total_posts = 0
         for lang in targets:
             for post in Post.objects.all():
-                if not force and PostTranslation.objects.filter(post=post, language=lang).exists():
+                if (
+                    not force
+                    and PostTranslation.objects.filter(
+                        post=post, language=lang
+                    ).exists()
+                ):
                     continue
                 translated = maybe_translate_texts(
-                    [post.title or "", post.summary or "", post.body or "", post.seo_title or "", post.seo_description or ""],
+                    [
+                        post.title or "",
+                        post.summary or "",
+                        post.body or "",
+                        post.seo_title or "",
+                        post.seo_description or "",
+                    ],
                     lang,
                 )
                 title, summary, body, seo_title, seo_desc = translated
@@ -68,7 +86,12 @@ class Command(BaseCommand):
                 total_posts += 1
 
             for cat in Category.objects.all():
-                if not force and CategoryTranslation.objects.filter(category=cat, language=lang).exists():
+                if (
+                    not force
+                    and CategoryTranslation.objects.filter(
+                        category=cat, language=lang
+                    ).exists()
+                ):
                     continue
                 name = maybe_translate_texts([cat.name or ""], lang)[0]
                 CategoryTranslation.objects.update_or_create(
@@ -78,13 +101,22 @@ class Command(BaseCommand):
                 )
 
             for tag in Tag.objects.all():
-                if not force and TagTranslation.objects.filter(tag=tag, language=lang).exists():
+                if (
+                    not force
+                    and TagTranslation.objects.filter(tag=tag, language=lang).exists()
+                ):
                     continue
-                name, desc = maybe_translate_texts([tag.name or "", getattr(tag, "description", "") or ""], lang)
+                name, desc = maybe_translate_texts(
+                    [tag.name or "", getattr(tag, "description", "") or ""], lang
+                )
                 TagTranslation.objects.update_or_create(
                     tag=tag,
                     language=lang,
                     defaults={"name": name, "description": desc},
                 )
 
-            self.stdout.write(self.style.SUCCESS(f"Translated content into {lang} (posts processed: {total_posts})."))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Translated content into {lang} (posts processed: {total_posts})."
+                )
+            )

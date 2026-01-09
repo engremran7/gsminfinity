@@ -1,15 +1,14 @@
-
 from __future__ import annotations
 
 from django.conf import settings
-from django.db import models
-from django.core.validators import MinLengthValidator, MaxLengthValidator
-from solo.models import SingletonModel
-from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.validators import MaxLengthValidator, MinLengthValidator
+from django.db import models
+from django.utils import timezone
+from solo.models import SingletonModel
 
-from apps.core.models import TimestampedModel, SoftDeleteModel
+from apps.core.models import SoftDeleteModel, TimestampedModel
 
 # Legacy enhanced models removed - archived in apps/core/versions/
 # Keeping import placeholder for historical migration compatibility
@@ -23,11 +22,11 @@ from apps.core.models import TimestampedModel, SoftDeleteModel
 class Comment(TimestampedModel, SoftDeleteModel):
     """
     Represents a user comment on any content object in the system.
-    
+
     Comment is a generic content model supporting comments on posts, pages, products,
     or any Django model via GenericForeignKey. Supports threading (parent-child),
     moderation workflows, AI toxicity detection, and metadata enrichment.
-    
+
     Features:
     - Generic target support (post, blog page, product, custom model)
     - Threading/nesting with parent-child relationships
@@ -37,7 +36,7 @@ class Comment(TimestampedModel, SoftDeleteModel):
     - Reputation scoring (user voting)
     - Soft delete for audit trail
     - Full-text search support via metadata
-    
+
     Attributes:
         content_type (ForeignKey): Django ContentType for generic FK target.
             Allows comments on any model (Post, Page, Product, etc.).
@@ -67,11 +66,11 @@ class Comment(TimestampedModel, SoftDeleteModel):
         edited_at (DateTimeField): When comment was last edited. null = never edited.
             Use to show "edited" indicator in UI.
         created_at (DateTimeField): When comment was created (from TimestampedModel).
-    
+
     Meta:
         ordering: Most recent first (-created_at)
         indexes: (content_type, object_id, status) for efficient filtering by target
-    
+
     Examples:
         >>> # Comment on a blog post (legacy style)
         >>> post = Post.objects.get(pk=1)
@@ -82,7 +81,7 @@ class Comment(TimestampedModel, SoftDeleteModel):
         ...     status=Comment.Status.PENDING
         ... )
         >>> comment.save()  # save() syncs generic target from post
-        
+
         >>> # Comment on any model using generic FK (new style)
         >>> from django.contrib.contenttypes.models import ContentType
         >>> from apps.products.models import Product
@@ -93,7 +92,7 @@ class Comment(TimestampedModel, SoftDeleteModel):
         ...     user=user,
         ...     body="Does this come in blue?"
         ... )
-        
+
         >>> # Threaded comment (reply to another comment)
         >>> parent_comment = Comment.objects.get(pk=5)
         >>> reply = Comment.objects.create(
@@ -102,18 +101,18 @@ class Comment(TimestampedModel, SoftDeleteModel):
         ...     body="Great question! It comes in blue and green.",
         ...     parent=parent_comment
         ... )
-        
+
         >>> # Moderate a comment
         >>> comment = Comment.objects.get(pk=10)
         >>> comment.status = Comment.Status.APPROVED
         >>> comment.save()  # is_approved auto-set in save()
-        
+
         >>> # Check toxicity (from AI moderation)
         >>> if comment.toxicity_score > 0.7:
         ...     comment.status = Comment.Status.SPAM
         ...     comment.moderation_flags['ai_flagged'] = True
         ...     comment.save()
-        
+
         >>> # Find all approved comments on a post (with children)
         >>> post = Post.objects.get(pk=1)
         >>> top_level = post.comments.filter(
@@ -121,6 +120,7 @@ class Comment(TimestampedModel, SoftDeleteModel):
         ...     status=Comment.Status.APPROVED
         ... ).prefetch_related('children')
     """
+
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
         APPROVED = "approved", "Approved"
@@ -128,7 +128,9 @@ class Comment(TimestampedModel, SoftDeleteModel):
         SPAM = "spam", "Spam"
 
     # Generic target to support comments on any model; keep post for backward compatibility.
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
+    content_type = models.ForeignKey(
+        ContentType, on_delete=models.CASCADE, null=True, blank=True
+    )
     object_id = models.PositiveIntegerField(null=True, blank=True, db_index=True)
     content_object = GenericForeignKey("content_type", "object_id")
     post = models.ForeignKey(
@@ -172,10 +174,12 @@ class Comment(TimestampedModel, SoftDeleteModel):
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["content_type", "object_id", "status"]),
-            models.Index(fields=["user", "status"]),  # User's comments filtered by status
+            models.Index(
+                fields=["user", "status"]
+            ),  # User's comments filtered by status
             models.Index(fields=["post", "status"]),  # Post comments filtered by status
-            models.Index(fields=["created_at"]),       # Recent comments
-            models.Index(fields=["toxicity_score"]),   # Moderation queue by toxicity
+            models.Index(fields=["created_at"]),  # Recent comments
+            models.Index(fields=["toxicity_score"]),  # Moderation queue by toxicity
         ]
 
     def __str__(self) -> str:
@@ -185,21 +189,21 @@ class Comment(TimestampedModel, SoftDeleteModel):
     def save(self, *args, **kwargs):
         """
         Keep generic target in sync with legacy post FK to support gradual migration.
-        
+
         Automatically:
         1. Syncs content_type + object_id from post if post exists
         2. Sets is_approved=True when status=APPROVED
-        
+
         This enables gradual migration from post FK to generic FK without
         breaking existing code that only uses post.
-        
+
         Args:
             *args: Passed to super().save()
             **kwargs: Passed to super().save()
-        
+
         Returns:
             None
-        
+
         Example:
             >>> comment = Comment(post=post, user=user, body="...")
             >>> comment.save()
@@ -222,14 +226,14 @@ class Comment(TimestampedModel, SoftDeleteModel):
 class CommentSettings(SingletonModel):
     """
     Singleton configuration for the comments system.
-    
+
     CommentSettings is a singleton model (only one instance ever exists) that stores
     global configuration for comment functionality. This allows the comments app to be
     reused independently in other projects with different moderation/comment policies.
-    
+
     Access via: CommentSettings.objects.get_solo()
     Never try to create multiple instances.
-    
+
     Attributes:
         enable_comments (BooleanField): Master switch to enable/disable all commenting.
             When False, no comments can be created or viewed. Useful for temporarily
@@ -240,7 +244,7 @@ class CommentSettings(SingletonModel):
         enable_ai_moderation (BooleanField): Enable AI-powered toxicity detection.
             When True, each comment is scored by safety firewall for harmful content.
             Scores above threshold auto-flag for manual review or auto-hide.
-    
+
     Examples:
         >>> # Get singleton settings
         >>> settings = CommentSettings.objects.get_solo()
@@ -285,5 +289,3 @@ class CommentSettings(SingletonModel):
 
     def __str__(self) -> str:
         return "Comment Settings"
-
-

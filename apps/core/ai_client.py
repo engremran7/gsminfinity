@@ -1,4 +1,3 @@
-
 """
 apps.core.ai_client
 -------------------
@@ -11,15 +10,14 @@ AI provider integration for the assistant endpoint.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
-import json
+from typing import Any
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ImproperlyConfigured
 from django.core.cache import cache
 
 try:
@@ -43,9 +41,10 @@ class AIRateLimiter:
         self.cache_key = "ai_rate_limit_global"
         self.user_cache_key_template = "ai_rate_limit_user_{}"
 
-    def is_allowed(self, user_id: Optional[int] = None) -> bool:
+    def is_allowed(self, user_id: int | None = None) -> bool:
         """Check if request is allowed under rate limits."""
         import time
+
         now = time.time()
         window_start = now - 60  # 1 minute window
 
@@ -87,6 +86,7 @@ class AICircuitBreaker:
     def is_open(self) -> bool:
         """Check if circuit breaker is open."""
         import time
+
         if self.failure_count >= self.failure_threshold:
             if time.time() - self.last_failure_time < self.recovery_timeout:
                 return True
@@ -97,20 +97,24 @@ class AICircuitBreaker:
     def record_success(self):
         """Record successful operation."""
         self.failure_count = 0
-        cache.set(self.cache_key, {
-            'failure_count': 0,
-            'last_failure_time': 0
-        }, timeout=600)
+        cache.set(
+            self.cache_key, {"failure_count": 0, "last_failure_time": 0}, timeout=600
+        )
 
     def record_failure(self):
         """Record failed operation."""
         import time
+
         self.failure_count += 1
         self.last_failure_time = time.time()
-        cache.set(self.cache_key, {
-            'failure_count': self.failure_count,
-            'last_failure_time': self.last_failure_time
-        }, timeout=600)
+        cache.set(
+            self.cache_key,
+            {
+                "failure_count": self.failure_count,
+                "last_failure_time": self.last_failure_time,
+            },
+            timeout=600,
+        )
 
     def __enter__(self):
         if self.is_open():
@@ -172,7 +176,8 @@ def _load_config() -> AiConfig:
 def _calculate_backoff_delay(attempt: int, base_delay: float = 1.0) -> float:
     """Calculate exponential backoff with jitter to prevent thundering herd."""
     import random
-    delay = base_delay * (2 ** attempt)
+
+    delay = base_delay * (2**attempt)
     jitter = random.uniform(0.1, 1.0) * delay * 0.1  # 10% jitter
     return min(delay + jitter, 60.0)  # Cap at 60 seconds
 
@@ -229,8 +234,7 @@ def generate_answer(*, question: str, user: Any) -> str:
 
     # Use circuit breaker for reliability
     circuit_breaker = AICircuitBreaker(
-        config.circuit_breaker_threshold,
-        config.circuit_breaker_timeout
+        config.circuit_breaker_threshold, config.circuit_breaker_timeout
     )
 
     with circuit_breaker:
@@ -247,128 +251,157 @@ def generate_answer(*, question: str, user: Any) -> str:
         return response or "I don't have an answer for that yet."
 
 
-def predict_ad_performance(features: Dict[str, Any]) -> Dict[str, Any]:
-        """Predict ad performance (CTR, CPC, confidence, recommendations).
+def predict_ad_performance(features: dict[str, Any]) -> dict[str, Any]:
+    """Predict ad performance (CTR, CPC, confidence, recommendations).
 
-        This is a best-effort implementation: in mock mode it uses heuristics;
-        otherwise it will attempt to call the provider with a short prompt and
-        parse JSON. Failures fall back to conservative heuristics.
-        """
-        cfg = _load_config()
-        # Simple heuristic fallback
-        def _heuristic() -> Dict[str, Any]:
-            ctr = min(0.1, 0.01 + float(features.get("placement_performance_score", 0)) * 0.001)
-            cpc = max(0.01, float(features.get("campaign_budget", 0)) * 0.0001)
-            return {
-                "ctr": round(ctr, 4),
-                "cpc": round(cpc, 4),
-                "confidence": 0.5,
-                "recommendations": ["Increase bids on high-value placements"]
-            }
+    This is a best-effort implementation: in mock mode it uses heuristics;
+    otherwise it will attempt to call the provider with a short prompt and
+    parse JSON. Failures fall back to conservative heuristics.
+    """
+    cfg = _load_config()
 
-        if cfg.mock_mode:
-            return _heuristic()
+    # Simple heuristic fallback
+    def _heuristic() -> dict[str, Any]:
+        ctr = min(
+            0.1, 0.01 + float(features.get("placement_performance_score", 0)) * 0.001
+        )
+        cpc = max(0.01, float(features.get("campaign_budget", 0)) * 0.0001)
+        return {
+            "ctr": round(ctr, 4),
+            "cpc": round(cpc, 4),
+            "confidence": 0.5,
+            "recommendations": ["Increase bids on high-value placements"],
+        }
 
-        try:
-            prompt = "Provide a JSON object with keys ctr, cpc, confidence, recommendations given features: " + json.dumps(features)
-            system = _build_system_prompt(None)
-            text = _call_openai_response(cfg, system, prompt)
-            # Try to parse JSON response
-            parsed = json.loads(text)
-            if isinstance(parsed, dict):
-                return parsed
-        except Exception:
-            pass
+    if cfg.mock_mode:
         return _heuristic()
 
-
-def optimize_bidding_strategy(payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Return an optimized bid recommendation based on historical data.
-
-        The payload is expected to contain keys like `campaign_id`, `historical_data`, and `budget`.
-        """
-        cfg = _load_config()
-
-        # Simple heuristic optimizer
-        try:
-            historical = payload.get("historical_data", []) or []
-            if historical:
-                avg_bid = sum(float(h.get("bid", 0.0)) for h in historical) / len(historical)
-            else:
-                avg_bid = float(payload.get("budget", 0.0)) * 0.001
-
-            return {"bid": round(max(0.01, avg_bid), 4), "strategy": "heuristic", "confidence": 0.5}
-        except Exception:
-            return {"bid": float(payload.get("budget", 0.0)) * 0.001, "strategy": "fallback", "confidence": 0.3}
+    try:
+        prompt = (
+            "Provide a JSON object with keys ctr, cpc, confidence, recommendations given features: "
+            + json.dumps(features)
+        )
+        system = _build_system_prompt(None)
+        text = _call_openai_response(cfg, system, prompt)
+        # Try to parse JSON response
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+    return _heuristic()
 
 
-def detect_ad_anomalies(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Detect anomalies in recent vs historical ad data.
+def optimize_bidding_strategy(payload: dict[str, Any]) -> dict[str, Any]:
+    """Return an optimized bid recommendation based on historical data.
 
-        Returns a list of anomaly dicts. This implementation uses simple statistical
-        heuristics and falls back to an empty list when data is insufficient.
-        """
-        recent = payload.get("recent_data", []) or []
+    The payload is expected to contain keys like `campaign_id`, `historical_data`, and `budget`.
+    """
+    _load_config()
+
+    # Simple heuristic optimizer
+    try:
         historical = payload.get("historical_data", []) or []
+        if historical:
+            avg_bid = sum(float(h.get("bid", 0.0)) for h in historical) / len(
+                historical
+            )
+        else:
+            avg_bid = float(payload.get("budget", 0.0)) * 0.001
 
-        anomalies: List[Dict[str, Any]] = []
-        try:
-            # Compare simple totals for a quick heuristic
-            recent_sum = sum(float(r.get("impressions", 0)) for r in recent)
-            historical_sum = sum(float(h.get("impressions", 0)) for h in historical) / max(1, len(historical))
-            if historical_sum > 0 and recent_sum < historical_sum * 0.5:
-                anomalies.append({"type": "drop_in_impressions", "severity": "high", "description": "Impressions dropped by >50%"})
-        except Exception:
-            pass
-        return anomalies
-
-
-def generate_personalized_ad_content(payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate personalized ad HTML using available creative template and user context.
-
-        Falls back to simple template substitution when AI is unavailable.
-        """
-        cfg = _load_config()
-        template = payload.get("creative_template", "")
-        user_ctx = payload.get("user_context", {}) or {}
-
-        if cfg.mock_mode or not template:
-            # Simple personalization: inject user country or name tokens if present
-            html = template
-            if "{country}" in html:
-                html = html.replace("{country}", str(user_ctx.get("country", "")))
-            if "{name}" in html:
-                html = html.replace("{name}", str(user_ctx.get("name", "")))
-            return {"html": html, "confidence": 0.5}
-
-        try:
-            prompt = "Personalize the following HTML template given user context as JSON: " + json.dumps({"template": template, "user_context": user_ctx})
-            system = _build_system_prompt(None)
-            text = _call_openai_response(cfg, system, prompt)
-            # Best-effort: assume returned text is the personalized html
-            return {"html": text, "confidence": 0.6}
-        except Exception:
-            return {"html": template, "confidence": 0.5}
+        return {
+            "bid": round(max(0.01, avg_bid), 4),
+            "strategy": "heuristic",
+            "confidence": 0.5,
+        }
+    except Exception:
+        return {
+            "bid": float(payload.get("budget", 0.0)) * 0.001,
+            "strategy": "fallback",
+            "confidence": 0.3,
+        }
 
 
-def predict_campaign_performance(features: Dict[str, Any]) -> Dict[str, Any]:
-        """Predict campaign-level performance metrics (confidence, predicted_revenue, predicted_ctr)."""
-        cfg = _load_config()
+def detect_ad_anomalies(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Detect anomalies in recent vs historical ad data.
 
-        if cfg.mock_mode:
-            return {"confidence": 0.5, "predicted_revenue": 0.0, "predicted_ctr": 0.01}
+    Returns a list of anomaly dicts. This implementation uses simple statistical
+    heuristics and falls back to an empty list when data is insufficient.
+    """
+    recent = payload.get("recent_data", []) or []
+    historical = payload.get("historical_data", []) or []
 
-        try:
-            prompt = "Predict campaign performance as JSON given features: " + json.dumps(features)
-            system = _build_system_prompt(None)
-            text = _call_openai_response(cfg, system, prompt)
-            parsed = json.loads(text)
-            if isinstance(parsed, dict):
-                return parsed
-        except Exception:
-            pass
+    anomalies: list[dict[str, Any]] = []
+    try:
+        # Compare simple totals for a quick heuristic
+        recent_sum = sum(float(r.get("impressions", 0)) for r in recent)
+        historical_sum = sum(float(h.get("impressions", 0)) for h in historical) / max(
+            1, len(historical)
+        )
+        if historical_sum > 0 and recent_sum < historical_sum * 0.5:
+            anomalies.append(
+                {
+                    "type": "drop_in_impressions",
+                    "severity": "high",
+                    "description": "Impressions dropped by >50%",
+                }
+            )
+    except Exception:
+        pass
+    return anomalies
 
+
+def generate_personalized_ad_content(payload: dict[str, Any]) -> dict[str, Any]:
+    """Generate personalized ad HTML using available creative template and user context.
+
+    Falls back to simple template substitution when AI is unavailable.
+    """
+    cfg = _load_config()
+    template = payload.get("creative_template", "")
+    user_ctx = payload.get("user_context", {}) or {}
+
+    if cfg.mock_mode or not template:
+        # Simple personalization: inject user country or name tokens if present
+        html = template
+        if "{country}" in html:
+            html = html.replace("{country}", str(user_ctx.get("country", "")))
+        if "{name}" in html:
+            html = html.replace("{name}", str(user_ctx.get("name", "")))
+        return {"html": html, "confidence": 0.5}
+
+    try:
+        prompt = (
+            "Personalize the following HTML template given user context as JSON: "
+            + json.dumps({"template": template, "user_context": user_ctx})
+        )
+        system = _build_system_prompt(None)
+        text = _call_openai_response(cfg, system, prompt)
+        # Best-effort: assume returned text is the personalized html
+        return {"html": text, "confidence": 0.6}
+    except Exception:
+        return {"html": template, "confidence": 0.5}
+
+
+def predict_campaign_performance(features: dict[str, Any]) -> dict[str, Any]:
+    """Predict campaign-level performance metrics (confidence, predicted_revenue, predicted_ctr)."""
+    cfg = _load_config()
+
+    if cfg.mock_mode:
         return {"confidence": 0.5, "predicted_revenue": 0.0, "predicted_ctr": 0.01}
+
+    try:
+        prompt = "Predict campaign performance as JSON given features: " + json.dumps(
+            features
+        )
+        system = _build_system_prompt(None)
+        text = _call_openai_response(cfg, system, prompt)
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+
+    return {"confidence": 0.5, "predicted_revenue": 0.0, "predicted_ctr": 0.01}
 
 
 # --------------------------------------------------------------------
@@ -386,7 +419,7 @@ def _fallback_excerpt(text: str) -> str:
     return (text.strip() or "Add a short summary.").split(".")[0][:200]
 
 
-def _fallback_tags(text: str) -> List[str]:
+def _fallback_tags(text: str) -> list[str]:
     seeds = ["ai", "engineering", "product", "update", "announcement", "guide"]
     out = []
     text_lower = text.lower()
@@ -404,14 +437,16 @@ def _fallback_summary(text: str) -> str:
     return "Summary: " + (text.strip()[:240] or "Key points and takeaways.")
 
 
-def _fallback_moderation(text: str) -> Dict[str, Any]:
+def _fallback_moderation(text: str) -> dict[str, Any]:
     lower = text.lower()
     toxic = any(w in lower for w in ["hate", "kill", "idiot"])
     score = 0.8 if toxic else 0.05
     return {"toxicity_score": score, "label": "high" if toxic else "low"}
 
 
-def _call_openai_with_retry(config: AiConfig, system_prompt: str, question: str, start_time: float) -> str:
+def _call_openai_with_retry(
+    config: AiConfig, system_prompt: str, question: str, start_time: float
+) -> str:
     """Call OpenAI API with retry logic and metrics."""
     client = _get_client(config)
 
@@ -480,7 +515,7 @@ def generate_seo_description(text: str, user: Any) -> str:
         return _fallback_seo(text)
 
 
-def suggest_tags(text: str, user: Any) -> List[str]:
+def suggest_tags(text: str, user: Any) -> list[str]:
     try:
         config = _load_config()
         prompt = "Suggest up to 5 comma-separated tags for this post:\n" + text
@@ -505,7 +540,7 @@ def summarize_text(text: str, user: Any) -> str:
         return _fallback_summary(text)
 
 
-def moderate_text(text: str, user: Any) -> Dict[str, Any]:
+def moderate_text(text: str, user: Any) -> dict[str, Any]:
     try:
         config = _load_config()
         prompt = (
@@ -527,6 +562,7 @@ def moderate_text(text: str, user: Any) -> Dict[str, Any]:
 # --------------------------------------------------------------------
 # Helpers
 # --------------------------------------------------------------------
+
 
 def _extract_text_response(response) -> str:
     try:
@@ -561,4 +597,3 @@ def _emit_metrics(*, ok: bool, attempt: int, elapsed_ms: int) -> None:
     except Exception:
         # Metrics should never break the request flow
         return
-

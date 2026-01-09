@@ -1,4 +1,3 @@
-
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
@@ -44,5 +43,3 @@ class CommentSettingsAdmin(SingletonModelAdmin):
 
     def has_add_permission(self, request):
         return False
-
-

@@ -1,4 +1,3 @@
-
 """
 admin.py
 --------
@@ -16,13 +15,12 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Iterable
 
-from django import forms
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
 from apps.core.models import AppRegistry
+
 
 # App registry admin
 @admin.register(AppRegistry)
@@ -74,16 +72,14 @@ class AppRegistryAdmin(SingletonModelAdmin):
         ),
         (
             "Core Platform",
-            {
-                "fields": (
-                    "users_enabled",
-                )
-            },
+            {"fields": ("users_enabled",)},
         ),
     )
 
     def has_add_permission(self, request):
         return False
+
+
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.http import HttpResponse
@@ -274,5 +270,3 @@ def auto_register_models(app_label: str):
 # e.g. for apps.core use app_label = "apps.core"
 # ---------------------------
 # auto_register_models("apps.core")
-
-

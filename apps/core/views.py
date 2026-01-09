@@ -1,4 +1,3 @@
-
 # apps/core/views.py
 """
 Core views â€” Enterprise-grade, Django 5.2+ ready.
@@ -16,13 +15,15 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from typing import Any, Dict, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any
 
 import django
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+from django.db import connections
 from django.http import (
-    Http404,
     HttpRequest,
     HttpResponse,
     HttpResponseServerError,
@@ -32,13 +33,9 @@ from django.shortcuts import render
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template
 from django.urls import NoReverseMatch, reverse
-from django.db import connections
 from django.utils.timezone import now, timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
-
-from apps.core.cache import DistributedCacheManager
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +44,10 @@ _SITE_SETTINGS_SNAPSHOT_KEY = "core_site_settings_snapshot_v1"
 _SITE_SETTINGS_VERSION_KEY = "site_settings_version"
 
 # Valid home templates
-_HOME_TEMPLATE_PRIORITY: List[str] = ["home.html", "core/home.html"]
+_HOME_TEMPLATE_PRIORITY: list[str] = ["home.html", "core/home.html"]
 MAX_QUESTION_CHARS = 4_000
 START_TIME = time.time()
+
 
 # ============================================================
 # INTERNAL UTILITIES
@@ -85,7 +83,7 @@ def _safe_iter(q: Any, limit: int = 5) -> list:
 # ============================================================
 # SNAPSHOT OF SITE SETTINGS (BRAND-NEUTRAL)
 # ============================================================
-def _get_site_settings_snapshot() -> Dict[str, Any]:
+def _get_site_settings_snapshot() -> dict[str, Any]:
     """
     Returns a fully serializable dict for templates.
     Never returns ORM objects and never raises.
@@ -124,9 +122,7 @@ def _get_site_settings_snapshot() -> Dict[str, Any]:
             "require_mfa": bool(getattr(obj, "require_mfa", False)),
             "maintenance_mode": bool(getattr(obj, "maintenance_mode", False)),
             "enable_blog": bool(getattr(obj, "enable_blog", True)),
-            "enable_blog_comments": bool(
-                getattr(obj, "enable_blog_comments", True)
-            ),
+            "enable_blog_comments": bool(getattr(obj, "enable_blog_comments", True)),
             "allow_user_blog_posts": bool(getattr(obj, "allow_user_blog_posts", False)),
             "primary_color": getattr(obj, "primary_color", "#0d6efd"),
             "secondary_color": getattr(obj, "secondary_color", "#6c757d"),
@@ -174,7 +170,7 @@ def _get_site_settings_snapshot() -> Dict[str, Any]:
 # SAFE RENDERING WRAPPER
 # ============================================================
 def _render_safe(
-    request: HttpRequest, template: str, context: Dict[str, Any], status: int = 200
+    request: HttpRequest, template: str, context: dict[str, Any], status: int = 200
 ) -> HttpResponse:
     """Completely safe render wrapper."""
     try:
@@ -196,7 +192,7 @@ def _render_safe(
         return HttpResponseServerError("Internal server error")
 
 
-def _first_existing_template(candidates: Iterable[str]) -> Optional[str]:
+def _first_existing_template(candidates: Iterable[str]) -> str | None:
     """Pick first existing template (safe)."""
     for name in candidates:
         try:
@@ -209,7 +205,7 @@ def _first_existing_template(candidates: Iterable[str]) -> Optional[str]:
     return None
 
 
-def _safe_url(name: str, **kwargs) -> Optional[str]:
+def _safe_url(name: str, **kwargs) -> str | None:
     """Best-effort reverse; returns None on failure instead of raising."""
     try:
         return reverse(name, kwargs=kwargs or None)
@@ -244,7 +240,8 @@ def home(request: HttpRequest) -> HttpResponse:
     def _u():
         try:
             from django.apps import apps
-            CustomUser = apps.get_model('users', 'CustomUser')
+
+            CustomUser = apps.get_model("users", "CustomUser")
             return CustomUser.objects.all()
         except Exception:
             return []
@@ -252,9 +249,12 @@ def home(request: HttpRequest) -> HttpResponse:
     def _n():
         try:
             from django.apps import apps
-            Notification = apps.get_model('users', 'Notification')
+
+            Notification = apps.get_model("users", "Notification")
             if request.user.is_authenticated:
-                return Notification.objects.filter(recipient=request.user, is_read=False)
+                return Notification.objects.filter(
+                    recipient=request.user, is_read=False
+                )
             return Notification.objects.none()
         except Exception:
             return []
@@ -262,14 +262,16 @@ def home(request: HttpRequest) -> HttpResponse:
     def _a():
         try:
             from django.apps import apps
-            Announcement = apps.get_model('users', 'Announcement')
+
+            Announcement = apps.get_model("users", "Announcement")
             return Announcement.objects.filter(is_active=True)
         except Exception:
             return []
+
     try:
-        from apps.pages.models import Page  # type: ignore
+        pass  # type: ignore
     except Exception:
-        Page = None
+        pass
 
     # System info
     try:
@@ -325,10 +327,22 @@ def site_map(request: HttpRequest) -> HttpResponse:
                 {"label": "Home", "url": _safe_url("core:home")},
                 {"label": "Blog", "url": _safe_url("blog:post_list")},
                 {"label": "Tags", "url": _safe_url("tags:list")},
-                {"label": "Privacy Policy", "url": _safe_url("pages:page", kwargs={"slug": "privacy"})},
-                {"label": "Terms of Service", "url": _safe_url("pages:page", kwargs={"slug": "terms"})},
-                {"label": "Cookies Policy", "url": _safe_url("pages:page", kwargs={"slug": "cookies"})},
-                {"label": "Cookie / Consent Settings", "url": _safe_url("consent:privacy_center")},
+                {
+                    "label": "Privacy Policy",
+                    "url": _safe_url("pages:page", kwargs={"slug": "privacy"}),
+                },
+                {
+                    "label": "Terms of Service",
+                    "url": _safe_url("pages:page", kwargs={"slug": "terms"}),
+                },
+                {
+                    "label": "Cookies Policy",
+                    "url": _safe_url("pages:page", kwargs={"slug": "cookies"}),
+                },
+                {
+                    "label": "Cookie / Consent Settings",
+                    "url": _safe_url("consent:privacy_center"),
+                },
             ],
         },
         {
@@ -420,11 +434,11 @@ def health_check(request: HttpRequest) -> JsonResponse:
     status = 200 if overall_ok else 503
     return JsonResponse(
         {
-          "ok": overall_ok,
-          "status": "healthy" if overall_ok else "degraded",
-          "checks": checks,
-          "optional": optional,
-          "meta": meta,
+            "ok": overall_ok,
+            "status": "healthy" if overall_ok else "degraded",
+            "checks": checks,
+            "optional": optional,
+            "meta": meta,
         },
         status=status,
     )
@@ -434,7 +448,7 @@ def health_check(request: HttpRequest) -> JsonResponse:
 # ERROR HANDLERS
 # ============================================================
 def error_400_view(
-    request: HttpRequest, exception: Optional[Exception] = None
+    request: HttpRequest, exception: Exception | None = None
 ) -> HttpResponse:
     return _render_safe(
         request,
@@ -445,7 +459,7 @@ def error_400_view(
 
 
 def error_403_view(
-    request: HttpRequest, exception: Optional[Exception] = None
+    request: HttpRequest, exception: Exception | None = None
 ) -> HttpResponse:
     return _render_safe(
         request,
@@ -456,7 +470,7 @@ def error_403_view(
 
 
 def error_404_view(
-    request: HttpRequest, exception: Optional[Exception] = None
+    request: HttpRequest, exception: Exception | None = None
 ) -> HttpResponse:
     return _render_safe(
         request,
@@ -496,7 +510,7 @@ def _parse_json_body(request: HttpRequest, max_bytes: int = 64_000) -> dict:
         return {"__error__": "bad_json"}
 
 
-def _enforce_ai_rate_limit(request: HttpRequest) -> Optional[JsonResponse]:
+def _enforce_ai_rate_limit(request: HttpRequest) -> JsonResponse | None:
     """
     Optional per-view rate-limit hook. Integrate with middleware flags if present.
     Return a JsonResponse to short-circuit, or None to continue.
@@ -570,15 +584,25 @@ def ai_assistant_view(request: HttpRequest) -> JsonResponse:
             except Exception:
                 payload_text = ""
             if action == "generate_title":
-                answer = ai_client.generate_title(payload_text or question, request.user)
+                answer = ai_client.generate_title(
+                    payload_text or question, request.user
+                )
             elif action == "generate_excerpt":
-                answer = ai_client.generate_excerpt(payload_text or question, request.user)
+                answer = ai_client.generate_excerpt(
+                    payload_text or question, request.user
+                )
             elif action == "generate_seo":
-                answer = ai_client.generate_seo_description(payload_text or question, request.user)
+                answer = ai_client.generate_seo_description(
+                    payload_text or question, request.user
+                )
             elif action == "suggest_tags":
-                answer = ", ".join(ai_client.suggest_tags(payload_text or question, request.user))
+                answer = ", ".join(
+                    ai_client.suggest_tags(payload_text or question, request.user)
+                )
             elif action in ("summarize", "summarize_comments"):
-                answer = ai_client.summarize_text(payload_text or question, request.user)
+                answer = ai_client.summarize_text(
+                    payload_text or question, request.user
+                )
             elif action == "moderate":
                 answer = ai_client.moderate_text(payload_text or question, request.user)
             else:

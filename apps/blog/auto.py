@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import List, Tuple
 
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone
@@ -37,7 +35,7 @@ def _sanitize_body(html: str) -> str:
     return cleaned.strip()
 
 
-def _safety_checks(content: str, user) -> Tuple[bool, str]:
+def _safety_checks(content: str, user) -> tuple[bool, str]:
     """
     Run basic safety validations for AI-generated copy.
     """
@@ -98,7 +96,11 @@ def _apply_seo(post: Post, content: str) -> None:
     if not canonical_url:
         try:
             settings_snapshot = _get_site_settings_snapshot()
-            host = settings_snapshot.get("site_url") or settings_snapshot.get("site_domain") or ""
+            host = (
+                settings_snapshot.get("site_url")
+                or settings_snapshot.get("site_domain")
+                or ""
+            )
             if host:
                 canonical_url = host.rstrip("/") + post.get_absolute_url()
         except Exception:
@@ -110,7 +112,9 @@ def _apply_seo(post: Post, content: str) -> None:
         meta, _ = Metadata.objects.get_or_create(seo=seo_obj)
         meta.meta_title = post.seo_title
         meta.meta_description = post.seo_description
-        meta.canonical_url = canonical_url or meta.canonical_url or post.get_absolute_url()
+        meta.canonical_url = (
+            canonical_url or meta.canonical_url or post.get_absolute_url()
+        )
         meta.noindex = getattr(post, "noindex", False)
         meta.save()
     except Exception:
@@ -125,7 +129,10 @@ def _assign_tags(post: Post, content: str) -> None:
     for name in suggested[:5]:
         norm_slug = slugify(name)[:80] or "tag"
         norm_name = (name or "").strip()[:64]
-        existing = Tag.objects.filter(slug=norm_slug).first() or Tag.objects.filter(name__iexact=norm_name).first()
+        existing = (
+            Tag.objects.filter(slug=norm_slug).first()
+            or Tag.objects.filter(name__iexact=norm_name).first()
+        )
         if not existing:
             try:
                 existing = Tag.objects.create(
@@ -174,7 +181,9 @@ def generate_post_from_topic(topic: AutoTopic, autopublish: bool = False) -> Pos
         topic.status = "running"
         topic.retry_count = (topic.retry_count or 0) + 1
         topic.last_attempt_at = now_ts
-        topic.save(update_fields=["status", "retry_count", "last_attempt_at", "updated_at"])
+        topic.save(
+            update_fields=["status", "retry_count", "last_attempt_at", "updated_at"]
+        )
 
         author = topic.created_by or _pick_author()
         if author is None:
@@ -215,7 +224,9 @@ def generate_post_from_topic(topic: AutoTopic, autopublish: bool = False) -> Pos
         if body_html:
             post.body = body_html
             try:
-                post.summary = ai_client.generate_excerpt(body_html, author or None)[:1000]
+                post.summary = ai_client.generate_excerpt(body_html, author or None)[
+                    :1000
+                ]
             except Exception:
                 post.summary = (body_html[:300] or topic.topic)[:1000]
             safety_ok, safety_error = _safety_checks(body_html, author)
@@ -245,14 +256,16 @@ def generate_post_from_topic(topic: AutoTopic, autopublish: bool = False) -> Pos
         topic.ai_run_id = post.ai_run_id or run_id
         topic.status = "succeeded" if ai_ok else "failed"
         topic.last_error = ai_error
-        topic.save(update_fields=["post", "ai_run_id", "status", "last_error", "updated_at"])
+        topic.save(
+            update_fields=["post", "ai_run_id", "status", "last_error", "updated_at"]
+        )
 
         return post
 
 
-def autoplan_topics(seed: str, count: int = 5) -> List[AutoTopic]:
+def autoplan_topics(seed: str, count: int = 5) -> list[AutoTopic]:
     """Generate topic ideas via AI and queue them."""
-    ideas: List[str] = []
+    ideas: list[str] = []
     try:
         prompt = (
             f"List {count} concise blog post ideas (one per line) about: {seed}. "
@@ -267,7 +280,7 @@ def autoplan_topics(seed: str, count: int = 5) -> List[AutoTopic]:
     except Exception as exc:
         logger.warning("autoplan_topics failed: %s", exc)
 
-    queued: List[AutoTopic] = []
+    queued: list[AutoTopic] = []
     for idea in ideas:
         queued.append(AutoTopic.objects.create(topic=idea, status="queued"))
     return queued
@@ -278,7 +291,9 @@ def reconcile_settings_with_post(post: Post) -> None:
     dirty_fields = []
     try:
         settings_snapshot = _get_site_settings_snapshot()
-        if hasattr(post, "allow_comments") and not settings_snapshot.get("enable_blog_comments", True):
+        if hasattr(post, "allow_comments") and not settings_snapshot.get(
+            "enable_blog_comments", True
+        ):
             if getattr(post, "allow_comments", True):
                 post.allow_comments = False
                 dirty_fields.append("allow_comments")

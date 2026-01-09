@@ -1,4 +1,3 @@
-
 # apps/core/middleware/ssl_toggle.py
 """
 apps/core/middleware/ssl_toggle
@@ -9,7 +8,6 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
@@ -30,7 +28,8 @@ def _should_force_https() -> bool:
 
     # Check Django settings first
     from django.conf import settings as django_settings
-    if hasattr(django_settings, 'FORCE_HTTPS'):
+
+    if hasattr(django_settings, "FORCE_HTTPS"):
         return bool(django_settings.FORCE_HTTPS)
 
     try:
@@ -61,7 +60,7 @@ class SslToggleMiddleware:
             return redirect_response
         return self.get_response(request)
 
-    def _maybe_redirect(self, request: HttpRequest) -> Optional[HttpResponse]:
+    def _maybe_redirect(self, request: HttpRequest) -> HttpResponse | None:
         # Never interfere with local/dev debugging
         try:
             if getattr(settings, "DEBUG", False):
@@ -89,5 +88,3 @@ class SslToggleMiddleware:
 
         logger.debug("[SslToggle] Redirecting to HTTPS: %s", url)
         return HttpResponseRedirect(url)
-
-

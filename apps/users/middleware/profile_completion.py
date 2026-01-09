@@ -1,7 +1,6 @@
-
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from django.shortcuts import redirect
 from django.urls import resolve, reverse
@@ -58,7 +57,6 @@ class EnforceProfileCompletionMiddleware:
     # Main middleware
     # ------------------------------------------------------------------
     def __call__(self, request):
-
         user = getattr(request, "user", None)
 
         # Feature flag: allow disabling enforcement from SiteSettings
@@ -124,5 +122,3 @@ class EnforceProfileCompletionMiddleware:
 
         # --- Finally: enforce redirect -------------------------------------
         return redirect(self.PROFILE_URL_NAME)
-
-

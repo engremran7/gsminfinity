@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import os
@@ -45,5 +44,3 @@ def get_client_ip(request: HttpRequest) -> str:
         return real_ip
 
     return remote_ip or ""
-
-

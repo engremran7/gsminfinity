@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from django.conf import settings
-from django.core.mail.backends.smtp import EmailBackend as SmtpEmailBackend
 from django.core.mail.backends.base import BaseEmailBackend
+from django.core.mail.backends.smtp import EmailBackend as SmtpEmailBackend
 from django.utils.module_loading import import_string
 
 logger = logging.getLogger(__name__)
@@ -20,11 +20,13 @@ def _get_fallback_backend_class():
     try:
         return import_string(backend_path)
     except Exception as exc:
-        logger.warning("Failed to import fallback email backend %s: %s", backend_path, exc)
+        logger.warning(
+            "Failed to import fallback email backend %s: %s", backend_path, exc
+        )
         return SmtpEmailBackend
 
 
-def _gmail_config() -> Dict[str, Any]:
+def _gmail_config() -> dict[str, Any]:
     try:
         from apps.site_settings.models import SiteSettings  # type: ignore
 
@@ -70,7 +72,9 @@ class GmailBackend(BaseEmailBackend):
             self._from_email = cfg.get("from_email")
         else:
             backend_cls = _get_fallback_backend_class()
-            self._backend = backend_cls(fail_silently=kwargs.get("fail_silently", False))
+            self._backend = backend_cls(
+                fail_silently=kwargs.get("fail_silently", False)
+            )
             self._from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
 
     def open(self):

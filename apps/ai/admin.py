@@ -1,13 +1,23 @@
-
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
-from apps.ai.models import AISettings, KnowledgeSource, ModelEndpoint, PipelineRun, Workflow
+from apps.ai.models import (
+    AISettings,
+    KnowledgeSource,
+    ModelEndpoint,
+    PipelineRun,
+    Workflow,
+)
 
 
 @admin.register(AISettings)
 class AISettingsAdmin(SingletonModelAdmin):
-    list_display = ("ai_enabled", "default_model", "enable_vector_search", "enable_safety_firewall")
+    list_display = (
+        "ai_enabled",
+        "default_model",
+        "enable_vector_search",
+        "enable_safety_firewall",
+    )
 
     def has_add_permission(self, request):
         return False
@@ -40,5 +50,3 @@ class PipelineRunAdmin(admin.ModelAdmin):
     list_filter = ("status", "started_at")
     search_fields = ("workflow__name",)
     readonly_fields = ("started_at",)
-
-

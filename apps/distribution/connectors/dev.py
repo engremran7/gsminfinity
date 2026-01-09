@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from . import LoggingConnector
@@ -18,5 +17,3 @@ class MediumConnector(LoggingConnector):
 
 class GistConnector(LoggingConnector):
     channel = "gist"
-
-

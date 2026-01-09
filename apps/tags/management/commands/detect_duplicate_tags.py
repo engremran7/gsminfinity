@@ -1,9 +1,8 @@
-
 from __future__ import annotations
 
-from django.core.management.base import BaseCommand
-from django.db.models import Q
 from difflib import SequenceMatcher
+
+from django.core.management.base import BaseCommand
 
 from apps.tags.models import Tag
 
@@ -20,8 +19,12 @@ class Command(BaseCommand):
     help = "Detect duplicate/near-duplicate tags based on normalized name similarity."
 
     def add_arguments(self, parser):
-        parser.add_argument("--threshold", type=float, default=0.7, help="Similarity threshold (0-1)")
-        parser.add_argument("--limit", type=int, default=200, help="Max pairs to output")
+        parser.add_argument(
+            "--threshold", type=float, default=0.7, help="Similarity threshold (0-1)"
+        )
+        parser.add_argument(
+            "--limit", type=int, default=200, help="Max pairs to output"
+        )
 
     def handle(self, *args, **options):
         threshold = options["threshold"]
@@ -31,7 +34,9 @@ class Command(BaseCommand):
         for i, t1 in enumerate(tags):
             for t2 in tags[i + 1 :]:
                 sim = max(
-                    SequenceMatcher(None, t1.normalized_name, t2.normalized_name).ratio(),
+                    SequenceMatcher(
+                        None, t1.normalized_name, t2.normalized_name
+                    ).ratio(),
                     jaccard(t1.normalized_name, t2.normalized_name),
                 )
                 if sim >= threshold:
@@ -43,5 +48,3 @@ class Command(BaseCommand):
         out.sort(reverse=True, key=lambda x: x[0])
         for sim, a, b in out:
             self.stdout.write(f"{sim:.2f}: {a} <-> {b}")
-
-

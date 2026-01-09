@@ -1,14 +1,13 @@
-
 from __future__ import annotations
 
+import logging
 import random
-from typing import Dict, Iterable, Optional
+from collections.abc import Iterable
 
-from apps.ads.models import PlacementAssignment, AdCreative, AdPlacement, AdsSettings
+from apps.ads.models import AdCreative, AdPlacement, AdsSettings, PlacementAssignment
+from apps.ads.services.targeting.engine import campaign_allowed, placement_allowed
 from apps.core.utils import feature_flags
 from apps.core.utils.logging import log_event
-from apps.ads.services.targeting.engine import campaign_allowed, placement_allowed
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,9 @@ def _aggressiveness_multiplier() -> int:
     return 2
 
 
-def choose_creative(placement: AdPlacement, context: Optional[Dict] = None) -> Optional[AdCreative]:
+def choose_creative(
+    placement: AdPlacement, context: dict | None = None
+) -> AdCreative | None:
     """
     Weighted random selection among enabled assignments for a placement.
     Aggressiveness controls how heavily weights are emphasized.
@@ -43,7 +44,9 @@ def choose_creative(placement: AdPlacement, context: Optional[Dict] = None) -> O
     consent_val = context.get("consent_ads")
     consent_ads = (
         consent_val is True
-        or (isinstance(consent_val, str) and consent_val.lower() in {"1", "true", "yes"})
+        or (
+            isinstance(consent_val, str) and consent_val.lower() in {"1", "true", "yes"}
+        )
         or (isinstance(consent_val, int) and consent_val == 1)
     )
     ad_settings = None
@@ -56,10 +59,15 @@ def choose_creative(placement: AdPlacement, context: Optional[Dict] = None) -> O
     if not consent_ads:
         return None
 
-    allowed_types = {t.strip() for t in (placement.allowed_types or "").split(",") if t.strip()}
+    allowed_types = {
+        t.strip() for t in (placement.allowed_types or "").split(",") if t.strip()
+    }
     enabled_networks = bool(getattr(ad_settings, "ad_networks_enabled", False))
     qs: Iterable[PlacementAssignment] = placement.assignments.filter(
-        is_enabled=True, is_active=True, creative__is_enabled=True, creative__is_active=True
+        is_enabled=True,
+        is_active=True,
+        creative__is_enabled=True,
+        creative__is_active=True,
     ).select_related("creative", "creative__campaign")
     pool = []
     mult = _aggressiveness_multiplier()
@@ -70,7 +78,11 @@ def choose_creative(placement: AdPlacement, context: Optional[Dict] = None) -> O
         campaign = creative.campaign
         if campaign and not campaign.is_live() and not campaign.locked:
             continue
-        if campaign and campaign.type in {"network", "affiliate"} and not enabled_networks:
+        if (
+            campaign
+            and campaign.type in {"network", "affiliate"}
+            and not enabled_networks
+        ):
             continue
         if campaign and not campaign_allowed(campaign, context):
             continue
@@ -89,5 +101,3 @@ def choose_creative(placement: AdPlacement, context: Optional[Dict] = None) -> O
         campaign=getattr(choice.campaign, "id", None),
     )
     return choice
-
-

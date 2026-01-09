@@ -11,6 +11,7 @@ class Page(models.Model):
     CMS Page model for static content with SEO, scheduling, and access control.
     Enterprise-grade with full sitemap integration.
     """
+
     STATUS_CHOICES = [
         ("draft", "Draft"),
         ("published", "Published"),
@@ -48,10 +49,14 @@ class Page(models.Model):
     seo_description = models.CharField(max_length=300, blank=True)
     og_image = models.ImageField(upload_to="pages/og/", null=True, blank=True)
 
-    access_level = models.CharField(max_length=12, choices=ACCESS_CHOICES, default="public")
+    access_level = models.CharField(
+        max_length=12, choices=ACCESS_CHOICES, default="public"
+    )
 
     include_in_sitemap = models.BooleanField(default=True)
-    changefreq = models.CharField(max_length=12, choices=CHANGEFREQ_CHOICES, default="weekly")
+    changefreq = models.CharField(
+        max_length=12, choices=CHANGEFREQ_CHOICES, default="weekly"
+    )
     priority = models.DecimalField(max_digits=2, decimal_places=1, default=0.5)
 
     canonical_url = models.URLField(blank=True, default="")
@@ -109,6 +114,7 @@ class Page(models.Model):
             return self.seo_description
         # Strip HTML/markdown and truncate
         import re
-        plain = re.sub(r'<[^>]+>', '', self.content)
-        plain = re.sub(r'[#*_`\[\]()]', '', plain)
-        return plain[:160].strip() + ('...' if len(plain) > 160 else '')
+
+        plain = re.sub(r"<[^>]+>", "", self.content)
+        plain = re.sub(r"[#*_`\[\]()]", "", plain)
+        return plain[:160].strip() + ("..." if len(plain) > 160 else "")

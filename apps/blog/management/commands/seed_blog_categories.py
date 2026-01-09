@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
 from apps.blog.models import Category
 
-
-DEFAULT_CATEGORIES: List[Tuple[str, Iterable[str]]] = [
+DEFAULT_CATEGORIES: list[tuple[str, Iterable[str]]] = [
     ("AI", ["Safety", "Productivity", "Tools"]),
     ("Product", ["Updates", "Guides"]),
     ("Security", ["AppSec", "Infra", "Compliance"]),
@@ -31,7 +31,9 @@ class Command(BaseCommand):
 
         for parent_name, children in DEFAULT_CATEGORIES:
             parent_slug = slugify(parent_name)[:120]
-            parent, _ = Category.objects.get_or_create(name=parent_name, defaults={"slug": parent_slug})
+            parent, _ = Category.objects.get_or_create(
+                name=parent_name, defaults={"slug": parent_slug}
+            )
             if flatten:
                 continue
             for child_name in children:
@@ -44,4 +46,6 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Category seeding complete."))
         if not flatten:
-            self.stdout.write(self.style.SUCCESS(f"Children created this run: {created}"))
+            self.stdout.write(
+                self.style.SUCCESS(f"Children created this run: {created}")
+            )

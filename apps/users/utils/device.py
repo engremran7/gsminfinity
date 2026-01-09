@@ -16,13 +16,14 @@ from __future__ import annotations
 
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from apps.site_settings.models import SiteSettings
-from apps.users.models import CustomUser, DeviceFingerprint
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
+
+from apps.site_settings.models import SiteSettings
+from apps.users.models import CustomUser, DeviceFingerprint
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ def register_fingerprint(
     os_info: str = "",
     motherboard_id: str = "",
     browser_info: str = "",
-) -> Optional[DeviceFingerprint]:
+) -> DeviceFingerprint | None:
     """
     Create or update a DeviceFingerprint record for the given user.
 
@@ -78,7 +79,7 @@ def register_fingerprint(
                     is_active=True,
                 )
                 created = True
-                update_fields: List[str] = []  # nothing to update after create
+                update_fields: list[str] = []  # nothing to update after create
             else:
                 # Update last_used_at and any changed metadata
                 update_fields = ["last_used_at"]
@@ -220,8 +221,8 @@ def enforce_device_limit(user: CustomUser) -> bool:
 def record_device_fingerprint(
     request,
     user: CustomUser,
-    fingerprint_data: Optional[Dict[str, Any]] = None,
-) -> Optional[DeviceFingerprint]:
+    fingerprint_data: dict[str, Any] | None = None,
+) -> DeviceFingerprint | None:
     """
     Unified helper for recording device fingerprints during login.
 
@@ -294,12 +295,12 @@ def record_device_fingerprint(
 # ---------------------------------------------------------------------
 # Admin-specific utilities
 # ---------------------------------------------------------------------
-def get_admin_device_stats() -> Dict[str, Dict[str, Any]]:
+def get_admin_device_stats() -> dict[str, dict[str, Any]]:
     """
     Returns device statistics for admin users.
     Useful for dashboards or audits.
     """
-    stats: Dict[str, Dict[str, Any]] = {}
+    stats: dict[str, dict[str, Any]] = {}
     admins = CustomUser.objects.filter(is_staff=True).only("id", "email")
     for user in admins:
         devices_qs = DeviceFingerprint.objects.filter(user=user, is_active=True).only(

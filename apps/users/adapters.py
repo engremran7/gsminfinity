@@ -1,4 +1,3 @@
-
 """
 Enterprise-grade Account & Social Adapters for GSMInfinity.
 Integrates OAuth onboarding, trusted social email verification, and safe redirects.
@@ -7,7 +6,7 @@ Integrates OAuth onboarding, trusted social email verification, and safe redirec
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
@@ -17,11 +16,12 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest
 from django.urls import NoReverseMatch, reverse
-from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
-from apps.core.utils.ip import get_client_ip
 from apps.consent.utils import hash_ip
+from apps.core.utils.ip import get_client_ip
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,6 +39,7 @@ def _safe_reverse(name: str, default: str = "/") -> str:
 
 class CustomAccountAdapter(DefaultAccountAdapter):
     """Account adapter with hardened password rules and trusted social email."""
+
     def send_mail(self, template_prefix, email, context):
         # Enrich reset/verification emails with timestamp and anonymized requester IP when available.
         context = context or {}
@@ -52,7 +53,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
             context.setdefault("client_ip", None)
         return super().send_mail(template_prefix, email, context)
 
-    def is_open_for_signup(self, request: Optional[HttpRequest]) -> bool:
+    def is_open_for_signup(self, request: HttpRequest | None) -> bool:
         try:
             from apps.site_settings.models import SiteSettings  # type: ignore
 
@@ -62,7 +63,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
             logger.warning("Signup availability check failed: %s", exc)
             return True
 
-    def clean_password(self, password: str, user: Optional[Any] = None) -> str:
+    def clean_password(self, password: str, user: Any | None = None) -> str:
         if not isinstance(password, str):
             raise ValidationError(_("Invalid password format."))
         if len(password) < 8:
@@ -95,7 +96,9 @@ class CustomAccountAdapter(DefaultAccountAdapter):
 
                 if verification_required:
                     try:
-                        messages.info(request, _("Please verify your email to continue."))
+                        messages.info(
+                            request, _("Please verify your email to continue.")
+                        )
                     except Exception:
                         pass
                     return _safe_reverse("users:verify_email", default="/")
@@ -109,7 +112,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         if user and not getattr(user, "profile_completed", False):
             return _safe_reverse("users:tell_us_about_you", default="/users/profile/")
         return _safe_reverse("users:dashboard", default="/")
-    
+
     def get_email_verification_redirect_url(self, email_address) -> str:
         """After email verification, redirect to profile completion if needed"""
         user = getattr(email_address, "user", None)
@@ -134,7 +137,9 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         if user and not getattr(user, "profile_completed", False):
             logger.debug("Social signup redirect -> users:tell_us_about_you")
             return _safe_reverse("users:tell_us_about_you", default="/users/profile/")
-        logger.debug("Social signup redirect -> users:dashboard (profile already complete)")
+        logger.debug(
+            "Social signup redirect -> users:dashboard (profile already complete)"
+        )
         return _safe_reverse("users:dashboard", default="/")
 
     def pre_social_login(self, request: HttpRequest, sociallogin: SocialLogin) -> None:
@@ -145,8 +150,10 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         """
         try:
             user = getattr(sociallogin, "user", None)
-            if user and getattr(user, "id", None) and getattr(
-                user, "profile_completed", False
+            if (
+                user
+                and getattr(user, "id", None)
+                and getattr(user, "profile_completed", False)
             ):
                 sociallogin.redirect_url = _safe_reverse("users:dashboard", default="/")
                 return
@@ -154,5 +161,3 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         except Exception as exc:
             logger.exception("pre_social_login fatal error: %s", exc)
             return
-
-

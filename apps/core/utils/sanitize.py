@@ -1,8 +1,8 @@
-
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from django.utils.text import slugify as django_slugify
 
@@ -12,7 +12,9 @@ except Exception:  # pragma: no cover
     nh3 = None
 
 
-def slugify(value: str, allow_unicode: bool = False, max_length: int | None = None) -> str:
+def slugify(
+    value: str, allow_unicode: bool = False, max_length: int | None = None
+) -> str:
     slug = django_slugify(value, allow_unicode=allow_unicode)
     if max_length:
         slug = slug[:max_length]
@@ -30,38 +32,50 @@ def sanitize_html(
     if nh3 is None:
         # fallback: strip tags by regex
         return re.sub(r"<[^>]+>", "", html)
-    tags = set(allowed_tags or [
-        "p",
-        "br",
-        "strong",
-        "em",
-        "ul",
-        "ol",
-        "li",
-        "a",
-        "code",
-        "blockquote",
-        "h3",
-        "h4",
-        "h5",
-        "iframe",
-    ])
-    
+    tags = set(
+        allowed_tags
+        or [
+            "p",
+            "br",
+            "strong",
+            "em",
+            "ul",
+            "ol",
+            "li",
+            "a",
+            "code",
+            "blockquote",
+            "h3",
+            "h4",
+            "h5",
+            "iframe",
+        ]
+    )
+
     # Convert attrs to nh3 format (dict of sets)
     raw_attrs = allowed_attrs or {
         "a": ["href", "title", "rel", "target"],
-        "iframe": ["src", "width", "height", "frameborder", "allow", "allowfullscreen", "class", "title"],
+        "iframe": [
+            "src",
+            "width",
+            "height",
+            "frameborder",
+            "allow",
+            "allowfullscreen",
+            "class",
+            "title",
+        ],
     }
     attrs = {k: set(v) for k, v in raw_attrs.items()}
-    
+
     cleaned = nh3.clean(
-        html, 
-        tags=tags, 
-        attributes=attrs, 
-        strip_comments=True, 
-        url_schemes={"http", "https", "mailto"}
+        html,
+        tags=tags,
+        attributes=attrs,
+        strip_comments=True,
+        url_schemes={"http", "https", "mailto"},
     )
-    
+
     # Drop iframes not on the allowed prefix list
     result = cleaned
     if "iframe" in tags:
@@ -91,5 +105,3 @@ def sanitize_html(
             flags=re.IGNORECASE,
         )
     return result
-
-

@@ -1,12 +1,11 @@
-
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from apps.blog.models import BlogSettings
 
 
-def get_settings() -> Dict[str, Any]:
+def get_settings() -> dict[str, Any]:
     try:
         s = BlogSettings.get_solo()
         return {
@@ -23,5 +22,3 @@ def get_settings() -> Dict[str, Any]:
 
 
 __all__ = ["get_settings"]
-
-

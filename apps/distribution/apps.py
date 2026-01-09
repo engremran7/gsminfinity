@@ -1,7 +1,7 @@
-
 from __future__ import annotations
 
 import logging
+
 from django.apps import AppConfig
 
 logger = logging.getLogger(__name__)
@@ -17,8 +17,7 @@ class DistributionConfig(AppConfig):
         # Wrapped in try/except for modularity - distribution app can work standalone
         try:
             from . import signals
+
             signals.connect_signals()
         except Exception as e:
             logger.debug(f"Distribution signals not connected: {e}")
-
-

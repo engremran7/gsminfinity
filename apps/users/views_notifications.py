@@ -1,16 +1,15 @@
-
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from .models import Announcement, Notification
+from .models import Notification
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # Serializers (JSON Safe)
 # ============================================================================
-def _serialize_notification(n: Notification) -> Dict[str, Any]:
+def _serialize_notification(n: Notification) -> dict[str, Any]:
     return {
         "id": n.id,
         "title": getattr(n, "title", ""),
@@ -94,7 +93,9 @@ def notification_mark_read(request: HttpRequest, pk: int) -> JsonResponse:
         notif.read_at = timezone.now()
         notif.save(update_fields=["is_read", "read_at"])
 
-    if "application/json" in (request.headers.get("Accept") or "") or request.headers.get("HX-Request"):
+    if "application/json" in (
+        request.headers.get("Accept") or ""
+    ) or request.headers.get("HX-Request"):
         return JsonResponse({"ok": True})
     return redirect(request.META.get("HTTP_REFERER") or "users:notifications")
 
@@ -106,8 +107,8 @@ def notification_mark_all_read(request: HttpRequest) -> JsonResponse:
         is_read=True,
         read_at=timezone.now(),
     )
-    if "application/json" in (request.headers.get("Accept") or "") or request.headers.get("HX-Request"):
+    if "application/json" in (
+        request.headers.get("Accept") or ""
+    ) or request.headers.get("HX-Request"):
         return JsonResponse({"ok": True})
     return redirect(request.META.get("HTTP_REFERER") or "users:notifications")
-
-

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import re
@@ -42,7 +41,9 @@ class Command(BaseCommand):
                     continue
                 slug = slugify(raw_name)
                 allowed_sizes = (match.group("sizes") or "").replace(" ", "")
-                allowed_types = (match.group("types") or "").replace(" ", "") or "banner,native,html"
+                allowed_types = (match.group("types") or "").replace(
+                    " ", ""
+                ) or "banner,native,html"
                 obj, created_flag = AdPlacement.objects.get_or_create(
                     slug=slug,
                     defaults={
@@ -78,5 +79,3 @@ class Command(BaseCommand):
                 f"Scan complete. Created: {created}, Updated: {updated}, Total: {AdPlacement.objects.count()}"
             )
         )
-
-

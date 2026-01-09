@@ -1,10 +1,8 @@
-
 from __future__ import annotations
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils import timezone
 from django.utils.text import slugify
 from solo.models import SingletonModel
 
@@ -47,9 +45,7 @@ class Metadata(TimestampedModel):
 
 
 class SchemaEntry(TimestampedModel):
-    seo = models.ForeignKey(
-        SEOModel, on_delete=models.CASCADE, related_name="schemas"
-    )
+    seo = models.ForeignKey(SEOModel, on_delete=models.CASCADE, related_name="schemas")
     schema_type = models.CharField(max_length=100)
     payload = models.JSONField(default=dict, blank=True)
     locked = models.BooleanField(default=False)
@@ -143,5 +139,3 @@ class SEOSettings(SingletonModel):
 
     def __str__(self) -> str:
         return "SEO Settings"
-
-

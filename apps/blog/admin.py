@@ -1,8 +1,15 @@
-
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
-from .models import BlogSettings, Category, Post, AutoTopic, PostTranslation, CategoryTranslation, TagTranslation
+from .models import (
+    AutoTopic,
+    BlogSettings,
+    Category,
+    CategoryTranslation,
+    Post,
+    PostTranslation,
+    TagTranslation,
+)
 
 
 @admin.register(Category)
@@ -25,7 +32,14 @@ class PostAdmin(admin.ModelAdmin):
         "noindex",
         "published_at",
     )
-    list_filter = ("status", "is_published", "is_ai_generated", "allow_comments", "noindex", "category")
+    list_filter = (
+        "status",
+        "is_published",
+        "is_ai_generated",
+        "allow_comments",
+        "noindex",
+        "category",
+    )
     search_fields = ("title", "summary", "body")
     prepopulated_fields = {"slug": ("title",)}
     autocomplete_fields = ("author", "category", "tags")
@@ -47,7 +61,15 @@ class BlogSettingsAdmin(SingletonModelAdmin):
 
 @admin.register(AutoTopic)
 class AutoTopicAdmin(admin.ModelAdmin):
-    list_display = ("topic", "status", "post", "retry_count", "created_by", "created_at", "last_attempt_at")
+    list_display = (
+        "topic",
+        "status",
+        "post",
+        "retry_count",
+        "created_by",
+        "created_at",
+        "last_attempt_at",
+    )
     list_filter = ("status", "retry_count")
     search_fields = ("topic", "post__title")
     raw_id_fields = ("post", "created_by")
@@ -75,5 +97,3 @@ class TagTranslationAdmin(admin.ModelAdmin):
     list_filter = ("language",)
     search_fields = ("name", "tag__name")
     raw_id_fields = ("tag",)
-
-

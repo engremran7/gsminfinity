@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from . import LoggingConnector
@@ -14,5 +13,3 @@ class SendGridConnector(LoggingConnector):
 
 class SubstackConnector(LoggingConnector):
     channel = "substack"
-
-

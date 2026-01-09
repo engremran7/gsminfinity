@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand
@@ -22,5 +21,3 @@ class Command(BaseCommand):
         self.stdout.write(f"Consent report for {today}:")
         for k, v in category_counts.items():
             self.stdout.write(f"  {k}: {v}")
-
-

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import logging
@@ -14,5 +13,3 @@ def enqueue_aggregation() -> None:
     but callers can rely on it existing and being idempotent.
     """
     logger.info("ads.tasks.enqueue_aggregation invoked")
-
-

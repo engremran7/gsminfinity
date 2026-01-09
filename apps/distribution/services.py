@@ -1,17 +1,17 @@
-
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterable, List, TYPE_CHECKING
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 
 from django.apps import apps
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from apps.core import ai_client
-from apps.core.utils.logging import log_event
 from apps.core.app_service import AppService
+from apps.core.utils.logging import log_event
+
 from .models import (
     Channel,
     ContentVariant,
@@ -28,10 +28,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _enabled_channels() -> List[str]:
+def _enabled_channels() -> list[str]:
     try:
         dist_api = AppService.get("distribution")
-        settings_obj = dist_api.get_settings() if dist_api and hasattr(dist_api, "get_settings") else {}
+        settings_obj = (
+            dist_api.get_settings()
+            if dist_api and hasattr(dist_api, "get_settings")
+            else {}
+        )
         if not settings_obj.get("distribution_enabled", True):
             return []
         override = settings_obj.get("default_channels") or []
@@ -50,40 +54,41 @@ def _default_template(channel: str) -> ShareTemplate | None:
     return tmpl
 
 
-def _ensure_variants(post: Post, channels: Iterable[str]) -> Dict[str, Dict[str, Any]]:
-    variants: Dict[str, Dict[str, Any]] = {}
-    
+def _ensure_variants(post: Post, channels: Iterable[str]) -> dict[str, dict[str, Any]]:
+    variants: dict[str, dict[str, Any]] = {}
+
     # Generate AI content once if possible
     ai_summary = post.summary
     ai_title = post.title
     ai_hashtags = []
 
     try:
-        from apps.ai.services import test_completion
         import json
-        
+
+        from apps.ai.services import test_completion
+
         prompt = f"""
         Analyze this blog post and provide distribution content.
         Return ONLY a valid JSON object with the following keys:
         - summary: A short, engaging summary for social media (max 280 chars)
         - title: A catchy, click-worthy title
         - hashtags: A list of 5 relevant hashtags (strings, no #)
-        
+
         Post Title: {post.title}
         Post Summary: {post.summary}
         Post Body (excerpt): {post.body[:1000]}
         """
-        
+
         resp = test_completion(prompt)
         text = resp.get("text", "")
         if text.startswith("```"):
-             text = text.split("```")[1].replace("json", "").strip()
-        
+            text = text.split("```")[1].replace("json", "").strip()
+
         data = json.loads(text)
         ai_summary = data.get("summary") or post.summary
         ai_title = data.get("title") or post.title
         ai_hashtags = data.get("hashtags") or []
-        
+
     except Exception as e:
         logger.warning(f"AI distribution content generation failed: {e}")
 
@@ -114,7 +119,9 @@ def _absolute_url(url: str) -> str:
     return f"{base}{url}" if base else url
 
 
-def _build_payload(post: Post, channel: str, template: ShareTemplate | None, variants: Dict[str, Any]) -> Dict[str, Any]:
+def _build_payload(
+    post: Post, channel: str, template: ShareTemplate | None, variants: dict[str, Any]
+) -> dict[str, Any]:
     data = variants.get(channel) or {}
     tmpl = template.body_template if template else "{title} {url}"
     url = data.get("url") or post.get_absolute_url()
@@ -131,7 +138,13 @@ def _build_payload(post: Post, channel: str, template: ShareTemplate | None, var
 
 
 @transaction.atomic
-def create_plan_for_post(post: "Post", *, channels: Iterable[str] | None = None, schedule_at=None, created_by=None) -> SharePlan:
+def create_plan_for_post(
+    post: Post,
+    *,
+    channels: Iterable[str] | None = None,
+    schedule_at=None,
+    created_by=None,
+) -> SharePlan:
     """Create a distribution plan for a blog post."""
     channels = list(channels or _enabled_channels())
     if not channels:
@@ -149,7 +162,7 @@ def create_plan_for_post(post: "Post", *, channels: Iterable[str] | None = None,
         created_by=created_by,
     )
     variants = _ensure_variants(post, channels)
-    jobs: List[ShareJob] = []
+    jobs: list[ShareJob] = []
     for ch in channels:
         template = _default_template(ch)
         payload = _build_payload(post, ch, template, variants)
@@ -173,26 +186,35 @@ def create_plan_for_post(post: "Post", *, channels: Iterable[str] | None = None,
     return plan
 
 
-def should_fanout(post: "Post") -> bool:
+def should_fanout(post: Post) -> bool:
     """Check if post should be fanned out - requires blog app."""
-    if not apps.is_installed('apps.blog'):
+    if not apps.is_installed("apps.blog"):
         return False
     try:
         from apps.blog.models import PostStatus
-        return post.status == PostStatus.PUBLISHED and post.publish_at and post.publish_at <= timezone.now()
+
+        return (
+            post.status == PostStatus.PUBLISHED
+            and post.publish_at
+            and post.publish_at <= timezone.now()
+        )
     except Exception:
         return False
 
 
-def fanout_post_publish(post: "Post", *, created_by=None) -> SharePlan | None:
+def fanout_post_publish(post: Post, *, created_by=None) -> SharePlan | None:
     """Fan out published post to distribution channels. Requires blog app."""
-    if not apps.is_installed('apps.blog'):
+    if not apps.is_installed("apps.blog"):
         return None
     if not should_fanout(post):
         return None
     try:
         dist_api = AppService.get("distribution")
-        settings_obj = dist_api.get_settings() if dist_api and hasattr(dist_api, "get_settings") else {}
+        settings_obj = (
+            dist_api.get_settings()
+            if dist_api and hasattr(dist_api, "get_settings")
+            else {}
+        )
         if not settings_obj.get("distribution_enabled", True):
             return None
         if not settings_obj.get("auto_fanout_on_publish", True):
@@ -201,9 +223,17 @@ def fanout_post_publish(post: "Post", *, created_by=None) -> SharePlan | None:
         pass
     plan = create_plan_for_post(post, created_by=created_by)
     if not plan:
-        logger.info("distribution.plan.skipped", extra={"post": post.slug, "reason": "no_channels"})
+        logger.info(
+            "distribution.plan.skipped",
+            extra={"post": post.slug, "reason": "no_channels"},
+        )
         return None
-    log_event(logger, "info", "distribution.plan.created", post=post.slug, plan=plan.id, channels=plan.channels)
+    log_event(
+        logger,
+        "info",
+        "distribution.plan.created",
+        post=post.slug,
+        plan=plan.id,
+        channels=plan.channels,
+    )
     return plan
-
-

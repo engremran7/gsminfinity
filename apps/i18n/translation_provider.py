@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
 
 import requests
 from django.conf import settings
@@ -10,12 +9,16 @@ logger = logging.getLogger(__name__)
 
 
 class BaseTranslator:
-    def translate(self, texts: List[str], target: str, source: Optional[str] = None) -> List[str]:
+    def translate(
+        self, texts: list[str], target: str, source: str | None = None
+    ) -> list[str]:
         raise NotImplementedError
 
 
 class DummyTranslator(BaseTranslator):
-    def translate(self, texts: List[str], target: str, source: Optional[str] = None) -> List[str]:
+    def translate(
+        self, texts: list[str], target: str, source: str | None = None
+    ) -> list[str]:
         # No-op: returns source text
         return texts
 
@@ -23,13 +26,17 @@ class DummyTranslator(BaseTranslator):
 class DeepLTranslator(BaseTranslator):
     def __init__(self, api_key: str):
         self.api_key = api_key
-        self.endpoint = getattr(settings, "DEEPL_ENDPOINT", "https://api-free.deepl.com/v2/translate")
+        self.endpoint = getattr(
+            settings, "DEEPL_ENDPOINT", "https://api-free.deepl.com/v2/translate"
+        )
 
-    def translate(self, texts: List[str], target: str, source: Optional[str] = None) -> List[str]:
+    def translate(
+        self, texts: list[str], target: str, source: str | None = None
+    ) -> list[str]:
         params = {"target_lang": target.upper()}
         if source:
             params["source_lang"] = source.upper()
-        translated: List[str] = []
+        translated: list[str] = []
         for text in texts:
             try:
                 resp = requests.post(
@@ -58,17 +65,20 @@ class ArgosTranslator(BaseTranslator):
 
     def __init__(self):
         try:
-            import argostranslate.package  # type: ignore
-            import argostranslate.translate  # type: ignore
+            pass  # type: ignore
         except Exception as exc:
             raise ImportError("argostranslate not installed") from exc
         self.argos = __import__("argostranslate.translate").translate
 
-    def translate(self, texts: List[str], target: str, source: Optional[str] = None) -> List[str]:
-        translated: List[str] = []
+    def translate(
+        self, texts: list[str], target: str, source: str | None = None
+    ) -> list[str]:
+        translated: list[str] = []
         for text in texts:
             try:
-                tr = self.argos.translate(text, from_code=source or "en", to_code=target)
+                tr = self.argos.translate(
+                    text, from_code=source or "en", to_code=target
+                )
                 translated.append(tr)
             except Exception as exc:
                 logger.warning("Argos translation failed: %s", exc)

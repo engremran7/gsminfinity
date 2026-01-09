@@ -1,4 +1,3 @@
-
 """
 apps.core.context_processors
 ----------------------------
@@ -15,10 +14,11 @@ Goals:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from django.conf import settings
 from django.http import HttpRequest
+
 from apps.core.models import AppRegistry
 from apps.core.utils.ip import get_client_ip
 
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 # =====================================================================
 # SITE SETTINGS (LIGHT SNAPSHOT)
 # =====================================================================
-def site_settings_context(request: HttpRequest) -> Dict[str, Any]:
+def site_settings_context(request: HttpRequest) -> dict[str, Any]:
     """
     Lightweight supplemental settings for templates.
     NOTE:
@@ -50,7 +50,7 @@ def site_settings_context(request: HttpRequest) -> Dict[str, Any]:
     except Exception as exc:
         # This occurs if the app/model is not installed or migrations haven't run
         logger.debug("SiteSettings lookup skipped/failed: %s", exc)
-        pass # s remains None
+        pass  # s remains None
 
     # 2. Extract values or use defensive defaults
     try:
@@ -78,7 +78,7 @@ def site_settings_context(request: HttpRequest) -> Dict[str, Any]:
 # =====================================================================
 # SOCIAL PROVIDER SELECTION (LOCATION AWARE)
 # =====================================================================
-def location_based_providers(request: HttpRequest) -> Dict[str, Any]:
+def location_based_providers(request: HttpRequest) -> dict[str, Any]:
     """
     Returns providers suggested for the user's region, filtered by site's enabled providers.
 
@@ -89,7 +89,7 @@ def location_based_providers(request: HttpRequest) -> Dict[str, Any]:
             "all_enabled_providers": [...],
         }
     """
-    enabled_providers: List[str] = []
+    enabled_providers: list[str] = []
 
     # -----------------------------------------------------------------------------
     # Lazy import allauth only if installed
@@ -150,11 +150,11 @@ def location_based_providers(request: HttpRequest) -> Dict[str, Any]:
             if enabled_providers
             else preferred_list
         )
-        
+
         # FINAL SANITY CHECK: If the resulting list is empty, fall back to all enabled providers
         if not available and enabled_providers:
             available = enabled_providers
-            
+
     except Exception:
         available = preferred_list
 
@@ -207,12 +207,12 @@ def detect_user_region(request: HttpRequest) -> str:
 # =====================================================================
 # GEOIP REGION
 # =====================================================================
-def _detect_region_via_geoip(request: HttpRequest) -> Optional[str]:
+def _detect_region_via_geoip(request: HttpRequest) -> str | None:
     try:
         geoip_paths_configured = (
-            getattr(settings, "GEOIP_PATH", None) or
-            getattr(settings, "GEOIP_COUNTRY", None) or
-            getattr(settings, "GEOIP_CITY", None)
+            getattr(settings, "GEOIP_PATH", None)
+            or getattr(settings, "GEOIP_COUNTRY", None)
+            or getattr(settings, "GEOIP_CITY", None)
         )
         if not geoip_paths_configured:
             return None
@@ -224,7 +224,7 @@ def _detect_region_via_geoip(request: HttpRequest) -> Optional[str]:
             return None
 
         ip = _get_client_ip(request)
-        if not ip or ip in ("127.0.0.1", "::1"): # Handle both IPv4 and IPv6 localhost
+        if not ip or ip in ("127.0.0.1", "::1"):  # Handle both IPv4 and IPv6 localhost
             return None
 
         try:
@@ -249,7 +249,7 @@ def _detect_region_via_geoip(request: HttpRequest) -> Optional[str]:
 # =====================================================================
 # LANGUAGE REGION
 # =====================================================================
-def _detect_region_via_language(request: HttpRequest) -> Optional[str]:
+def _detect_region_via_language(request: HttpRequest) -> str | None:
     try:
         header = request.META.get("HTTP_ACCEPT_LANGUAGE", "") or ""
         if not header:
@@ -298,7 +298,7 @@ def _get_client_ip(request: HttpRequest) -> str:
 # =====================================================================
 # CORE CONTEXT
 # =====================================================================
-def core_context(request: HttpRequest) -> Dict[str, Any]:
+def core_context(request: HttpRequest) -> dict[str, Any]:
     """
     Small, safe global flags for templates.
     """
@@ -306,8 +306,6 @@ def core_context(request: HttpRequest) -> Dict[str, Any]:
         "DEBUG": getattr(settings, "DEBUG", False),
         "ENV": getattr(settings, "ENV", "production"),
         # Use SITE_ID from settings, fallback to 1
-        "SITE_ID": getattr(settings, "SITE_ID", 1), 
+        "SITE_ID": getattr(settings, "SITE_ID", 1),
         "TIME_ZONE": getattr(settings, "TIME_ZONE", "UTC"),
     }
-
-

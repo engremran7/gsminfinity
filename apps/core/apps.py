@@ -1,4 +1,3 @@
-
 from django.apps import AppConfig
 from django.utils.module_loading import autodiscover_modules
 
@@ -24,4 +23,3 @@ class CoreConfig(AppConfig):
 
         # Auto-discover signals.py in submodules
         autodiscover_modules("signals")
-

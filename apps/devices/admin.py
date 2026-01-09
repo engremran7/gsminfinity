@@ -1,14 +1,9 @@
-
 from __future__ import annotations
 
-import json
-
 from django.contrib import admin, messages
-from django.utils import timezone
 from solo.admin import SingletonModelAdmin
 
 from apps.devices.models import AppPolicy, Device, DeviceConfig, DeviceEvent
-from apps.devices.admin_quota import UserDeviceQuotaAdmin  # Register quota admin
 
 
 @admin.register(Device)
@@ -33,25 +28,40 @@ class DeviceAdmin(admin.ModelAdmin):
         """Count other users on the same OS fingerprint."""
         if not obj.os_fingerprint:
             return 0
-        return Device.objects.filter(os_fingerprint=obj.os_fingerprint).values("user").distinct().count()
+        return (
+            Device.objects.filter(os_fingerprint=obj.os_fingerprint)
+            .values("user")
+            .distinct()
+            .count()
+        )
+
     related_users_count.short_description = "Users on Device"
 
     def related_users_list(self, obj):
         """List other users sharing this device fingerprint."""
         if not obj.os_fingerprint:
             return "N/A"
-        users = Device.objects.filter(os_fingerprint=obj.os_fingerprint).values_list("user__email", flat=True).distinct()
+        users = (
+            Device.objects.filter(os_fingerprint=obj.os_fingerprint)
+            .values_list("user__email", flat=True)
+            .distinct()
+        )
         return ", ".join(users)
+
     related_users_list.short_description = "Users sharing this device"
 
     @admin.action(description="Mark selected devices as trusted")
     def mark_trusted(self, request, queryset):
         updated = queryset.update(is_trusted=True, is_blocked=False)
-        self.message_user(request, f"{updated} device(s) marked as trusted.", messages.SUCCESS)
+        self.message_user(
+            request, f"{updated} device(s) marked as trusted.", messages.SUCCESS
+        )
 
     @admin.action(description="Block selected devices")
     def block_devices(self, request, queryset):
-        updated = queryset.update(is_blocked=True, is_trusted=False, max_privilege_level="blocked")
+        updated = queryset.update(
+            is_blocked=True, is_trusted=False, max_privilege_level="blocked"
+        )
         self.message_user(request, f"{updated} device(s) blocked.", messages.SUCCESS)
 
     @admin.action(description="Unblock selected devices")
@@ -69,8 +79,29 @@ class DeviceAdmin(admin.ModelAdmin):
 @admin.register(DeviceConfig)
 class DeviceConfigAdmin(SingletonModelAdmin):
     fieldsets = (
-        ("Fingerprinting", {"fields": ("basic_fingerprinting_enabled", "enhanced_fingerprinting_enabled", "allow_server_fallback")}),
-        ("Management", {"fields": ("enterprise_device_management_enabled", "max_devices_default", "monthly_device_quota", "yearly_device_quota", "ad_unlock_enabled", "device_expiry_days")}),
+        (
+            "Fingerprinting",
+            {
+                "fields": (
+                    "basic_fingerprinting_enabled",
+                    "enhanced_fingerprinting_enabled",
+                    "allow_server_fallback",
+                )
+            },
+        ),
+        (
+            "Management",
+            {
+                "fields": (
+                    "enterprise_device_management_enabled",
+                    "max_devices_default",
+                    "monthly_device_quota",
+                    "yearly_device_quota",
+                    "ad_unlock_enabled",
+                    "device_expiry_days",
+                )
+            },
+        ),
         ("Login", {"fields": ("strict_new_device_login", "require_mfa_on_new_device")}),
         ("AI", {"fields": ("ai_risk_scoring_enabled",)}),
     )
@@ -85,10 +116,21 @@ class DeviceConfigAdmin(SingletonModelAdmin):
 
 @admin.register(AppPolicy)
 class AppPolicyAdmin(admin.ModelAdmin):
-    list_display = ("name", "device_locking_mode", "mfa_requirement", "enhanced_fingerprinting", "ai_risk_scoring", "monthly_device_quota", "yearly_device_quota", "ad_unlock_enabled")
+    list_display = (
+        "name",
+        "device_locking_mode",
+        "mfa_requirement",
+        "enhanced_fingerprinting",
+        "ai_risk_scoring",
+        "monthly_device_quota",
+        "yearly_device_quota",
+        "ad_unlock_enabled",
+    )
     search_fields = ("name",)
     formfield_overrides = {
-        AppPolicy._meta.get_field("service_level_rules").__class__: {"widget": admin.widgets.AdminTextareaWidget}
+        AppPolicy._meta.get_field("service_level_rules").__class__: {
+            "widget": admin.widgets.AdminTextareaWidget
+        }
     }
 
     def has_change_permission(self, request, obj=None):
@@ -104,12 +146,25 @@ class AppPolicyAdmin(admin.ModelAdmin):
 
 @admin.register(DeviceEvent)
 class DeviceEventAdmin(admin.ModelAdmin):
-    list_display = ("created_at", "event_type", "user", "device", "success", "reason", "ip")
+    list_display = (
+        "created_at",
+        "event_type",
+        "user",
+        "device",
+        "success",
+        "reason",
+        "ip",
+    )
     list_filter = ("event_type", "success", "created_at")
-    search_fields = ("user__email", "user__username", "device__os_fingerprint", "reason", "ip", "user_agent")
+    search_fields = (
+        "user__email",
+        "user__username",
+        "device__os_fingerprint",
+        "reason",
+        "ip",
+        "user_agent",
+    )
     readonly_fields = ("created_at",)
 
     def has_add_permission(self, request):
         return False
-
-

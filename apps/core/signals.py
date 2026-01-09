@@ -1,4 +1,3 @@
-
 """
 apps.core.signals
 -----------------
@@ -10,7 +9,7 @@ are not applied yet, it quietly skips.
 from __future__ import annotations
 
 import logging
-from typing import Iterable
+from collections.abc import Iterable
 
 from django.apps import apps as django_apps
 from django.db.models.signals import post_migrate
@@ -86,9 +85,12 @@ def seed_singletons(sender, **kwargs):  # pragma: no cover - signal hook
         try:
             from apps.devices.models import AppPolicy
 
-            AppPolicy.objects.get_or_create(name=DEFAULT_APP_POLICY["name"], defaults=DEFAULT_APP_POLICY)
+            AppPolicy.objects.get_or_create(
+                name=DEFAULT_APP_POLICY["name"], defaults=DEFAULT_APP_POLICY
+            )
         except Exception as exc:
             logger.debug("Default AppPolicy seed skipped: %s", exc)
+
 
 # ============================================================================
 # Cross-App Communication Signals
@@ -126,7 +128,9 @@ content_viewed = Signal()  # args: content_object, user, request
 content_shared = Signal()  # args: content_object, platform, user
 
 # Notification signals
-notification_send_requested = Signal()  # args: user_ids, title, message, notification_type
+notification_send_requested = (
+    Signal()
+)  # args: user_ids, title, message, notification_type
 
 # Storage signals (firmware download/upload)
 firmware_upload_requested = Signal()  # args: firmware_object, local_path, metadata

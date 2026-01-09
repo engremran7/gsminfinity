@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import logging
@@ -179,5 +178,3 @@ class VerificationFileAdmin(admin.ModelAdmin):
 admin.site.site_header = _("Administration Portal")
 admin.site.index_title = _("Enterprise Settings")
 admin.site.site_title = _("Site Configuration")
-
-

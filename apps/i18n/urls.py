@@ -1,4 +1,3 @@
-
 from django.urls import path
 
 from apps.i18n import views, views_switcher
@@ -12,5 +11,3 @@ urlpatterns = [
     path("switch/", views_switcher.switch_locale, name="switch"),
     path("api/translate/", views.translate_texts, name="translate_texts"),
 ]
-
-

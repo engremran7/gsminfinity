@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from django import template
@@ -17,5 +16,3 @@ def add_class(field, css: str = ""):
         return field.as_widget(attrs={"class": combined})
     except Exception:
         return field
-
-

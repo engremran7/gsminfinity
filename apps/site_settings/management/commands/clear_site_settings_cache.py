@@ -1,6 +1,6 @@
+from django.core.management.base import BaseCommand
 
 from apps.site_settings.signals import clear_site_settings_cache
-from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
@@ -9,4 +9,3 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         clear_site_settings_cache()
         self.stdout.write(self.style.SUCCESS("Site settings caches cleared."))
-

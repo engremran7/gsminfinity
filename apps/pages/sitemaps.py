@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from django.conf import settings
 from django.contrib.sitemaps import Sitemap
 from django.contrib.sites.models import Site
 from django.urls import reverse
@@ -30,7 +29,9 @@ class PublishedPagesSitemap(Sitemap):
     def items(self):
         now = timezone.now()
         qs = (
-            Page.objects.filter(status="published", access_level="public", include_in_sitemap=True)
+            Page.objects.filter(
+                status="published", access_level="public", include_in_sitemap=True
+            )
             .exclude(unpublish_at__isnull=False, unpublish_at__lte=now)
             .order_by("-last_modified")
         )

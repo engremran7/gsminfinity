@@ -1,4 +1,3 @@
-
 from django.contrib import admin
 
 from apps.i18n.models import (
@@ -35,7 +34,14 @@ class TranslationValueInline(admin.TabularInline):
 
 @admin.register(TranslationKey)
 class TranslationKeyAdmin(admin.ModelAdmin):
-    list_display = ("app_id", "namespace", "key", "workflow_state", "version", "updated_at")
+    list_display = (
+        "app_id",
+        "namespace",
+        "key",
+        "workflow_state",
+        "version",
+        "updated_at",
+    )
     list_filter = ("workflow_state", "namespace")
     search_fields = ("app_id", "namespace", "key")
     inlines = [TranslationValueInline]
@@ -46,7 +52,15 @@ class MissingKeyLogAdmin(admin.ModelAdmin):
     list_display = ("app_id", "locale", "key", "route", "created_at")
     list_filter = ("locale", "app_id")
     search_fields = ("key", "route", "app_id")
-    readonly_fields = ("app_id", "site_id", "locale", "key", "route", "user_id", "created_at")
+    readonly_fields = (
+        "app_id",
+        "site_id",
+        "locale",
+        "key",
+        "route",
+        "user_id",
+        "created_at",
+    )
 
 
 @admin.register(FontRegistry)
@@ -64,7 +78,15 @@ class ThemeAdmin(admin.ModelAdmin):
 
 @admin.register(ThemeAssignment)
 class ThemeAssignmentAdmin(admin.ModelAdmin):
-    list_display = ("theme", "app_id", "scope", "route", "user_id", "device_pref", "system_pref")
+    list_display = (
+        "theme",
+        "app_id",
+        "scope",
+        "route",
+        "user_id",
+        "device_pref",
+        "system_pref",
+    )
     list_filter = ("scope",)
     search_fields = ("app_id", "route", "user_id")
 
@@ -81,5 +103,3 @@ class AuditLogAdmin(admin.ModelAdmin):
     list_filter = ("action",)
     search_fields = ("app_id", "actor__username")
     readonly_fields = ("before", "after", "created_at")
-
-

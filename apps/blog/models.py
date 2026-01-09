@@ -1,15 +1,15 @@
-
 from __future__ import annotations
 
 from django.conf import settings
+from django.core.validators import MaxLengthValidator, MinLengthValidator
 from django.db import models
-from django.core.validators import MinLengthValidator, MaxLengthValidator
+from django.db.models import QuerySet
+from django.db.models.functions import Lower
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
-from django.urls import reverse
 from solo.models import SingletonModel
-from django.db.models.functions import Lower
-from django.db.models import QuerySet
+
 from apps.core.utils.sanitize import sanitize_html
 
 
@@ -82,7 +82,10 @@ class Post(models.Model):
     )
     tags = models.ManyToManyField("tags.Tag", blank=True, related_name="posts")
     status = models.CharField(
-        max_length=20, choices=PostStatus.choices, default=PostStatus.DRAFT, db_index=True
+        max_length=20,
+        choices=PostStatus.choices,
+        default=PostStatus.DRAFT,
+        db_index=True,
     )
     publish_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
@@ -105,15 +108,19 @@ class Post(models.Model):
     views_count = models.PositiveIntegerField(default=0, help_text="Total views")
     likes_count = models.PositiveIntegerField(default=0, help_text="Total likes")
     comments_count = models.PositiveIntegerField(default=0, help_text="Total comments")
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-published_at", "-created_at"]
         indexes = [
-            models.Index(fields=["status", "publish_at"], name="blog_post_status_pub_idx"),
-            models.Index(fields=["author", "status"], name="blog_post_author_status_idx"),
+            models.Index(
+                fields=["status", "publish_at"], name="blog_post_status_pub_idx"
+            ),
+            models.Index(
+                fields=["author", "status"], name="blog_post_author_status_idx"
+            ),
             models.Index(Lower("slug"), name="blog_post_slug_ci_idx"),
         ]
 
@@ -123,9 +130,7 @@ class Post(models.Model):
         Convenience queryset for live posts (published and not in the future).
         """
         now_ts = timezone.now()
-        return cls.objects.filter(
-            status=PostStatus.PUBLISHED, publish_at__lte=now_ts
-        )
+        return cls.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
 
     def __str__(self) -> str:
         return self.title
@@ -195,8 +200,16 @@ class Post(models.Model):
 
 
 class PostDraft(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="post_drafts")
-    post = models.ForeignKey("blog.Post", null=True, blank=True, on_delete=models.CASCADE, related_name="drafts")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="post_drafts"
+    )
+    post = models.ForeignKey(
+        "blog.Post",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="drafts",
+    )
     data = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -209,8 +222,16 @@ class PostDraft(models.Model):
 
 
 class PostRevision(models.Model):
-    post = models.ForeignKey("blog.Post", on_delete=models.CASCADE, related_name="revisions")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="post_revisions")
+    post = models.ForeignKey(
+        "blog.Post", on_delete=models.CASCADE, related_name="revisions"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="post_revisions",
+    )
     snapshot = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
@@ -243,10 +264,14 @@ class BlogSettings(SingletonModel):
 
 
 class PostTranslation(models.Model):
-    post = models.ForeignKey("blog.Post", on_delete=models.CASCADE, related_name="translations")
+    post = models.ForeignKey(
+        "blog.Post", on_delete=models.CASCADE, related_name="translations"
+    )
     language = models.CharField(max_length=10, db_index=True)
     title = models.CharField(max_length=200, blank=True, default="")
-    summary = models.TextField(blank=True, default="", validators=[MaxLengthValidator(1000)])
+    summary = models.TextField(
+        blank=True, default="", validators=[MaxLengthValidator(1000)]
+    )
     body = models.TextField(blank=True, default="")
     seo_title = models.CharField(max_length=240, blank=True, default="")
     seo_description = models.CharField(max_length=320, blank=True, default="")
@@ -262,13 +287,17 @@ class PostTranslation(models.Model):
 
 
 class CategoryTranslation(models.Model):
-    category = models.ForeignKey("blog.Category", on_delete=models.CASCADE, related_name="translations")
+    category = models.ForeignKey(
+        "blog.Category", on_delete=models.CASCADE, related_name="translations"
+    )
     language = models.CharField(max_length=10, db_index=True)
     name = models.CharField(max_length=120)
 
     class Meta:
         unique_together = ("category", "language")
-        indexes = [models.Index(fields=["language"], name="category_translation_lang_idx")]
+        indexes = [
+            models.Index(fields=["language"], name="category_translation_lang_idx")
+        ]
         verbose_name = "Category Translation"
         verbose_name_plural = "Category Translations"
 
@@ -277,7 +306,9 @@ class CategoryTranslation(models.Model):
 
 
 class TagTranslation(models.Model):
-    tag = models.ForeignKey("tags.Tag", on_delete=models.CASCADE, related_name="translations")
+    tag = models.ForeignKey(
+        "tags.Tag", on_delete=models.CASCADE, related_name="translations"
+    )
     language = models.CharField(max_length=10, db_index=True)
     name = models.CharField(max_length=80)
     description = models.TextField(blank=True, default="")
@@ -311,8 +342,12 @@ class AutoTopic(models.Model):
     scheduled_for = models.DateTimeField(null=True, blank=True)
     retry_count = models.PositiveIntegerField(default=0)
     last_attempt_at = models.DateTimeField(null=True, blank=True)
-    post = models.ForeignKey("blog.Post", null=True, blank=True, on_delete=models.SET_NULL)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    post = models.ForeignKey(
+        "blog.Post", null=True, blank=True, on_delete=models.SET_NULL
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -324,5 +359,3 @@ class AutoTopic(models.Model):
 
     def __str__(self) -> str:
         return f"{self.topic} ({self.status})"
-
-

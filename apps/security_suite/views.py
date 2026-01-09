@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
@@ -12,7 +12,7 @@ def security_status(request):
     Lightweight status endpoint exposing active security modules and policies.
     Uses DB-backed SecurityConfig when available and AppRegistry flags for UI awareness.
     """
-    payload: Dict[str, Any] = {"modules": {}, "policies": {}, "hints": {}}
+    payload: dict[str, Any] = {"modules": {}, "policies": {}, "hints": {}}
     try:
         from apps.security_suite.api import security_settings_snapshot
 

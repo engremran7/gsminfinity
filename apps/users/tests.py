@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from types import SimpleNamespace
@@ -48,5 +47,3 @@ class CommentRateLimitTests(TestCase):
         for _ in range(10):
             self.assertTrue(_check_comment_rate_limit(request))
         self.assertFalse(_check_comment_rate_limit(request))
-
-

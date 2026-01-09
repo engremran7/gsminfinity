@@ -1,23 +1,22 @@
-
 from __future__ import annotations
 
-from django.http import JsonResponse, Http404, HttpRequest, HttpResponse
-from django.views.decorators.http import require_GET, require_POST
-from django.db.models import Q
-from django.shortcuts import render, get_object_or_404
-from django.core.paginator import Paginator
-from django.contrib.auth.decorators import login_required
-from django.contrib.admin.views.decorators import staff_member_required
 from difflib import SequenceMatcher
 
-
-from .models import Tag
-from apps.blog.models import Post, PostStatus
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.utils import timezone
-from apps.core import ai_client
+from django.views.decorators.http import require_GET, require_POST
+
+from apps.blog.models import Post, PostStatus
 from apps.core.app_service import AppService
+
 from . import services
+from .models import Tag
 
 
 def _get_tag_settings() -> dict:
@@ -64,7 +63,9 @@ def search(request):
 
 @require_GET
 def tag_list(request: HttpRequest) -> HttpResponse:
-    tags = Tag.objects.filter(is_active=True, is_deleted=False).order_by("-usage_count", "name")
+    tags = Tag.objects.filter(is_active=True, is_deleted=False).order_by(
+        "-usage_count", "name"
+    )
     return render(
         request,
         "tags/list.html",
@@ -77,7 +78,9 @@ def tag_detail(request: HttpRequest, slug: str) -> HttpResponse:
     tag = get_object_or_404(Tag, slug=slug, is_deleted=False)
     now_ts = timezone.now()
     posts = (
-        Post.objects.filter(tags=tag, status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
+        Post.objects.filter(
+            tags=tag, status=PostStatus.PUBLISHED, publish_at__lte=now_ts
+        )
         .select_related("author", "category")
         .prefetch_related("tags")
         .order_by("-published_at")
@@ -86,10 +89,9 @@ def tag_detail(request: HttpRequest, slug: str) -> HttpResponse:
     page_obj = paginator.get_page(request.GET.get("page") or 1)
     trending_tags = Tag.objects.order_by("-usage_count")[:10]
     trending_tags = trending_tags.filter(is_deleted=False)
-    latest = (
-        Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now_ts)
-        .order_by("-published_at")[:5]
-    )
+    latest = Post.objects.filter(
+        status=PostStatus.PUBLISHED, publish_at__lte=now_ts
+    ).order_by("-published_at")[:5]
     trending_tags_html = render_to_string(
         "components/tag_badges.html", {"tags": trending_tags}
     )
@@ -114,8 +116,12 @@ def tag_detail(request: HttpRequest, slug: str) -> HttpResponse:
 def manage_tags(request: HttpRequest) -> HttpResponse:
     if not (request.user.is_staff or request.user.is_superuser):
         raise Http404()
-    top_tags = Tag.objects.filter(is_active=True, is_deleted=False).order_by("-usage_count", "name")[:50]
-    curated = Tag.objects.filter(is_curated=True, is_deleted=False).order_by("name")[:50]
+    top_tags = Tag.objects.filter(is_active=True, is_deleted=False).order_by(
+        "-usage_count", "name"
+    )[:50]
+    curated = Tag.objects.filter(is_curated=True, is_deleted=False).order_by("name")[
+        :50
+    ]
     return render(
         request,
         "tags/manage.html",
@@ -197,7 +203,13 @@ def duplicates_review(request: HttpRequest) -> HttpResponse:
             )
             if sim >= threshold:
                 pairs.append(
-                    {"score": round(sim, 2), "a": t1.name, "a_slug": t1.slug, "b": t2.name, "b_slug": t2.slug}
+                    {
+                        "score": round(sim, 2),
+                        "a": t1.name,
+                        "a_slug": t1.slug,
+                        "b": t2.name,
+                        "b_slug": t2.slug,
+                    }
                 )
     pairs.sort(key=lambda x: x["score"], reverse=True)
     return render(request, "tags/admin_duplicates.html", {"pairs": pairs})
@@ -205,13 +217,15 @@ def duplicates_review(request: HttpRequest) -> HttpResponse:
 
 @staff_member_required(login_url="admin_suite:admin_suite_login")
 def keyword_review(request: HttpRequest) -> HttpResponse:
-    suggestions = (
-        Tag.objects.none()
-    )
+    suggestions = Tag.objects.none()
     from .models_keyword import KeywordSuggestion
 
-    suggestions = KeywordSuggestion.objects.select_related("provider").order_by("-score", "-created_at")[:200]
-    return render(request, "tags/admin_keyword_review.html", {"suggestions": suggestions})
+    suggestions = KeywordSuggestion.objects.select_related("provider").order_by(
+        "-score", "-created_at"
+    )[:200]
+    return render(
+        request, "tags/admin_keyword_review.html", {"suggestions": suggestions}
+    )
 
 
 @staff_member_required(login_url="admin_suite:admin_suite_login")
@@ -262,7 +276,9 @@ def suggest_tags(request: HttpRequest) -> JsonResponse:
         suggestions = services.suggest_tags_from_text(text, limit=10)
         # Enrich with curated flag when existing
         names = [s["normalized"] for s in suggestions if s.get("normalized")]
-        existing = {t.normalized_name: t for t in Tag.objects.filter(normalized_name__in=names)}
+        existing = {
+            t.normalized_name: t for t in Tag.objects.filter(normalized_name__in=names)
+        }
         enriched = []
         for s in suggestions:
             norm = s.get("normalized")
@@ -278,5 +294,3 @@ def suggest_tags(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"ok": True, "suggestions": enriched})
     except Exception:
         return JsonResponse({"ok": False, "error": "failed"}, status=500)
-
-

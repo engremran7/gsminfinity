@@ -1,4 +1,3 @@
-
 from django.urls import path
 
 from . import views
@@ -15,5 +14,3 @@ urlpatterns = [
     path("moderation/", views.moderation_queue, name="moderation_queue"),
     path("moderation/action/", views.moderation_action, name="moderation_action"),
 ]
-
-

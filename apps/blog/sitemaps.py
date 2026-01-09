@@ -7,8 +7,6 @@ from django.utils import timezone
 from apps.site_settings.models import SiteSettings
 
 from .models import Post, PostStatus
-from apps.i18n.services import resolve_locale
-from apps.blog.views import _apply_translations_to_posts
 
 
 class PublishedBlogPostsSitemap(Sitemap):
@@ -31,7 +29,9 @@ class PublishedBlogPostsSitemap(Sitemap):
     def items(self):
         now = timezone.now()
         items = (
-            Post.objects.filter(status=PostStatus.PUBLISHED, publish_at__lte=now, noindex=False)
+            Post.objects.filter(
+                status=PostStatus.PUBLISHED, publish_at__lte=now, noindex=False
+            )
             .order_by("-publish_at")
             .select_related("author", "category")
         )

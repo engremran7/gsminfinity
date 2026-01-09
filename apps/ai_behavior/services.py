@@ -1,7 +1,6 @@
-
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from django.utils import timezone
 
@@ -15,7 +14,7 @@ def record_insight(
     related_ip: str | None = None,
     severity: str = "low",
     recommendation: str = "",
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
 ) -> BehaviorInsight:
     """
     Minimal ingestion point for risk/anomaly insights.
@@ -31,7 +30,7 @@ def record_insight(
     )
 
 
-def promote_from_device_event(event: Dict[str, Any]) -> Optional[BehaviorInsight]:
+def promote_from_device_event(event: dict[str, Any]) -> BehaviorInsight | None:
     """
     Lightweight heuristic: flag blocked or repeated failures as high severity.
     """
@@ -58,5 +57,3 @@ def promote_from_device_event(event: Dict[str, Any]) -> Optional[BehaviorInsight
 
 
 __all__ = ["record_insight", "promote_from_device_event"]
-
-
