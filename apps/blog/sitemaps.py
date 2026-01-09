@@ -7,8 +7,6 @@ from django.utils import timezone
 from apps.site_settings.models import SiteSettings
 
 from .models import Post, PostStatus
-from apps.i18n.services import resolve_locale
-from apps.blog.views import _apply_translations_to_posts
 
 
 class PublishedBlogPostsSitemap(Sitemap):

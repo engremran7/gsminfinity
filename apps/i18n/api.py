@@ -4,7 +4,8 @@ Public API surface for the i18n + Themes micro-app, loaded dynamically via AppSe
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any, Dict, Optional
 
 from django.http import HttpRequest
 

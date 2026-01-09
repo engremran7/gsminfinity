@@ -1,13 +1,19 @@
 
 from __future__ import annotations
 
-import json
 from typing import List, Optional
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from apps.i18n.models import AppManifest, FontRegistry, LanguageProfile, Locale, Theme, ThemeAssignment
+from apps.i18n.models import (
+    AppManifest,
+    FontRegistry,
+    LanguageProfile,
+    Locale,
+    Theme,
+    ThemeAssignment,
+)
 
 
 class Command(BaseCommand):

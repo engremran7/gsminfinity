@@ -1,9 +1,9 @@
 
 from __future__ import annotations
 
-from django.core.management.base import BaseCommand
-from django.db.models import Q
 from difflib import SequenceMatcher
+
+from django.core.management.base import BaseCommand
 
 from apps.tags.models import Tag
 

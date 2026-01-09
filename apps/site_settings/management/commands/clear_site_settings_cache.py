@@ -1,6 +1,7 @@
 
-from apps.site_settings.signals import clear_site_settings_cache
 from django.core.management.base import BaseCommand
+
+from apps.site_settings.signals import clear_site_settings_cache
 
 
 class Command(BaseCommand):

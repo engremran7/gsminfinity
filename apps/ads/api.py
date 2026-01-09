@@ -6,8 +6,8 @@ Public API surface for the Ads app.
 Resolved dynamically via AppService to avoid hard imports.
 """
 
-from typing import Any, Dict, List
 import logging
+from typing import Any, Dict, List
 
 from apps.ads.models import AdsSettings
 
@@ -42,40 +42,40 @@ def get_settings() -> Dict[str, Any]:
         "affiliate_enabled": bool(getattr(s, "affiliate_enabled", False)),
         "ad_networks_enabled": bool(getattr(s, "ad_networks_enabled", False)),
         "ad_aggressiveness_level": getattr(s, "ad_aggressiveness_level", "balanced"),
-        
+
         # Auto ads
         "auto_ads_enabled": bool(getattr(s, "auto_ads_enabled", False)),
         "auto_ads_in_article": bool(getattr(s, "auto_ads_in_article", True)),
         "auto_ads_in_feed": bool(getattr(s, "auto_ads_in_feed", True)),
         "auto_ads_anchor": bool(getattr(s, "auto_ads_anchor", False)),
         "auto_ads_vignette": bool(getattr(s, "auto_ads_vignette", False)),
-        
+
         # Rewarded ads
         "rewarded_ads_enabled": bool(getattr(s, "rewarded_ads_enabled", False)),
         "rewarded_ads_reward_type": getattr(s, "rewarded_ads_reward_type", "downloads"),
         "rewarded_ads_reward_value": getattr(s, "rewarded_ads_reward_value", 1),
-        
+
         # Networks
         "adsense_enabled": bool(getattr(s, "adsense_enabled", False)),
         "adsense_publisher_id": getattr(s, "adsense_publisher_id", ""),
         "adsense_auto_ads": bool(getattr(s, "adsense_auto_ads", False)),
         "enabled_networks": s.get_enabled_networks() if hasattr(s, 'get_enabled_networks') else [],
-        
+
         # Header bidding
         "header_bidding_enabled": bool(getattr(s, "header_bidding_enabled", False)),
         "prebid_timeout_ms": getattr(s, "prebid_timeout_ms", 1000),
-        
+
         # Native ads
         "native_ads_enabled": bool(getattr(s, "native_ads_enabled", False)),
         "native_ads_style": getattr(s, "native_ads_style", "card"),
-        
+
         # AI optimization
         "ai_optimization_enabled": bool(getattr(s, "ai_optimization_enabled", False)),
-        
+
         # Privacy
         "require_consent": bool(getattr(s, "require_consent", True)),
         "show_ads_without_consent": bool(getattr(s, "show_ads_without_consent", True)),
-        
+
         # Limits
         "max_ads_per_page": getattr(s, "max_ads_per_page", 5),
         "lazy_load_ads": bool(getattr(s, "lazy_load_ads", True)),
@@ -110,15 +110,15 @@ def get_rewarded_ad_config(config_name: str = None) -> Dict[str, Any]:
     """
     try:
         from apps.ads.models import RewardedAdConfig
-        
+
         if config_name:
             config = RewardedAdConfig.objects.filter(name=config_name, is_enabled=True).first()
         else:
             config = RewardedAdConfig.objects.filter(is_enabled=True).first()
-        
+
         if not config:
             return {"enabled": False}
-        
+
         return {
             "enabled": True,
             "name": config.name,
@@ -168,19 +168,20 @@ def track_affiliate_click_sync(
     For use in views that need immediate response.
     """
     try:
-        from apps.ads.models import AffiliateProduct, AffiliateClick
         from django.contrib.auth import get_user_model
-        
+
+        from apps.ads.models import AffiliateClick, AffiliateProduct
+
         User = get_user_model()
-        
+
         product = AffiliateProduct.objects.filter(id=product_id).first()
         if not product:
             return {'status': 'product_not_found'}
-        
+
         user = None
         if user_id:
             user = User.objects.filter(id=user_id).first()
-        
+
         # Create click record
         click = AffiliateClick.objects.create(
             product=product,
@@ -193,14 +194,14 @@ def track_affiliate_click_sync(
             referrer_type=referrer_type[:20] if referrer_type else "",
             referrer_id=referrer_id,
         )
-        
+
         # Increment product click count
         AffiliateProduct.objects.filter(id=product_id).update(
             clicks=product.clicks + 1
         )
-        
+
         return {'status': 'success', 'click_id': click.id}
-        
+
     except Exception as exc:
         logger.error(f"Failed to track affiliate click: {exc}")
         return {'status': 'error', 'error': str(exc)}
@@ -218,18 +219,19 @@ def get_contextual_products(
     Returns a list of product dictionaries.
     """
     try:
-        from apps.ads.models import AffiliateProduct, AffiliateProductMatch, AdsSettings
         from django.db.models import Q
-        
+
+        from apps.ads.models import AdsSettings, AffiliateProduct, AffiliateProductMatch
+
         settings_obj = AdsSettings.get_solo()
         if not settings_obj.affiliate_products_enabled:
             return []
-        
+
         max_products = min(max_products, settings_obj.affiliate_products_max_per_page)
-        
+
         products = []
         seen_ids = set()
-        
+
         # 1. Manual matches
         match_filters = Q(is_hidden=False)
         if brand:
@@ -240,39 +242,39 @@ def get_contextual_products(
             match_filters &= Q(variant=variant)
         elif blog_post:
             match_filters &= Q(blog_post=blog_post)
-        
+
         matches = AffiliateProductMatch.objects.filter(
             match_filters,
             product__is_enabled=True,
             product__is_in_stock=True,
         ).select_related("product", "product__provider")[:max_products]
-        
+
         for match in matches:
             if match.product_id not in seen_ids:
                 products.append(_product_to_dict(match.product))
                 seen_ids.add(match.product_id)
-        
+
         if len(products) >= max_products:
             return products[:max_products]
-        
+
         # 2. Targeted products
         remaining = max_products - len(products)
         targeted_filters = Q(is_enabled=True, is_in_stock=True)
         targeted_filters &= ~Q(id__in=seen_ids)
-        
+
         if brand:
             targeted_filters &= Q(target_brands=brand)
         elif model:
             targeted_filters &= Q(target_models=model)
-        
+
         targeted = AffiliateProduct.objects.filter(targeted_filters)[:remaining]
-        
+
         for product in targeted:
             products.append(_product_to_dict(product))
-        
+
         if len(products) >= max_products:
             return products[:max_products]
-        
+
         # 3. Universal products
         remaining = max_products - len(products)
         universal = AffiliateProduct.objects.filter(
@@ -280,12 +282,12 @@ def get_contextual_products(
             is_in_stock=True,
             is_universal=True,
         ).exclude(id__in=seen_ids)[:remaining]
-        
+
         for product in universal:
             products.append(_product_to_dict(product))
-        
+
         return products[:max_products]
-        
+
     except Exception as exc:
         logger.error(f"Failed to get contextual products: {exc}")
         return []
@@ -314,7 +316,7 @@ def _product_to_dict(product) -> Dict[str, Any]:
 
 __all__ = [
     "get_settings",
-    "should_show_ads", 
+    "should_show_ads",
     "get_enabled_networks",
     "get_rewarded_ad_config",
     "get_affiliate_products_settings",

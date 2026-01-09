@@ -1,6 +1,7 @@
 # Firmware-Storage Bridge - Helper utilities for firmware app
+from typing import Any, Dict, List, Optional
+
 from django.apps import apps
-from typing import Optional, Dict, Any, List
 
 
 class FirmwareStorageHelper:
@@ -8,7 +9,7 @@ class FirmwareStorageHelper:
     Helper class for firmware app to interact with storage
     Uses signals and adapters for loose coupling
     """
-    
+
     @staticmethod
     def upload_firmware(
         firmware_object: Any,
@@ -46,10 +47,10 @@ class FirmwareStorageHelper:
         # Check if storage app is installed
         if not apps.is_installed('apps.storage'):
             return None
-        
+
         # Emit signal for upload request
         from apps.core.signals import firmware_upload_requested
-        
+
         firmware_upload_requested.send(
             sender=firmware_object.__class__,
             firmware=firmware_object,
@@ -61,11 +62,11 @@ class FirmwareStorageHelper:
                 'category': category
             }
         )
-        
+
         # Use adapter for direct upload (if needed immediately)
         try:
             from .adapters import get_storage_provider
-            
+
             provider = get_storage_provider('google_drive')
             if provider:
                 return provider.upload_file(
@@ -81,7 +82,7 @@ class FirmwareStorageHelper:
         except Exception as e:
             print(f"Storage upload error: {e}")
             return None
-    
+
     @staticmethod
     def request_download(user: Any, firmware_object: Any):
         """
@@ -111,20 +112,20 @@ class FirmwareStorageHelper:
         # Check if storage app is installed
         if not apps.is_installed('apps.storage'):
             return None
-        
+
         # Emit signal for download request
         from apps.core.signals import firmware_download_requested
-        
+
         firmware_download_requested.send(
             sender=firmware_object.__class__,
             user=user,
             firmware=firmware_object
         )
-        
+
         # Use adapter for download
         try:
             from .adapters import get_storage_provider
-            
+
             provider = get_storage_provider('google_drive')
             if provider:
                 return provider.initiate_download(
@@ -134,7 +135,7 @@ class FirmwareStorageHelper:
         except Exception as e:
             print(f"Storage download error: {e}")
             return None
-    
+
     @staticmethod
     def get_download_status(session_id: str) -> Dict[str, Any]:
         """
@@ -153,16 +154,16 @@ class FirmwareStorageHelper:
         """
         if not apps.is_installed('apps.storage'):
             return {'status': 'not_available', 'error': 'Storage app not installed'}
-        
+
         try:
             from .adapters import get_storage_provider
-            
+
             provider = get_storage_provider('google_drive')
             if provider:
                 return provider.get_download_status(session_id)
         except Exception as e:
             return {'status': 'error', 'error': str(e)}
-    
+
     @staticmethod
     def add_external_link(
         firmware_object: Any,
@@ -194,10 +195,10 @@ class FirmwareStorageHelper:
         """
         if not apps.is_installed('apps.storage'):
             return None
-        
+
         try:
             from .adapters import get_storage_provider
-            
+
             storage_provider = get_storage_provider('google_drive')
             if storage_provider:
                 metadata = {}
@@ -205,7 +206,7 @@ class FirmwareStorageHelper:
                     metadata['password'] = password
                 if notes:
                     metadata['notes'] = notes
-                
+
                 return storage_provider.add_external_link(
                     firmware_object=firmware_object,
                     provider=provider,
@@ -215,7 +216,7 @@ class FirmwareStorageHelper:
         except Exception as e:
             print(f"External link error: {e}")
             return None
-    
+
     @staticmethod
     def get_storage_locations(firmware_object: Any) -> List:
         """
@@ -226,14 +227,14 @@ class FirmwareStorageHelper:
         """
         if not apps.is_installed('apps.storage'):
             return []
-        
+
         try:
             FirmwareStorageLocation = apps.get_model('storage', 'FirmwareStorageLocation')
             from django.contrib.contenttypes.models import ContentType
-            
+
             Firmware = apps.get_model('firmware', 'Firmware')
             content_type = ContentType.objects.get_for_model(Firmware)
-            
+
             return FirmwareStorageLocation.objects.filter(
                 content_type=content_type,
                 object_id=firmware_object.id,
@@ -242,7 +243,7 @@ class FirmwareStorageHelper:
         except Exception as e:
             print(f"Get locations error: {e}")
             return []
-    
+
     @staticmethod
     def check_storage_quota() -> Dict[str, Any]:
         """
@@ -253,16 +254,16 @@ class FirmwareStorageHelper:
         """
         if not apps.is_installed('apps.storage'):
             return {'available': False}
-        
+
         try:
             SharedDriveAccount = apps.get_model('storage', 'SharedDriveAccount')
-            
+
             drives = SharedDriveAccount.objects.filter(is_active=True)
             quota_info = {
                 'available': True,
                 'drives': []
             }
-            
+
             for drive in drives:
                 quota_info['drives'].append({
                     'drive_id': drive.drive_id,
@@ -272,7 +273,7 @@ class FirmwareStorageHelper:
                     'utilization': drive.utilization_percent(),
                     'health': drive.health_status
                 })
-            
+
             return quota_info
         except Exception as e:
             return {'available': False, 'error': str(e)}

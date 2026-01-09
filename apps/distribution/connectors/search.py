@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import json
 import logging
-import requests
 from typing import Optional
 
-from . import ConnectorResult
+import requests
+
 from apps.distribution.models import ShareJob, SocialAccount
+
+from . import ConnectorResult
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +41,14 @@ class GoogleIndexingConnector:
             account = SocialAccount.objects.filter(
                 channel=self.channel, is_active=True
             ).first()
-            
+
             if not account:
                 return ConnectorResult(
                     ok=False,
                     message="No active Google Indexing account configured",
                     response_code="NO_ACCOUNT"
                 )
-            
+
             # Get service account credentials
             service_account = account.config.get("service_account_json")
             if not service_account:
@@ -55,7 +57,7 @@ class GoogleIndexingConnector:
                     message="No service_account_json in config",
                     response_code="NO_CREDENTIALS"
                 )
-            
+
             if isinstance(service_account, str):
                 try:
                     service_account = json.loads(service_account)
@@ -65,7 +67,7 @@ class GoogleIndexingConnector:
                         message="Invalid service_account_json format",
                         response_code="INVALID_CREDENTIALS"
                     )
-            
+
             # Get URL from job payload
             url = job.payload.get("url") if job.payload else None
             if not url:
@@ -74,7 +76,7 @@ class GoogleIndexingConnector:
                     message="No URL in job payload",
                     response_code="NO_URL"
                 )
-            
+
             # Get access token using service account
             access_token = self._get_access_token(service_account)
             if not access_token:
@@ -83,12 +85,12 @@ class GoogleIndexingConnector:
                     message="Failed to obtain access token",
                     response_code="AUTH_FAILED"
                 )
-            
+
             # Submit URL for indexing
             notification_type = job.payload.get("action", "URL_UPDATED")
             if notification_type not in ("URL_UPDATED", "URL_DELETED"):
                 notification_type = "URL_UPDATED"
-            
+
             response = requests.post(
                 self.API_URL,
                 headers={
@@ -101,7 +103,7 @@ class GoogleIndexingConnector:
                 },
                 timeout=HTTP_TIMEOUT,
             )
-            
+
             if response.status_code == 200:
                 result = response.json()
                 return ConnectorResult(
@@ -118,7 +120,7 @@ class GoogleIndexingConnector:
                     message=f"Google API error: {error}",
                     response_code=str(response.status_code)
                 )
-                
+
         except requests.RequestException as e:
             logger.error(f"Google Indexing request failed: {e}")
             return ConnectorResult(
@@ -133,13 +135,14 @@ class GoogleIndexingConnector:
                 message=f"Connector error: {str(e)[:200]}",
                 response_code="ERROR"
             )
-    
+
     def _get_access_token(self, service_account: dict) -> Optional[str]:
         """Get OAuth2 access token using service account JWT assertion."""
         try:
-            import jwt
             import time
-            
+
+            import jwt
+
             now = int(time.time())
             payload = {
                 "iss": service_account.get("client_email"),
@@ -148,10 +151,10 @@ class GoogleIndexingConnector:
                 "iat": now,
                 "exp": now + 3600,
             }
-            
+
             private_key = service_account.get("private_key", "")
             assertion = jwt.encode(payload, private_key, algorithm="RS256")
-            
+
             response = requests.post(
                 self.TOKEN_URL,
                 data={
@@ -160,13 +163,13 @@ class GoogleIndexingConnector:
                 },
                 timeout=HTTP_TIMEOUT,
             )
-            
+
             if response.status_code == 200:
                 return response.json().get("access_token")
             else:
                 logger.error(f"Failed to get Google access token: {response.text}")
                 return None
-                
+
         except ImportError:
             logger.error("PyJWT not installed - required for Google Indexing API")
             return None
@@ -196,24 +199,24 @@ class BingConnector:
             account = SocialAccount.objects.filter(
                 channel=self.channel, is_active=True
             ).first()
-            
+
             if not account:
                 return ConnectorResult(
                     ok=False,
                     message="No active Bing Indexing account configured",
                     response_code="NO_ACCOUNT"
                 )
-            
+
             api_key = account.config.get("api_key", "")
             site_url = account.config.get("site_url", "")
-            
+
             if not api_key or not site_url:
                 return ConnectorResult(
                     ok=False,
                     message="Missing api_key or site_url in config",
                     response_code="NO_CREDENTIALS"
                 )
-            
+
             # Get URL from job payload
             url = job.payload.get("url") if job.payload else None
             if not url:
@@ -222,7 +225,7 @@ class BingConnector:
                     message="No URL in job payload",
                     response_code="NO_URL"
                 )
-            
+
             # Ensure URL belongs to the verified site
             if not url.startswith(site_url.rstrip("/")):
                 return ConnectorResult(
@@ -230,20 +233,20 @@ class BingConnector:
                     message=f"URL must belong to verified site: {site_url}",
                     response_code="INVALID_URL"
                 )
-            
+
             # Submit URL to Bing
             params = {
                 "apikey": api_key,
                 "siteUrl": site_url,
                 "url": url,
             }
-            
+
             response = requests.get(
                 self.API_URL,
                 params=params,
                 timeout=HTTP_TIMEOUT,
             )
-            
+
             if response.status_code == 200:
                 # Bing returns empty response on success
                 return ConnectorResult(
@@ -259,7 +262,7 @@ class BingConnector:
                     message=f"Bing API error: {error}",
                     response_code=str(response.status_code)
                 )
-                
+
         except requests.RequestException as e:
             logger.error(f"Bing Indexing request failed: {e}")
             return ConnectorResult(

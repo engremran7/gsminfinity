@@ -1,23 +1,23 @@
 
 from __future__ import annotations
 
+from django import forms
 from django.contrib import admin
 from django.core.exceptions import ImproperlyConfigured
-from django import forms
 from django.db import models
 from django.utils import timezone
 
 from .models import (
-    SocialAccount,
-    ShareTemplate,
+    ContentDistribution,
     ContentVariant,
-    SharePlan,
+    DistributionSettings,
     ShareJob,
     ShareLog,
-    WebSubSubscription,
+    SharePlan,
+    ShareTemplate,
+    SocialAccount,
     SyndicationPartner,
-    DistributionSettings,
-    ContentDistribution,
+    WebSubSubscription,
 )
 
 
@@ -147,7 +147,7 @@ class DistributionSettingsAdmin(SingletonModelAdmin):
     Centralized control panel for all distribution automation limits and policies.
     Configure SEO limits, auto-tagging frequency, platform restrictions, and more.
     """
-    
+
     fieldsets = (
         ("🌐 General Distribution Settings", {
             "fields": ("distribution_enabled", "auto_fanout_on_publish", "require_admin_approval"),
@@ -211,7 +211,7 @@ class DistributionSettingsAdmin(SingletonModelAdmin):
             "classes": ("collapse",),
         }),
     )
-    
+
     def has_add_permission(self, request):
         return False
 
@@ -227,7 +227,7 @@ class ContentDistributionAdmin(admin.ModelAdmin):
     search_fields = ("title", "summary")
     readonly_fields = ("content_type", "object_id", "distribution_count", "failed_count", "created_at", "updated_at")
     actions = ["apply_limits_action", "retry_failed"]
-    
+
     fieldsets = (
         ("Content Information", {
             "fields": ("content_type", "object_id", "title", "summary", "content_url"),
@@ -243,11 +243,11 @@ class ContentDistributionAdmin(admin.ModelAdmin):
             "classes": ("collapse",),
         }),
     )
-    
+
     @admin.display(description="Platforms")
     def platform_count(self, obj):
         return len(obj.target_channels) if obj.target_channels else 0
-    
+
     @admin.action(description="Apply admin-configured limits to selected")
     def apply_limits_action(self, request, queryset):
         count = 0
@@ -255,7 +255,7 @@ class ContentDistributionAdmin(admin.ModelAdmin):
             dist.apply_limits()
             count += 1
         self.message_user(request, f"Applied limits to {count} distribution(s)")
-    
+
     @admin.action(description="Retry failed distributions")
     def retry_failed(self, request, queryset):
         from apps.distribution.tasks import distribute_content

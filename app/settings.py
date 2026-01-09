@@ -21,8 +21,10 @@ try:
     from dotenv import load_dotenv  # type: ignore
 
     load_dotenv()
-except Exception:
-    pass
+except ImportError as exc:
+    logger.debug("dotenv not available: %s", exc)
+except Exception as exc:
+    logger.warning("Failed to load .env file: %s", exc)
 
 logger = logging.getLogger("app")
 
@@ -37,8 +39,8 @@ def _configure_io_encoding() -> None:
         if stream and hasattr(stream, "reconfigure"):
             try:
                 stream.reconfigure(encoding="utf-8")
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Failed to reconfigure %s encoding: %s", stream_name, exc)
 
 
 _configure_io_encoding()
@@ -718,40 +720,40 @@ SUMMERNOTE_CONFIG = {
     # Change editor size
     'width': '100%',
     'height': '480',
-    
+
     # Set iframe mode for better isolation - DISABLED to fix CSP issues
     'iframe': False,
-    
+
     # Disable file upload (or configure as needed)
     'disable_upload': False,
-    
+
     # Set upload path (relative to MEDIA_ROOT)
     'upload_to': 'uploads/summernote/%Y-%m-%d/',
-    
+
     # Storage class
     'attachment_storage_class': 'django.core.files.storage.FileSystemStorage',
-    
+
     # Set attachment size limit (5MB)
     'attachment_filesize_limit': 5 * 1024 * 1024,
-    
+
     # Allowed image file extensions - remove the model line
     # 'attachment_model': 'django_summernote.Attachment',
-    
+
     # Require authentication for uploads
     'attachment_require_authentication': True,
-    
+
     # Lazy loading
     'lazy': True,
-    
+
     # Use native CSRF
     'disable_attachment': False,
-    
+
     # Air mode - removes toolbar, shows inline
     'airMode': False,
-    
+
     # Test mode
     'summernote_test_mode': False,
-    
+
     # IMPORTANT: Don't load from CDN, use local files only
     'js': (),
     'css': (),

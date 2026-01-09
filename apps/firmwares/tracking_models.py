@@ -22,10 +22,9 @@ Performance Notes:
 - Stats aggregated daily to reduce query load
 - 90-day data retention (configurable)
 """
-from django.db import models
 from django.conf import settings
+from django.db import models
 from django.utils import timezone
-from datetime import timedelta
 
 
 class FirmwareView(models.Model):
@@ -33,11 +32,11 @@ class FirmwareView(models.Model):
     # GenericForeignKey to support all firmware types (Official, Engineering, etc.)
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.contrib.contenttypes.models import ContentType
-    
+
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.UUIDField()  # Firmware ID
     firmware = GenericForeignKey('content_type', 'object_id')
-    
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -50,7 +49,7 @@ class FirmwareView(models.Model):
     user_agent = models.CharField(max_length=255, blank=True)
     referer = models.URLField(max_length=500, blank=True)
     viewed_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    
+
     class Meta:
         db_table = 'firmwares_view_log'
         indexes = [
@@ -58,7 +57,7 @@ class FirmwareView(models.Model):
             models.Index(fields=['-viewed_at']),  # Trending queries
         ]
         ordering = ['-viewed_at']
-    
+
     @classmethod
     def log_view(cls, firmware, user=None, session_key=None, request=None):
         """Convenient method to log a view with optional request context"""
@@ -68,14 +67,14 @@ class FirmwareView(models.Model):
             'user': user,
             'session_key': session_key,
         }
-        
+
         if request:
             data.update({
                 'ip_address': request.META.get('REMOTE_ADDR'),
                 'user_agent': request.META.get('HTTP_USER_AGENT', '')[:255],
                 'referer': request.META.get('HTTP_REFERER', '')[:500],
             })
-        
+
         return cls.objects.create(**data)
 
 
@@ -83,21 +82,21 @@ class FirmwareDownloadAttempt(models.Model):
     """Track download attempts including failures - critical for storage analytics"""
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.contrib.contenttypes.models import ContentType
-    
+
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.UUIDField()
     firmware = GenericForeignKey('content_type', 'object_id')
-    
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         help_text="User who attempted download"
     )
-    
+
     # Storage integration (if using storage app)
     storage_session_id = models.UUIDField(null=True, blank=True, help_text="UserDownloadSession ID if applicable")
-    
+
     # Status tracking
     STATUS_CHOICES = [
         ('initiated', 'Initiated'),
@@ -109,16 +108,16 @@ class FirmwareDownloadAttempt(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='initiated', db_index=True)
-    
+
     initiated_at = models.DateTimeField(auto_now_add=True, db_index=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     failed_at = models.DateTimeField(null=True, blank=True)
-    
+
     failure_reason = models.CharField(max_length=500, blank=True)
     bytes_transferred = models.BigIntegerField(default=0, help_text="Actual bytes downloaded")
-    
+
     ip_address = models.GenericIPAddressField(null=True, blank=True)
-    
+
     class Meta:
         db_table = 'firmwares_download_attempt'
         indexes = [
@@ -127,14 +126,14 @@ class FirmwareDownloadAttempt(models.Model):
             models.Index(fields=['-initiated_at']),
         ]
         ordering = ['-initiated_at']
-    
+
     def mark_completed(self, bytes_transferred=0):
         """Mark download as successfully completed"""
         self.status = 'completed'
         self.completed_at = timezone.now()
         self.bytes_transferred = bytes_transferred
         self.save(update_fields=['status', 'completed_at', 'bytes_transferred'])
-    
+
     def mark_failed(self, reason):
         """Mark download as failed with reason"""
         self.status = 'failed'
@@ -148,7 +147,7 @@ class FirmwareRequest(models.Model):
     brand = models.ForeignKey('firmwares.Brand', on_delete=models.CASCADE, related_name='requests')
     model = models.ForeignKey('firmwares.Model', on_delete=models.CASCADE, null=True, blank=True, related_name='requests')
     variant_name = models.CharField(max_length=200, blank=True, help_text="Requested variant (may not exist yet)")
-    
+
     firmware_type = models.CharField(
         max_length=50,
         choices=[
@@ -160,26 +159,26 @@ class FirmwareRequest(models.Model):
         ],
         default='official'
     )
-    
+
     requested_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         related_name='firmware_requests'
     )
-    
+
     description = models.TextField(blank=True, help_text="Additional details from user")
     urgency = models.IntegerField(
         default=1,
         choices=[(1, 'Low'), (2, 'Normal'), (3, 'High'), (4, 'Urgent')],
         help_text="User-indicated urgency"
     )
-    
+
     # Tracking
     request_count = models.IntegerField(default=1, help_text="Number of users who requested this")
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     last_requested_at = models.DateTimeField(auto_now=True)
-    
+
     # Status
     STATUS_CHOICES = [
         ('open', 'Open'),
@@ -198,7 +197,7 @@ class FirmwareRequest(models.Model):
     fulfilled_firmware_id = models.UUIDField(null=True, blank=True)
     fulfilled_at = models.DateTimeField(null=True, blank=True)
     admin_notes = models.TextField(blank=True)
-    
+
     class Meta:
         db_table = 'firmwares_request'
         indexes = [
@@ -208,12 +207,12 @@ class FirmwareRequest(models.Model):
         ]
         unique_together = [('brand', 'model', 'variant_name', 'firmware_type')]  # Prevent duplicates
         ordering = ['-request_count', '-last_requested_at']
-    
+
     def __str__(self):
         model_str = f"/{self.model.name}" if self.model else ""
         variant_str = f"/{self.variant_name}" if self.variant_name else ""
         return f"{self.brand.name}{model_str}{variant_str} ({self.firmware_type}) - {self.request_count} requests"
-    
+
     def increment_request(self, user=None):
         """Increment request count when another user requests same firmware"""
         from django.db.models import F
@@ -228,13 +227,13 @@ class FirmwareStats(models.Model):
     """Aggregated daily statistics per firmware - optimized for dashboard queries"""
     from django.contrib.contenttypes.fields import GenericForeignKey
     from django.contrib.contenttypes.models import ContentType
-    
+
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.UUIDField()
     firmware = GenericForeignKey('content_type', 'object_id')
-    
+
     date = models.DateField(db_index=True, help_text="Stats for this date")
-    
+
     # Daily metrics
     view_count = models.IntegerField(default=0)
     unique_visitors = models.IntegerField(default=0)
@@ -242,7 +241,7 @@ class FirmwareStats(models.Model):
     successful_downloads = models.IntegerField(default=0)
     failed_downloads = models.IntegerField(default=0)
     bytes_transferred = models.BigIntegerField(default=0)
-    
+
     # Calculated metrics
     conversion_rate = models.FloatField(
         default=0.0,
@@ -252,7 +251,7 @@ class FirmwareStats(models.Model):
         default=0.0,
         help_text="Successful / Total attempts percentage"
     )
-    
+
     class Meta:
         db_table = 'firmwares_stats'
         unique_together = [('content_type', 'object_id', 'date')]
@@ -262,7 +261,7 @@ class FirmwareStats(models.Model):
             models.Index(fields=['content_type', 'object_id', 'date']),
         ]
         ordering = ['-date']
-    
+
     def calculate_rates(self):
         """Recalculate conversion and success rates"""
         self.conversion_rate = (
@@ -274,19 +273,19 @@ class FirmwareStats(models.Model):
             if self.download_attempts > 0 else 0.0
         )
         self.save(update_fields=['conversion_rate', 'success_rate'])
-    
+
     @classmethod
     def aggregate_for_date(cls, date, firmware_ct, firmware_id):
         """Aggregate raw logs into daily stats (run by Celery task)"""
-        from django.db.models import Count, Q, Sum
-        
+        from django.db.models import Sum
+
         # Get or create stats record
         stats, created = cls.objects.get_or_create(
             content_type=firmware_ct,
             object_id=firmware_id,
             date=date
         )
-        
+
         # Count views
         views = FirmwareView.objects.filter(
             content_type=firmware_ct,
@@ -296,7 +295,7 @@ class FirmwareStats(models.Model):
         stats.view_count = views.count()
         stats.unique_visitors = views.values('user').distinct().count() + \
                                 views.filter(user__isnull=True).values('session_key').distinct().count()
-        
+
         # Count downloads
         downloads = FirmwareDownloadAttempt.objects.filter(
             content_type=firmware_ct,
@@ -307,6 +306,6 @@ class FirmwareStats(models.Model):
         stats.successful_downloads = downloads.filter(status='completed').count()
         stats.failed_downloads = downloads.filter(status='failed').count()
         stats.bytes_transferred = downloads.aggregate(total=Sum('bytes_transferred'))['total'] or 0
-        
+
         stats.calculate_rates()
         return stats

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from .views_shared import *
-from .views_shared import _render_admin, _make_breadcrumb
+from .views_shared import _make_breadcrumb, _render_admin
+
 
 # Extracted views_content views from legacy views.py
 class PageForm(forms.ModelForm):
@@ -116,7 +117,7 @@ def admin_suite_blog(request: HttpRequest) -> HttpResponse:
         raise _ADMIN_DISABLED
 
     try:
-        from apps.blog.models import Post, PostStatus, Category
+        from apps.blog.models import Category, Post, PostStatus
     except Exception:
         raise Http404("Blog module not installed")
 
@@ -223,7 +224,7 @@ def admin_suite_blog(request: HttpRequest) -> HttpResponse:
     seo_health = {}
     if edit_post:
         try:
-            from apps.seo.auto import suggest_tags, ensure_canonical
+            from apps.seo.auto import ensure_canonical, suggest_tags
 
             suggested_tags = suggest_tags([edit_post.title, edit_post.summary or "", edit_post.body], max_tags=6)
             seo_health = {
@@ -286,7 +287,7 @@ def admin_suite_blog_categories(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         category_id = request.POST.get("category_id")
-        
+
         if action == "delete" and category_id:
             try:
                 Category.objects.get(pk=category_id).delete()
@@ -400,8 +401,9 @@ def admin_suite_marketing(request: HttpRequest) -> HttpResponse:
 
     # Ads snapshot
     try:
-        from apps.ads.models import AdPlacement, AdCreative, AdEvent
         from django.utils import timezone
+
+        from apps.ads.models import AdCreative, AdEvent, AdPlacement
 
         stats["placements"] = AdPlacement.objects.count()
         stats["creatives"] = AdCreative.objects.count()
@@ -526,7 +528,7 @@ def admin_suite_distribution(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.distribution.models import SocialAccount, SharePlan, ShareJob
+            from apps.distribution.models import ShareJob, SharePlan, SocialAccount
 
             if action == "disable_account":
                 aid = request.POST.get("account_id")
@@ -573,8 +575,14 @@ def admin_suite_distribution(request: HttpRequest) -> HttpResponse:
             message = "Action failed."
 
     try:
-        from apps.distribution.models import SocialAccount, SharePlan, ShareJob, ShareLog
         from django.utils import timezone
+
+        from apps.distribution.models import (
+            ShareJob,
+            ShareLog,
+            SharePlan,
+            SocialAccount,
+        )
 
         stats["accounts"] = SocialAccount.objects.count()
         stats["plans"] = SharePlan.objects.count()
@@ -668,7 +676,7 @@ def admin_suite_ads(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.ads.models import AdPlacement, AdCreative
+            from apps.ads.models import AdCreative, AdPlacement
 
             if action == "disable_placement":
                 pid = request.POST.get("placement_id")
@@ -712,8 +720,9 @@ def admin_suite_ads(request: HttpRequest) -> HttpResponse:
             message = "Action failed."
 
     try:
-        from apps.ads.models import AdPlacement, AdCreative, AdEvent
         from django.utils import timezone
+
+        from apps.ads.models import AdCreative, AdEvent, AdPlacement
 
         stats["placements"] = AdPlacement.objects.count()
         stats["creatives"] = AdCreative.objects.count()
@@ -798,6 +807,7 @@ def admin_suite_tags(request: HttpRequest) -> HttpResponse:
         action = request.POST.get("action")
         try:
             import nh3
+
             from apps.tags.models import Tag
 
             name = nh3.clean(request.POST.get("name", ""), tags=set())

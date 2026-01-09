@@ -16,10 +16,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from apps.consent.models import ConsentPolicy
 from django.conf import settings
 from django.http import HttpRequest
 from django.utils.functional import SimpleLazyObject
+
+from apps.consent.models import ConsentPolicy
 
 logger = logging.getLogger(__name__)
 

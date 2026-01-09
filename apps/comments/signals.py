@@ -11,8 +11,9 @@ Core signals (notify_on_comment) remain active for the base Comment model.
 from __future__ import annotations
 
 import logging
+
 from django.apps import apps
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 logger = logging.getLogger(__name__)
@@ -23,7 +24,10 @@ def _get_notification_helpers():
     if not apps.is_installed('apps.users'):
         return None, lambda: False
     try:
-        from apps.users.services.notifications import send_notification, notifications_enabled
+        from apps.users.services.notifications import (
+            notifications_enabled,
+            send_notification,
+        )
         return send_notification, notifications_enabled
     except Exception:
         return None, lambda: False
@@ -37,18 +41,18 @@ def notify_on_comment(sender, instance, created, **kwargs):
     - Someone replies to a comment (notify parent comment author)
     """
     send_notification, notifications_enabled = _get_notification_helpers()
-    
+
     if not created or not notifications_enabled():
         return
-    
+
     if send_notification is None:
         return
-    
+
     try:
         # Don't notify if comment is pending or spam
         if instance.status in ['pending', 'spam']:
             return
-        
+
         # Notify post author when someone comments
         if instance.post and instance.post.author != instance.user:
             send_notification(
@@ -62,7 +66,7 @@ def notify_on_comment(sender, instance, created, **kwargs):
                 action_type="comment",
                 icon="comment",
             )
-        
+
         # Notify parent comment author when someone replies
         if instance.parent and instance.parent.user != instance.user:
             send_notification(
@@ -89,20 +93,21 @@ def sync_post_comment_count_on_save(sender, instance, created, **kwargs):
     try:
         if not instance.post:
             return
-        
+
+        from django.db.models import Q
+
         from apps.blog.models import Post
-        from django.db.models import Count, Q
-        
+
         # Get approved comment count
         approved_count = instance.post.comments.filter(
             Q(status='approved') | Q(status='APPROVED')
         ).count()
-        
+
         # Update post comment count if it has changed
         if hasattr(instance.post, 'comments_count') and instance.post.comments_count != approved_count:
             Post.objects.filter(pk=instance.post.pk).update(comments_count=approved_count)
             logger.debug(f"Updated comment count for post {instance.post.pk}: {approved_count}")
-            
+
     except Exception as exc:
         logger.error(f"Failed to sync comment count: {exc}")
 
@@ -115,19 +120,20 @@ def sync_post_comment_count_on_delete(sender, instance, **kwargs):
     try:
         if not instance.post:
             return
-        
-        from apps.blog.models import Post
+
         from django.db.models import Q
-        
+
+        from apps.blog.models import Post
+
         # Get approved comment count (instance already deleted)
         approved_count = instance.post.comments.filter(
             Q(status='approved') | Q(status='APPROVED')
         ).count()
-        
+
         if hasattr(instance.post, 'comments_count'):
             Post.objects.filter(pk=instance.post.pk).update(comments_count=approved_count)
             logger.debug(f"Updated comment count after delete for post {instance.post.pk}: {approved_count}")
-            
+
     except Exception as exc:
         logger.error(f"Failed to sync comment count on delete: {exc}")
 
@@ -166,7 +172,7 @@ def sync_post_comment_count_on_delete(sender, instance, **kwargs):
 #                 'insightful': '💡',
 #                 'funny': '😂',
 #             }.get(instance.award_type, '🏅')
-#             
+#
 #             send_notification(
 #                 recipient=comment.user,
 #                 title=f"You received a {instance.award_type} award!",

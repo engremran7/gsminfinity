@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import re
 from collections import Counter
-from typing import Iterable, List, Tuple
+from collections.abc import Iterable
+from typing import List, Tuple
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -10,7 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 
-from apps.seo.models import SEOModel, Metadata, SchemaEntry
+from apps.seo.models import Metadata, SchemaEntry, SEOModel
 from apps.seo.models_settings import SeoAutomationSettings
 from apps.tags.models import Tag
 
@@ -162,7 +163,7 @@ def apply_auto_tags(post, max_tags: int = 6) -> list[Tag]:
     suggestions = []
     # Try AI first
     try:
-        from apps.ai.services import test_completion, get_settings
+        from apps.ai.services import get_settings, test_completion
         ai_settings = get_settings()
         if ai_settings.get("ai_enabled"):
             prompt = f"Generate {max_tags} relevant tags for the following blog post. Return ONLY a comma-separated list of tags.\n\nTitle: {post.title}\nSummary: {post.summary}\n\nTags:"

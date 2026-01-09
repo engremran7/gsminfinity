@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from .views_shared import *
-from .views_shared import _render_admin, _make_breadcrumb
+from .views_shared import _make_breadcrumb, _render_admin
+
 
 # Extracted views_settings views from legacy views.py
 @staff_member_required
@@ -59,9 +60,10 @@ def admin_suite_settings(request: HttpRequest) -> HttpResponse:
     }
     try:
         from security_suite.security import conf as sec_conf
-        from security_suite.security_devices import conf as dev_conf
         from security_suite.security_bots import conf as bot_conf
+        from security_suite.security_devices import conf as dev_conf
         from security_suite.security_risk import conf as risk_conf
+
         from apps.core.models import AppRegistry
 
         reg = AppRegistry.get_solo()
@@ -184,8 +186,9 @@ def admin_suite_consent(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.consent.models import ConsentPolicy
             from django.utils import timezone
+
+            from apps.consent.models import ConsentPolicy
 
             if action == "create_policy":
                 ConsentPolicy.objects.create(
@@ -212,8 +215,9 @@ def admin_suite_consent(request: HttpRequest) -> HttpResponse:
             logger.warning("Admin suite consent action failed: %s", exc)
 
     try:
-        from apps.consent.models import ConsentPolicy, ConsentDecision, ConsentEvent
         from django.utils import timezone
+
+        from apps.consent.models import ConsentDecision, ConsentEvent, ConsentPolicy
 
         stats["policies_total"] = ConsentPolicy.objects.count()
         stats["policies_active"] = ConsentPolicy.objects.filter(is_active=True).count()

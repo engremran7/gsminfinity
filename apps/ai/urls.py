@@ -1,7 +1,6 @@
 from django.urls import path
 
-from . import views
-from . import services_view
+from . import services_view, views
 
 app_name = "ai"
 

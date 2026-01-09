@@ -13,7 +13,7 @@ class SeoConfig(AppConfig):
             signals.connect_signals()
         except Exception:
             pass
-        
+
         # Register signal handlers for cross-app communication
         try:
             from . import signal_handlers  # noqa: F401
@@ -23,6 +23,7 @@ class SeoConfig(AppConfig):
         # Register SEO sitemap entries into the shared registry
         try:
             from apps.pages.sitemap_registry import register_sitemap
+
             from .sitemaps import ActiveSeoEntriesSitemap
 
             register_sitemap("seo", ActiveSeoEntriesSitemap)

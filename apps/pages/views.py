@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from apps.site_settings.models import SiteSettings
+
 from .models import Page
 
 logger = logging.getLogger(__name__)
@@ -67,18 +68,19 @@ def home_landing(request: HttpRequest) -> HttpResponse:
     """
     from django.apps import apps
     from django.db.models import Sum
+
     from .widgets import HomePageWidgetService
-    
+
     # Get stats for homepage
     stats = {
-        'brands_count': 0, 
-        'models_count': 0, 
+        'brands_count': 0,
+        'models_count': 0,
         'firmwares_count': 0,
         'total_downloads': 0,
         'auto_blogs_count': 0,
         'manual_blogs_count': 0,
     }
-    
+
     try:
         # Firmware stats
         if apps.is_installed('apps.firmwares'):
@@ -89,11 +91,11 @@ def home_landing(request: HttpRequest) -> HttpResponse:
             ReadbackFirmware = apps.get_model('firmwares', 'ReadbackFirmware')
             ModifiedFirmware = apps.get_model('firmwares', 'ModifiedFirmware')
             OtherFirmware = apps.get_model('firmwares', 'OtherFirmware')
-            
+
             # Brand doesn't have is_active, count all brands
             stats['brands_count'] = Brand.objects.count()
             stats['models_count'] = Model.objects.filter(is_active=True).count()
-            
+
             # Count all active firmwares
             stats['firmwares_count'] = sum([
                 OfficialFirmware.objects.filter(is_active=True).count(),
@@ -102,7 +104,7 @@ def home_landing(request: HttpRequest) -> HttpResponse:
                 ModifiedFirmware.objects.filter(is_active=True).count(),
                 OtherFirmware.objects.filter(is_active=True).count(),
             ])
-            
+
             # Total downloads across all firmware types
             total_downloads = 0
             for fw_model in [OfficialFirmware, EngineeringFirmware, ReadbackFirmware, ModifiedFirmware, OtherFirmware]:
@@ -110,16 +112,16 @@ def home_landing(request: HttpRequest) -> HttpResponse:
                 if downloads:
                     total_downloads += downloads
             stats['total_downloads'] = total_downloads
-            
+
         # Blog stats
         if apps.is_installed('apps.blog'):
             Post = apps.get_model('blog', 'Post')
             stats['auto_blogs_count'] = Post.objects.filter(is_published=True, is_ai_generated=True).count()
             stats['manual_blogs_count'] = Post.objects.filter(is_published=True, is_ai_generated=False).count()
-            
+
     except Exception as e:
         logger.warning(f"Error fetching homepage stats: {e}")
-    
+
     # Get all widget data in single optimized call
     widget_config = {
         'latest_firmwares': 8,      # Left column
@@ -129,9 +131,9 @@ def home_landing(request: HttpRequest) -> HttpResponse:
         'trending_blogs': 6,         # Right column
         'layout': 'dual_column',
     }
-    
+
     homepage_data = HomePageWidgetService.get_homepage_data(widget_config)
-    
+
     # Organize into left/right columns for template
     context = {
         'stats': stats,
@@ -147,7 +149,7 @@ def home_landing(request: HttpRequest) -> HttpResponse:
         'ad_placements': homepage_data['ad_placements'],
         'cache_timestamp': homepage_data.get('cache_timestamp'),
     }
-    
+
     return render(
         request,
         "pages/home_landing.html",

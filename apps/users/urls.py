@@ -7,28 +7,28 @@ Enterprise-grade URL configuration for GSMInfinity Users module.
 from allauth.account.views import LogoutView
 from django.urls import path
 
-from . import api, views_notifications, admin_views
+from . import admin_views, api, views_notifications
 from .views import (
     EnterpriseLoginView,
     EnterpriseSignupView,
+    approve_device,
     auth_hub_view,
     change_username,
     check_username,
     dashboard_view,
-    profile_view,
-    devices_view,
-    resend_verification,
-    tell_us_about_you,
-    verify_email_view,
-    verify_email_status,
-    verify_email_required,
     device_approval_needed,
-    approve_device,
     device_eviction,
     device_mfa_challenge,
+    devices_view,
     notification_settings,
+    profile_view,
     push_subscription,
+    resend_verification,
+    tell_us_about_you,
     unsubscribe_push,
+    verify_email_required,
+    verify_email_status,
+    verify_email_view,
 )
 
 app_name = "users"
@@ -71,21 +71,21 @@ from . import api_social
 # Admin API endpoints (add to main admin URLconf via gsminfinity/urls.py)
 admin_api_patterns = [
     path("admin/users/notification/stats/", api.notification_stats, name="notification_stats_api"),
-    
+
     # Social Auth Provider APIs
     path("api/social-providers/", api_social.social_providers_list, name="social_providers_api"),
     path("api/social-providers/create/", api_social.social_provider_create, name="social_provider_create_api"),
     path("api/social-providers/<str:provider_id>/", api_social.social_provider_detail, name="social_provider_detail_api"),
     path("api/social-providers/<str:provider_id>/test/", api_social.social_provider_test, name="social_provider_test_api"),
     path("api/social-providers/<str:provider_id>/sync/", api_social.social_provider_sync, name="social_provider_sync_api"),
-    
+
     # Social Posting Account APIs
     path("api/social-posting/", api_social.social_posting_list, name="social_posting_api"),
     path("api/social-posting/create/", api_social.social_posting_create, name="social_posting_create_api"),
     path("api/social-posting/<str:account_id>/", api_social.social_posting_detail, name="social_posting_detail_api"),
     path("api/social-posting/<str:account_id>/test/", api_social.social_posting_test, name="social_posting_test_api"),
     path("api/social-posting/<str:account_id>/send-test/", api_social.social_posting_send_test, name="social_posting_send_test_api"),
-    
+
     # Public info APIs (for login page)
     path("api/social-providers/info/", api_social.social_providers_info, name="social_providers_info_api"),
     path("api/social-platforms/info/", api_social.social_platforms_info, name="social_platforms_info_api"),

@@ -3,22 +3,24 @@ import shutil
 import uuid
 import zipfile
 from pathlib import Path
-from django.db import transaction
+
 from django.conf import settings
+from django.db import transaction
+
+from .ai_client import AIClient
+from .crypto import decrypt_password, encrypt_password
 from .models import (
-    PendingFirmware,
-    OfficialFirmware,
-    EngineeringFirmware,
-    ReadbackFirmware,
-    ModifiedFirmware,
-    OtherFirmware,
-    UnclassifiedFirmware,
     Brand,
+    EngineeringFirmware,
     Model,
+    ModifiedFirmware,
+    OfficialFirmware,
+    OtherFirmware,
+    PendingFirmware,
+    ReadbackFirmware,
+    UnclassifiedFirmware,
     Variant,
 )
-from .crypto import encrypt_password, decrypt_password
-from .ai_client import AIClient
 
 ai_client = AIClient()
 

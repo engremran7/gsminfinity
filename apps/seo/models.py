@@ -4,7 +4,6 @@ from __future__ import annotations
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils import timezone
 from django.utils.text import slugify
 from solo.models import SingletonModel
 

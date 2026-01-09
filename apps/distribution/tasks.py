@@ -11,14 +11,14 @@ except Exception:  # pragma: no cover - fallback when Celery not installed
         def decorator(func):
             return func
         return decorator
-from django.utils import timezone
 from django.conf import settings
-
 from django.db import transaction
+from django.utils import timezone
+
+from apps.distribution.api import get_settings
 
 from .connectors import dispatch
 from .models import ShareJob, SocialAccount
-from apps.distribution.api import get_settings
 
 logger = logging.getLogger(__name__)
 

@@ -22,19 +22,6 @@ from typing import Any, Dict, Optional
 
 from allauth.account.forms import LoginForm, SignupForm
 from allauth.account.views import LoginView, SignupView
-from apps.users.forms import TellUsAboutYouForm
-from apps.users.models import Announcement, Notification
-from apps.users.services.rate_limit import allow_action
-from apps.users.services.recaptcha import verify_recaptcha
-from apps.core.app_service import AppService
-from apps.devices.services import (
-    make_device_token,
-    load_device_token,
-    mark_device_trusted,
-    attach_device_cookie,
-)
-from apps.devices.services import DevicePolicyError
-from apps.core.utils.ip import get_client_ip
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
@@ -48,8 +35,22 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.http import require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods, require_POST
+
+from apps.core.app_service import AppService
+from apps.core.utils.ip import get_client_ip
+from apps.devices.services import (
+    DevicePolicyError,
+    attach_device_cookie,
+    load_device_token,
+    make_device_token,
+    mark_device_trusted,
+)
+from apps.users.forms import TellUsAboutYouForm
+from apps.users.models import Announcement, Notification
+from apps.users.services.rate_limit import allow_action
+from apps.users.services.recaptcha import verify_recaptcha
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +138,7 @@ def devices_view(request: HttpRequest) -> HttpResponse:
                     "first_seen_at",
                 )
             )
-            
+
             # Post-process to flag duplicates (same OS, different browser entry)
             seen_fingerprints = {}
             devices = []
@@ -185,9 +186,9 @@ def devices_view(request: HttpRequest) -> HttpResponse:
         request,
         "users/devices.html",
         {
-            "devices": devices, 
-            "message": message, 
-            "error": error, 
+            "devices": devices,
+            "message": message,
+            "error": error,
             "pending_device": pending_device,
             "remaining_devices": remaining_devices,
             "max_devices": max_devices,
@@ -220,8 +221,8 @@ def _get_settings(request: Optional[HttpRequest] = None) -> Dict[str, object]:
     unavailable, fall back to safe defaults.
     """
     try:
-        from apps.users.models import UsersSettings
         from apps.site_settings.models import SiteSettings
+        from apps.users.models import UsersSettings
 
         us = UsersSettings.get_solo()
         ss = SiteSettings.get_solo()
@@ -493,37 +494,38 @@ class EnterpriseSignupView(SignupView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
+
         # Import country detection utilities
+        from django_countries import countries
+
         from apps.users.services import (
             COUNTRY_PHONE_CODES,
             detect_country_from_ip,
             get_client_ip,
             get_phone_code_for_country,
         )
-        from django_countries import countries
-        
+
         # Detect country from IP
         ip = get_client_ip(self.request)
         detected_country = detect_country_from_ip(ip) if ip else None
         detected_phone_code = get_phone_code_for_country(detected_country) if detected_country else None
-        
+
         # Build country choices list
         country_choices = list(countries)
-        
+
         # Build phone code choices list
         phone_code_choices = sorted(
             [(code, dial) for code, dial in COUNTRY_PHONE_CODES.items()],
             key=lambda x: x[0]
         )
-        
+
         context.update({
             "countries": country_choices,
             "phone_codes": phone_code_choices,
             "detected_country": detected_country,
             "detected_phone_code": detected_phone_code,
         })
-        
+
         return context
 
     def form_valid(self, form):
@@ -650,17 +652,17 @@ def verify_email_required(request: HttpRequest) -> HttpResponse:
     Social login users should never see this page (they're pre-verified).
     """
     user = request.user
-    
+
     # Social login users are already verified
     if getattr(user, "signup_method", None) == "social":
         next_url = request.session.pop("next_after_verify", None)
         return redirect(next_url or "users:dashboard")
-    
+
     # If already verified, redirect to intended destination
     if getattr(user, "email_verified_at", None):
         next_url = request.session.pop("next_after_verify", None)
         return redirect(next_url or "users:dashboard")
-    
+
     return render(request, "users/verify_email_required.html", {"user": user})
 
 
@@ -818,8 +820,8 @@ def dashboard_view(request: HttpRequest) -> HttpResponse:
     # Resolve current device (best effort) for trust reminder
     current_device = None
     try:
-        from apps.devices.services import resolve_identity
         from apps.devices.models import Device
+        from apps.devices.services import resolve_identity
 
         ident = resolve_identity(request, user=request.user, service_name="login")
         candidate_id = ident.get("os_fingerprint") or ident.get("server_fallback_fp")
@@ -956,56 +958,57 @@ def tell_us_about_you(request: HttpRequest) -> HttpResponse:
       • Phone number with country code
       • Password (for social accounts without password)
     """
+    from django_countries import countries
+
     from apps.users.services import (
         COUNTRY_PHONE_CODES,
         auto_detect_user_country,
         get_phone_code_for_country,
     )
-    from django_countries import countries
-    
+
     user = request.user
 
     if getattr(user, "profile_completed", False):
         return redirect("users:dashboard")
-    
+
     # Auto-detect country from IP on first visit
     detected_country = None
     detected_phone_code = None
-    
+
     if not user.country:
         auto_detect_user_country(user, request)
-    
+
     if user.country:
         detected_country = user.country
         detected_phone_code = get_phone_code_for_country(user.country)
-    
+
     # Determine if we need password fields
     show_password_fields = not user.has_usable_password()
 
     if request.method == "POST":
         form = TellUsAboutYouForm(request.POST, user=user, request=request)
-        
+
         if form.is_valid():
             update_fields: list[str] = []
-            
+
             # Username
             username = form.cleaned_data.get("username", "").strip()
             if username and user.username != username:
                 user.username = username
                 update_fields.append("username")
-            
+
             # Full name
             full_name = form.cleaned_data.get("full_name", "").strip()
             if full_name:
                 user.full_name = full_name
                 update_fields.append("full_name")
-            
+
             # Country
             country = form.cleaned_data.get("country", "").strip()
             if country and hasattr(user, "country"):
                 user.country = country
                 update_fields.append("country")
-            
+
             # Phone
             phone = form.cleaned_data.get("phone", "").strip()
             phone_country_code = form.cleaned_data.get("phone_country_code", "").strip()
@@ -1015,23 +1018,23 @@ def tell_us_about_you(request: HttpRequest) -> HttpResponse:
             if phone_country_code and hasattr(user, "phone_country_code"):
                 user.phone_country_code = phone_country_code
                 update_fields.append("phone_country_code")
-            
+
             # Password for social accounts
             password1 = form.cleaned_data.get("password1")
             password2 = form.cleaned_data.get("password2")
             if password1 and password2 and password1 == password2:
                 user.set_password(password1)
                 update_session_auth_hash(request, user)
-            
+
             # Mark profile as completed
             if hasattr(user, "profile_completed"):
                 user.profile_completed = True
                 update_fields.append("profile_completed")
-            
+
             # Save all updates
             if update_fields:
                 user.save(update_fields=update_fields)
-            
+
             messages.success(request, _("Welcome! Your profile has been completed."))
             return redirect("users:dashboard")
         else:
@@ -1047,16 +1050,16 @@ def tell_us_about_you(request: HttpRequest) -> HttpResponse:
             "phone": getattr(user, "phone", "") or "",
         }
         form = TellUsAboutYouForm(initial=initial_data, user=user, request=request)
-    
+
     # Build country choices list
     country_choices = list(countries)
-    
+
     # Build phone code choices list
     phone_code_choices = sorted(
         [(code, dial) for code, dial in COUNTRY_PHONE_CODES.items()],
         key=lambda x: x[0]
     )
-    
+
     context = {
         "user": user,
         "form": form,
@@ -1163,10 +1166,10 @@ def notification_settings(request: HttpRequest) -> HttpResponse:
     User notification preferences management.
     """
     from apps.users.models import NotificationPreferences
-    
+
     # Get or create preferences
     preferences, created = NotificationPreferences.objects.get_or_create(user=request.user)
-    
+
     if request.method == "POST":
         try:
             # Email preferences
@@ -1175,32 +1178,32 @@ def notification_settings(request: HttpRequest) -> HttpResponse:
             preferences.email_mentions = request.POST.get('email_mentions') == 'on'
             preferences.email_new_posts = request.POST.get('email_new_posts') == 'on'
             preferences.email_frequency = request.POST.get('email_frequency', 'instant')
-            
+
             # Web preferences
             preferences.web_comments = request.POST.get('web_comments') == 'on'
             preferences.web_awards = request.POST.get('web_awards') == 'on'
             preferences.web_moderation = request.POST.get('web_moderation') == 'on'
             preferences.web_system = request.POST.get('web_system') == 'on'
-            
+
             # Quiet hours
             preferences.quiet_hours_enabled = request.POST.get('quiet_hours_enabled') == 'on'
             if preferences.quiet_hours_enabled:
                 preferences.quiet_hours_start = request.POST.get('quiet_hours_start', '22:00')
                 preferences.quiet_hours_end = request.POST.get('quiet_hours_end', '08:00')
-            
+
             preferences.save()
             messages.success(request, "Notification preferences saved successfully!")
             return redirect('users:notification_settings')
-            
+
         except Exception as exc:
             logger.exception("Failed to save notification preferences: %s", exc)
             messages.error(request, "Failed to save preferences. Please try again.")
-    
+
     context = {
         'preferences': preferences,
         'vapid_public_key': getattr(settings, 'VAPID_PUBLIC_KEY', ''),
     }
-    
+
     return render(request, 'users/notification_settings.html', context)
 
 
@@ -1211,16 +1214,17 @@ def push_subscription(request: HttpRequest) -> JsonResponse:
     Save push notification subscription from service worker.
     """
     import json
+
     from apps.users.models import PushSubscription
-    
+
     try:
         data = json.loads(request.body)
         endpoint = data.get('endpoint')
         keys = data.get('keys', {})
-        
+
         if not endpoint or not keys.get('p256dh') or not keys.get('auth'):
             return JsonResponse({'error': 'Invalid subscription data'}, status=400)
-        
+
         # Get or create subscription
         subscription, created = PushSubscription.objects.update_or_create(
             user=request.user,
@@ -1232,19 +1236,19 @@ def push_subscription(request: HttpRequest) -> JsonResponse:
                 'is_active': True,
             }
         )
-        
+
         # Enable push in preferences
         from apps.users.models import NotificationPreferences
         prefs, _ = NotificationPreferences.objects.get_or_create(user=request.user)
         prefs.push_enabled = True
         prefs.save(update_fields=['push_enabled'])
-        
+
         return JsonResponse({
             'ok': True,
             'created': created,
             'subscription_id': subscription.id
         })
-        
+
     except Exception as exc:
         logger.exception("Failed to save push subscription: %s", exc)
         return JsonResponse({'error': 'Server error'}, status=500)
@@ -1257,20 +1261,21 @@ def unsubscribe_push(request: HttpRequest) -> JsonResponse:
     Unsubscribe from push notifications.
     """
     import json
+
     from apps.users.models import PushSubscription
-    
+
     try:
         data = json.loads(request.body)
         endpoint = data.get('endpoint')
-        
+
         if endpoint:
             PushSubscription.objects.filter(user=request.user, endpoint=endpoint).update(is_active=False)
         else:
             # Disable all user subscriptions
             PushSubscription.objects.filter(user=request.user).update(is_active=False)
-        
+
         return JsonResponse({'ok': True})
-        
+
     except Exception as exc:
         logger.exception("Failed to unsubscribe push: %s", exc)
         return JsonResponse({'error': 'Server error'}, status=500)

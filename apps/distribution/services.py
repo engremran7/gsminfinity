@@ -2,16 +2,17 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterable, List, TYPE_CHECKING
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from django.apps import apps
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from apps.core import ai_client
-from apps.core.utils.logging import log_event
 from apps.core.app_service import AppService
+from apps.core.utils.logging import log_event
+
 from .models import (
     Channel,
     ContentVariant,
@@ -52,16 +53,17 @@ def _default_template(channel: str) -> ShareTemplate | None:
 
 def _ensure_variants(post: Post, channels: Iterable[str]) -> Dict[str, Dict[str, Any]]:
     variants: Dict[str, Dict[str, Any]] = {}
-    
+
     # Generate AI content once if possible
     ai_summary = post.summary
     ai_title = post.title
     ai_hashtags = []
 
     try:
-        from apps.ai.services import test_completion
         import json
-        
+
+        from apps.ai.services import test_completion
+
         prompt = f"""
         Analyze this blog post and provide distribution content.
         Return ONLY a valid JSON object with the following keys:
@@ -73,17 +75,17 @@ def _ensure_variants(post: Post, channels: Iterable[str]) -> Dict[str, Dict[str,
         Post Summary: {post.summary}
         Post Body (excerpt): {post.body[:1000]}
         """
-        
+
         resp = test_completion(prompt)
         text = resp.get("text", "")
         if text.startswith("```"):
              text = text.split("```")[1].replace("json", "").strip()
-        
+
         data = json.loads(text)
         ai_summary = data.get("summary") or post.summary
         ai_title = data.get("title") or post.title
         ai_hashtags = data.get("hashtags") or []
-        
+
     except Exception as e:
         logger.warning(f"AI distribution content generation failed: {e}")
 

@@ -4,25 +4,27 @@ Handles all comment business logic with reactions, voting, moderation, threading
 """
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Any
-from django.db import transaction, models
-from django.db.models import F, Q, Count, Sum, Avg, Prefetch
-from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
-from django.core.cache import cache
-from django.conf import settings
-import re
 import logging
+import re
+from typing import Any, Dict, List, Optional
+
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.core.cache import cache
+from django.db import transaction
+from django.db.models import Count, Q, Sum
+from django.utils import timezone
 
 from apps.comments.models import Comment
+from apps.core.events import EventTypes, event_bus
+
 # ARCHIVED: Enhanced models moved to apps/core/versions/
 # from apps.comments.models_enhanced import (
 #     CommentReaction, CommentVote, CommentFlag, CommentMention,
 #     CommentEdit, CommentBookmark, CommentAward, CommentAnalytics,
 #     CommentThread, ModerationAction
 # )
-from apps.core.infrastructure import QueueService, EmailService
-from apps.core.events import event_bus, EventTypes
+from apps.core.infrastructure import EmailService, QueueService
 from apps.core.metrics import metrics
 
 logger = logging.getLogger(__name__)
@@ -33,13 +35,13 @@ class CommentService:
     Centralized service for all comment operations.
     Provides enterprise-grade features for comments system.
     """
-    
+
     def __init__(self):
         self.queue = QueueService()
         self.email = EmailService()
-    
+
     # ==================== CRUD Operations ====================
-    
+
     @transaction.atomic
     def create_comment(
         self,
@@ -65,10 +67,10 @@ class CommentService:
             Created Comment instance
         """
         metrics.increment("comment.create")
-        
+
         # Get content type
         content_type = ContentType.objects.get_for_model(content_object)
-        
+
         # Create comment
         comment = Comment.objects.create(
             content_type=content_type,
@@ -81,15 +83,15 @@ class CommentService:
             is_approved=auto_approve,
             metadata=metadata or {}
         )
-        
+
         # Extract and create mentions
         mentions = self._extract_mentions(body)
         if mentions:
             self._create_mentions(comment, mentions)
-        
+
         # Create analytics record
         CommentAnalytics.objects.create(comment=comment)
-        
+
         # Update thread metadata if this is a reply
         if parent:
             self._update_thread_metadata(parent)
@@ -102,7 +104,7 @@ class CommentService:
                 last_activity=timezone.now(),
                 participant_count=1
             )
-        
+
         # Publish event
         event_bus.publish(EventTypes.COMMENT_CREATED, {
             "comment_id": comment.id,
@@ -110,17 +112,17 @@ class CommentService:
             "content_type": str(content_type),
             "object_id": content_object.pk
         })
-        
+
         # Queue moderation if not auto-approved
         if not auto_approve:
             self.queue.enqueue(
                 "apps.comments.tasks.moderate_comment",
                 comment_id=comment.id
             )
-        
+
         logger.info(f"Comment {comment.id} created by user {user.id}")
         return comment
-    
+
     @transaction.atomic
     def update_comment(
         self,
@@ -133,7 +135,7 @@ class CommentService:
         Update comment body with edit tracking.
         """
         metrics.increment("comment.update")
-        
+
         # Save edit history
         CommentEdit.objects.create(
             comment=comment,
@@ -141,25 +143,25 @@ class CommentService:
             edited_by=edited_by,
             edit_reason=edit_reason
         )
-        
+
         # Update comment
         comment.body = new_body
         comment.edited_at = timezone.now()
         comment.save(update_fields=["body", "edited_at"])
-        
+
         # Re-extract mentions
         self._update_mentions(comment, new_body)
-        
+
         # Queue re-moderation if needed
         if comment.status == Comment.Status.APPROVED:
             self.queue.enqueue(
                 "apps.comments.tasks.remoderate_comment",
                 comment_id=comment.id
             )
-        
+
         logger.info(f"Comment {comment.id} updated by {edited_by.id}")
         return comment
-    
+
     @transaction.atomic
     def delete_comment(
         self,
@@ -171,14 +173,14 @@ class CommentService:
         Delete comment (soft or hard).
         """
         metrics.increment("comment.delete")
-        
+
         if hard_delete:
             comment.delete()
         else:
             comment.is_deleted = True
             comment.deleted_at = timezone.now()
             comment.save(update_fields=["is_deleted", "deleted_at"])
-        
+
         # Log moderation action
         ModerationAction.objects.create(
             comment=comment if not hard_delete else None,
@@ -186,12 +188,12 @@ class CommentService:
             moderator=deleted_by,
             reason="Comment deleted"
         )
-        
+
         logger.info(f"Comment {comment.id} deleted by {deleted_by.id}")
         return True
-    
+
     # ==================== Reactions & Voting ====================
-    
+
     @transaction.atomic
     def add_reaction(
         self,
@@ -203,16 +205,16 @@ class CommentService:
         Add or update user's reaction to comment.
         """
         metrics.increment("comment.reaction")
-        
+
         reaction, created = CommentReaction.objects.update_or_create(
             comment=comment,
             user=user,
             defaults={"reaction_type": reaction_type}
         )
-        
+
         # Update analytics
         self._update_comment_analytics(comment)
-        
+
         # Notify comment author
         if comment.user != user:
             self.queue.enqueue(
@@ -221,9 +223,9 @@ class CommentService:
                 user_id=user.id,
                 reaction_type=reaction_type
             )
-        
+
         return reaction
-    
+
     @transaction.atomic
     def remove_reaction(self, comment: Comment, user: Any) -> bool:
         """Remove user's reaction from comment."""
@@ -231,12 +233,12 @@ class CommentService:
             comment=comment,
             user=user
         ).delete()
-        
+
         if deleted_count > 0:
             self._update_comment_analytics(comment)
-        
+
         return deleted_count > 0
-    
+
     @transaction.atomic
     def vote_comment(
         self,
@@ -248,21 +250,21 @@ class CommentService:
         Add or update user's vote on comment.
         """
         metrics.increment(f"comment.vote.{'up' if vote > 0 else 'down'}")
-        
+
         vote_obj, created = CommentVote.objects.update_or_create(
             comment=comment,
             user=user,
             defaults={"vote": vote}
         )
-        
+
         # Update comment score
         self._recalculate_comment_score(comment)
-        
+
         # Update analytics
         self._update_comment_analytics(comment)
-        
+
         return vote_obj
-    
+
     @transaction.atomic
     def remove_vote(self, comment: Comment, user: Any) -> bool:
         """Remove user's vote from comment."""
@@ -270,15 +272,15 @@ class CommentService:
             comment=comment,
             user=user
         ).delete()
-        
+
         if deleted_count > 0:
             self._recalculate_comment_score(comment)
             self._update_comment_analytics(comment)
-        
+
         return deleted_count > 0
-    
+
     # ==================== Moderation ====================
-    
+
     @transaction.atomic
     def flag_comment(
         self,
@@ -291,18 +293,18 @@ class CommentService:
         Flag comment for moderation.
         """
         metrics.increment("comment.flag")
-        
+
         flag, created = CommentFlag.objects.get_or_create(
             comment=comment,
             user=user,
             defaults={"reason": reason, "details": details}
         )
-        
+
         # Update analytics
         analytics = comment.analytics
         analytics.flag_count = comment.flags.filter(resolved=False).count()
         analytics.save(update_fields=["flag_count"])
-        
+
         # Auto-hide if threshold reached
         flag_threshold = getattr(settings, "COMMENT_FLAG_THRESHOLD", 3)
         if analytics.flag_count >= flag_threshold:
@@ -313,9 +315,9 @@ class CommentService:
                 reason=f"Auto-rejected: {analytics.flag_count} flags",
                 auto_moderated=True
             )
-        
+
         return flag
-    
+
     @transaction.atomic
     def moderate_comment(
         self,
@@ -329,13 +331,13 @@ class CommentService:
         Moderate comment with specified action.
         """
         metrics.increment(f"comment.moderate.{action}")
-        
+
         action_map = {
             "approve": Comment.Status.APPROVED,
             "reject": Comment.Status.REJECTED,
             "spam": Comment.Status.SPAM,
         }
-        
+
         if action in action_map:
             comment.status = action_map[action]
             comment.is_approved = (action == "approve")
@@ -344,7 +346,7 @@ class CommentService:
             comment.is_deleted = True
             comment.deleted_at = timezone.now()
             comment.save(update_fields=["is_deleted", "deleted_at"])
-        
+
         # Log action
         mod_action = ModerationAction.objects.create(
             comment=comment,
@@ -353,12 +355,12 @@ class CommentService:
             reason=reason,
             auto_moderated=auto_moderated
         )
-        
+
         logger.info(f"Comment {comment.id} moderated: {action} by {moderator or 'system'}")
         return mod_action
-    
+
     # ==================== Threading ====================
-    
+
     def get_comment_thread(
         self,
         root_comment: Comment,
@@ -372,7 +374,7 @@ class CommentService:
         cached = cache.get(cache_key)
         if cached:
             return cached
-        
+
         # Build thread recursively
         thread = self._build_thread_recursive(
             root_comment,
@@ -380,10 +382,10 @@ class CommentService:
             max_depth=max_depth,
             sort_by=sort_by
         )
-        
+
         cache.set(cache_key, thread, timeout=300)  # 5 minutes
         return thread
-    
+
     def _build_thread_recursive(
         self,
         comment: Comment,
@@ -394,13 +396,13 @@ class CommentService:
         """Recursively build comment thread."""
         if depth >= max_depth:
             return None
-        
+
         # Get direct replies
         replies = comment.children.filter(
             is_deleted=False,
             status=Comment.Status.APPROVED
         ).select_related("user").prefetch_related("reactions", "votes")
-        
+
         # Sort replies
         if sort_by == "score":
             replies = replies.order_by("-score", "-created_at")
@@ -410,25 +412,25 @@ class CommentService:
             ).order_by("-vote_count", "-created_at")
         else:  # date
             replies = replies.order_by("-created_at")
-        
+
         # Build structure
         thread = {
             "comment": comment,
             "depth": depth,
             "replies": []
         }
-        
+
         for reply in replies:
             child_thread = self._build_thread_recursive(
                 reply, depth + 1, max_depth, sort_by
             )
             if child_thread:
                 thread["replies"].append(child_thread)
-        
+
         return thread
-    
+
     # ==================== Awards & Gamification ====================
-    
+
     @transaction.atomic
     def give_award(
         self,
@@ -441,20 +443,20 @@ class CommentService:
         Give award to comment.
         """
         metrics.increment(f"comment.award.{award_type}")
-        
+
         award = CommentAward.objects.create(
             comment=comment,
             award_type=award_type,
             given_by=given_by,
             auto_assigned=auto_assigned
         )
-        
+
         # Update analytics
         analytics = comment.analytics
         analytics.award_count = comment.awards.count()
         analytics.calculate_engagement_score()
         analytics.save()
-        
+
         # Notify comment author
         if comment.user != given_by:
             self.queue.enqueue(
@@ -462,9 +464,9 @@ class CommentService:
                 comment_id=comment.id,
                 award_type=award_type
             )
-        
+
         return award
-    
+
     @transaction.atomic
     def bookmark_comment(
         self,
@@ -480,20 +482,20 @@ class CommentService:
             user=user,
             defaults={"notes": notes}
         )
-        
+
         if not created and notes:
             bookmark.notes = notes
             bookmark.save(update_fields=["notes"])
-        
+
         # Update analytics
         analytics = comment.analytics
         analytics.bookmark_count = comment.bookmarks.count()
         analytics.save(update_fields=["bookmark_count"])
-        
+
         return bookmark
-    
+
     # ==================== Analytics ====================
-    
+
     @transaction.atomic
     def update_comment_analytics(self, comment_id: int):
         """
@@ -503,12 +505,12 @@ class CommentService:
             comment = Comment.objects.select_related("analytics").get(id=comment_id)
         except Comment.DoesNotExist:
             return
-        
+
         analytics = comment.analytics
-        
+
         # Count reactions
         analytics.reaction_count = comment.reactions.count()
-        
+
         # Count votes
         votes = comment.votes.aggregate(
             upvotes=Count("id", filter=Q(vote=1)),
@@ -517,20 +519,20 @@ class CommentService:
         analytics.upvotes = votes["upvotes"] or 0
         analytics.downvotes = votes["downvotes"] or 0
         analytics.net_votes = analytics.upvotes - analytics.downvotes
-        
+
         # Count other metrics
         analytics.reply_count = comment.children.filter(is_deleted=False).count()
         analytics.flag_count = comment.flags.filter(resolved=False).count()
         analytics.bookmark_count = comment.bookmarks.count()
         analytics.award_count = comment.awards.count()
-        
+
         # Calculate engagement score
         analytics.calculate_engagement_score()
-        
+
         analytics.save()
-        
+
         logger.debug(f"Updated analytics for comment {comment_id}")
-    
+
     def get_top_comments(
         self,
         content_object: Any,
@@ -541,38 +543,38 @@ class CommentService:
         Get top comments by engagement score.
         """
         content_type = ContentType.objects.get_for_model(content_object)
-        
+
         qs = Comment.objects.filter(
             content_type=content_type,
             object_id=content_object.pk,
             status=Comment.Status.APPROVED,
             is_deleted=False
         ).select_related("user", "analytics")
-        
+
         # Filter by period
         if period != "all":
             period_map = {"day": 1, "week": 7, "month": 30}
             days = period_map.get(period, 7)
             cutoff = timezone.now() - timezone.timedelta(days=days)
             qs = qs.filter(created_at__gte=cutoff)
-        
+
         # Order by engagement
         qs = qs.order_by("-analytics__engagement_score", "-created_at")
-        
+
         return list(qs[:limit])
-    
+
     # ==================== Helper Methods ====================
-    
+
     def _extract_mentions(self, text: str) -> List[str]:
         """Extract @mentions from text."""
         pattern = r'@(\w+)'
         return re.findall(pattern, text)
-    
+
     def _create_mentions(self, comment: Comment, usernames: List[str]):
         """Create mention records and notifications."""
         from django.contrib.auth import get_user_model
         User = get_user_model()
-        
+
         for username in usernames:
             try:
                 user = User.objects.get(username=username)
@@ -580,7 +582,7 @@ class CommentService:
                     comment=comment,
                     mentioned_user=user
                 )
-                
+
                 # Queue notification
                 self.queue.enqueue(
                     "apps.comments.tasks.notify_mention",
@@ -589,14 +591,14 @@ class CommentService:
                 )
             except User.DoesNotExist:
                 continue
-    
+
     def _update_mentions(self, comment: Comment, new_text: str):
         """Update mentions after comment edit."""
         new_mentions = set(self._extract_mentions(new_text))
         old_mentions = set(
             comment.mentions.values_list("mentioned_user__username", flat=True)
         )
-        
+
         # Remove old mentions not in new text
         removed = old_mentions - new_mentions
         if removed:
@@ -604,12 +606,12 @@ class CommentService:
             User = get_user_model()
             user_ids = User.objects.filter(username__in=removed).values_list("id", flat=True)
             comment.mentions.filter(mentioned_user_id__in=user_ids).delete()
-        
+
         # Add new mentions
         added = new_mentions - old_mentions
         if added:
             self._create_mentions(comment, list(added))
-    
+
     def _update_thread_metadata(self, root_comment: Comment):
         """Update thread metadata after new reply."""
         thread, _ = CommentThread.objects.get_or_create(
@@ -621,17 +623,17 @@ class CommentService:
                 "participant_count": 1
             }
         )
-        
+
         # Count all replies in thread
         total_replies = Comment.objects.filter(
             parent=root_comment,
             is_deleted=False
         ).count()
-        
+
         thread.total_replies = total_replies
         thread.last_activity = timezone.now()
         thread.save(update_fields=["total_replies", "last_activity"])
-    
+
     def _recalculate_comment_score(self, comment: Comment):
         """Recalculate comment score from votes."""
         votes = comment.votes.aggregate(
@@ -639,7 +641,7 @@ class CommentService:
         )
         comment.score = votes["total"] or 0
         comment.save(update_fields=["score"])
-    
+
     def _update_comment_analytics(self, comment: Comment):
         """Update analytics (async via queue)."""
         self.queue.enqueue(

@@ -18,13 +18,11 @@ import json
 import logging
 from typing import Any, Dict
 
-from apps.consent.models import ConsentRecord, ConsentDecision, ConsentEvent
+from apps.consent.models import ConsentDecision, ConsentEvent
 from apps.consent.utils import (
     consent_cache_key,
     get_active_policy,
     resolve_site_domain,
-    hash_ip,
-    hash_ua,
     serialize_policy,
 )
 from apps.core.utils.ip import get_client_ip
@@ -273,5 +271,8 @@ def update_consent(request: HttpRequest) -> JsonResponse:
     except Exception as exc:
         logger.exception("update_consent unexpected failure → %s", exc)
         return JsonResponse({"ok": False, "error": "internal_error"}, status=500)
+
+
+"error": "internal_error"}, status=500)
 
 

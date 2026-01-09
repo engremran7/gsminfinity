@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import logging
 from types import SimpleNamespace
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Dict, Optional, Set, Tuple
 
 from apps.consent.models import ConsentRecord
 from apps.consent.utils import (

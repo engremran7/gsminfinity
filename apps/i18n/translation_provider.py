@@ -58,8 +58,7 @@ class ArgosTranslator(BaseTranslator):
 
     def __init__(self):
         try:
-            import argostranslate.package  # type: ignore
-            import argostranslate.translate  # type: ignore
+            pass  # type: ignore
         except Exception as exc:
             raise ImportError("argostranslate not installed") from exc
         self.argos = __import__("argostranslate.translate").translate

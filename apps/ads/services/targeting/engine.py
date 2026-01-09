@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 from apps.ads.models import AdPlacement, Campaign
 from apps.core.utils import feature_flags

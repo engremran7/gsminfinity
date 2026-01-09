@@ -14,11 +14,13 @@ sys.path.insert(0, str(PROJECT_ROOT))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
 
 import django
+
 django.setup()
 
 from django.apps import apps
-from django.urls import get_resolver
 from django.core.management import call_command
+from django.urls import get_resolver
+
 
 def check_urls():
     """Verify all views have URLs"""
@@ -26,7 +28,7 @@ def check_urls():
     resolver = get_resolver()
     patterns = resolver.url_patterns
     print(f"  Found {len(patterns)} URL patterns")
-    
+
     # Check key apps
     key_apps = ['firmwares', 'blog', 'storage', 'distribution', 'analytics', 'admin_suite']
     for app in key_apps:
@@ -39,7 +41,7 @@ def check_urls():
 def check_models():
     """Verify all models are defined"""
     print("\n✓ CHECKING MODELS...")
-    
+
     checks = {
         'firmwares': ['Brand', 'Model', 'Variant', 'OfficialFirmware', 'PendingFirmware'],
         'blog': ['Post', 'Category', 'Tag'],
@@ -48,7 +50,7 @@ def check_models():
         'analytics': ['PageView', 'Event', 'DailyMetrics', 'RealtimeMetrics'],
         'tags': ['Tag'],
     }
-    
+
     for app_name, models in checks.items():
         try:
             for model_name in models:
@@ -60,7 +62,7 @@ def check_models():
 def check_views():
     """Verify key views exist"""
     print("\n✓ CHECKING VIEWS...")
-    
+
     checks = {
         'apps.firmwares.views': ['FirmwareUploadView', 'PendingFirmwareViewSet'],
         'apps.blog.views': ['post_list', 'post_detail', 'post_create'],
@@ -68,7 +70,7 @@ def check_views():
         'apps.distribution.views': ['dashboard'],
         'apps.analytics.views': ['analytics_dashboard', 'track_pageview', 'track_event'],
     }
-    
+
     for module_path, views in checks.items():
         try:
             module = __import__(module_path, fromlist=views)
@@ -83,7 +85,7 @@ def check_views():
 def check_tasks():
     """Verify Celery tasks are defined"""
     print("\n✓ CHECKING CELERY TASKS...")
-    
+
     checks = {
         'apps.firmwares.tasks': ['analyze_firmware_ai', 'cleanup_old_tracking_data'],
         'apps.blog.tasks': ['auto_generate_blog_post', 'auto_tag_post'],
@@ -91,7 +93,7 @@ def check_tasks():
         'apps.ads.tasks': ['aggregate_events', 'cleanup_old_events'],
         'apps.analytics.tasks': ['aggregate_daily_metrics', 'update_realtime_metrics'],
     }
-    
+
     for module_path, tasks in checks.items():
         try:
             module = __import__(module_path, fromlist=tasks)
@@ -108,18 +110,17 @@ def check_migrations():
     print("\n✓ CHECKING MIGRATIONS...")
     try:
         # This will show pending migrations
-        from django.core.management import execute_from_command_line
-        from io import StringIO
         import sys
-        
+        from io import StringIO
+
         old_stdout = sys.stdout
         sys.stdout = StringIO()
-        
+
         try:
             call_command('showmigrations', '--plan', verbosity=0)
             output = sys.stdout.getvalue()
             sys.stdout = old_stdout
-            
+
             if '[ ]' in output:
                 print("  ⚠️  Pending migrations found - run: python manage.py migrate")
             else:
@@ -134,13 +135,13 @@ def check_settings():
     """Verify key settings are configured"""
     print("\n✓ CHECKING SETTINGS...")
     from django.conf import settings
-    
+
     checks = {
         'INSTALLED_APPS': ['apps.firmwares', 'apps.blog', 'apps.storage', 'apps.analytics'],
         'CELERY_BEAT_SCHEDULE': 'Celery beat schedule',
         'REST_FRAMEWORK': 'DRF configuration',
     }
-    
+
     for setting, description in checks.items():
         if hasattr(settings, setting):
             print(f"  ✓ {setting}")
@@ -151,14 +152,14 @@ def main():
     print("=" * 70)
     print("GSM INFINITY - IMPLEMENTATION VERIFICATION")
     print("=" * 70)
-    
+
     check_urls()
     check_models()
     check_views()
     check_tasks()
     check_migrations()
     check_settings()
-    
+
     print("\n" + "=" * 70)
     print("✓ VERIFICATION COMPLETE")
     print("=" * 70)

@@ -17,11 +17,12 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest
 from django.urls import NoReverseMatch, reverse
-from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
-from apps.core.utils.ip import get_client_ip
 from apps.consent.utils import hash_ip
+from apps.core.utils.ip import get_client_ip
+
 logger = logging.getLogger(__name__)
 
 
@@ -109,7 +110,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         if user and not getattr(user, "profile_completed", False):
             return _safe_reverse("users:tell_us_about_you", default="/users/profile/")
         return _safe_reverse("users:dashboard", default="/")
-    
+
     def get_email_verification_redirect_url(self, email_address) -> str:
         """After email verification, redirect to profile completion if needed"""
         user = getattr(email_address, "user", None)

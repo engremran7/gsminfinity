@@ -1,9 +1,9 @@
 
 from __future__ import annotations
 
-import functools
 import logging
-from typing import Any, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any, Dict, Optional
 
 from django.conf import settings
 from django.core.cache import cache
@@ -14,10 +14,10 @@ from django.utils.translation import get_language_from_request, to_locale
 from apps.i18n.models import (
     AppManifest,
     AuditLog,
+    FontRegistry,
     LanguageProfile,
     Locale,
     MissingKeyLog,
-    FontRegistry,
     Theme,
     ThemeAssignment,
     TranslationKey,
@@ -392,38 +392,39 @@ def auto_translate(app_id: str, key: TranslationKey, target_locale: str, provide
         TranslationValue if successful, None otherwise
     """
     try:
-        from apps.i18n.translation_provider import get_translator
         from django.conf import settings
-        
+
+        from apps.i18n.translation_provider import get_translator
+
         # Get source text from English or default locale
         source_value = TranslationValue.objects.filter(
             translation_key=key,
             locale__in=['en', 'en-US'],
             status='approved'
         ).first()
-        
+
         if not source_value:
             logger.warning(f"No source translation found for key {key.key}")
             return None
-        
+
         # Get configured provider
         provider_name = provider or getattr(settings, 'TRANSLATION_PROVIDER', 'dummy')
         translator = get_translator(provider_name)
-        
+
         if not translator:
             logger.warning(f"Translation provider '{provider_name}' not available")
             return None
-        
+
         # Translate
         translated_text = translator.translate(
             text=source_value.message,
             source_lang='en',
             target_lang=target_locale
         )
-        
+
         if not translated_text:
             return None
-        
+
         # Create or update translation value
         trans_value, created = TranslationValue.objects.update_or_create(
             translation_key=key,
@@ -433,14 +434,14 @@ def auto_translate(app_id: str, key: TranslationKey, target_locale: str, provide
                 'status': 'pending',  # Auto-translated content needs review
             }
         )
-        
+
         # Invalidate cache
         cache_key = f"i18n_bundle:{app_id}:{target_locale}:*"
         cache.delete_pattern(cache_key) if hasattr(cache, 'delete_pattern') else cache.clear()
-        
+
         logger.info(f"Auto-translated key '{key.key}' to {target_locale}")
         return trans_value
-        
+
     except Exception as e:
         logger.error(f"Auto-translate failed for key {key.key}: {e}")
         return None
@@ -460,29 +461,29 @@ def auto_translate_batch(app_id: str, target_locale: str, namespace: str | None 
         Dict with success/failure counts
     """
     results = {'translated': 0, 'failed': 0, 'skipped': 0}
-    
+
     try:
         # Find keys missing translations for target locale
         qs = TranslationKey.objects.filter(app_id=app_id)
         if namespace:
             qs = qs.filter(namespace=namespace)
-        
+
         keys_with_target = TranslationValue.objects.filter(
             locale=target_locale
         ).values_list('translation_key_id', flat=True)
-        
+
         missing_keys = qs.exclude(id__in=keys_with_target)[:limit]
-        
+
         for key in missing_keys:
             result = auto_translate(app_id, key, target_locale)
             if result:
                 results['translated'] += 1
             else:
                 results['failed'] += 1
-        
+
         logger.info(f"Batch translate to {target_locale}: {results}")
         return results
-        
+
     except Exception as e:
         logger.error(f"Batch translate failed: {e}")
         results['error'] = str(e)

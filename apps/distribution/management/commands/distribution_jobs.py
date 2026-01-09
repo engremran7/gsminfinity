@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db import models
 from django.utils import timezone
 
 from apps.distribution.api import get_settings
 from apps.distribution.models import ShareJob
 from apps.distribution.tasks import deliver_job
-from django.db import models
 
 
 class Command(BaseCommand):

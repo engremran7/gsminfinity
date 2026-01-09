@@ -1,40 +1,37 @@
 
 from __future__ import annotations
 
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.core.paginator import Paginator
-from django.http import HttpRequest, HttpResponse, Http404, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_http_methods, require_POST, require_GET
-from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
-from django.views.decorators.cache import cache_page
-from django.template.loader import render_to_string
-from django.db.models import Q, Count, F
-from django.db import transaction, models
-from django.utils import timezone
-from django.contrib.contenttypes.models import ContentType
-
 import hashlib
 import logging
 
-from apps.core.views import _get_site_settings_snapshot
-from apps.core.app_service import AppService
-from .forms import PostForm, CategoryForm
-from .models import Post, PostStatus, Category, PostDraft, PostRevision
-from apps.tags.models import Tag
-from apps.tags import services as tag_services
-from apps.seo.models import SEOModel, Metadata
-from apps.core.utils import feature_flags
-from apps.users.models import CustomUser
-from apps.core import ai
-from apps.core import ai_client
-from apps.blog.services import ai_editor, workflow
-from apps.core.utils.logging import log_event
-from apps.i18n.services import resolve_locale
-from apps.blog.models import PostTranslation, CategoryTranslation, TagTranslation
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from django.core.paginator import Paginator
+from django.db import models, transaction
+from django.db.models import Q, QuerySet
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from django.db.models import QuerySet
+from apps.blog.models import CategoryTranslation, PostTranslation, TagTranslation
+from apps.blog.services import ai_editor, workflow
+from apps.core import ai_client
+from apps.core.app_service import AppService
+from apps.core.utils import feature_flags
+from apps.core.utils.logging import log_event
+from apps.core.views import _get_site_settings_snapshot
+from apps.i18n.services import resolve_locale
+from apps.seo.models import Metadata, SEOModel
+from apps.tags import services as tag_services
+from apps.tags.models import Tag
+from apps.users.models import CustomUser
+
+from .forms import CategoryForm, PostForm
+from .models import Category, Post, PostDraft, PostRevision, PostStatus
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +83,7 @@ def _apply_translations_to_posts(posts: list | QuerySet, locale: str | None) -> 
         except Exception:
             post_tags_map[p.id] = []
             continue
-    
+
     tag_translations = {
         tt.tag_id: tt
         for tt in TagTranslation.objects.filter(tag_id__in=tag_ids, language=locale)
@@ -295,26 +292,26 @@ def post_list(request: HttpRequest) -> HttpResponse:
     )
     # Get featured post (most recent featured or latest published)
     featured_post = Post.objects.filter(
-        status=PostStatus.PUBLISHED, 
+        status=PostStatus.PUBLISHED,
         publish_at__lte=now_ts,
         featured=True
     ).order_by('-published_at').first()
-    
+
     if not featured_post:
         featured_post = Post.objects.filter(
             status=PostStatus.PUBLISHED,
             publish_at__lte=now_ts
         ).order_by('-published_at').first()
-    
+
     # Annotate categories with post count
     from django.db.models import Count
     categories_with_count = Category.objects.annotate(
         post_count=Count('posts', filter=models.Q(posts__status=PostStatus.PUBLISHED, posts__publish_at__lte=now_ts))
     ).select_related("parent").order_by("parent__name", "name")
-    
+
     # Get popular tags for sidebar
     popular_tags = Tag.objects.filter(is_active=True).order_by('-usage_count')[:15]
-    
+
     context = {
         "posts": page_obj,  # Pass page_obj directly for pagination
         "featured_post": featured_post,
@@ -458,20 +455,20 @@ def post_detail(request: HttpRequest, slug: str) -> HttpResponse:
         is_deleted=False,
         parent__isnull=True  # Top-level comments only, replies are nested
     ).select_related('user').order_by('-created_at')
-    
+
     # Get tag categories for the tags widget
     tag_categories = Tag.CATEGORY_CHOICES if hasattr(Tag, 'CATEGORY_CHOICES') else []
-    
+
     # Get popular tags for sidebar
     popular_tags = Tag.objects.filter(is_active=True).order_by('-usage_count')[:10]
-    
+
     # Get related posts based on tags
     related_posts = Post.objects.filter(
         tags__in=post.tags.all(),
         status=PostStatus.PUBLISHED,
         publish_at__lte=timezone.now(),
     ).exclude(pk=post.pk).distinct().order_by('-published_at')[:3]
-    
+
     return render(
         request,
         "blog/post_detail.html",
@@ -701,13 +698,13 @@ def category_create(request: HttpRequest) -> HttpResponse:
     except Exception:
         blog_api = None
         blog_settings = {}
-    
+
     blog_enabled = blog_settings.get("enable_blog", False if blog_api is None else settings_snapshot.get("enable_blog", True))
     if not blog_enabled and not (request.user.is_staff or request.user.is_superuser):
         raise Http404("Blog is disabled.")
 
     allow_user_posts = blog_settings.get("allow_user_blog_posts", settings_snapshot.get("allow_user_blog_posts", False))
-    
+
     # RBAC: allow staff, editors, authors; optionally allow authenticated users if toggle enabled.
     allowed = (
         request.user.is_staff
@@ -957,11 +954,11 @@ def post_like(request: HttpRequest, pk: int) -> JsonResponse:
     """
     try:
         post = get_object_or_404(Post, pk=pk)
-        
+
         # Check if user has already liked this post
         # Using a simple approach - you may want to create a PostLike model later
         liked_posts = request.session.get('liked_posts', [])
-        
+
         if pk in liked_posts:
             # Unlike
             liked_posts.remove(pk)
@@ -972,10 +969,10 @@ def post_like(request: HttpRequest, pk: int) -> JsonResponse:
             liked_posts.append(pk)
             post.likes_count = (post.likes_count or 0) + 1
             action = 'liked'
-        
+
         request.session['liked_posts'] = liked_posts
         post.save(update_fields=['likes_count'])
-        
+
         return JsonResponse({
             'ok': True,
             'action': action,
@@ -993,10 +990,10 @@ def post_bookmark(request: HttpRequest, pk: int) -> JsonResponse:
     """
     try:
         post = get_object_or_404(Post, pk=pk)
-        
+
         # Check if user has already bookmarked this post
         bookmarked_posts = request.session.get('bookmarked_posts', [])
-        
+
         if pk in bookmarked_posts:
             # Remove bookmark
             bookmarked_posts.remove(pk)
@@ -1005,10 +1002,10 @@ def post_bookmark(request: HttpRequest, pk: int) -> JsonResponse:
             # Add bookmark
             bookmarked_posts.append(pk)
             action = 'bookmarked'
-        
+
         request.session['bookmarked_posts'] = bookmarked_posts
         request.session.modified = True
-        
+
         return JsonResponse({
             'ok': True,
             'action': action,

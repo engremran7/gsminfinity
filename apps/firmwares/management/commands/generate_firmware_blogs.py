@@ -3,12 +3,16 @@ Management command to regenerate blog posts for all models with firmware
 Useful for bulk generation or refreshing existing posts
 """
 from django.core.management.base import BaseCommand
-from django.db.models import Count
-from apps.firmwares.models import (
-    Model, OfficialFirmware, EngineeringFirmware, 
-    ReadbackFirmware, ModifiedFirmware, OtherFirmware
-)
+
 from apps.firmwares.blog_automation import FirmwareBlogService
+from apps.firmwares.models import (
+    EngineeringFirmware,
+    Model,
+    ModifiedFirmware,
+    OfficialFirmware,
+    OtherFirmware,
+    ReadbackFirmware,
+)
 
 
 class Command(BaseCommand):
@@ -36,7 +40,7 @@ class Command(BaseCommand):
         force_update = options.get('force', False)
         model_slug = options.get('model_slug')
         run_async = options.get('run_async', False)
-        
+
         if run_async:
             from apps.firmwares.tasks import generate_all_firmware_blogs
             task = generate_all_firmware_blogs.delay(force_update=force_update)
@@ -44,22 +48,22 @@ class Command(BaseCommand):
                 self.style.SUCCESS(f'Queued blog generation task: {task.id}')
             )
             return
-        
+
         self.stdout.write(self.style.SUCCESS('Starting blog post generation...'))
-        
+
         # Get models with firmware
         if model_slug:
             models = Model.objects.filter(slug=model_slug)
         else:
             models = Model.objects.all().select_related('brand')
-        
+
         total_models = models.count()
         self.stdout.write(f'Found {total_models} models to process')
-        
+
         success_count = 0
         skip_count = 0
         error_count = 0
-        
+
         for model in models:
             try:
                 # Check if model has any firmware (directly linked to model, not via variant)
@@ -70,14 +74,14 @@ class Command(BaseCommand):
                     ModifiedFirmware.objects.filter(model=model, is_active=True).exists() or
                     OtherFirmware.objects.filter(model=model, is_active=True).exists()
                 )
-                
+
                 if not has_firmware and not force_update:
                     skip_count += 1
                     continue
-                
+
                 # Generate blog post
                 post = FirmwareBlogService.generate_firmware_post(model, force_update=force_update)
-                
+
                 if post:
                     self.stdout.write(
                         self.style.SUCCESS(f'  ✓ Generated: {model.brand.name} {model.name}')
@@ -88,13 +92,13 @@ class Command(BaseCommand):
                         self.style.WARNING(f'  - Skipped: {model.brand.name} {model.name}')
                     )
                     skip_count += 1
-                    
+
             except Exception as e:
                 self.stdout.write(
                     self.style.ERROR(f'  ✗ Error: {model.brand.name} {model.name} - {str(e)}')
                 )
                 error_count += 1
-        
+
         # Summary
         self.stdout.write(self.style.SUCCESS('\n' + '='*60))
         self.stdout.write(self.style.SUCCESS('Blog Post Generation Complete'))

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from django import forms
 
-from .models import Post, Category
+from .models import Category, Post
 
 
 class CategoryForm(forms.ModelForm):

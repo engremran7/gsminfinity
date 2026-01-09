@@ -36,9 +36,6 @@ def _auto_import_view_modules() -> None:
 _auto_import_view_modules()
 
 # Explicitly re-export new views if auto-import misses them (e.g. due to caching)
-from .views_content import admin_suite_blog_categories, admin_suite_pending_approval
-from .views_users import admin_suite_user_sessions, admin_suite_staff_users
-from .views_security import admin_suite_security_events
 
 __all__.extend([
     "admin_suite_blog_categories",

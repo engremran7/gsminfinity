@@ -1,17 +1,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Optional
+from typing import Optional
 
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 
 from apps.devices.services import (
+    DevicePolicyError,
     enforce_device_policy_for_login,
     enforce_device_policy_for_service,
-    DevicePolicyError,
 )
 
 

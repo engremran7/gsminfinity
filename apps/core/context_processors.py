@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.http import HttpRequest
+
 from apps.core.models import AppRegistry
 from apps.core.utils.ip import get_client_ip
 
@@ -150,11 +151,11 @@ def location_based_providers(request: HttpRequest) -> Dict[str, Any]:
             if enabled_providers
             else preferred_list
         )
-        
+
         # FINAL SANITY CHECK: If the resulting list is empty, fall back to all enabled providers
         if not available and enabled_providers:
             available = enabled_providers
-            
+
     except Exception:
         available = preferred_list
 
@@ -306,7 +307,7 @@ def core_context(request: HttpRequest) -> Dict[str, Any]:
         "DEBUG": getattr(settings, "DEBUG", False),
         "ENV": getattr(settings, "ENV", "production"),
         # Use SITE_ID from settings, fallback to 1
-        "SITE_ID": getattr(settings, "SITE_ID", 1), 
+        "SITE_ID": getattr(settings, "SITE_ID", 1),
         "TIME_ZONE": getattr(settings, "TIME_ZONE", "UTC"),
     }
 

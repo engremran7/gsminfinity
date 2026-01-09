@@ -4,25 +4,25 @@ from django.utils.html import format_html
 from solo.admin import SingletonModelAdmin
 
 from .models import (
-    AdPlacement,
     AdCreative,
-    Campaign,
-    PlacementAssignment,
-    AffiliateSource,
-    AffiliateLink,
     AdEvent,
-    AdsSettings,
     AdNetwork,
+    AdPlacement,
+    AdsSettings,
     AdUnit,
-    RewardedAdConfig,
-    RewardedAdView,
-    AutoAdsScanResult,
+    AffiliateClick,
+    AffiliateLink,
+    AffiliateProduct,
+    AffiliateProductCategory,
+    AffiliateProductMatch,
     # Affiliate Products
     AffiliateProvider,
-    AffiliateProductCategory,
-    AffiliateProduct,
-    AffiliateProductMatch,
-    AffiliateClick,
+    AffiliateSource,
+    AutoAdsScanResult,
+    Campaign,
+    PlacementAssignment,
+    RewardedAdConfig,
+    RewardedAdView,
 )
 
 
@@ -117,7 +117,7 @@ class AdNetworkAdmin(admin.ModelAdmin):
     inlines = [AdUnitInline]
     exclude = ("is_deleted", "deleted_at", "deleted_by")
     readonly_fields = ("created_by", "updated_by", "last_sync_at", "sync_status")
-    
+
     fieldsets = (
         ("Basic Info", {
             "fields": ("name", "network_type", "is_enabled", "priority")
@@ -171,7 +171,7 @@ class RewardedAdConfigAdmin(admin.ModelAdmin):
     search_fields = ("name", "reward_description")
     exclude = ("is_deleted", "deleted_at", "deleted_by")
     readonly_fields = ("created_by", "updated_by")
-    
+
     fieldsets = (
         ("Basic Info", {
             "fields": ("name", "placement", "network", "ad_unit", "is_enabled")
@@ -202,7 +202,7 @@ class RewardedAdViewAdmin(admin.ModelAdmin):
         "status", "reward_granted", "reward_type", "reward_amount",
         "ip_address", "user_agent", "page_url", "created_at"
     )
-    
+
     def has_add_permission(self, request):
         return False  # Views are created programmatically
 
@@ -215,7 +215,7 @@ class AutoAdsScanResultAdmin(admin.ModelAdmin):
     list_filter = ("applied",)
     search_fields = ("template_path", "ai_recommendation")
     readonly_fields = ("template_path", "suggested_placements", "content_analysis", "ai_recommendation", "score", "created_at")
-    
+
     def has_add_permission(self, request):
         return False  # Scans are created by management command
 
@@ -231,7 +231,7 @@ class AffiliateProviderAdmin(admin.ModelAdmin):
     search_fields = ("name", "associate_tag")
     exclude = ("is_deleted", "deleted_at", "deleted_by")
     readonly_fields = ("created_by", "updated_by", "last_sync_at", "sync_status", "products_count")
-    
+
     fieldsets = (
         ("Basic Info", {
             "fields": ("name", "provider_type", "is_enabled", "priority")
@@ -265,7 +265,7 @@ class AffiliateProductCategoryAdmin(admin.ModelAdmin):
     list_filter = ("is_active", "parent")
     search_fields = ("name", "slug", "device_keywords")
     prepopulated_fields = {"slug": ("name",)}
-    
+
     fieldsets = (
         ("Basic Info", {
             "fields": ("name", "slug", "parent", "is_active")
@@ -296,7 +296,7 @@ class AffiliateProductAdmin(admin.ModelAdmin):
     inlines = [AffiliateProductMatchInline]
     filter_horizontal = ("target_brands", "target_models")
     prepopulated_fields = {"slug": ("name",)}
-    
+
     fieldsets = (
         ("Basic Info", {
             "fields": ("provider", "category", "name", "slug", "description", "product_type")
@@ -337,7 +337,7 @@ class AffiliateProductAdmin(admin.ModelAdmin):
             "classes": ("collapse",),
         }),
     )
-    
+
     def display_price(self, obj):
         price = obj.get_display_price()
         if obj.sale_price and obj.sale_price < obj.price:
@@ -348,7 +348,7 @@ class AffiliateProductAdmin(admin.ModelAdmin):
             )
         return f"{obj.currency} {price}"
     display_price.short_description = "Price"
-    
+
     def rating_stars(self, obj):
         filled = int(obj.rating)
         empty = 5 - filled
@@ -365,7 +365,7 @@ class AffiliateProductMatchAdmin(admin.ModelAdmin):
     list_filter = ("match_type", "is_pinned", "is_hidden")
     search_fields = ("product__name", "brand__name", "model__name")
     raw_id_fields = ("product", "brand", "model", "variant", "blog_post")
-    
+
     def target_display(self, obj):
         target = obj.brand or obj.model or obj.variant or obj.blog_post
         return str(target) if target else "—"
@@ -383,7 +383,7 @@ class AffiliateClickAdmin(admin.ModelAdmin):
         "brand_slug", "model_slug", "firmware_id", "blog_slug",
         "country", "region", "created_at"
     )
-    
+
     def has_add_permission(self, request):
         return False  # Clicks are tracked programmatically
 
@@ -393,7 +393,7 @@ class AffiliateClickAdmin(admin.ModelAdmin):
 @admin.register(AdsSettings)
 class AdsSettingsAdmin(SingletonModelAdmin):
     list_display = ("ads_enabled", "auto_ads_enabled", "rewarded_ads_enabled", "affiliate_products_enabled", "ad_aggressiveness_level")
-    
+
     fieldsets = (
         ("Master Controls", {
             "fields": (

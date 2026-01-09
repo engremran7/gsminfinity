@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Iterable
+from typing import Dict
 
 from apps.seo.models import SitemapEntry
 

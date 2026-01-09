@@ -19,7 +19,8 @@ from __future__ import annotations
 
 import inspect
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -27,6 +28,7 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from django.utils.module_loading import import_string
 from django.views.generic import RedirectView
+
 from apps.core import views as core_views
 from apps.pages import views as pages_views
 
@@ -125,7 +127,7 @@ urlpatterns = [
     path("blog/", include(("apps.blog.urls", "blog"), namespace="blog")),
     # Comments API
     path("comments/", include(("apps.comments.urls", "comments"), namespace="comments")),
-    
+
     # Core API endpoints
     path("api/comments/", include(("apps.comments.urls_api", "comments_api"), namespace="comments_api")),
     path("api/tags/", include(("apps.tags.urls_api", "tags_api"), namespace="tags_api")),

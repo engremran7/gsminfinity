@@ -6,11 +6,12 @@ Periodic tasks to:
 - Clean old tracking data
 """
 
-from celery import shared_task
-from django.utils import timezone
-from django.apps import apps
-from datetime import timedelta
 import logging
+from datetime import timedelta
+
+from celery import shared_task
+from django.apps import apps
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -23,18 +24,18 @@ def aggregate_daily_firmware_stats():
     """
     if not apps.is_installed('apps.firmwares'):
         return {'error': 'Firmwares app not installed'}
-    
+
     try:
         FirmwareStats = apps.get_model('firmwares', 'FirmwareStats')
         FirmwareView = apps.get_model('firmwares', 'FirmwareView')
         FirmwareDownloadAttempt = apps.get_model('firmwares', 'FirmwareDownloadAttempt')
-        
+
         # Aggregate yesterday's data
         yesterday = (timezone.now() - timedelta(days=1)).date()
-        
+
         # Get all unique firmwares that had activity yesterday
         from django.contrib.contenttypes.models import ContentType
-        
+
         firmware_types = [
             'OfficialFirmware',
             'EngineeringFirmware',
@@ -42,31 +43,31 @@ def aggregate_daily_firmware_stats():
             'ModifiedFirmware',
             'OtherFirmware',
         ]
-        
+
         aggregated_count = 0
-        
+
         for fw_type in firmware_types:
             try:
                 Model = apps.get_model('firmwares', fw_type)
                 content_type = ContentType.objects.get_for_model(Model)
-                
+
                 # Get unique firmware IDs that had activity
                 firmware_ids = set()
-                
+
                 # From views
                 views = FirmwareView.objects.filter(
                     content_type=content_type,
                     viewed_at__date=yesterday
                 ).values_list('object_id', flat=True).distinct()
                 firmware_ids.update(views)
-                
+
                 # From downloads
                 downloads = FirmwareDownloadAttempt.objects.filter(
                     content_type=content_type,
                     initiated_at__date=yesterday
                 ).values_list('object_id', flat=True).distinct()
                 firmware_ids.update(downloads)
-                
+
                 # Aggregate stats for each firmware
                 for fw_id in firmware_ids:
                     stats = FirmwareStats.aggregate_for_date(
@@ -75,14 +76,14 @@ def aggregate_daily_firmware_stats():
                         firmware_id=fw_id
                     )
                     aggregated_count += 1
-                    
+
             except Exception as e:
                 logger.error(f"Error aggregating {fw_type}: {e}")
                 continue
-        
+
         logger.info(f"Aggregated {aggregated_count} firmware stats for {yesterday}")
         return {'date': str(yesterday), 'aggregated': aggregated_count}
-        
+
     except Exception as e:
         logger.error(f"Error in aggregate_daily_firmware_stats: {e}")
         return {'error': str(e)}
@@ -96,35 +97,35 @@ def cleanup_old_tracking_data(days_to_keep: int = 90):
     """
     if not apps.is_installed('apps.firmwares'):
         return {'error': 'Firmwares app not installed'}
-    
+
     try:
         FirmwareView = apps.get_model('firmwares', 'FirmwareView')
         FirmwareDownloadAttempt = apps.get_model('firmwares', 'FirmwareDownloadAttempt')
-        
+
         cutoff_date = timezone.now() - timedelta(days=days_to_keep)
-        
+
         # Delete old views
         views_deleted = FirmwareView.objects.filter(
             viewed_at__lt=cutoff_date
         ).delete()[0]
-        
+
         # Delete old download attempts (except failed ones - keep for debugging)
         downloads_deleted = FirmwareDownloadAttempt.objects.filter(
             initiated_at__lt=cutoff_date,
             status__in=['completed', 'cancelled']
         ).delete()[0]
-        
+
         logger.info(
             f"Cleaned up old tracking data: {views_deleted} views, "
             f"{downloads_deleted} download attempts older than {days_to_keep} days"
         )
-        
+
         return {
             'views_deleted': views_deleted,
             'downloads_deleted': downloads_deleted,
             'cutoff_date': str(cutoff_date.date()),
         }
-        
+
     except Exception as e:
         logger.error(f"Error in cleanup_old_tracking_data: {e}")
         return {'error': str(e)}
@@ -141,17 +142,17 @@ def update_firmware_request_priorities():
     """
     if not apps.is_installed('apps.firmwares'):
         return {'error': 'Firmwares app not installed'}
-    
+
     try:
         FirmwareRequest = apps.get_model('firmwares', 'FirmwareRequest')
-        
+
         open_requests = FirmwareRequest.objects.filter(status='open')
-        
+
         # Could add a priority_score field to model and update it here
         # For now, just log the current state
-        
+
         by_count = open_requests.order_by('-request_count')[:10]
-        
+
         top_requests = []
         for req in by_count:
             top_requests.append({
@@ -160,14 +161,14 @@ def update_firmware_request_priorities():
                 'count': req.request_count,
                 'urgency': req.urgency,
             })
-        
+
         logger.info(f"Top 10 requested firmwares: {top_requests}")
-        
+
         return {
             'total_open': open_requests.count(),
             'top_requests': top_requests,
         }
-        
+
     except Exception as e:
         logger.error(f"Error in update_firmware_request_priorities: {e}")
         return {'error': str(e)}
@@ -181,12 +182,12 @@ def invalidate_homepage_caches():
     """
     try:
         from apps.pages.widgets import HomePageWidgetService
-        
+
         HomePageWidgetService.invalidate_caches()
-        
+
         logger.info("Homepage caches invalidated by scheduled task")
         return {'status': 'success', 'time': timezone.now().isoformat()}
-        
+
     except Exception as e:
         logger.error(f"Error invalidating homepage caches: {e}")
         return {'error': str(e)}
@@ -237,9 +238,9 @@ def log_firmware_view(firmware_ct_id: int, firmware_id: str, user_id: int = None
     try:
         FirmwareView = apps.get_model('firmwares', 'FirmwareView')
         from django.contrib.contenttypes.models import ContentType
-        
+
         content_type = ContentType.objects.get(id=firmware_ct_id)
-        
+
         user = None
         if user_id:
             User = apps.get_model(apps.get_app_config('users').default_auto_field.rsplit('.', 1)[0], 'User')
@@ -247,7 +248,7 @@ def log_firmware_view(firmware_ct_id: int, firmware_id: str, user_id: int = None
                 user = User.objects.get(id=user_id)
             except:
                 pass
-        
+
         FirmwareView.objects.create(
             content_type=content_type,
             object_id=firmware_id,
@@ -255,7 +256,7 @@ def log_firmware_view(firmware_ct_id: int, firmware_id: str, user_id: int = None
             session_key=session_key or '',
             ip_address=ip_address,
         )
-        
+
     except Exception as e:
         logger.warning(f"Failed to log firmware view: {e}")
         # Don't fail the main request if logging fails
@@ -277,12 +278,12 @@ def log_firmware_download_attempt(firmware_ct_id: int, firmware_id: str, user_id
     try:
         FirmwareDownloadAttempt = apps.get_model('firmwares', 'FirmwareDownloadAttempt')
         from django.contrib.contenttypes.models import ContentType
-        
+
         content_type = ContentType.objects.get(id=firmware_ct_id)
-        
+
         User = apps.get_model('users', 'User')
         user = User.objects.get(id=user_id)
-        
+
         FirmwareDownloadAttempt.objects.create(
             content_type=content_type,
             object_id=firmware_id,
@@ -290,7 +291,7 @@ def log_firmware_download_attempt(firmware_ct_id: int, firmware_id: str, user_id
             status=status,
             storage_session_id=storage_session_id,
         )
-        
+
     except Exception as e:
         logger.warning(f"Failed to log download attempt: {e}")
 
@@ -312,10 +313,10 @@ def generate_firmware_blog_post(self, model_id: int, force_update: bool = False)
     try:
         Model = apps.get_model('firmwares', 'Model')
         model = Model.objects.select_related('brand').get(id=model_id)
-        
+
         from apps.firmwares.blog_automation import FirmwareBlogService
         post = FirmwareBlogService.generate_firmware_post(model, force_update=force_update)
-        
+
         if post:
             logger.info(f"Blog post generated for {model.brand.name} {model.name}: {post.slug}")
             return {
@@ -330,11 +331,11 @@ def generate_firmware_blog_post(self, model_id: int, force_update: bool = False)
                 'status': 'skipped',
                 'model': f"{model.brand.name} {model.name}",
             }
-            
+
     except Model.DoesNotExist:
         logger.error(f"Model with id {model_id} not found")
         return {'status': 'error', 'error': f'Model {model_id} not found'}
-        
+
     except Exception as e:
         logger.error(f"Error generating blog for model {model_id}: {e}")
         # Retry on failure
@@ -361,18 +362,18 @@ def generate_all_firmware_blogs(force_update: bool = False, brand_name: str = No
         ReadbackFirmware = apps.get_model('firmwares', 'ReadbackFirmware')
         ModifiedFirmware = apps.get_model('firmwares', 'ModifiedFirmware')
         OtherFirmware = apps.get_model('firmwares', 'OtherFirmware')
-        
+
         from apps.firmwares.blog_automation import FirmwareBlogService
-        
+
         # Get models queryset
         models_qs = Model.objects.select_related('brand')
         if brand_name:
             models_qs = models_qs.filter(brand__name__iexact=brand_name)
-        
+
         success_count = 0
         skip_count = 0
         error_count = 0
-        
+
         for model in models_qs:
             try:
                 # Check if model has any active firmware
@@ -383,32 +384,32 @@ def generate_all_firmware_blogs(force_update: bool = False, brand_name: str = No
                     ModifiedFirmware.objects.filter(model=model, is_active=True).exists() or
                     OtherFirmware.objects.filter(model=model, is_active=True).exists()
                 )
-                
+
                 if not has_firmware and not force_update:
                     skip_count += 1
                     continue
-                
+
                 post = FirmwareBlogService.generate_firmware_post(model, force_update=force_update)
-                
+
                 if post:
                     success_count += 1
                 else:
                     skip_count += 1
-                    
+
             except Exception as e:
                 logger.error(f"Error generating blog for {model}: {e}")
                 error_count += 1
-        
+
         result = {
             'status': 'completed',
             'success_count': success_count,
             'skip_count': skip_count,
             'error_count': error_count,
         }
-        
+
         logger.info(f"Bulk blog generation completed: {result}")
         return result
-        
+
     except Exception as e:
         logger.error(f"Error in generate_all_firmware_blogs: {e}")
         return {'status': 'error', 'error': str(e)}

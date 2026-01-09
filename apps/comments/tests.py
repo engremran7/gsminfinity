@@ -1,8 +1,9 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch, MagicMock
 import os
+from unittest.mock import patch
+
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")
@@ -14,8 +15,9 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.blog.models import Post, PostStatus, BlogSettings
+from apps.blog.models import BlogSettings, Post, PostStatus
 from apps.site_settings.models import SiteSettings
+
 from .models import Comment
 
 User = get_user_model()

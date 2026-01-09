@@ -104,7 +104,7 @@ def hash_password_simple(password: str, salt: Optional[str] = None) -> tuple[str
     """
     if salt is None:
         salt = generate_token(16)
-    
+
     combined = salt + password
     hashed = hash_value(combined, 'sha256')
     return hashed, salt
@@ -146,14 +146,14 @@ def mask_email(email: str) -> str:
     """
     if '@' not in email:
         return email
-    
+
     username, domain = email.split('@', 1)
-    
+
     if len(username) <= 2:
         masked_username = username[0] + '*'
     else:
         masked_username = username[0] + '***' + username[-1]
-    
+
     return f"{masked_username}@{domain}"
 
 
@@ -173,10 +173,10 @@ def mask_phone(phone: str) -> str:
     """
     # Remove non-digits
     digits = ''.join(c for c in phone if c.isdigit())
-    
+
     if len(digits) < 4:
         return phone
-    
+
     return '***-***-' + digits[-4:]
 
 
@@ -198,11 +198,11 @@ def mask_string(value: str, show_chars: int = 3, mask_char: str = '*') -> str:
     """
     if len(value) <= show_chars * 2:
         return mask_char * len(value)
-    
+
     start = value[:show_chars]
     end = value[-show_chars:]
     middle_length = len(value) - (show_chars * 2)
-    
+
     return start + (mask_char * middle_length) + end
 
 
@@ -222,7 +222,7 @@ def validate_strength_password(password: str) -> dict:
     """
     issues = []
     score = 0
-    
+
     # Length check
     if len(password) < 8:
         issues.append("Too short (minimum 8 characters)")
@@ -230,39 +230,39 @@ def validate_strength_password(password: str) -> dict:
         score += 2
     else:
         score += 1
-    
+
     # Character variety
     has_lower = any(c.islower() for c in password)
     has_upper = any(c.isupper() for c in password)
     has_digit = any(c.isdigit() for c in password)
     has_special = any(c in string.punctuation for c in password)
-    
+
     if not has_lower:
         issues.append("Missing lowercase letter")
     else:
         score += 1
-    
+
     if not has_upper:
         issues.append("Missing uppercase letter")
     else:
         score += 1
-    
+
     if not has_digit:
         issues.append("Missing number")
     else:
         score += 1
-    
+
     if not has_special:
         issues.append("Missing special character")
     else:
         score += 2
-    
+
     # Common patterns
     common_passwords = ['password', '123456', 'qwerty', 'abc123']
     if password.lower() in common_passwords:
         issues.append("Too common")
         score = 0
-    
+
     return {
         'is_strong': score >= 5 and len(issues) == 0,
         'score': score,

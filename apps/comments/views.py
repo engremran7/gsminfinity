@@ -1,8 +1,16 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+from urllib.parse import urlencode
+
+import requests
+from django.conf import settings
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
 from django.core.paginator import Paginator
+from django.db.models import F
 from django.http import (
     HttpRequest,
     HttpResponse,
@@ -11,26 +19,20 @@ from django.http import (
     JsonResponse,
 )
 from django.shortcuts import get_object_or_404, redirect
-from django.views.decorators.http import require_GET, require_POST
-from apps.consent.decorators import consent_required
 from django.utils import timezone
-from django.db.models import F
-from django.contrib.admin.views.decorators import staff_member_required
-from datetime import timedelta
-import requests
-from django.conf import settings
-from django.core.mail import send_mail
-from urllib.parse import urlencode
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.blog.models import Post
-from apps.core.views import _get_site_settings_snapshot
-from apps.core.app_service import AppService
-from .models import Comment
-from apps.core import ai_client
 from apps.comments.services.moderation import classify_comment
+from apps.consent.decorators import consent_required
+from apps.core import ai_client
+from apps.core.app_service import AppService
 from apps.core.utils import feature_flags
 from apps.core.utils.ip import get_client_ip
+from apps.core.views import _get_site_settings_snapshot
 from apps.users.services.rate_limit import allow_action
+
+from .models import Comment
 
 
 @login_required

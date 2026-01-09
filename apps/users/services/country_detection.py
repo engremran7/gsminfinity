@@ -78,25 +78,25 @@ def detect_country_from_ip(ip_address: str) -> Optional[str]:
     """
     if not ip_address or ip_address in ("127.0.0.1", "localhost", "::1"):
         return None
-    
+
     try:
         import requests
-        
+
         # Use ip-api.com (free, no API key required, 45 requests/minute)
         response = requests.get(
             f"http://ip-api.com/json/{ip_address}",
             timeout=3,
             params={"fields": "countryCode,status"}
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             if data.get("status") == "success":
                 return data.get("countryCode")
-        
+
     except Exception as e:
         logger.warning(f"IP geolocation failed for {ip_address}: {e}")
-    
+
     return None
 
 
@@ -120,22 +120,22 @@ def auto_detect_user_country(user, request) -> bool:
     if user.country and user.country_detected_at:
         # Already detected
         return False
-    
+
     ip = get_client_ip(request)
     country_code = detect_country_from_ip(ip)
-    
+
     if country_code:
         user.country = country_code
         user.country_detected_at = timezone.now()
-        
+
         # Also set phone country code if not set
         if not user.phone_country_code:
             user.phone_country_code = get_phone_code_for_country(country_code)
-        
+
         user.save(update_fields=["country", "country_detected_at", "phone_country_code"])
         logger.info(f"Auto-detected country {country_code} for user {user.pk} from IP {ip}")
         return True
-    
+
     return False
 
 
@@ -144,7 +144,7 @@ def is_email_verified(user) -> bool:
     # Social login users are considered verified
     if user.signup_method == "social":
         return True
-    
+
     # Manual signup users need explicit verification
     return user.email_verified_at is not None
 
@@ -157,7 +157,7 @@ def requires_email_verification(user) -> bool:
     """
     if user.signup_method == "social":
         return False
-    
+
     return user.email_verified_at is None
 
 
@@ -178,12 +178,12 @@ def validate_phone_number(phone: str, country_code: str = "") -> Tuple[bool, str
     """
     if not phone:
         return True, ""
-    
+
     # Remove all non-digit characters except +
     cleaned = re.sub(r"[^\d+]", "", phone)
-    
+
     # Must start with + or be digits only
     if not re.match(r"^\+?\d{7,15}$", cleaned):
         return False, "Invalid phone number format"
-    
+
     return True, ""

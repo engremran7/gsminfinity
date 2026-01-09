@@ -1,29 +1,29 @@
-from rest_framework import views, viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.decorators import action
-from django.shortcuts import get_object_or_404
+import logging
+
 from django.contrib.contenttypes.models import ContentType
+from django.shortcuts import get_object_or_404
+from rest_framework import status, views, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+
 from .models import (
-    SharedDriveAccount,
-    ServiceAccount,
     FirmwareStorageLocation,
+    ServiceAccount,
+    SharedDriveAccount,
     UserDownloadSession,
-    DriveFileOrganization
 )
 from .serializers import (
-    SharedDriveAccountSerializer,
-    ServiceAccountSerializer,
     FirmwareStorageLocationSerializer,
-    UserDownloadSessionSerializer,
-    DriveFileOrganizationSerializer,
     InitiateDownloadSerializer,
-    QuotaStatusSerializer
+    QuotaStatusSerializer,
+    ServiceAccountSerializer,
+    SharedDriveAccountSerializer,
+    UserDownloadSessionSerializer,
 )
-from .services.orchestrator import DownloadOrchestrator
 from .services import ServiceAccountRouter
+from .services.orchestrator import DownloadOrchestrator
 from .services.placement import SmartPlacementAlgorithm
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -34,17 +34,17 @@ class InitiateFirmwareDownloadView(views.APIView):
     Start firmware download process - copies to user's GDrive
     """
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request):
         serializer = InitiateDownloadSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         firmware_type = serializer.validated_data['firmware_type']
         firmware_id = serializer.validated_data['firmware_id']
-        
+
         # Get firmware model
         from apps.firmware import models as firmware_models
-        
+
         model_map = {
             'official': firmware_models.OfficialFirmware,
             'engineering': firmware_models.EngineeringFirmware,
@@ -53,31 +53,31 @@ class InitiateFirmwareDownloadView(views.APIView):
             'other': firmware_models.OtherFirmware,
             'unclassified': firmware_models.UnclassifiedFirmware
         }
-        
+
         model_class = model_map.get(firmware_type)
         if not model_class:
             return Response(
                 {'error': f'Invalid firmware type: {firmware_type}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         firmware = get_object_or_404(model_class, id=firmware_id)
         content_type = ContentType.objects.get_for_model(model_class)
-        
+
         orchestrator = DownloadOrchestrator()
-        
+
         try:
             session = orchestrator.initiate_download(
                 user=request.user,
                 firmware_object=firmware,
                 content_type=content_type
             )
-            
+
             return Response(
                 UserDownloadSessionSerializer(session).data,
                 status=status.HTTP_201_CREATED
             )
-            
+
         except ValueError as e:
             return Response(
                 {'error': str(e)},
@@ -97,7 +97,7 @@ class DownloadSessionStatusView(views.APIView):
     Check download session status
     """
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request, session_id):
         session = get_object_or_404(
             UserDownloadSession,
@@ -113,16 +113,16 @@ class DownloadLinkView(views.APIView):
     Get final download link (marks session as downloading)
     """
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request, session_id):
         from django.utils import timezone
-        
+
         session = get_object_or_404(
             UserDownloadSession,
             id=session_id,
             user=request.user
         )
-        
+
         if session.status != 'ready':
             return Response(
                 {
@@ -131,19 +131,19 @@ class DownloadLinkView(views.APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         if session.is_expired():
             return Response(
                 {'error': 'Download link has expired'},
                 status=status.HTTP_410_GONE
             )
-        
+
         # Track download start
         if not session.download_started_at:
             session.download_started_at = timezone.now()
             session.status = 'downloading'
             session.save(update_fields=['download_started_at', 'status'])
-        
+
         return Response({
             'download_link': session.user_gdrive_link,
             'expires_at': session.expires_at,
@@ -159,16 +159,16 @@ class QuotaStatusView(views.APIView):
     Get current quota status across all shared drives and service accounts
     """
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         router = ServiceAccountRouter()
         distribution = router.get_shared_drive_distribution()
-        
+
         serializer = QuotaStatusSerializer(distribution, many=True)
-        
+
         total_available_gb = sum(d['available_quota_gb'] for d in distribution)
         total_quota_gb = sum(d['total_quota_gb'] for d in distribution)
-        
+
         return Response({
             'shared_drives': serializer.data,
             'total_available_gb': round(total_available_gb, 2),
@@ -183,7 +183,7 @@ class DriveBalanceReportView(views.APIView):
     Get drive balance analysis (admin only)
     """
     permission_classes = [IsAdminUser]
-    
+
     def get(self, request):
         placement = SmartPlacementAlgorithm()
         analysis = placement.balance_drives()
@@ -196,7 +196,7 @@ class BrandDistributionView(views.APIView):
     Get brand distribution across drives (admin only)
     """
     permission_classes = [IsAdminUser]
-    
+
     def get(self, request):
         placement = SmartPlacementAlgorithm()
         distribution = placement.get_brand_distribution()
@@ -212,7 +212,7 @@ class SharedDriveAccountViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAdminUser]
     queryset = SharedDriveAccount.objects.all().order_by('-priority', 'name')
     serializer_class = SharedDriveAccountSerializer
-    
+
     @action(detail=True, methods=['post'])
     def update_health(self, request, pk=None):
         """Manually trigger health status update"""
@@ -232,7 +232,7 @@ class ServiceAccountViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ServiceAccount.objects.select_related('shared_drive').all()
     serializer_class = ServiceAccountSerializer
     filterset_fields = ['shared_drive', 'is_active', 'is_banned']
-    
+
     @action(detail=True, methods=['post'])
     def reset_quota(self, request, pk=None):
         """Manually reset service account quota"""
@@ -259,24 +259,24 @@ class UserDownloadSessionViewSet(viewsets.ReadOnlyModelViewSet):
     """
     permission_classes = [IsAuthenticated]
     serializer_class = UserDownloadSessionSerializer
-    
+
     def get_queryset(self):
         return UserDownloadSession.objects.filter(
             user=self.request.user
         ).select_related('storage_location').order_by('-created_at')
-    
+
     @action(detail=True, methods=['delete'])
     def cancel(self, request, pk=None):
         """Cancel a pending/copying download session"""
         session = self.get_object()
-        
+
         if session.status not in ['pending', 'copying']:
             return Response(
                 {'error': 'Can only cancel pending or copying sessions'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         session.status = 'expired'
         session.save()
-        
+
         return Response({'status': 'cancelled'})

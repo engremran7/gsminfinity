@@ -1,4 +1,5 @@
 import base64
+
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured

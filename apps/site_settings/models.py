@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
@@ -95,7 +95,7 @@ class SiteSettings(SingletonModel):
     default_language = models.CharField(max_length=10, default="en")
     timezone = models.CharField(max_length=50, default="UTC")
     enable_localization = models.BooleanField(default=False)
-    
+
     # Featured languages shown in header dropdown (comma-separated codes)
     # Example: "en,ar,fr,de,es,zh,ja,ko,ru,pt"
     featured_languages = models.CharField(

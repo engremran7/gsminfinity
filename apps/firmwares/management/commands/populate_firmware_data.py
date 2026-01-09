@@ -3,21 +3,28 @@ Management command to populate dummy firmware data for testing.
 Creates ~100 brands, ~500 models with variants, and firmware entries
 to test automated SEO, blog posts, tags, and distribution features.
 """
+import random
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.utils.text import slugify
-from datetime import timedelta
-import random
 
 from apps.firmwares.models import (
-    Brand, Model, Variant, OfficialFirmware, EngineeringFirmware,
-    ModifiedFirmware, PendingFirmware, FirmwareRequest
+    Brand,
+    EngineeringFirmware,
+    FirmwareRequest,
+    Model,
+    ModifiedFirmware,
+    OfficialFirmware,
+    PendingFirmware,
+    Variant,
 )
 
 
 class Command(BaseCommand):
     help = 'Populate extensive dummy firmware data for testing automation features'
-    
+
     def add_arguments(self, parser):
         parser.add_argument(
             '--brands',
@@ -35,10 +42,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         num_brands = options['brands']
         models_per_brand = options['models_per_brand']
-        
+
         self.stdout.write(self.style.SUCCESS(f'Creating extensive firmware data...'))
         self.stdout.write(self.style.WARNING(f'Target: {num_brands} brands, ~{num_brands * models_per_brand} models'))
-        
+
         # Generate realistic brand names
         brand_prefixes = [
             'Samsung', 'Xiaomi', 'OPPO', 'Vivo', 'Realme', 'OnePlus', 'Huawei',
@@ -50,21 +57,21 @@ class Command(BaseCommand):
             'Blackview', 'Ulefone', 'Oukitel', 'Cubot', 'Elephone', 'Umidigi',
             'Leagoo', 'Homtom', 'Vernee', 'Bluboo', 'Maze', 'Nomu', 'AGM'
         ]
-        
+
         brand_suffixes = [
             '', ' Mobile', ' Telecom', ' Electronics', ' Tech', ' Devices',
             ' Communications', ' Digital', ' Systems', ' Networks'
         ]
-        
+
         brands_data = []
         existing_names = set()
-        
+
         for i in range(num_brands):
             if i < len(brand_prefixes):
                 name = brand_prefixes[i] + random.choice(brand_suffixes)
             else:
                 name = f"{random.choice(brand_prefixes)} {random.choice(['Pro', 'Plus', 'Max', 'Ultra', 'Lite', 'Neo', 'Ace', 'Edge', 'Prime'])}"
-            
+
             # Ensure unique names
             counter = 1
             original_name = name
@@ -72,7 +79,7 @@ class Command(BaseCommand):
                 name = f"{original_name} {counter}"
                 counter += 1
             existing_names.add(name)
-            
+
             slug = slugify(name)
             # Ensure unique slugs
             counter = 1
@@ -80,9 +87,9 @@ class Command(BaseCommand):
             while slug in [b['slug'] for b in brands_data]:
                 slug = f"{original_slug}-{counter}"
                 counter += 1
-            
+
             brands_data.append({'name': name, 'slug': slug})
-        
+
         # Create brands
         brands = {}
         created_count = 0
@@ -94,9 +101,9 @@ class Command(BaseCommand):
             brands[brand_data['slug']] = brand
             if created:
                 created_count += 1
-        
+
         self.stdout.write(f'✓ Brands: {created_count} created, {len(brands_data) - created_count} existing')
-        
+
         # Generate model names and variants
         model_series = [
             'Galaxy', 'Redmi', 'Note', 'Find', 'Reno', 'GT', 'Nord', 'Mate',
@@ -104,13 +111,13 @@ class Command(BaseCommand):
             'Narzo', 'C Series', 'Hot', 'Spark', 'Camon', 'Pova', 'Pop',
             'Mix', 'Pad', 'Book', 'Watch', 'Band', 'Buds'
         ]
-        
+
         model_modifiers = [
             '', ' Pro', ' Max', ' Ultra', ' Plus', ' Lite', ' SE', ' Neo',
             ' Ace', ' Edge', ' Prime', ' Youth', ' Standard', ' Turbo',
             ' Racing', ' GT', ' Gaming', ' 5G'
         ]
-        
+
         regions = ['Global', 'USA', 'Europe', 'India', 'China', 'Korea', 'Japan', 'LATAM', 'MEA']
         chipsets = [
             'Snapdragon 8 Gen 3', 'Snapdragon 8 Gen 2', 'Snapdragon 888', 'Snapdragon 870',
@@ -120,30 +127,30 @@ class Command(BaseCommand):
             'Exynos 2400', 'Exynos 1380', 'Exynos 1330', 'Exynos 850',
             'Kirin 9000', 'Kirin 990', 'Kirin 985', 'Unisoc T820'
         ]
-        
+
         android_versions = ['Android 15', 'Android 14', 'Android 13', 'Android 12', 'Android 11']
-        
+
         created_variants = []
         models_created = 0
         variants_created = 0
-        
+
         for brand_slug, brand in brands.items():
             # Each brand gets 4-7 models
             num_models = random.randint(models_per_brand - 2, models_per_brand + 2)
-            
+
             for i in range(num_models):
                 model_name = f"{random.choice(model_series)} {random.randint(1, 99)}{random.choice(model_modifiers)}"
                 model_slug = slugify(f"{model_name}-{brand_slug}")
-                
+
                 model, created = Model.objects.get_or_create(
                     brand=brand,
                     slug=model_slug,
                     defaults={'name': model_name}
                 )
-                
+
                 if created:
                     models_created += 1
-                
+
                 # Each model gets 1-4 variants
                 num_variants = random.randint(1, 4)
                 for v in range(num_variants):
@@ -160,10 +167,10 @@ class Command(BaseCommand):
                         variant_code = f"RMX{random.randint(3000, 3999)}"
                     else:
                         variant_code = f"{chr(65 + random.randint(0, 25))}{random.randint(1000, 9999)}"
-                    
+
                     variant_slug = slugify(variant_code)
                     board_id = f"{random.choice(['sm', 's5e', 'mt', 'sdm', 'msm'])}{random.randint(6000, 9999)}"
-                    
+
                     variant, created = Variant.objects.get_or_create(
                         model=model,
                         slug=variant_slug,
@@ -173,32 +180,32 @@ class Command(BaseCommand):
                             'board_id': board_id,
                         }
                     )
-                    
+
                     if created:
                         variants_created += 1
                         created_variants.append(variant)
-        
+
         self.stdout.write(f'✓ Models: {models_created} created')
         self.stdout.write(f'✓ Variants: {variants_created} created')
         self.stdout.write(self.style.WARNING(f'Generating firmwares for {len(created_variants)} variants...'))
-        
+
         # Create firmware entries for each variant
         firmware_types = [
             ('official', OfficialFirmware, 60),  # 60% official
             ('engineering', EngineeringFirmware, 20),  # 20% engineering
             ('modified', ModifiedFirmware, 20),  # 20% modified
         ]
-        
+
         firmware_count = 0
         official_count = engineering_count = modified_count = 0
-        
+
         for idx, variant in enumerate(created_variants, 1):
             if idx % 50 == 0:
                 self.stdout.write(f'  Progress: {idx}/{len(created_variants)} variants...')
-            
+
             # Each variant gets 2-5 firmware entries
             num_firmwares = random.randint(2, 5)
-            
+
             for i in range(num_firmwares):
                 # Select firmware type based on weighted probability
                 rand_val = random.randint(1, 100)
@@ -211,12 +218,12 @@ class Command(BaseCommand):
                 else:
                     firmware_type_name, FirmwareClass = 'modified', ModifiedFirmware
                     modified_count += 1
-                
+
                 version = f'V{random.randint(1, 15)}.{random.randint(0, 9)}.{random.randint(0, 199)}'
                 chipset = random.choice(chipsets)
                 android = random.choice(android_versions)
                 build_date = timezone.now() - timedelta(days=random.randint(1, 730))  # Up to 2 years old
-                
+
                 firmware_data = {
                     'brand': variant.model.brand,
                     'model': variant.model,
@@ -234,7 +241,7 @@ class Command(BaseCommand):
                         'build_fingerprint': f'{variant.model.brand.slug}/{variant.model.slug}/{variant.slug}:{android}/{version}:user/release-keys',
                     },
                 }
-                
+
                 # Add type-specific fields
                 if FirmwareClass == ModifiedFirmware:
                     firmware_data['subtype'] = random.choice([
@@ -245,29 +252,29 @@ class Command(BaseCommand):
                     firmware_data['subtype'] = random.choice([
                         'Engineering Boot', 'Factory Test', 'Debug Build', 'Diagnostic'
                     ])
-                
+
                 firmware, created = FirmwareClass.objects.get_or_create(
                     variant=variant,
                     chipset=chipset,
                     original_file_name=firmware_data['original_file_name'],
                     defaults=firmware_data
                 )
-                
+
                 if created:
                     firmware_count += 1
-        
+
         self.stdout.write(f'✓ Firmwares: {firmware_count} created')
         self.stdout.write(f'  - Official: {official_count}')
         self.stdout.write(f'  - Engineering: {engineering_count}')
         self.stdout.write(f'  - Modified: {modified_count}')
-        
+
         # Create some pending firmwares
         pending_count = 0
         sample_variants = random.sample(created_variants, min(30, len(created_variants)))
-        
+
         for i, variant in enumerate(sample_variants):
             chipset = random.choice(chipsets)
-            
+
             pending, created = PendingFirmware.objects.get_or_create(
                 original_file_name=f'{variant.slug}_pending_{i}.zip',
                 defaults={
@@ -286,13 +293,13 @@ class Command(BaseCommand):
             )
             if created:
                 pending_count += 1
-        
+
         self.stdout.write(f'✓ Pending firmwares: {pending_count} created')
-        
+
         # Create firmware requests
         request_count = 0
         sample_variants_for_requests = random.sample(created_variants, min(50, len(created_variants)))
-        
+
         for variant in sample_variants_for_requests:
             request, created = FirmwareRequest.objects.get_or_create(
                 brand=variant.model.brand,
@@ -309,9 +316,9 @@ class Command(BaseCommand):
             )
             if created:
                 request_count += 1
-        
+
         self.stdout.write(f'✓ Firmware requests: {request_count} created')
-        
+
         # Final summary
         self.stdout.write(self.style.SUCCESS('\n' + '='*60))
         self.stdout.write(self.style.SUCCESS('✓ Data population complete!'))

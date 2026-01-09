@@ -1,25 +1,23 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse
-from django.utils import timezone
-from django.db.models import Q
-from django.views.decorators.csrf import csrf_protect
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import Http404
+from django.db.models import Q
+from django.http import Http404, HttpRequest, HttpResponse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_protect
 
-from apps.core.models import AppRegistry
 from apps.admin_suite.views_shared import (
     _ADMIN_DISABLED,
     _make_breadcrumb,
     _render_admin,
     logger,
 )
+from apps.core.models import AppRegistry
 from apps.distribution.api import get_settings as dist_get_settings
 from apps.distribution.forms import SocialAccountForm
-from apps.distribution.models import SocialAccount, SharePlan, ShareJob, ShareLog
+from apps.distribution.models import ShareJob, ShareLog, SharePlan, SocialAccount
 from apps.distribution.tasks import enqueue_pending_for_account
-
 
 __all__ = [
     "admin_suite_distribution",
@@ -155,20 +153,20 @@ def admin_suite_social_posting(request: HttpRequest) -> HttpResponse:
     """
     if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
         raise _ADMIN_DISABLED
-    
+
     from apps.users.models_social import SocialPostingAccount
-    
+
     message = ""
-    
+
     if request.method == "POST":
         action = request.POST.get("action")
         account_id = request.POST.get("account_id")
-        
+
         try:
             if action == "create_account":
                 platform = request.POST.get("platform")
                 account_name = request.POST.get("account_name", "").strip()
-                
+
                 if not platform:
                     message = "Platform is required."
                 elif not account_name:
@@ -176,7 +174,7 @@ def admin_suite_social_posting(request: HttpRequest) -> HttpResponse:
                 else:
                     auth_info = SocialPostingAccount.get_auth_info(platform)
                     auth_type = auth_info.get('auth_type', 'oauth2')
-                    
+
                     account = SocialPostingAccount.objects.create(
                         platform=platform,
                         account_name=account_name,
@@ -187,7 +185,7 @@ def admin_suite_social_posting(request: HttpRequest) -> HttpResponse:
                         status='unconfigured',
                         created_by=request.user,
                     )
-                    
+
                     # Handle credentials based on platform type
                     if auth_type == 'api_token':
                         # Telegram bot token
@@ -215,21 +213,21 @@ def admin_suite_social_posting(request: HttpRequest) -> HttpResponse:
                             account.set_api_key(api_key)
                         if api_secret:
                             account.set_api_secret(api_secret)
-                    
+
                     account.save()
-                    
+
                     # For OAuth platforms, redirect to auth
                     if auth_info.get('requires_oauth'):
                         message = f"Created {account.get_platform_display()}. Click 'Connect' to authorize via OAuth."
                     else:
                         message = f"Created {account.get_platform_display()} account."
-            
+
             elif action == "test_connection" and account_id:
                 account = SocialPostingAccount.objects.filter(id=account_id).first()
                 if account:
                     success, msg = account.test_connection()
                     message = f"{account.get_platform_display()}: {msg}"
-            
+
             elif action == "toggle_account" and account_id:
                 account = SocialPostingAccount.objects.filter(id=account_id).first()
                 if account:
@@ -240,7 +238,7 @@ def admin_suite_social_posting(request: HttpRequest) -> HttpResponse:
                         account.status = 'active'
                     account.save(update_fields=['is_enabled', 'status', 'updated_at'])
                     message = f"{account.account_name} {'enabled' if account.is_enabled else 'disabled'}."
-            
+
             elif action == "delete_account" and account_id:
                 if not getattr(request.user, "is_superuser", False):
                     message = "Superuser required to delete accounts."
@@ -250,7 +248,7 @@ def admin_suite_social_posting(request: HttpRequest) -> HttpResponse:
                         name = f"{account.get_platform_display()} - {account.account_name}"
                         account.delete()
                         message = f"Deleted {name}."
-            
+
             elif action == "send_test_post" and account_id:
                 account = SocialPostingAccount.objects.filter(id=account_id).first()
                 if account:
@@ -267,14 +265,14 @@ def admin_suite_social_posting(request: HttpRequest) -> HttpResponse:
                             tags=["test"],
                         )
                         message = f"Test post prepared: {test_content['content'][:100]}..."
-                        
+
         except Exception as exc:
             logger.warning("Social posting action failed: %s", exc)
             message = f"Action failed: {exc}"
-    
+
     # Get all configured accounts
     accounts = list(SocialPostingAccount.objects.order_by('platform', 'account_name'))
-    
+
     # Group accounts by platform
     accounts_by_platform = {}
     for account in accounts:
@@ -282,13 +280,13 @@ def admin_suite_social_posting(request: HttpRequest) -> HttpResponse:
         if platform not in accounts_by_platform:
             accounts_by_platform[platform] = []
         accounts_by_platform[platform].append(account)
-    
+
     # Platform info for adding new accounts
     platform_info = {
         key: SocialPostingAccount.get_auth_info(key)
         for key, _ in SocialPostingAccount.PLATFORM_CHOICES
     }
-    
+
     # Stats
     stats = {
         'total_accounts': len(accounts),
@@ -296,7 +294,7 @@ def admin_suite_social_posting(request: HttpRequest) -> HttpResponse:
         'total_posts': sum(a.total_posts for a in accounts),
         'successful_posts': sum(a.successful_posts for a in accounts),
     }
-    
+
     return _render_admin(
         request,
         "admin_suite/social_posting.html",
@@ -328,19 +326,19 @@ def admin_suite_social_posting_detail(request: HttpRequest, account_id: str) -> 
     """
     if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
         raise _ADMIN_DISABLED
-    
+
     from apps.users.models_social import SocialPostingAccount
-    
+
     try:
         account = SocialPostingAccount.objects.get(id=account_id)
     except SocialPostingAccount.DoesNotExist:
         raise Http404("Account not found")
-    
+
     message = ""
-    
+
     if request.method == "POST":
         action = request.POST.get("action")
-        
+
         try:
             if action == "update_credentials":
                 # Update credentials based on auth type
@@ -351,17 +349,17 @@ def admin_suite_social_posting_detail(request: HttpRequest, account_id: str) -> 
                     chat_id = request.POST.get("destination_id", "").strip()
                     if chat_id:
                         account.destination_id = chat_id
-                        
+
                 elif account.auth_type == 'webhook':
                     webhook_url = request.POST.get("webhook_url", "").strip()
                     if webhook_url:
                         account.set_webhook_url(webhook_url)
-                        
+
                 elif account.auth_type == 'access_token':
                     access_token = request.POST.get("access_token", "").strip()
                     if access_token:
                         account.set_access_token(access_token)
-                        
+
                 elif account.auth_type in ['api_key_secret', 'oauth2']:
                     api_key = request.POST.get("api_key", "").strip()
                     api_secret = request.POST.get("api_secret", "").strip()
@@ -369,20 +367,20 @@ def admin_suite_social_posting_detail(request: HttpRequest, account_id: str) -> 
                         account.set_api_key(api_key)
                     if api_secret:
                         account.set_api_secret(api_secret)
-                
+
                 # Update account info
                 account.account_name = request.POST.get("account_name", "").strip() or account.account_name
                 account.destination_type = request.POST.get("destination_type", account.destination_type)
                 account.destination_id = request.POST.get("destination_id", "").strip() or account.destination_id
                 account.destination_name = request.POST.get("destination_name", "").strip() or account.destination_name
                 account.destination_url = request.POST.get("destination_url", "").strip() or account.destination_url
-                
+
                 if account.has_credentials:
                     account.status = 'active'
-                
+
                 account.save()
                 message = "Credentials updated."
-            
+
             elif action == "update_posting_settings":
                 account.auto_post_enabled = request.POST.get("auto_post_enabled") == "on"
                 account.post_content_types = request.POST.get("post_content_types", "both")
@@ -390,7 +388,7 @@ def admin_suite_social_posting_detail(request: HttpRequest, account_id: str) -> 
                 account.include_image = request.POST.get("include_image") == "on"
                 account.include_link = request.POST.get("include_link") == "on"
                 account.hashtags = request.POST.get("hashtags", "").strip()
-                
+
                 # Rate limiting
                 try:
                     account.min_post_interval_minutes = int(request.POST.get("min_post_interval", 60))
@@ -400,15 +398,15 @@ def admin_suite_social_posting_detail(request: HttpRequest, account_id: str) -> 
                     account.daily_post_limit = int(request.POST.get("daily_post_limit", 10))
                 except (ValueError, TypeError):
                     pass
-                
+
                 account.notes = request.POST.get("notes", "").strip()
                 account.save()
                 message = "Posting settings updated."
-            
+
             elif action == "test_connection":
                 success, msg = account.test_connection()
                 message = msg
-            
+
             elif action == "send_test_post":
                 if account.status != 'active':
                     message = "Account must be active to send test post."
@@ -421,13 +419,13 @@ def admin_suite_social_posting_detail(request: HttpRequest, account_id: str) -> 
                     )
                     # In reality, this would call the posting service
                     message = f"Test post content: {test_content['content'][:200]}..."
-            
+
             elif action == "reset_counters":
                 account.posts_today = 0
                 account.consecutive_failures = 0
                 account.save(update_fields=['posts_today', 'consecutive_failures', 'updated_at'])
                 message = "Counters reset."
-            
+
             elif action == "start_oauth":
                 # Generate OAuth URL for the platform
                 auth_info = account.auth_info
@@ -439,14 +437,14 @@ def admin_suite_social_posting_detail(request: HttpRequest, account_id: str) -> 
                     message = f"OAuth flow would redirect to: {auth_info.get('oauth_url', 'N/A')}"
                 else:
                     message = "This platform does not require OAuth."
-                    
+
         except Exception as exc:
             logger.warning("Social posting detail action failed: %s", exc)
             message = f"Action failed: {exc}"
-    
+
     # Get auth info for this platform
     auth_info = account.auth_info
-    
+
     return _render_admin(
         request,
         "admin_suite/social_posting_detail.html",
@@ -480,33 +478,32 @@ def admin_suite_social_posting_oauth_callback(request: HttpRequest, platform: st
     """
     if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
         raise _ADMIN_DISABLED
-    
+
     from django.shortcuts import redirect
-    from apps.users.models_social import SocialPostingAccount
-    
+
     code = request.GET.get('code')
     state = request.GET.get('state')
     error = request.GET.get('error')
-    
+
     if error:
         # OAuth was denied or failed
         logger.warning(f"OAuth error for {platform}: {error}")
         # Redirect back to social posting with error
         return redirect('admin_suite:social_posting')
-    
+
     if not code:
         logger.warning(f"OAuth callback for {platform} missing code")
         return redirect('admin_suite:social_posting')
-    
+
     # Find the account that initiated this OAuth flow
     # In a real implementation, we'd validate the state parameter
     # and exchange the code for tokens
-    
+
     try:
         # Exchange code for tokens (platform-specific)
         # This is a placeholder - real implementation would call the platform's token endpoint
         logger.info(f"OAuth callback received for {platform} with code: {code[:10]}...")
-        
+
         # Example token exchange would go here
         # tokens = exchange_code_for_tokens(platform, code)
         # account.set_access_token(tokens['access_token'])
@@ -514,8 +511,8 @@ def admin_suite_social_posting_oauth_callback(request: HttpRequest, platform: st
         # account.token_expiry = calculate_expiry(tokens)
         # account.status = 'active'
         # account.save()
-        
+
     except Exception as exc:
         logger.error(f"OAuth token exchange failed for {platform}: {exc}")
-    
+
     return redirect('admin_suite:social_posting')

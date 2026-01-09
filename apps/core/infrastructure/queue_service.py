@@ -6,26 +6,26 @@ Unified interface for background task processing.
 Supports multiple backends: Celery, Django-Q, or synchronous fallback.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 class QueueBackend(ABC):
     """Abstract queue backend interface"""
-    
+
     @abstractmethod
     def enqueue(self, task: str, *args, **kwargs) -> Any:
         """Enqueue a task for async execution"""
         pass
-    
+
     @abstractmethod
     def enqueue_in(self, task: str, seconds: int, *args, **kwargs) -> Any:
         """Enqueue a delayed task"""
         pass
-    
+
     @abstractmethod
     def get_status(self, task_id: str) -> dict:
         """Get task execution status"""
@@ -34,7 +34,7 @@ class QueueBackend(ABC):
 
 class CeleryBackend(QueueBackend):
     """Celery task queue implementation"""
-    
+
     def enqueue(self, task: str, *args, **kwargs):
         try:
             from celery import current_app
@@ -46,7 +46,7 @@ class CeleryBackend(QueueBackend):
         except ImportError:
             logger.error("Celery not installed")
             raise
-    
+
     def enqueue_in(self, task: str, seconds: int, *args, **kwargs):
         try:
             from celery import current_app
@@ -58,7 +58,7 @@ class CeleryBackend(QueueBackend):
         except ImportError:
             logger.error("Celery not installed")
             raise
-    
+
     def get_status(self, task_id: str) -> dict:
         try:
             from celery.result import AsyncResult
@@ -74,7 +74,7 @@ class CeleryBackend(QueueBackend):
 
 class DjangoQBackend(QueueBackend):
     """Django-Q task queue implementation"""
-    
+
     def enqueue(self, task: str, *args, **kwargs):
         try:
             from django_q.tasks import async_task
@@ -83,18 +83,19 @@ class DjangoQBackend(QueueBackend):
         except ImportError:
             logger.error("Django-Q not installed")
             raise
-    
+
     def enqueue_in(self, task: str, seconds: int, *args, **kwargs):
         try:
-            from django_q.tasks import schedule
             from datetime import datetime, timedelta
+
+            from django_q.tasks import schedule
             run_at = datetime.now() + timedelta(seconds=seconds)
             task_id = schedule(task, *args, schedule_type='O', next_run=run_at, **kwargs)
             return task_id
         except ImportError:
             logger.error("Django-Q not installed")
             raise
-    
+
     def get_status(self, task_id: str) -> dict:
         try:
             from django_q.models import Task
@@ -113,7 +114,7 @@ class DjangoQBackend(QueueBackend):
 
 class SyncBackend(QueueBackend):
     """Synchronous fallback - executes tasks immediately"""
-    
+
     def enqueue(self, task: str, *args, **kwargs):
         """Execute task synchronously"""
         try:
@@ -123,16 +124,16 @@ class SyncBackend(QueueBackend):
         except Exception as e:
             logger.error(f"Sync task execution failed: {e}", exc_info=True)
             raise
-    
+
     def enqueue_in(self, task: str, seconds: int, *args, **kwargs):
         """Cannot delay in sync mode - execute immediately with warning"""
         logger.warning(f"Sync backend cannot delay tasks - executing {task} immediately")
         return self.enqueue(task, *args, **kwargs)
-    
+
     def get_status(self, task_id: str) -> dict:
         """Sync tasks complete immediately"""
         return {'status': 'completed', 'note': 'Synchronous execution'}
-    
+
     def _resolve_task(self, task_path: str):
         """Import and return the task function"""
         import importlib
@@ -150,22 +151,22 @@ class QueueService:
         task_id = queue.enqueue('apps.blog.tasks.publish_post', post_id=123)
         status = queue.get_status(task_id)
     """
-    
+
     def __init__(self, backend: Optional[str] = None):
         from django.conf import settings
         backend = backend or getattr(settings, 'QUEUE_BACKEND', 'sync')
-        
+
         backends = {
             'celery': CeleryBackend,
             'django_q': DjangoQBackend,
             'sync': SyncBackend,
         }
-        
+
         backend_class = backends.get(backend, SyncBackend)
         self.backend = backend_class()
         self.backend_name = backend
         logger.info(f"QueueService initialized with {backend} backend")
-    
+
     def enqueue(self, task: str, *args, **kwargs) -> Any:
         """
         Enqueue a task for async execution.
@@ -179,7 +180,7 @@ class QueueService:
             Task ID for tracking
         """
         return self.backend.enqueue(task, *args, **kwargs)
-    
+
     def enqueue_in(self, task: str, seconds: int, *args, **kwargs) -> Any:
         """
         Enqueue a delayed task.
@@ -194,7 +195,7 @@ class QueueService:
             Task ID for tracking
         """
         return self.backend.enqueue_in(task, seconds, *args, **kwargs)
-    
+
     def get_status(self, task_id: str) -> dict:
         """
         Get task execution status.
@@ -206,7 +207,7 @@ class QueueService:
             Dictionary with status information
         """
         return self.backend.get_status(task_id)
-    
+
     @property
     def is_async(self) -> bool:
         """Check if backend supports true async execution"""

@@ -4,8 +4,8 @@ from __future__ import annotations
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apps.tags.models import Tag
 from apps.blog.models import Post, PostStatus
+from apps.tags.models import Tag
 
 
 class Command(BaseCommand):

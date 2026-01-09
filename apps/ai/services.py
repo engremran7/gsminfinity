@@ -2,13 +2,19 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
-from django.utils import timezone
 from django.conf import settings
+from django.utils import timezone
 
 from apps.ai.clients import AIProviderConfig, AIProviderError, send_chat
-from apps.ai.models import AISettings, KnowledgeSource, ModelEndpoint, PipelineRun, Workflow
+from apps.ai.models import (
+    AISettings,
+    KnowledgeSource,
+    ModelEndpoint,
+    PipelineRun,
+    Workflow,
+)
 
 logger = logging.getLogger(__name__)
 

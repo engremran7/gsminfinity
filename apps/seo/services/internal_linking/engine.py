@@ -1,15 +1,15 @@
 
 from __future__ import annotations
 
-from typing import List, Iterable, Optional
 from collections import Counter
+from collections.abc import Iterable
+from typing import List
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
 
-from apps.seo.models import LinkableEntity, LinkSuggestion
-from apps.core.utils import feature_flags
 from apps.core import ai
+from apps.core.utils import feature_flags
+from apps.seo.models import LinkableEntity, LinkSuggestion
 
 
 def refresh_linkable_entity(obj, title: str, url: str, keywords: str = ""):

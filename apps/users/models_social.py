@@ -15,11 +15,12 @@ from __future__ import annotations
 
 import json
 import uuid
-from django.db import models
+
+from cryptography.fernet import Fernet
 from django.conf import settings
 from django.contrib.sites.models import Site
+from django.db import models
 from django.utils import timezone
-from cryptography.fernet import Fernet
 
 # Import encryption utilities from storage module
 try:
@@ -57,7 +58,7 @@ class SocialProviderConfig(models.Model):
     - Twitter/X OAuth 2.0
     - LinkedIn OAuth 2.0
     """
-    
+
     PROVIDER_CHOICES = [
         ('google', 'Google OAuth 2.0'),
         ('facebook', 'Facebook Login'),
@@ -69,13 +70,13 @@ class SocialProviderConfig(models.Model):
         ('discord', 'Discord'),
         ('slack', 'Slack'),
     ]
-    
+
     AUTH_FLOW_CHOICES = [
         ('api_credentials', 'API Credentials Only (Client ID + Secret)'),
         ('browser_oauth', 'Browser OAuth Required'),
         ('service_account', 'Service Account (JSON)'),
     ]
-    
+
     STATUS_CHOICES = [
         ('unconfigured', 'Not Configured'),
         ('pending_oauth', 'Pending OAuth Flow'),
@@ -83,44 +84,44 @@ class SocialProviderConfig(models.Model):
         ('error', 'Configuration Error'),
         ('disabled', 'Disabled'),
     ]
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     provider = models.CharField(max_length=32, choices=PROVIDER_CHOICES, unique=True)
     display_name = models.CharField(max_length=128, blank=True, help_text="Custom display name")
-    
+
     # Auth flow type
     auth_flow_type = models.CharField(max_length=32, choices=AUTH_FLOW_CHOICES, default='api_credentials')
-    
+
     # Encrypted credentials
     _client_id_encrypted = models.BinaryField(blank=True, null=True, db_column='client_id_encrypted')
     _client_secret_encrypted = models.BinaryField(blank=True, null=True, db_column='client_secret_encrypted')
     _additional_config_encrypted = models.BinaryField(blank=True, null=True, db_column='additional_config_encrypted')
-    
+
     # Provider-specific fields
     tenant_id = models.CharField(max_length=255, blank=True, help_text="Microsoft Azure Tenant ID")
     team_id = models.CharField(max_length=64, blank=True, help_text="Apple Team ID")
     key_id = models.CharField(max_length=64, blank=True, help_text="Apple Key ID")
-    
+
     # OAuth tokens (if browser flow was completed)
     _access_token_encrypted = models.BinaryField(blank=True, null=True, db_column='access_token_encrypted')
     _refresh_token_encrypted = models.BinaryField(blank=True, null=True, db_column='refresh_token_encrypted')
     token_expiry = models.DateTimeField(null=True, blank=True)
-    
+
     # Status tracking
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='unconfigured')
     is_enabled = models.BooleanField(default=True)
-    
+
     # Scopes
     scopes = models.JSONField(default=list, blank=True, help_text="OAuth scopes to request")
-    
+
     # Settings
     settings_json = models.JSONField(default=dict, blank=True, help_text="Provider-specific settings")
-    
+
     # Tracking
     last_tested_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True, default="")
     users_count = models.IntegerField(default=0, help_text="Users who signed up via this provider")
-    
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -128,19 +129,19 @@ class SocialProviderConfig(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True,
         on_delete=models.SET_NULL, related_name="created_social_configs"
     )
-    
+
     class Meta:
         ordering = ['provider']
         verbose_name = "Social Auth Provider"
         verbose_name_plural = "Social Auth Providers"
-    
+
     def __str__(self):
         return f"{self.get_provider_display()} ({self.status})"
-    
+
     def _get_cipher(self):
         """Get Fernet cipher for encryption/decryption."""
         return Fernet(get_encryption_key())
-    
+
     # Encrypted field accessors
     def set_client_id(self, value: str):
         if not value:
@@ -148,7 +149,7 @@ class SocialProviderConfig(models.Model):
             return
         cipher = self._get_cipher()
         self._client_id_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_client_id(self) -> str:
         if not self._client_id_encrypted:
             return ""
@@ -157,14 +158,14 @@ class SocialProviderConfig(models.Model):
             return cipher.decrypt(bytes(self._client_id_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_client_secret(self, value: str):
         if not value:
             self._client_secret_encrypted = None
             return
         cipher = self._get_cipher()
         self._client_secret_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_client_secret(self) -> str:
         if not self._client_secret_encrypted:
             return ""
@@ -173,14 +174,14 @@ class SocialProviderConfig(models.Model):
             return cipher.decrypt(bytes(self._client_secret_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_access_token(self, value: str):
         if not value:
             self._access_token_encrypted = None
             return
         cipher = self._get_cipher()
         self._access_token_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_access_token(self) -> str:
         if not self._access_token_encrypted:
             return ""
@@ -189,14 +190,14 @@ class SocialProviderConfig(models.Model):
             return cipher.decrypt(bytes(self._access_token_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_refresh_token(self, value: str):
         if not value:
             self._refresh_token_encrypted = None
             return
         cipher = self._get_cipher()
         self._refresh_token_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_refresh_token(self) -> str:
         if not self._refresh_token_encrypted:
             return ""
@@ -205,7 +206,7 @@ class SocialProviderConfig(models.Model):
             return cipher.decrypt(bytes(self._refresh_token_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_additional_config(self, config: dict):
         if not config:
             self._additional_config_encrypted = None
@@ -213,7 +214,7 @@ class SocialProviderConfig(models.Model):
         cipher = self._get_cipher()
         data = json.dumps(config).encode()
         self._additional_config_encrypted = cipher.encrypt(data)
-    
+
     def get_additional_config(self) -> dict:
         if not self._additional_config_encrypted:
             return {}
@@ -223,27 +224,27 @@ class SocialProviderConfig(models.Model):
             return json.loads(data.decode())
         except Exception:
             return {}
-    
+
     # Helper properties
     @property
     def has_credentials(self) -> bool:
         """Check if basic credentials are configured."""
         return bool(self._client_id_encrypted and self._client_secret_encrypted)
-    
+
     @property
     def is_token_expired(self) -> bool:
         """Check if OAuth token is expired."""
         if not self.token_expiry:
             return True
         return timezone.now() >= self.token_expiry
-    
+
     @property
     def requires_browser_oauth(self) -> bool:
         """Check if this provider needs browser redirect for OAuth."""
         # Providers that require browser OAuth for admin consent
         browser_required = {'google', 'microsoft', 'apple'}
         return self.provider in browser_required
-    
+
     @property
     def callback_url(self) -> str:
         """Get OAuth callback URL for this provider."""
@@ -253,7 +254,7 @@ class SocialProviderConfig(models.Model):
             return f"{protocol}://{site.domain}/accounts/{self.provider}/login/callback/"
         except Exception:
             return f"/accounts/{self.provider}/login/callback/"
-    
+
     @property
     def provider_console_url(self) -> str:
         """Get developer console URL for this provider."""
@@ -269,7 +270,7 @@ class SocialProviderConfig(models.Model):
             'slack': 'https://api.slack.com/apps',
         }
         return console_urls.get(self.provider, '')
-    
+
     @classmethod
     def get_default_scopes(cls, provider: str) -> list:
         """Get default OAuth scopes for a provider."""
@@ -285,7 +286,7 @@ class SocialProviderConfig(models.Model):
             'slack': ['openid', 'email', 'profile'],
         }
         return default_scopes.get(provider, ['email', 'profile'])
-    
+
     def sync_to_allauth(self) -> bool:
         """
         Sync this configuration to allauth's SocialApp model.
@@ -293,13 +294,13 @@ class SocialProviderConfig(models.Model):
         """
         try:
             from allauth.socialaccount.models import SocialApp
-            
+
             client_id = self.get_client_id()
             client_secret = self.get_client_secret()
-            
+
             if not client_id or not client_secret:
                 return False
-            
+
             social_app, created = SocialApp.objects.update_or_create(
                 provider=self.provider,
                 defaults={
@@ -309,19 +310,19 @@ class SocialProviderConfig(models.Model):
                     'settings': self.settings_json or {},
                 }
             )
-            
+
             # Ensure current site is linked
             current_site = Site.objects.get_current()
             if current_site not in social_app.sites.all():
                 social_app.sites.add(current_site)
-            
+
             return True
         except Exception as e:
             self.last_error = str(e)
             self.status = 'error'
             self.save(update_fields=['last_error', 'status', 'updated_at'])
             return False
-    
+
     def test_connection(self) -> tuple[bool, str]:
         """
         Test if the provider credentials are valid.
@@ -330,41 +331,41 @@ class SocialProviderConfig(models.Model):
         try:
             client_id = self.get_client_id()
             client_secret = self.get_client_secret()
-            
+
             if not client_id:
                 return False, "Client ID is not configured"
-            
+
             if not client_secret:
                 return False, "Client Secret is not configured"
-            
+
             # Provider-specific validation
             if self.provider == 'google':
                 # Google OAuth - check if client ID has correct format
                 if not client_id.endswith('.apps.googleusercontent.com'):
                     return False, "Google Client ID should end with .apps.googleusercontent.com"
-            
+
             elif self.provider == 'microsoft':
                 # Microsoft - check tenant ID
                 if not self.tenant_id:
                     # Default to 'common' if not specified
                     pass
-            
+
             elif self.provider == 'apple':
                 if not self.team_id or not self.key_id:
                     return False, "Apple Sign In requires Team ID and Key ID"
-            
+
             # Update test timestamp
             self.last_tested_at = timezone.now()
             self.last_error = ""
             self.save(update_fields=['last_tested_at', 'last_error', 'updated_at'])
-            
+
             return True, "Credentials look valid. Test a real login to verify."
-            
+
         except Exception as e:
             self.last_error = str(e)
             self.save(update_fields=['last_error', 'updated_at'])
             return False, str(e)
-    
+
     def update_user_count(self):
         """Update the count of users who signed up via this provider."""
         try:
@@ -387,7 +388,7 @@ class SocialPostingAccount(models.Model):
     Each platform can post to different destinations:
     - Pages, Groups, Channels, Profiles
     """
-    
+
     PLATFORM_CHOICES = [
         ('facebook', 'Facebook (Page/Group)'),
         ('twitter', 'Twitter / X'),
@@ -402,7 +403,7 @@ class SocialPostingAccount(models.Model):
         ('medium', 'Medium'),
         ('threads', 'Threads'),
     ]
-    
+
     AUTH_TYPE_CHOICES = [
         ('oauth2', 'OAuth 2.0 (Browser Login)'),
         ('api_token', 'API Token / Bot Token'),
@@ -410,7 +411,7 @@ class SocialPostingAccount(models.Model):
         ('api_key_secret', 'API Key + Secret'),
         ('access_token', 'Access Token (Long-lived)'),
     ]
-    
+
     DESTINATION_TYPE_CHOICES = [
         ('page', 'Page'),
         ('group', 'Group'),
@@ -421,7 +422,7 @@ class SocialPostingAccount(models.Model):
         ('board', 'Board'),
         ('blog', 'Blog'),
     ]
-    
+
     STATUS_CHOICES = [
         ('unconfigured', 'Not Configured'),
         ('pending_oauth', 'Pending OAuth Authorization'),
@@ -430,25 +431,25 @@ class SocialPostingAccount(models.Model):
         ('error', 'Configuration Error'),
         ('disabled', 'Disabled'),
     ]
-    
+
     # Auto-posting content types
     POST_CONTENT_CHOICES = [
         ('blogs', 'Blog Posts'),
         ('firmwares', 'Firmware Uploads'),
         ('both', 'Both Blogs & Firmwares'),
     ]
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     platform = models.CharField(max_length=32, choices=PLATFORM_CHOICES)
     account_name = models.CharField(max_length=255, help_text="Account/Page/Channel name")
     auth_type = models.CharField(max_length=32, choices=AUTH_TYPE_CHOICES, default='oauth2')
-    
+
     # Destination details
     destination_type = models.CharField(max_length=32, choices=DESTINATION_TYPE_CHOICES, default='page')
     destination_id = models.CharField(max_length=255, blank=True, help_text="Page ID, Channel ID, Group ID, etc.")
     destination_name = models.CharField(max_length=255, blank=True, help_text="Human-readable destination name")
     destination_url = models.URLField(blank=True, help_text="URL to the page/channel/group")
-    
+
     # Encrypted credentials - different fields for different auth types
     _api_key_encrypted = models.BinaryField(blank=True, null=True, db_column='api_key_encrypted')
     _api_secret_encrypted = models.BinaryField(blank=True, null=True, db_column='api_secret_encrypted')
@@ -456,24 +457,24 @@ class SocialPostingAccount(models.Model):
     _refresh_token_encrypted = models.BinaryField(blank=True, null=True, db_column='refresh_token_encrypted')
     _webhook_url_encrypted = models.BinaryField(blank=True, null=True, db_column='webhook_url_encrypted')
     _bot_token_encrypted = models.BinaryField(blank=True, null=True, db_column='bot_token_encrypted')
-    
+
     # Additional config (JSON) - for platform-specific settings
     _additional_config_encrypted = models.BinaryField(blank=True, null=True, db_column='additional_config_encrypted')
-    
+
     # Token management
     token_expiry = models.DateTimeField(null=True, blank=True)
     token_scope = models.CharField(max_length=512, blank=True, help_text="OAuth scopes granted")
-    
+
     # Account metadata (fetched after OAuth)
     account_id = models.CharField(max_length=255, blank=True)
     account_username = models.CharField(max_length=255, blank=True)
     account_avatar_url = models.URLField(blank=True)
     followers_count = models.IntegerField(default=0)
-    
+
     # Status
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='unconfigured')
     is_enabled = models.BooleanField(default=True)
-    
+
     # Auto-posting configuration
     auto_post_enabled = models.BooleanField(default=True, help_text="Auto-post new content")
     post_content_types = models.CharField(max_length=32, choices=POST_CONTENT_CHOICES, default='both')
@@ -481,26 +482,26 @@ class SocialPostingAccount(models.Model):
     include_image = models.BooleanField(default=True, help_text="Include featured image in posts")
     include_link = models.BooleanField(default=True, help_text="Include link to full content")
     hashtags = models.CharField(max_length=512, blank=True, help_text="Default hashtags to add")
-    
+
     # Rate limiting
     min_post_interval_minutes = models.IntegerField(default=60, help_text="Minimum minutes between posts")
     last_post_at = models.DateTimeField(null=True, blank=True)
     posts_today = models.IntegerField(default=0)
     daily_post_limit = models.IntegerField(default=10, help_text="Maximum posts per day")
-    
+
     # Stats
     total_posts = models.IntegerField(default=0)
     successful_posts = models.IntegerField(default=0)
     failed_posts = models.IntegerField(default=0)
-    
+
     # Error tracking
     last_tested_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True, default="")
     consecutive_failures = models.IntegerField(default=0)
-    
+
     # Notes
     notes = models.TextField(blank=True, default="")
-    
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -508,20 +509,20 @@ class SocialPostingAccount(models.Model):
         settings.AUTH_USER_MODEL, null=True, blank=True,
         on_delete=models.SET_NULL, related_name="created_social_posting_accounts"
     )
-    
+
     class Meta:
         ordering = ['platform', 'account_name']
         verbose_name = "Social Posting Account"
         verbose_name_plural = "Social Posting Accounts"
         # Allow multiple accounts per platform (e.g., multiple Facebook pages)
         unique_together = []
-    
+
     def __str__(self):
         return f"{self.get_platform_display()} - {self.account_name} ({self.status})"
-    
+
     def _get_cipher(self):
         return Fernet(get_encryption_key())
-    
+
     # Encrypted field accessors
     def set_api_key(self, value: str):
         if not value:
@@ -529,7 +530,7 @@ class SocialPostingAccount(models.Model):
             return
         cipher = self._get_cipher()
         self._api_key_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_api_key(self) -> str:
         if not self._api_key_encrypted:
             return ""
@@ -538,14 +539,14 @@ class SocialPostingAccount(models.Model):
             return cipher.decrypt(bytes(self._api_key_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_api_secret(self, value: str):
         if not value:
             self._api_secret_encrypted = None
             return
         cipher = self._get_cipher()
         self._api_secret_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_api_secret(self) -> str:
         if not self._api_secret_encrypted:
             return ""
@@ -554,14 +555,14 @@ class SocialPostingAccount(models.Model):
             return cipher.decrypt(bytes(self._api_secret_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_access_token(self, value: str):
         if not value:
             self._access_token_encrypted = None
             return
         cipher = self._get_cipher()
         self._access_token_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_access_token(self) -> str:
         if not self._access_token_encrypted:
             return ""
@@ -570,14 +571,14 @@ class SocialPostingAccount(models.Model):
             return cipher.decrypt(bytes(self._access_token_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_refresh_token(self, value: str):
         if not value:
             self._refresh_token_encrypted = None
             return
         cipher = self._get_cipher()
         self._refresh_token_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_refresh_token(self) -> str:
         if not self._refresh_token_encrypted:
             return ""
@@ -586,14 +587,14 @@ class SocialPostingAccount(models.Model):
             return cipher.decrypt(bytes(self._refresh_token_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_webhook_url(self, value: str):
         if not value:
             self._webhook_url_encrypted = None
             return
         cipher = self._get_cipher()
         self._webhook_url_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_webhook_url(self) -> str:
         if not self._webhook_url_encrypted:
             return ""
@@ -602,14 +603,14 @@ class SocialPostingAccount(models.Model):
             return cipher.decrypt(bytes(self._webhook_url_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_bot_token(self, value: str):
         if not value:
             self._bot_token_encrypted = None
             return
         cipher = self._get_cipher()
         self._bot_token_encrypted = cipher.encrypt(value.encode())
-    
+
     def get_bot_token(self) -> str:
         if not self._bot_token_encrypted:
             return ""
@@ -618,7 +619,7 @@ class SocialPostingAccount(models.Model):
             return cipher.decrypt(bytes(self._bot_token_encrypted)).decode()
         except Exception:
             return ""
-    
+
     def set_additional_config(self, config: dict):
         if not config:
             self._additional_config_encrypted = None
@@ -626,7 +627,7 @@ class SocialPostingAccount(models.Model):
         cipher = self._get_cipher()
         data = json.dumps(config).encode()
         self._additional_config_encrypted = cipher.encrypt(data)
-    
+
     def get_additional_config(self) -> dict:
         if not self._additional_config_encrypted:
             return {}
@@ -636,7 +637,7 @@ class SocialPostingAccount(models.Model):
             return json.loads(data.decode())
         except Exception:
             return {}
-    
+
     @property
     def has_credentials(self) -> bool:
         """Check if any credentials are configured."""
@@ -646,20 +647,20 @@ class SocialPostingAccount(models.Model):
             self._webhook_url_encrypted,
             self._bot_token_encrypted,
         ])
-    
+
     @property
     def is_token_expired(self) -> bool:
         """Check if OAuth token is expired."""
         if not self.token_expiry:
             return False  # No expiry set, assume valid
         return timezone.now() >= self.token_expiry
-    
+
     @property
     def requires_oauth(self) -> bool:
         """Check if this platform requires OAuth browser flow."""
         oauth_platforms = {'facebook', 'twitter', 'linkedin', 'instagram', 'pinterest', 'reddit', 'threads'}
         return self.platform in oauth_platforms
-    
+
     @property
     def can_post_now(self) -> bool:
         """Check if we can post right now (rate limiting)."""
@@ -672,7 +673,7 @@ class SocialPostingAccount(models.Model):
             if minutes_since_last < self.min_post_interval_minutes:
                 return False
         return True
-    
+
     @classmethod
     def get_auth_info(cls, platform: str) -> dict:
         """Get authentication requirements for a platform."""
@@ -779,12 +780,12 @@ class SocialPostingAccount(models.Model):
             },
         }
         return auth_info.get(platform, {})
-    
+
     @property
     def auth_info(self) -> dict:
         """Get auth info for this account's platform."""
         return self.get_auth_info(self.platform)
-    
+
     @property
     def oauth_callback_url(self) -> str:
         """Get OAuth callback URL for this platform."""
@@ -795,7 +796,7 @@ class SocialPostingAccount(models.Model):
             return f"{protocol}://{site.domain}/admin/distribution/social-posting/oauth/callback/{self.platform}/"
         except Exception:
             return f"/admin/distribution/social-posting/oauth/callback/{self.platform}/"
-    
+
     def get_default_template(self) -> str:
         """Get default post template for this platform."""
         templates = {
@@ -813,50 +814,50 @@ class SocialPostingAccount(models.Model):
             'threads': "📢 {title}\n\n{excerpt}\n\n🔗 {url}",
         }
         return templates.get(self.platform, "{title}\n\n{excerpt}\n\n{url}")
-    
+
     def format_post(self, title: str, excerpt: str, url: str, tags: list = None, image_url: str = None) -> dict:
         """Format a post for this platform."""
         template = self.post_template or self.get_default_template()
-        
+
         # Combine platform hashtags with content tags
         all_tags = []
         if tags:
             all_tags.extend([f"#{tag.replace(' ', '')}" for tag in tags])
         if self.hashtags:
             all_tags.extend([t.strip() for t in self.hashtags.split(',') if t.strip()])
-        
+
         tags_str = ' '.join(all_tags)
-        
+
         content = template.format(
             title=title,
             excerpt=excerpt[:280] if self.platform == 'twitter' else excerpt,
             url=url if self.include_link else '',
             tags=tags_str
         )
-        
+
         result = {
             'content': content.strip(),
             'platform': self.platform,
         }
-        
+
         if self.include_image and image_url:
             result['image_url'] = image_url
-        
+
         if self.platform == 'reddit':
             result['title'] = title
             result['subreddit'] = self.destination_id
-        
+
         return result
-    
+
     def test_connection(self) -> tuple[bool, str]:
         """Test if the account credentials are valid."""
         try:
             if not self.has_credentials:
                 return False, "No credentials configured"
-            
+
             if self.is_token_expired:
                 return False, "Access token has expired. Please re-authenticate."
-            
+
             # Platform-specific validation
             if self.platform == 'telegram':
                 bot_token = self.get_bot_token()
@@ -865,30 +866,30 @@ class SocialPostingAccount(models.Model):
                 if not self.destination_id:
                     return False, "Chat/Channel ID is required"
                 # Could do actual API test here
-            
+
             elif self.platform == 'discord':
                 webhook_url = self.get_webhook_url()
                 if not webhook_url:
                     return False, "Webhook URL is required"
                 if 'discord.com/api/webhooks/' not in webhook_url:
                     return False, "Invalid Discord webhook URL"
-            
+
             elif self.platform in ['facebook', 'twitter', 'linkedin', 'instagram']:
                 access_token = self.get_access_token()
                 if not access_token:
                     return False, "Access token is required. Please complete OAuth flow."
-            
+
             self.last_tested_at = timezone.now()
             self.last_error = ""
             self.save(update_fields=['last_tested_at', 'last_error', 'updated_at'])
-            
+
             return True, "Credentials look valid. Send a test post to verify."
-            
+
         except Exception as e:
             self.last_error = str(e)
             self.save(update_fields=['last_error', 'updated_at'])
             return False, str(e)
-    
+
     def record_post(self, success: bool, error: str = ""):
         """Record a post attempt."""
         self.total_posts += 1
@@ -901,14 +902,14 @@ class SocialPostingAccount(models.Model):
             self.failed_posts += 1
             self.consecutive_failures += 1
             self.last_error = error
-            
+
             # Auto-disable after too many failures
             if self.consecutive_failures >= 5:
                 self.status = 'error'
                 self.is_enabled = False
-        
+
         self.save()
-    
+
     def reset_daily_counter(self):
         """Reset daily post counter (call this daily via cron/celery)."""
         self.posts_today = 0

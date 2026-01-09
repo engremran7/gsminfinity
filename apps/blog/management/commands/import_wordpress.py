@@ -4,12 +4,12 @@ import html
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
-from apps.blog.models import Post, PostStatus, Category
+from apps.blog.models import Category, Post, PostStatus
 from apps.tags.models import Tag
-from django.contrib.auth import get_user_model
 
 
 class Command(BaseCommand):

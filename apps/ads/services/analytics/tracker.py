@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from apps.ads.models import AdEvent, AdPlacement, AdCreative, Campaign
+from apps.ads.models import AdCreative, AdEvent, AdPlacement, Campaign
 from apps.core.utils import feature_flags
 from apps.core.utils.logging import log_event
 

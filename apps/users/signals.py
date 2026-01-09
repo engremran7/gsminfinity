@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 
 from allauth.account.signals import email_confirmed, user_signed_up
+
 try:
     from allauth.account.signals import password_changed, password_set
 except Exception:  # allauth version guard

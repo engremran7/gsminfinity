@@ -5,7 +5,8 @@ Intentionally lightweight to be loaded via AppService.get("crawler_guard").
 """
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from collections.abc import Iterable
+from typing import Optional
 
 from apps.crawler_guard.models import CrawlerEvent, CrawlerRule
 

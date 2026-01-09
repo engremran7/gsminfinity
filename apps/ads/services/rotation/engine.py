@@ -1,14 +1,15 @@
 
 from __future__ import annotations
 
+import logging
 import random
-from typing import Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Dict, Optional
 
-from apps.ads.models import PlacementAssignment, AdCreative, AdPlacement, AdsSettings
+from apps.ads.models import AdCreative, AdPlacement, AdsSettings, PlacementAssignment
+from apps.ads.services.targeting.engine import campaign_allowed, placement_allowed
 from apps.core.utils import feature_flags
 from apps.core.utils.logging import log_event
-from apps.ads.services.targeting.engine import campaign_allowed, placement_allowed
-import logging
 
 logger = logging.getLogger(__name__)
 

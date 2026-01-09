@@ -5,10 +5,11 @@ import logging
 from typing import Optional
 
 from django.conf import settings
-from apps.users.models import Notification
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
+
+from apps.users.models import Notification
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -56,13 +57,13 @@ def send_notification(
     try:
         from apps.users.models import NotificationPreferences
         prefs = NotificationPreferences.objects.filter(user=recipient).first()
-        
+
         if prefs:
             # Check if it's quiet hours
             if prefs.is_quiet_hours_now() and level != "critical":
                 logger.debug("Skipping notification for user %s during quiet hours", recipient.pk)
                 return None
-            
+
             # Check if web notifications are enabled for this type
             if channel == "web" and not prefs.should_send_web(action_type):
                 logger.debug("Web notifications disabled for user %s, type %s", recipient.pk, action_type)
@@ -160,17 +161,17 @@ def _send_push_notification(notification: Notification, recipient: User, action_
     """
     try:
         from apps.users.models import NotificationPreferences, PushSubscription
-        
+
         # Check if push is enabled
         prefs = NotificationPreferences.objects.filter(user=recipient).first()
         if not prefs or not prefs.push_enabled:
             return
-        
+
         # Get active subscriptions
         subscriptions = PushSubscription.objects.filter(user=recipient, is_active=True)
         if not subscriptions.exists():
             return
-        
+
         # Prepare push payload
         payload = {
             'title': notification.title,
@@ -181,16 +182,17 @@ def _send_push_notification(notification: Notification, recipient: User, action_
             'url': notification.url or '/users/notifications/',
             'notificationId': notification.pk,
         }
-        
+
         # Try sending via pywebpush (if installed)
         try:
-            from pywebpush import webpush, WebPushException
             import json
-            
+
+            from pywebpush import WebPushException, webpush
+
             vapid_claims = {
                 "sub": f"mailto:{getattr(settings, 'VAPID_ADMIN_EMAIL', 'admin@example.com')}"
             }
-            
+
             for subscription in subscriptions:
                 try:
                     webpush(
@@ -207,10 +209,10 @@ def _send_push_notification(notification: Notification, recipient: User, action_
                         # Subscription expired
                         subscription.is_active = False
                         subscription.save(update_fields=['is_active'])
-                        
+
         except ImportError:
             logger.debug("pywebpush not installed, skipping push notifications")
-            
+
     except Exception as exc:
         logger.exception("Failed to send push notification: %s", exc)
 

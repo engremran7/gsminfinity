@@ -2,7 +2,13 @@
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
-from apps.ai.models import AISettings, KnowledgeSource, ModelEndpoint, PipelineRun, Workflow
+from apps.ai.models import (
+    AISettings,
+    KnowledgeSource,
+    ModelEndpoint,
+    PipelineRun,
+    Workflow,
+)
 
 
 @admin.register(AISettings)

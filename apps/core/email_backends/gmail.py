@@ -4,8 +4,8 @@ import logging
 from typing import Any, Dict
 
 from django.conf import settings
-from django.core.mail.backends.smtp import EmailBackend as SmtpEmailBackend
 from django.core.mail.backends.base import BaseEmailBackend
+from django.core.mail.backends.smtp import EmailBackend as SmtpEmailBackend
 from django.utils.module_loading import import_string
 
 logger = logging.getLogger(__name__)

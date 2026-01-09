@@ -22,12 +22,13 @@ from decimal import Decimal
 from typing import Any, Dict, Optional
 
 import requests
-from apps.site_settings.models import SiteSettings
 from django.conf import settings as django_settings
 from django.core.cache import cache
 from requests import Response
 from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import RequestException, Timeout
+
+from apps.site_settings.models import SiteSettings
 
 logger = logging.getLogger(__name__)
 

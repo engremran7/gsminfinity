@@ -82,14 +82,14 @@ def sanitize_ad_code(code: Optional[str]) -> str:
     """
     if not code:
         return ''
-    
+
     if not NH3_AVAILABLE:
         logger.warning("nh3 not installed - ad code not sanitized!")
         return code
-    
+
     # nh3 uses sets for tags and dict of sets for attributes
     tags = set(ALLOWED_AD_TAGS)
-    
+
     # Convert attribute dict to nh3 format (set of attribute names per tag)
     attrs = {}
     for tag, attr_list in ALLOWED_AD_ATTRS.items():
@@ -98,7 +98,7 @@ def sanitize_ad_code(code: Optional[str]) -> str:
             attrs['*'] = set(attr_list)
         else:
             attrs[tag] = set(attr_list)
-    
+
     # First pass: nh3 clean
     cleaned = nh3.clean(
         code,
@@ -106,7 +106,7 @@ def sanitize_ad_code(code: Optional[str]) -> str:
         attributes=attrs,
         strip_comments=True,
     )
-    
+
     # Second pass: Remove inline script content (only allow src-based scripts)
     # Remove any script tags that don't have src attribute
     cleaned = re.sub(
@@ -115,7 +115,7 @@ def sanitize_ad_code(code: Optional[str]) -> str:
         cleaned,
         flags=re.IGNORECASE | re.DOTALL
     )
-    
+
     return cleaned
 
 
@@ -128,20 +128,20 @@ ALLOWED_CONTENT_TAGS = [
     # Text formatting
     'p', 'br', 'hr', 'strong', 'b', 'em', 'i', 'u', 's', 'strike', 'del', 'ins',
     'sup', 'sub', 'mark', 'small', 'abbr', 'cite', 'q',
-    
+
     # Headings
     'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-    
+
     # Lists
     'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-    
+
     # Links and media
     'a', 'img', 'figure', 'figcaption', 'picture', 'source',
     'video', 'audio', 'iframe',
-    
+
     # Tables
     'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col',
-    
+
     # Structure
     'div', 'span', 'article', 'section', 'aside', 'header', 'footer', 'nav', 'main',
     'blockquote', 'pre', 'code', 'details', 'summary',
@@ -188,14 +188,14 @@ def sanitize_html_content(content: Optional[str]) -> str:
     """
     if not content:
         return ''
-    
+
     if not NH3_AVAILABLE:
         logger.warning("nh3 not installed - content not sanitized!")
         return content
-    
+
     # nh3 uses sets for tags and dict of sets for attributes
     tags = set(ALLOWED_CONTENT_TAGS)
-    
+
     # Convert attribute dict to nh3 format
     attrs = {}
     for tag, attr_list in ALLOWED_CONTENT_ATTRS.items():
@@ -203,7 +203,7 @@ def sanitize_html_content(content: Optional[str]) -> str:
             attrs['*'] = set(attr_list)
         else:
             attrs[tag] = set(attr_list)
-    
+
     # nh3 uses url_schemes instead of protocols
     return nh3.clean(
         content,
@@ -226,11 +226,11 @@ def sanitize_plain_text(text: Optional[str]) -> str:
     """
     if not text:
         return ''
-    
+
     if not NH3_AVAILABLE:
         # Fallback: basic tag stripping
         return re.sub(r'<[^>]+>', '', text)
-    
+
     # nh3.clean with empty tags set strips all HTML
     return nh3.clean(text, tags=set())
 
@@ -255,9 +255,9 @@ def is_safe_url(url: str, allowed_hosts: Optional[list] = None) -> bool:
     """
     if not url:
         return False
-    
+
     url = url.strip().lower()
-    
+
     # Block dangerous protocols
     dangerous_prefixes = [
         'javascript:', 'vbscript:', 'data:text/html',
@@ -266,7 +266,7 @@ def is_safe_url(url: str, allowed_hosts: Optional[list] = None) -> bool:
     for prefix in dangerous_prefixes:
         if url.startswith(prefix):
             return False
-    
+
     # If allowed_hosts specified, validate hostname
     if allowed_hosts:
         from urllib.parse import urlparse
@@ -276,13 +276,13 @@ def is_safe_url(url: str, allowed_hosts: Optional[list] = None) -> bool:
                 return False
         except Exception:
             return False
-    
+
     return True
 
 
 __all__ = [
     'sanitize_ad_code',
-    'sanitize_html_content', 
+    'sanitize_html_content',
     'sanitize_plain_text',
     'is_safe_url',
     'NH3_AVAILABLE',

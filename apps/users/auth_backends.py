@@ -14,7 +14,8 @@ Enterprise-grade multi-identifier authentication backend for GSMInfinity.
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any, Optional
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend

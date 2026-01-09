@@ -4,7 +4,6 @@ i18n Celery Tasks - Background automation for translations.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from celery import shared_task
 from django.core.cache import cache
@@ -32,17 +31,17 @@ def auto_translate_key(self, key_id: int, target_locale: str, provider: str | No
     try:
         from apps.i18n.models import TranslationKey
         from apps.i18n.services import auto_translate
-        
+
         key = TranslationKey.objects.get(pk=key_id)
         result = auto_translate(key.app_id, key, target_locale, provider)
-        
+
         if result:
             logger.info(f"Auto-translated key {key.key} to {target_locale}")
             return {'status': 'success', 'key': key.key, 'locale': target_locale}
         else:
             logger.warning(f"Failed to translate key {key.key} to {target_locale}")
             return {'status': 'failed', 'key': key.key}
-            
+
     except Exception as exc:
         logger.error(f"Auto-translate task failed: {exc}")
         raise self.retry(exc=exc)
@@ -68,11 +67,11 @@ def batch_translate_locale(self, app_id: str, target_locale: str, namespace: str
     """
     try:
         from apps.i18n.services import auto_translate_batch
-        
+
         results = auto_translate_batch(app_id, target_locale, namespace, limit)
         logger.info(f"Batch translate {app_id}/{target_locale}: {results}")
         return results
-        
+
     except Exception as exc:
         logger.error(f"Batch translate task failed: {exc}")
         raise self.retry(exc=exc)
@@ -88,23 +87,24 @@ def process_missing_key_logs(app_id: str | None = None, limit: int = 50):
         limit: Maximum entries to process
     """
     try:
-        from apps.i18n.models import MissingKeyLog, TranslationKey, Locale
         from django.db.models import Count
-        
+
+        from apps.i18n.models import Locale, MissingKeyLog, TranslationKey
+
         # Find most requested missing keys
         qs = MissingKeyLog.objects.values('app_id', 'namespace', 'key').annotate(
             request_count=Count('id')
         ).order_by('-request_count')
-        
+
         if app_id:
             qs = qs.filter(app_id=app_id)
-        
+
         entries = qs[:limit]
         created_count = 0
         queued_count = 0
-        
+
         supported_locales = list(Locale.objects.values_list('code', flat=True))
-        
+
         for entry in entries:
             # Create TranslationKey if not exists
             key, created = TranslationKey.objects.get_or_create(
@@ -116,26 +116,26 @@ def process_missing_key_logs(app_id: str | None = None, limit: int = 50):
                     'description': f'Auto-created from missing key log ({entry["request_count"]} requests)',
                 }
             )
-            
+
             if created:
                 created_count += 1
-                
+
                 # Queue translation for all supported locales
                 for locale in supported_locales:
                     if locale not in ('en', 'en-US'):
                         auto_translate_key.delay(key.pk, locale)
                         queued_count += 1
-        
+
         # Clean up processed entries
         MissingKeyLog.objects.filter(
             app_id__in=[e['app_id'] for e in entries],
             namespace__in=[e['namespace'] for e in entries],
             key__in=[e['key'] for e in entries],
         ).delete()
-        
+
         logger.info(f"Processed missing keys: {created_count} created, {queued_count} translations queued")
         return {'created': created_count, 'queued': queued_count}
-        
+
     except Exception as e:
         logger.error(f"Process missing keys failed: {e}")
         return {'error': str(e)}
@@ -152,22 +152,22 @@ def invalidate_translation_cache(app_id: str, locale: str | None = None):
     """
     try:
         pattern = f"i18n_bundle:{app_id}:{locale or '*'}:*"
-        
+
         if hasattr(cache, 'delete_pattern'):
             cache.delete_pattern(pattern)
         else:
             # Fallback: try to delete specific known keys
             from apps.i18n.models import Locale
             locales = [locale] if locale else Locale.objects.values_list('code', flat=True)
-            
+
             for loc in locales:
                 cache.delete(f"i18n_bundle:{app_id}:{loc}::0")
                 cache.delete(f"i18n_theme:{app_id}:{loc}::light")
                 cache.delete(f"i18n_theme:{app_id}:{loc}::dark")
-        
+
         logger.info(f"Translation cache invalidated for {app_id}/{locale or 'all'}")
         return {'status': 'success'}
-        
+
     except Exception as e:
         logger.error(f"Cache invalidation failed: {e}")
         return {'error': str(e)}
@@ -183,36 +183,37 @@ def translate_blog_post(self, post_id: int, target_locales: list[str] | None = N
         target_locales: List of target locales (uses all if None)
     """
     try:
+        from django.conf import settings
+
         from apps.blog.models import Post, PostTranslation
         from apps.i18n.models import Locale
         from apps.i18n.translation_provider import get_translator
-        from django.conf import settings
-        
+
         post = Post.objects.get(pk=post_id)
-        
+
         # Get target locales
         if not target_locales:
             target_locales = list(
                 Locale.objects.exclude(code__in=['en', 'en-US'])
                 .values_list('code', flat=True)
             )
-        
+
         provider_name = getattr(settings, 'TRANSLATION_PROVIDER', 'dummy')
         translator = get_translator(provider_name)
-        
+
         if not translator:
             logger.warning(f"No translator available for provider: {provider_name}")
             return {'status': 'no_provider'}
-        
+
         results = {'translated': 0, 'failed': 0}
-        
+
         for locale in target_locales:
             try:
                 # Translate title
                 title = translator.translate(post.title, 'en', locale)
                 # Translate summary
                 summary = translator.translate(post.summary or '', 'en', locale) if post.summary else ''
-                
+
                 PostTranslation.objects.update_or_create(
                     post=post,
                     locale=locale,
@@ -224,14 +225,14 @@ def translate_blog_post(self, post_id: int, target_locales: list[str] | None = N
                     }
                 )
                 results['translated'] += 1
-                
+
             except Exception as e:
                 logger.error(f"Failed to translate post {post_id} to {locale}: {e}")
                 results['failed'] += 1
-        
+
         logger.info(f"Blog post {post_id} translation: {results}")
         return results
-        
+
     except Exception as exc:
         logger.error(f"Blog post translation failed: {exc}")
         raise self.retry(exc=exc)
@@ -243,34 +244,33 @@ def sync_translation_stats():
     Calculate and cache translation coverage statistics.
     """
     try:
-        from apps.i18n.models import TranslationKey, TranslationValue, Locale
-        from django.db.models import Count
-        
+        from apps.i18n.models import Locale, TranslationKey, TranslationValue
+
         stats = {}
-        
+
         total_keys = TranslationKey.objects.count()
         locales = Locale.objects.all()
-        
+
         for locale in locales:
             translated = TranslationValue.objects.filter(
                 locale=locale.code,
                 status='approved'
             ).count()
-            
+
             coverage = (translated / total_keys * 100) if total_keys > 0 else 0
-            
+
             stats[locale.code] = {
                 'total_keys': total_keys,
                 'translated': translated,
                 'coverage_percent': round(coverage, 1),
             }
-        
+
         # Cache for 1 hour
         cache.set('i18n_translation_stats', stats, timeout=3600)
-        
+
         logger.info(f"Translation stats synced for {len(locales)} locales")
         return stats
-        
+
     except Exception as e:
         logger.error(f"Translation stats sync failed: {e}")
         return {'error': str(e)}

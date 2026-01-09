@@ -4,25 +4,26 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 
-from django.http import JsonResponse, HttpRequest, HttpResponse
-from django.shortcuts import render, redirect
-from django.views.decorators.http import require_GET, require_POST
-from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import user_passes_test
 from django.core.cache import cache
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_GET, require_POST
 
+from apps.ads.services.analytics.tracker import record_event as tracker_record_event
+from apps.ads.services.rotation.engine import choose_creative
+from apps.ads.services.schemas import AdRequest, AdResponse, CreativeSelection
+from apps.ads.services.targeting.engine import campaign_allowed
+from apps.consent.utils import check as consent_check
+from apps.consent.utils import hash_ip, hash_ua
 from apps.core.app_service import AppService
 from apps.core.utils import feature_flags
-from .models import AdPlacement, AdEvent, Campaign, AdCreative, PlacementAssignment
-from apps.ads.services.rotation.engine import choose_creative
-from apps.ads.services.analytics.tracker import record_event as tracker_record_event
-from apps.core.utils.logging import log_event
-from apps.consent.utils import check as consent_check, hash_ip, hash_ua
-from apps.ads.services import ai_optimizer
-from apps.ads.services.schemas import AdRequest, AdResponse, CreativeSelection
 from apps.core.utils.ip import get_client_ip
-from apps.ads.services.targeting.engine import campaign_allowed
+from apps.core.utils.logging import log_event
 from apps.site_settings.models import SiteSettings
+
+from .models import AdCreative, AdEvent, AdPlacement, Campaign, PlacementAssignment
 
 logger = logging.getLogger(__name__)
 
@@ -329,7 +330,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         clicks=Count('id', filter=Q(event_type='click'))
     )
     placement_lookup = {stat['placement_id']: stat for stat in placement_aggregates}
-    
+
     for p in placements:
         stats = placement_lookup.get(p.id, {'impressions': 0, 'clicks': 0})
         imp = stats['impressions']
@@ -347,7 +348,7 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         clicks=Count('id', filter=Q(event_type='click'))
     )
     creative_lookup = {stat['creative_id']: stat for stat in creative_aggregates}
-    
+
     for c in all_creatives:
         stats = creative_lookup.get(c.id, {'impressions': 0, 'clicks': 0})
         imp = stats['impressions']
@@ -448,18 +449,18 @@ def track_affiliate_click(request: HttpRequest) -> JsonResponse:
     Called via beacon or AJAX when user clicks an affiliate product link.
     """
     import json
-    
+
     try:
         # Parse JSON body or form data
         if request.content_type == 'application/json':
             data = json.loads(request.body)
         else:
             data = request.POST
-        
+
         product_id = data.get('product_id')
         if not product_id:
             return JsonResponse({'ok': False, 'error': 'missing_product_id'}, status=400)
-        
+
         # Rate limit per IP
         rl_key = f"affiliate:click:{get_client_ip(request) or 'anon'}"
         try:
@@ -469,10 +470,10 @@ def track_affiliate_click(request: HttpRequest) -> JsonResponse:
             cache.set(rl_key, int(count) + 1, timeout=60)
         except Exception:
             pass
-        
+
         # Track the click
         from apps.ads.api import track_affiliate_click_sync
-        
+
         result = track_affiliate_click_sync(
             product_id=int(product_id),
             user_id=request.user.id if request.user.is_authenticated else None,
@@ -483,12 +484,12 @@ def track_affiliate_click(request: HttpRequest) -> JsonResponse:
             user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
             session_id=request.session.session_key or '',
         )
-        
+
         if result.get('status') == 'success':
             return JsonResponse({'ok': True, 'click_id': result.get('click_id')})
         else:
             return JsonResponse({'ok': False, 'error': result.get('status')}, status=400)
-            
+
     except json.JSONDecodeError:
         return JsonResponse({'ok': False, 'error': 'invalid_json'}, status=400)
     except Exception as exc:
@@ -502,22 +503,22 @@ def get_affiliate_products(request: HttpRequest) -> JsonResponse:
     Get affiliate products for a given context.
     Used for client-side lazy loading of products.
     """
-    from apps.ads.api import get_contextual_products, get_affiliate_products_settings
-    
+    from apps.ads.api import get_affiliate_products_settings, get_contextual_products
+
     settings = get_affiliate_products_settings()
     if not settings.get('enabled'):
         return JsonResponse({'ok': False, 'products': []})
-    
+
     # Get context parameters
     brand_id = request.GET.get('brand_id')
     model_id = request.GET.get('model_id')
     variant_id = request.GET.get('variant_id')
     post_id = request.GET.get('post_id')
     max_products = int(request.GET.get('max', 4))
-    
+
     # Get the actual model instances
     brand = model = variant = post = None
-    
+
     try:
         if brand_id:
             from apps.firmwares.models import Brand
@@ -533,7 +534,7 @@ def get_affiliate_products(request: HttpRequest) -> JsonResponse:
             post = Post.objects.filter(id=post_id).first()
     except Exception as exc:
         logger.warning(f"Failed to get context objects: {exc}")
-    
+
     products = get_contextual_products(
         brand=brand,
         model=model,
@@ -541,7 +542,7 @@ def get_affiliate_products(request: HttpRequest) -> JsonResponse:
         blog_post=post,
         max_products=max_products
     )
-    
+
     return JsonResponse({
         'ok': True,
         'products': products,

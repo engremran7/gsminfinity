@@ -4,10 +4,9 @@ import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import requests
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 

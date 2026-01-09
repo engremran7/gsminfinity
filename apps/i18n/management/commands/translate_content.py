@@ -4,10 +4,15 @@ from typing import List
 
 from django.core.management.base import BaseCommand
 
-from apps.blog.models import Post, Category
-from apps.tags.models import Tag
-from apps.blog.models import PostTranslation, CategoryTranslation, TagTranslation
+from apps.blog.models import (
+    Category,
+    CategoryTranslation,
+    Post,
+    PostTranslation,
+    TagTranslation,
+)
 from apps.i18n.translation_provider import get_translator
+from apps.tags.models import Tag
 
 
 class Command(BaseCommand):

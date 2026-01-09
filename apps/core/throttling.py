@@ -2,7 +2,7 @@
 Custom Throttling Classes for API Rate Limiting
 Enterprise-grade rate limiting with different tiers
 """
-from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 
 class UploadRateThrottle(UserRateThrottle):

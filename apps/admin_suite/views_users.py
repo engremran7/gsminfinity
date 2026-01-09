@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from .views_shared import *
-from .views_shared import _render_admin, _make_breadcrumb
+from .views_shared import _make_breadcrumb, _render_admin
+
 
 # Extracted views_users views from legacy views.py
 @staff_member_required
@@ -54,6 +55,7 @@ def admin_suite_users(request: HttpRequest) -> HttpResponse:
 
     try:
         from django.db.models import BooleanField, Exists, OuterRef, Q, Value
+
         from apps.users.models import CustomUser
 
         stats["total_users"] = CustomUser.objects.count()
@@ -413,7 +415,7 @@ def admin_suite_staff_users(request: HttpRequest) -> HttpResponse:
         raise _ADMIN_DISABLED
 
     staff_users = CustomUser.objects.filter(is_staff=True).order_by("-date_joined")
-    
+
     return _render_admin(
         request,
         "admin_suite/staff_users.html",
@@ -446,22 +448,22 @@ def admin_suite_social_providers(request: HttpRequest) -> HttpResponse:
     """
     if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
         raise _ADMIN_DISABLED
-    
+
     from apps.users.models_social import SocialProviderConfig
-    
+
     message = ""
-    
+
     # Handle POST actions
     if request.method == "POST":
         action = request.POST.get("action")
         provider_id = request.POST.get("provider_id")
-        
+
         try:
             if action == "create_provider":
                 provider = request.POST.get("provider")
                 client_id = request.POST.get("client_id", "").strip()
                 client_secret = request.POST.get("client_secret", "").strip()
-                
+
                 if not provider:
                     message = "Provider type is required."
                 elif not client_id or not client_secret:
@@ -479,7 +481,7 @@ def admin_suite_social_providers(request: HttpRequest) -> HttpResponse:
                     )
                     config.set_client_id(client_id)
                     config.set_client_secret(client_secret)
-                    
+
                     # Handle provider-specific fields
                     if provider == 'microsoft':
                         tenant_id = request.POST.get("tenant_id", "").strip()
@@ -487,22 +489,22 @@ def admin_suite_social_providers(request: HttpRequest) -> HttpResponse:
                     elif provider == 'apple':
                         config.team_id = request.POST.get("team_id", "").strip()
                         config.key_id = request.POST.get("key_id", "").strip()
-                    
+
                     config.status = 'active'
                     config.save()
-                    
+
                     # Sync to allauth
                     if config.sync_to_allauth():
                         message = f"{'Created' if created else 'Updated'} {config.get_provider_display()} and synced to auth system."
                     else:
                         message = f"{'Created' if created else 'Updated'} {config.get_provider_display()} but sync failed. Check error."
-            
+
             elif action == "test_connection" and provider_id:
                 config = SocialProviderConfig.objects.filter(id=provider_id).first()
                 if config:
                     success, msg = config.test_connection()
                     message = f"{config.get_provider_display()}: {msg}"
-            
+
             elif action == "toggle_provider" and provider_id:
                 config = SocialProviderConfig.objects.filter(id=provider_id).first()
                 if config:
@@ -510,14 +512,14 @@ def admin_suite_social_providers(request: HttpRequest) -> HttpResponse:
                     config.status = 'active' if config.is_enabled else 'disabled'
                     config.save(update_fields=['is_enabled', 'status', 'updated_at'])
                     message = f"{config.get_provider_display()} {'enabled' if config.is_enabled else 'disabled'}."
-            
+
             elif action == "sync_allauth" and provider_id:
                 config = SocialProviderConfig.objects.filter(id=provider_id).first()
                 if config and config.sync_to_allauth():
                     message = f"Synced {config.get_provider_display()} to authentication system."
                 else:
                     message = "Sync failed. Check provider error."
-            
+
             elif action == "delete_provider" and provider_id:
                 if not getattr(request.user, "is_superuser", False):
                     message = "Superuser required to delete providers."
@@ -527,18 +529,18 @@ def admin_suite_social_providers(request: HttpRequest) -> HttpResponse:
                         name = config.get_provider_display()
                         config.delete()
                         message = f"Deleted {name} configuration."
-                        
+
         except Exception as exc:
             logger.warning("Social provider action failed: %s", exc)
             message = f"Action failed: {exc}"
-    
+
     # Get all configured providers
     providers = list(SocialProviderConfig.objects.all())
-    
+
     # Update user counts
     for p in providers:
         p.update_user_count()
-    
+
     # Get existing allauth social apps for comparison
     existing_allauth = set()
     try:
@@ -546,14 +548,14 @@ def admin_suite_social_providers(request: HttpRequest) -> HttpResponse:
         existing_allauth = set(SocialApp.objects.values_list('provider', flat=True))
     except Exception:
         pass
-    
+
     # Available provider choices (excluding already configured)
     configured_providers = {p.provider for p in providers}
     available_choices = [
         (k, v) for k, v in SocialProviderConfig.PROVIDER_CHOICES
         if k not in configured_providers
     ]
-    
+
     return _render_admin(
         request,
         "admin_suite/social_providers.html",
@@ -586,48 +588,48 @@ def admin_suite_social_provider_detail(request: HttpRequest, provider_id: str) -
     """
     if not getattr(settings, "ADMIN_SUITE_ENABLED", True):
         raise _ADMIN_DISABLED
-    
+
     from apps.users.models_social import SocialProviderConfig
-    
+
     try:
         config = SocialProviderConfig.objects.get(id=provider_id)
     except SocialProviderConfig.DoesNotExist:
         raise Http404("Provider not found")
-    
+
     message = ""
-    
+
     if request.method == "POST":
         action = request.POST.get("action")
-        
+
         try:
             if action == "update_credentials":
                 client_id = request.POST.get("client_id", "").strip()
                 client_secret = request.POST.get("client_secret", "").strip()
-                
+
                 if client_id:
                     config.set_client_id(client_id)
                 if client_secret:
                     config.set_client_secret(client_secret)
-                
+
                 # Update provider-specific fields
                 if config.provider == 'microsoft':
                     config.tenant_id = request.POST.get("tenant_id", "").strip() or config.tenant_id
                 elif config.provider == 'apple':
                     config.team_id = request.POST.get("team_id", "").strip() or config.team_id
                     config.key_id = request.POST.get("key_id", "").strip() or config.key_id
-                
+
                 # Update scopes if provided
                 scopes = request.POST.get("scopes", "").strip()
                 if scopes:
                     config.scopes = [s.strip() for s in scopes.split(",") if s.strip()]
-                
+
                 config.display_name = request.POST.get("display_name", "").strip() or config.display_name
                 config.save()
-                
+
                 # Sync to allauth
                 config.sync_to_allauth()
                 message = "Credentials updated and synced."
-            
+
             elif action == "update_settings":
                 settings_json = request.POST.get("settings_json", "{}").strip()
                 try:
@@ -638,21 +640,21 @@ def admin_suite_social_provider_detail(request: HttpRequest, provider_id: str) -
                     message = "Settings updated."
                 except json.JSONDecodeError:
                     message = "Invalid JSON format."
-            
+
             elif action == "test_connection":
                 success, msg = config.test_connection()
                 message = msg
-            
+
             elif action == "sync_allauth":
                 if config.sync_to_allauth():
                     message = "Successfully synced to authentication system."
                 else:
                     message = f"Sync failed: {config.last_error}"
-                    
+
         except Exception as exc:
             logger.warning("Provider detail action failed: %s", exc)
             message = f"Action failed: {exc}"
-    
+
     # Get linked users count
     linked_users = []
     try:
@@ -665,11 +667,11 @@ def admin_suite_social_provider_detail(request: HttpRequest, provider_id: str) -
         config.users_count = SocialAccount.objects.filter(provider=config.provider).count()
     except Exception:
         pass
-    
+
     # Mask sensitive data for display
     client_id = config.get_client_id()
     client_id_masked = f"{client_id[:8]}...{client_id[-4:]}" if len(client_id) > 12 else "Not set"
-    
+
     return _render_admin(
         request,
         "admin_suite/social_provider_detail.html",
@@ -691,9 +693,9 @@ def admin_suite_social_provider_detail(request: HttpRequest, provider_id: str) -
 
 
 __all__ = [
-    'admin_suite_users', 
-    'admin_suite_user_detail', 
-    'admin_suite_user_sessions', 
+    'admin_suite_users',
+    'admin_suite_user_detail',
+    'admin_suite_user_sessions',
     'admin_suite_staff_users',
     'admin_suite_social_providers',
     'admin_suite_social_provider_detail',

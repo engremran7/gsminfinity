@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
+from allauth.account.forms import ChangePasswordForm
 from django import forms
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.password_validation import validate_password
@@ -20,7 +21,6 @@ from django.core.exceptions import ValidationError
 from django.http import HttpRequest
 from django.utils.module_loading import import_string
 from django.utils.translation import gettext_lazy as _
-from allauth.account.forms import ChangePasswordForm
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -168,19 +168,19 @@ class CustomSignupForm(forms.Form):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if not phone:
             return ""
-        
+
         # Remove any non-digit characters
         phone_digits = "".join(c for c in phone if c.isdigit())
-        
+
         if len(phone_digits) < 6:
             raise ValidationError(_("Phone number must be at least 6 digits."))
         if len(phone_digits) > 15:
             raise ValidationError(_("Phone number cannot exceed 15 digits."))
-        
+
         # Check for uniqueness
         if User.objects.filter(phone=phone_digits).exists():
             raise ValidationError(_("This phone number is already registered."))
-        
+
         return phone_digits
 
     def clean(self) -> dict[str, Any]:
@@ -273,7 +273,7 @@ class TellUsAboutYouForm(forms.Form):
             }
         ),
     )
-    
+
     country = forms.CharField(
         max_length=2,
         required=False,
@@ -284,7 +284,7 @@ class TellUsAboutYouForm(forms.Form):
             }
         ),
     )
-    
+
     phone_country_code = forms.CharField(
         max_length=5,
         required=False,
@@ -295,7 +295,7 @@ class TellUsAboutYouForm(forms.Form):
             }
         ),
     )
-    
+
     phone = forms.CharField(
         max_length=20,
         required=False,
@@ -363,15 +363,15 @@ class TellUsAboutYouForm(forms.Form):
         phone = (self.cleaned_data.get("phone") or "").strip()
         if not phone:
             return ""
-        
+
         # Remove any non-digit characters
         phone_digits = "".join(c for c in phone if c.isdigit())
-        
+
         if len(phone_digits) < 6:
             raise ValidationError(_("Phone number must be at least 6 digits."))
         if len(phone_digits) > 15:
             raise ValidationError(_("Phone number cannot exceed 15 digits."))
-        
+
         # Check for uniqueness
         UserModel = get_user_model()
         qs = UserModel.objects.filter(phone=phone_digits)
@@ -379,7 +379,7 @@ class TellUsAboutYouForm(forms.Form):
             qs = qs.exclude(pk=self.user.pk)
         if qs.exists():
             raise ValidationError(_("This phone number is already registered."))
-        
+
         return phone_digits
 
     def clean_country(self) -> str:

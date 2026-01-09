@@ -6,36 +6,36 @@ Unified interface for file storage operations.
 Supports multiple backends: Local filesystem, S3, GCS, Azure.
 """
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 class StorageBackend(ABC):
     """Abstract storage backend interface"""
-    
+
     @abstractmethod
     def save(self, name: str, content) -> str:
         """Save a file and return its path"""
         pass
-    
+
     @abstractmethod
     def url(self, name: str) -> str:
         """Get public URL for a file"""
         pass
-    
+
     @abstractmethod
     def delete(self, name: str) -> bool:
         """Delete a file"""
         pass
-    
+
     @abstractmethod
     def exists(self, name: str) -> bool:
         """Check if file exists"""
         pass
-    
+
     @abstractmethod
     def size(self, name: str) -> int:
         """Get file size in bytes"""
@@ -44,30 +44,30 @@ class StorageBackend(ABC):
 
 class LocalStorageBackend(StorageBackend):
     """Local filesystem storage"""
-    
+
     def __init__(self):
         from django.core.files.storage import FileSystemStorage
         self.storage = FileSystemStorage()
-    
+
     def save(self, name: str, content) -> str:
         return self.storage.save(name, content)
-    
+
     def url(self, name: str) -> str:
         return self.storage.url(name)
-    
+
     def delete(self, name: str) -> bool:
         return self.storage.delete(name)
-    
+
     def exists(self, name: str) -> bool:
         return self.storage.exists(name)
-    
+
     def size(self, name: str) -> int:
         return self.storage.size(name)
 
 
 class S3StorageBackend(StorageBackend):
     """AWS S3 storage"""
-    
+
     def __init__(self):
         try:
             from storages.backends.s3boto3 import S3Boto3Storage
@@ -75,27 +75,27 @@ class S3StorageBackend(StorageBackend):
         except ImportError:
             logger.error("django-storages[s3] not installed")
             raise ImportError("Install with: pip install django-storages[boto3]")
-    
+
     def save(self, name: str, content) -> str:
         return self.storage.save(name, content)
-    
+
     def url(self, name: str) -> str:
         return self.storage.url(name)
-    
+
     def delete(self, name: str) -> bool:
         self.storage.delete(name)
         return True
-    
+
     def exists(self, name: str) -> bool:
         return self.storage.exists(name)
-    
+
     def size(self, name: str) -> int:
         return self.storage.size(name)
 
 
 class GCSStorageBackend(StorageBackend):
     """Google Cloud Storage"""
-    
+
     def __init__(self):
         try:
             from storages.backends.gcloud import GoogleCloudStorage
@@ -103,27 +103,27 @@ class GCSStorageBackend(StorageBackend):
         except ImportError:
             logger.error("django-storages[google] not installed")
             raise ImportError("Install with: pip install django-storages[google]")
-    
+
     def save(self, name: str, content) -> str:
         return self.storage.save(name, content)
-    
+
     def url(self, name: str) -> str:
         return self.storage.url(name)
-    
+
     def delete(self, name: str) -> bool:
         self.storage.delete(name)
         return True
-    
+
     def exists(self, name: str) -> bool:
         return self.storage.exists(name)
-    
+
     def size(self, name: str) -> int:
         return self.storage.size(name)
 
 
 class AzureStorageBackend(StorageBackend):
     """Azure Blob Storage"""
-    
+
     def __init__(self):
         try:
             from storages.backends.azure_storage import AzureStorage
@@ -131,20 +131,20 @@ class AzureStorageBackend(StorageBackend):
         except ImportError:
             logger.error("django-storages[azure] not installed")
             raise ImportError("Install with: pip install django-storages[azure]")
-    
+
     def save(self, name: str, content) -> str:
         return self.storage.save(name, content)
-    
+
     def url(self, name: str) -> str:
         return self.storage.url(name)
-    
+
     def delete(self, name: str) -> bool:
         self.storage.delete(name)
         return True
-    
+
     def exists(self, name: str) -> bool:
         return self.storage.exists(name)
-    
+
     def size(self, name: str) -> int:
         return self.storage.size(name)
 
@@ -159,27 +159,27 @@ class StorageService:
         url = storage.get_url(path)
         storage.delete_file(path)
     """
-    
+
     def __init__(self, backend: Optional[str] = None):
         from django.conf import settings
         backend = backend or getattr(settings, 'STORAGE_BACKEND', 'local')
-        
+
         backends = {
             'local': LocalStorageBackend,
             's3': S3StorageBackend,
             'gcs': GCSStorageBackend,
             'azure': AzureStorageBackend,
         }
-        
+
         backend_class = backends.get(backend)
         if not backend_class:
             logger.warning(f"Unknown storage backend '{backend}', using local")
             backend_class = LocalStorageBackend
-        
+
         self.backend = backend_class()
         self.backend_name = backend
         logger.info(f"StorageService initialized with {backend} backend")
-    
+
     def save_file(self, name: str, content) -> str:
         """
         Save a file and return its path/name.
@@ -192,7 +192,7 @@ class StorageService:
             Actual path/name where file was saved
         """
         return self.backend.save(name, content)
-    
+
     def get_url(self, name: str) -> str:
         """
         Get public URL for a file.
@@ -204,7 +204,7 @@ class StorageService:
             Public URL to access the file
         """
         return self.backend.url(name)
-    
+
     def delete_file(self, name: str) -> bool:
         """
         Delete a file.
@@ -220,7 +220,7 @@ class StorageService:
         except Exception as e:
             logger.error(f"Failed to delete file {name}: {e}")
             return False
-    
+
     def file_exists(self, name: str) -> bool:
         """
         Check if file exists.
@@ -232,7 +232,7 @@ class StorageService:
             True if file exists
         """
         return self.backend.exists(name)
-    
+
     def get_file_size(self, name: str) -> int:
         """
         Get file size in bytes.

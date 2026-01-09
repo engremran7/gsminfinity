@@ -6,7 +6,7 @@ Pure text manipulation functions with no business logic.
 """
 
 import re
-from typing import Optional, List
+from typing import List
 
 
 def truncate_words(text: str, max_words: int, suffix: str = '...') -> str:
@@ -138,14 +138,14 @@ def excerpt(text: str, max_length: int = 150, suffix: str = '...') -> str:
     """
     if len(text) <= max_length:
         return text
-    
+
     # Try to break at word boundary
     truncated = text[:max_length]
     last_space = truncated.rfind(' ')
-    
+
     if last_space > 0:
         truncated = truncated[:last_space]
-    
+
     return truncated + suffix
 
 
@@ -184,16 +184,16 @@ def title_case(text: str) -> str:
     """
     # Don't capitalize small words unless they're first/last
     small_words = {'a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'in', 'of', 'on', 'or', 'the', 'to', 'with'}
-    
+
     words = text.split()
     result = []
-    
+
     for i, word in enumerate(words):
         if i == 0 or i == len(words) - 1 or word.lower() not in small_words:
             result.append(word.capitalize())
         else:
             result.append(word.lower())
-    
+
     return ' '.join(result)
 
 

@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import os
-import django
-from django.test import TestCase, override_settings
-from django.template import Context, Template
 
-from apps.core.utils import feature_flags
+import django
+from django.template import Context, Template
+from django.test import TestCase, override_settings
+
 from apps.site_settings.models import SiteSettings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings")

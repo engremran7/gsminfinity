@@ -27,26 +27,26 @@ def emit_security_event(
             ip=ip,
             metadata=metadata or {},
         )
-        
+
         # Notify user of critical security events
         if user and getattr(user, "is_authenticated", False) and event_type in ["login_failed", "password_changed", "mfa_enabled", "mfa_disabled"]:
             try:
                 from apps.users.services.notifications import send_notification
-                
+
                 title_map = {
                     "login_failed": "Failed login attempt",
                     "password_changed": "Password changed",
                     "mfa_enabled": "MFA enabled",
                     "mfa_disabled": "MFA disabled",
                 }
-                
+
                 msg_map = {
                     "login_failed": f"A failed login attempt was detected from {ip or 'unknown IP'}.",
                     "password_changed": "Your password was recently changed.",
                     "mfa_enabled": "Two-factor authentication was enabled on your account.",
                     "mfa_disabled": "Two-factor authentication was disabled on your account.",
                 }
-                
+
                 send_notification(
                     recipient=user,
                     title=title_map.get(event_type, "Security Alert"),
@@ -58,7 +58,7 @@ def emit_security_event(
                 )
             except Exception:
                 pass
-                
+
     except Exception as exc:  # pragma: no cover - defensive path
         logger.debug("emit_security_event skipped: %s", exc)
         return

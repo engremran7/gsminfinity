@@ -1,27 +1,34 @@
-from rest_framework import views, viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from django.shortcuts import get_object_or_404
-from apps.core.throttling import UploadRateThrottle, APIRateThrottle
-from .serializers import (
-    PendingFirmwareUploadSerializer,
-    PendingFirmwareSerializer,
-    SchemaUpdateProposalSerializer,
-    BrandCreationRequestSerializer,
-    ModelCreationRequestSerializer,
-    VariantCreationRequestSerializer,
-)
+from rest_framework import status, views, viewsets
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+
+from apps.core.throttling import APIRateThrottle, UploadRateThrottle
+
 from .models import (
-    PendingFirmware,
     Brand,
-    Model,
-    Variant,
-    SchemaUpdateProposal,
     BrandCreationRequest,
+    Model,
     ModelCreationRequest,
+    PendingFirmware,
+    SchemaUpdateProposal,
+    Variant,
     VariantCreationRequest,
 )
-from .services import handle_upload, attempt_extraction, run_ai_analysis, moderate_and_route
+from .serializers import (
+    BrandCreationRequestSerializer,
+    ModelCreationRequestSerializer,
+    PendingFirmwareSerializer,
+    PendingFirmwareUploadSerializer,
+    SchemaUpdateProposalSerializer,
+    VariantCreationRequestSerializer,
+)
+from .services import (
+    attempt_extraction,
+    handle_upload,
+    moderate_and_route,
+    run_ai_analysis,
+)
 
 
 class FirmwareUploadView(views.APIView):

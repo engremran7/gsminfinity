@@ -18,11 +18,12 @@ import logging
 from datetime import timedelta
 from typing import Any, Dict, List, Optional
 
-from apps.site_settings.models import SiteSettings
-from apps.users.models import CustomUser, DeviceFingerprint
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
+
+from apps.site_settings.models import SiteSettings
+from apps.users.models import CustomUser, DeviceFingerprint
 
 logger = logging.getLogger(__name__)
 

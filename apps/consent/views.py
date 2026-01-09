@@ -3,14 +3,13 @@ from __future__ import annotations
 
 import json
 
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.http import HttpRequest, HttpResponse
-from django.views.decorators.http import require_POST, require_GET
-from django.http import JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import render
+from django.views.decorators.http import require_GET, require_POST
 
-from apps.consent.models import ConsentPolicy, ConsentDecision, ConsentEvent
-from apps.consent.utils import hash_ip, hash_ua, resolve_policy_url, set_consent_cookie
+from apps.consent.models import ConsentDecision, ConsentEvent, ConsentPolicy
+from apps.consent.utils import resolve_policy_url, set_consent_cookie
 from apps.core.utils.ip import get_client_ip
 
 
@@ -179,7 +178,7 @@ def banner(request: HttpRequest) -> HttpResponse:
         if not policy.is_active:
             policy.is_active = True
             policy.save(update_fields=["is_active"])
-    
+
     # Format categories for template with proper structure
     categories_snapshot = policy.categories_snapshot or {}
     formatted_categories = {}
@@ -196,7 +195,7 @@ def banner(request: HttpRequest) -> HttpResponse:
                 "required": False,
                 "checked": False,
             }
-    
+
     ctx = {
         "policy": policy,
         "consent_categories": formatted_categories,

@@ -10,7 +10,7 @@ are not applied yet, it quietly skips.
 from __future__ import annotations
 
 import logging
-from typing import Iterable
+from collections.abc import Iterable
 
 from django.apps import apps as django_apps
 from django.db.models.signals import post_migrate

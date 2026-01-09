@@ -3,9 +3,8 @@ Firmware Admin Auto-Fill System
 Automatically fills missing fields using AI and internet data
 """
 import logging
-from django.db import models
+
 from django.core.cache import cache
-import requests
 
 logger = logging.getLogger(__name__)
 

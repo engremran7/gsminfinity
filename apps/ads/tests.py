@@ -2,12 +2,19 @@
 from __future__ import annotations
 
 from unittest.mock import patch
+
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from apps.ads.models import AdPlacement, AdCreative, Campaign, PlacementAssignment, AdsSettings
-from apps.site_settings.models import SiteSettings
+from apps.ads.models import (
+    AdCreative,
+    AdPlacement,
+    AdsSettings,
+    Campaign,
+    PlacementAssignment,
+)
 from apps.ads.services.rotation.engine import choose_creative
+from apps.site_settings.models import SiteSettings
 
 
 @override_settings(

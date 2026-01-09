@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Optional
 
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator

@@ -6,12 +6,11 @@ import logging
 import uuid
 from typing import Any, Dict, Optional, Tuple
 
-from django.core import signing
 from django.conf import settings
-from django.utils import timezone
+from django.core import signing
 from django.http import HttpResponse
+from django.utils import timezone
 
-from apps.consent.utils import check as consent_check
 from apps.core.app_service import AppService
 from apps.core.utils.ip import get_client_ip
 from apps.devices.models import AppPolicy, Device, DeviceConfig, DeviceEvent

@@ -3,8 +3,15 @@ from __future__ import annotations
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
 
-from apps.distribution.models import SocialAccount, ShareTemplate, SharePlan, ShareJob, ShareLog, SyndicationPartner
 from apps.distribution.api import get_settings
+from apps.distribution.models import (
+    ShareJob,
+    ShareLog,
+    SharePlan,
+    ShareTemplate,
+    SocialAccount,
+    SyndicationPartner,
+)
 from apps.distribution.services import _enabled_channels
 
 

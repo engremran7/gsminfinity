@@ -4,8 +4,9 @@ from django.core.cache import cache
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from .models import SiteSettings, VerificationFile, VerificationMetaTag
 from apps.core.utils import feature_flags
+
+from .models import SiteSettings, VerificationFile, VerificationMetaTag
 
 
 def clear_site_settings_cache():

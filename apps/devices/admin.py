@@ -1,14 +1,11 @@
 
 from __future__ import annotations
 
-import json
 
 from django.contrib import admin, messages
-from django.utils import timezone
 from solo.admin import SingletonModelAdmin
 
 from apps.devices.models import AppPolicy, Device, DeviceConfig, DeviceEvent
-from apps.devices.admin_quota import UserDeviceQuotaAdmin  # Register quota admin
 
 
 @admin.register(Device)

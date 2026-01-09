@@ -12,12 +12,13 @@ from __future__ import annotations
 
 import json
 import logging
-from django.http import JsonResponse, HttpRequest
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_protect
-from django.contrib.admin.views.decorators import staff_member_required
 
-from .models_social import SocialProviderConfig, SocialPostingAccount
+from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpRequest, JsonResponse
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_http_methods
+
+from .models_social import SocialPostingAccount, SocialProviderConfig
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ def social_providers_list(request: HttpRequest) -> JsonResponse:
     """
     try:
         providers = SocialProviderConfig.objects.all()
-        
+
         data = []
         for p in providers:
             p.update_user_count()
@@ -59,7 +60,7 @@ def social_providers_list(request: HttpRequest) -> JsonResponse:
                 "last_error": p.last_error,
                 "created_at": p.created_at.isoformat(),
             })
-        
+
         return JsonResponse({"providers": data})
     except Exception as exc:
         logger.exception("Failed to list social providers: %s", exc)
@@ -85,22 +86,22 @@ def social_provider_create(request: HttpRequest) -> JsonResponse:
     """
     try:
         data = json.loads(request.body) if request.body else {}
-        
+
         provider = data.get("provider")
         client_id = data.get("client_id", "").strip()
         client_secret = data.get("client_secret", "").strip()
-        
+
         if not provider:
             return JsonResponse({"error": "Provider type is required"}, status=400)
-        
+
         if not client_id or not client_secret:
             return JsonResponse({"error": "Client ID and secret are required"}, status=400)
-        
+
         # Validate provider type
         valid_providers = dict(SocialProviderConfig.PROVIDER_CHOICES).keys()
         if provider not in valid_providers:
             return JsonResponse({"error": f"Invalid provider. Must be one of: {', '.join(valid_providers)}"}, status=400)
-        
+
         # Create or update
         config, created = SocialProviderConfig.objects.get_or_create(
             provider=provider,
@@ -111,10 +112,10 @@ def social_provider_create(request: HttpRequest) -> JsonResponse:
                 "created_by": request.user,
             }
         )
-        
+
         config.set_client_id(client_id)
         config.set_client_secret(client_secret)
-        
+
         # Handle provider-specific fields
         if provider == 'microsoft' and data.get("tenant_id"):
             config.tenant_id = data["tenant_id"]
@@ -123,19 +124,19 @@ def social_provider_create(request: HttpRequest) -> JsonResponse:
                 config.team_id = data["team_id"]
             if data.get("key_id"):
                 config.key_id = data["key_id"]
-        
+
         if data.get("scopes"):
             config.scopes = data["scopes"]
-        
+
         if data.get("display_name"):
             config.display_name = data["display_name"]
-        
+
         config.status = "active"
         config.save()
-        
+
         # Sync to allauth
         sync_success = config.sync_to_allauth()
-        
+
         return JsonResponse({
             "success": True,
             "created": created,
@@ -148,7 +149,7 @@ def social_provider_create(request: HttpRequest) -> JsonResponse:
                 "callback_url": config.callback_url,
             }
         })
-        
+
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON body"}, status=400)
     except Exception as exc:
@@ -167,7 +168,7 @@ def social_provider_detail(request: HttpRequest, provider_id: str) -> JsonRespon
         config = SocialProviderConfig.objects.filter(id=provider_id).first()
         if not config:
             return JsonResponse({"error": "Provider not found"}, status=404)
-        
+
         if request.method == "GET":
             config.update_user_count()
             return JsonResponse({
@@ -191,10 +192,10 @@ def social_provider_detail(request: HttpRequest, provider_id: str) -> JsonRespon
                 "created_at": config.created_at.isoformat(),
                 "updated_at": config.updated_at.isoformat(),
             })
-        
+
         elif request.method == "PUT":
             data = json.loads(request.body) if request.body else {}
-            
+
             if data.get("client_id"):
                 config.set_client_id(data["client_id"])
             if data.get("client_secret"):
@@ -208,7 +209,7 @@ def social_provider_detail(request: HttpRequest, provider_id: str) -> JsonRespon
             if data.get("is_enabled") is not None:
                 config.is_enabled = data["is_enabled"]
                 config.status = "active" if data["is_enabled"] else "disabled"
-            
+
             # Provider-specific
             if config.provider == 'microsoft' and data.get("tenant_id") is not None:
                 config.tenant_id = data["tenant_id"]
@@ -217,12 +218,12 @@ def social_provider_detail(request: HttpRequest, provider_id: str) -> JsonRespon
                     config.team_id = data["team_id"]
                 if data.get("key_id") is not None:
                     config.key_id = data["key_id"]
-            
+
             config.save()
-            
+
             # Sync to allauth
             sync_success = config.sync_to_allauth()
-            
+
             return JsonResponse({
                 "success": True,
                 "synced": sync_success,
@@ -231,14 +232,14 @@ def social_provider_detail(request: HttpRequest, provider_id: str) -> JsonRespon
                     "status": config.status,
                 }
             })
-        
+
         elif request.method == "DELETE":
             if not request.user.is_superuser:
                 return JsonResponse({"error": "Superuser required to delete providers"}, status=403)
-            
+
             config.delete()
             return JsonResponse({"success": True, "deleted": True})
-        
+
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON body"}, status=400)
     except Exception as exc:
@@ -257,15 +258,15 @@ def social_provider_test(request: HttpRequest, provider_id: str) -> JsonResponse
         config = SocialProviderConfig.objects.filter(id=provider_id).first()
         if not config:
             return JsonResponse({"error": "Provider not found"}, status=404)
-        
+
         success, message = config.test_connection()
-        
+
         return JsonResponse({
             "success": success,
             "message": message,
             "tested_at": config.last_tested_at.isoformat() if config.last_tested_at else None,
         })
-        
+
     except Exception as exc:
         logger.exception("Social provider test failed: %s", exc)
         return JsonResponse({"error": str(exc)}, status=500)
@@ -282,14 +283,14 @@ def social_provider_sync(request: HttpRequest, provider_id: str) -> JsonResponse
         config = SocialProviderConfig.objects.filter(id=provider_id).first()
         if not config:
             return JsonResponse({"error": "Provider not found"}, status=404)
-        
+
         success = config.sync_to_allauth()
-        
+
         return JsonResponse({
             "success": success,
             "error": config.last_error if not success else None,
         })
-        
+
     except Exception as exc:
         logger.exception("Social provider sync failed: %s", exc)
         return JsonResponse({"error": str(exc)}, status=500)
@@ -309,7 +310,7 @@ def social_posting_list(request: HttpRequest) -> JsonResponse:
     """
     try:
         accounts = SocialPostingAccount.objects.all()
-        
+
         data = []
         for a in accounts:
             data.append({
@@ -336,7 +337,7 @@ def social_posting_list(request: HttpRequest) -> JsonResponse:
                 "last_error": a.last_error,
                 "created_at": a.created_at.isoformat(),
             })
-        
+
         return JsonResponse({"accounts": data})
     except Exception as exc:
         logger.exception("Failed to list social posting accounts: %s", exc)
@@ -362,25 +363,25 @@ def social_posting_create(request: HttpRequest) -> JsonResponse:
     """
     try:
         data = json.loads(request.body) if request.body else {}
-        
+
         platform = data.get("platform")
         account_name = data.get("account_name", "").strip()
-        
+
         if not platform:
             return JsonResponse({"error": "Platform is required"}, status=400)
-        
+
         if not account_name:
             return JsonResponse({"error": "Account name is required"}, status=400)
-        
+
         # Validate platform type
         valid_platforms = dict(SocialPostingAccount.PLATFORM_CHOICES).keys()
         if platform not in valid_platforms:
             return JsonResponse({"error": f"Invalid platform. Must be one of: {', '.join(valid_platforms)}"}, status=400)
-        
+
         # Get auth info for this platform
         auth_info = SocialPostingAccount.get_auth_info(platform)
         auth_type = auth_info.get('auth_type', 'oauth2')
-        
+
         # Create account
         account = SocialPostingAccount.objects.create(
             platform=platform,
@@ -392,7 +393,7 @@ def social_posting_create(request: HttpRequest) -> JsonResponse:
             status="unconfigured",
             created_by=request.user,
         )
-        
+
         # Set credentials based on auth type
         if auth_type == 'api_token' and data.get("bot_token"):
             account.set_bot_token(data["bot_token"])
@@ -409,9 +410,9 @@ def social_posting_create(request: HttpRequest) -> JsonResponse:
                 account.set_api_key(data["api_key"])
             if data.get("api_secret"):
                 account.set_api_secret(data["api_secret"])
-        
+
         account.save()
-        
+
         return JsonResponse({
             "success": True,
             "account": {
@@ -422,7 +423,7 @@ def social_posting_create(request: HttpRequest) -> JsonResponse:
                 "requires_oauth": account.requires_oauth,
             }
         })
-        
+
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON body"}, status=400)
     except Exception as exc:
@@ -441,7 +442,7 @@ def social_posting_detail(request: HttpRequest, account_id: str) -> JsonResponse
         account = SocialPostingAccount.objects.filter(id=account_id).first()
         if not account:
             return JsonResponse({"error": "Account not found"}, status=404)
-        
+
         if request.method == "GET":
             return JsonResponse({
                 "id": str(account.id),
@@ -480,10 +481,10 @@ def social_posting_detail(request: HttpRequest, account_id: str) -> JsonResponse
                 "created_at": account.created_at.isoformat(),
                 "updated_at": account.updated_at.isoformat(),
             })
-        
+
         elif request.method == "PUT":
             data = json.loads(request.body) if request.body else {}
-            
+
             # Update credentials based on auth type
             if account.auth_type == 'api_token' and data.get("bot_token"):
                 account.set_bot_token(data["bot_token"])
@@ -496,7 +497,7 @@ def social_posting_detail(request: HttpRequest, account_id: str) -> JsonResponse
                     account.set_api_key(data["api_key"])
                 if data.get("api_secret"):
                     account.set_api_secret(data["api_secret"])
-            
+
             # Update other fields
             if data.get("account_name"):
                 account.account_name = data["account_name"]
@@ -532,12 +533,12 @@ def social_posting_detail(request: HttpRequest, account_id: str) -> JsonResponse
                     account.status = "disabled"
                 elif account.has_credentials:
                     account.status = "active"
-            
+
             if account.has_credentials and account.status == 'unconfigured':
                 account.status = "active"
-            
+
             account.save()
-            
+
             return JsonResponse({
                 "success": True,
                 "account": {
@@ -545,14 +546,14 @@ def social_posting_detail(request: HttpRequest, account_id: str) -> JsonResponse
                     "status": account.status,
                 }
             })
-        
+
         elif request.method == "DELETE":
             if not request.user.is_superuser:
                 return JsonResponse({"error": "Superuser required to delete accounts"}, status=403)
-            
+
             account.delete()
             return JsonResponse({"success": True, "deleted": True})
-        
+
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON body"}, status=400)
     except Exception as exc:
@@ -571,15 +572,15 @@ def social_posting_test(request: HttpRequest, account_id: str) -> JsonResponse:
         account = SocialPostingAccount.objects.filter(id=account_id).first()
         if not account:
             return JsonResponse({"error": "Account not found"}, status=404)
-        
+
         success, message = account.test_connection()
-        
+
         return JsonResponse({
             "success": success,
             "message": message,
             "tested_at": account.last_tested_at.isoformat() if account.last_tested_at else None,
         })
-        
+
     except Exception as exc:
         logger.exception("Social posting account test failed: %s", exc)
         return JsonResponse({"error": str(exc)}, status=500)
@@ -596,10 +597,10 @@ def social_posting_send_test(request: HttpRequest, account_id: str) -> JsonRespo
         account = SocialPostingAccount.objects.filter(id=account_id).first()
         if not account:
             return JsonResponse({"error": "Account not found"}, status=404)
-        
+
         if account.status != 'active':
             return JsonResponse({"error": "Account must be active to send test post"}, status=400)
-        
+
         # Format test post
         test_content = account.format_post(
             title="Test Post from Admin",
@@ -607,7 +608,7 @@ def social_posting_send_test(request: HttpRequest, account_id: str) -> JsonRespo
             url="https://example.com/test",
             tags=["test"],
         )
-        
+
         # In a real implementation, this would call the actual posting service
         # For now, we just return the formatted content
         return JsonResponse({
@@ -615,7 +616,7 @@ def social_posting_send_test(request: HttpRequest, account_id: str) -> JsonRespo
             "message": "Test post prepared (actual sending requires posting service)",
             "content": test_content,
         })
-        
+
     except Exception as exc:
         logger.exception("Social posting test send failed: %s", exc)
         return JsonResponse({"error": str(exc)}, status=500)
@@ -634,17 +635,17 @@ def social_providers_info(request: HttpRequest) -> JsonResponse:
     try:
         # Get enabled providers
         providers = SocialProviderConfig.objects.filter(
-            is_enabled=True, 
+            is_enabled=True,
             status='active'
         ).values('provider', 'display_name')
-        
+
         data = []
         for p in providers:
             data.append({
                 "provider": p['provider'],
                 "name": p['display_name'] or dict(SocialProviderConfig.PROVIDER_CHOICES).get(p['provider']),
             })
-        
+
         return JsonResponse({"providers": data})
     except Exception:
         return JsonResponse({"providers": []})
@@ -665,5 +666,5 @@ def social_platforms_info(request: HttpRequest) -> JsonResponse:
             "setup_url": auth_info.get('setup_url', ''),
             "description": auth_info.get('description', ''),
         })
-    
+
     return JsonResponse({"platforms": data})

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from django.core.management.base import BaseCommand
 
-from apps.tags.models_keyword import KeywordProvider
 from apps.tags import services
+from apps.tags.models_keyword import KeywordProvider
 
 
 class Command(BaseCommand):

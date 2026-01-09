@@ -1,6 +1,6 @@
 # Storage Interfaces - Abstract interfaces for loose coupling
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Any, Dict
 
 
 class StorageProvider(ABC):
@@ -8,7 +8,7 @@ class StorageProvider(ABC):
     Abstract interface for cloud storage operations
     Allows firmware app to use storage without direct dependency
     """
-    
+
     @abstractmethod
     def upload_file(
         self,
@@ -28,7 +28,7 @@ class StorageProvider(ABC):
             StorageLocation object with file details
         """
         pass
-    
+
     @abstractmethod
     def initiate_download(
         self,
@@ -46,7 +46,7 @@ class StorageProvider(ABC):
             DownloadSession with status and link
         """
         pass
-    
+
     @abstractmethod
     def get_download_status(self, session_id: str) -> Dict[str, Any]:
         """
@@ -59,7 +59,7 @@ class StorageProvider(ABC):
             Dict with status, link, expires_at, etc.
         """
         pass
-    
+
     @abstractmethod
     def add_external_link(
         self,

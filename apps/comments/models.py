@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.db import models
-from django.core.validators import MinLengthValidator, MaxLengthValidator
-from solo.models import SingletonModel
-from django.utils import timezone
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.validators import MaxLengthValidator, MinLengthValidator
+from django.db import models
+from django.utils import timezone
+from solo.models import SingletonModel
 
-from apps.core.models import TimestampedModel, SoftDeleteModel
+from apps.core.models import SoftDeleteModel, TimestampedModel
 
 # Legacy enhanced models removed - archived in apps/core/versions/
 # Keeping import placeholder for historical migration compatibility

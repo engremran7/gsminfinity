@@ -2,10 +2,11 @@
 Tagging service providing generic tagging functionality for any Django model.
 Completely decoupled from specific content types.
 """
+from typing import Any, List, Optional
+
 from django.contrib.contenttypes.models import ContentType
-from django.db import transaction, models
+from django.db import models, transaction
 from django.utils.text import slugify
-from typing import List, Optional, Any
 
 
 class TaggingService:
@@ -27,15 +28,15 @@ class TaggingService:
         # Find all posts with a tag
         posts = service.get_objects_for_tag("python", Post)
     """
-    
+
     def __init__(self):
         """Initialize the service with required models"""
         from apps.tags.models import Tag
         from apps.tags.models_tagged_item import TaggedItem
-        
+
         self.Tag = Tag
         self.TaggedItem = TaggedItem
-    
+
     @transaction.atomic
     def tag_object(
         self,
@@ -62,10 +63,10 @@ class TaggingService:
             name=tag_name.strip(),
             defaults={'slug': self._slugify_tag(tag_name)}
         )
-        
+
         # Get content type for the object
         content_type = ContentType.objects.get_for_model(obj)
-        
+
         # Create or get the tagging relationship
         tagged_item, created = self.TaggedItem.objects.get_or_create(
             tag=tag,
@@ -73,15 +74,15 @@ class TaggingService:
             object_id=obj.pk,
             defaults={'created_by': created_by}
         )
-        
+
         # Update the tag's usage_count if a new TaggedItem was created
         if created:
             from django.db.models import F
             self.Tag.objects.filter(pk=tag.pk).update(usage_count=F('usage_count') + 1)
             tag.refresh_from_db()
-        
+
         return tagged_item
-    
+
     def untag_object(self, obj: Any, tag_name: str) -> bool:
         """
         Remove a specific tag from an object.
@@ -99,24 +100,24 @@ class TaggingService:
         try:
             tag = self.Tag.objects.get(name=tag_name.strip())
             content_type = ContentType.objects.get_for_model(obj)
-            
+
             deleted_count, _ = self.TaggedItem.objects.filter(
                 tag=tag,
                 content_type=content_type,
                 object_id=obj.pk
             ).delete()
-            
+
             # Update the tag's usage_count if items were deleted
             if deleted_count > 0:
                 from django.db.models import F
                 self.Tag.objects.filter(pk=tag.pk).update(
                     usage_count=models.functions.Greatest(F('usage_count') - deleted_count, 0)
                 )
-            
+
             return deleted_count > 0
         except self.Tag.DoesNotExist:
             return False
-    
+
     def clear_all_tags(self, obj: Any) -> int:
         """
         Remove all tags from an object.
@@ -132,9 +133,9 @@ class TaggingService:
             content_type=content_type,
             object_id=obj.pk
         ).delete()
-        
+
         return deleted_count
-    
+
     def get_tags_for_object(self, obj: Any):
         """
         Get all tags associated with an object.
@@ -151,12 +152,12 @@ class TaggingService:
             ['python', 'django', 'web']
         """
         content_type = ContentType.objects.get_for_model(obj)
-        
+
         return self.Tag.objects.filter(
             tagged_items__content_type=content_type,
             tagged_items__object_id=obj.pk
         ).distinct()
-    
+
     def get_objects_for_tag(
         self,
         tag_name: str,
@@ -183,18 +184,18 @@ class TaggingService:
             tag = self.Tag.objects.get(name=tag_name.strip())
         except self.Tag.DoesNotExist:
             return []
-        
+
         tagged_items = self.TaggedItem.objects.filter(tag=tag).select_related(
             'content_type'
         )
-        
+
         if model_class:
             content_type = ContentType.objects.get_for_model(model_class)
             tagged_items = tagged_items.filter(content_type=content_type)
-        
+
         # Return the actual objects
         return [item.content_object for item in tagged_items if item.content_object]
-    
+
     @transaction.atomic
     def bulk_tag_objects(
         self,
@@ -218,14 +219,14 @@ class TaggingService:
             >>> service.bulk_tag_objects(posts, ["python", "tutorial"], user)
         """
         tagged_items = []
-        
+
         for obj in objects:
             for tag_name in tag_names:
                 tagged_item = self.tag_object(obj, tag_name, created_by)
                 tagged_items.append(tagged_item)
-        
+
         return tagged_items
-    
+
     def sync_tags_for_object(
         self,
         obj: Any,
@@ -253,17 +254,17 @@ class TaggingService:
         # Get current tags
         current_tags = set(self.get_tags_for_object(obj).values_list('name', flat=True))
         desired_tags = set(tag.strip() for tag in tag_names)
-        
+
         # Remove tags that shouldn't be there
         tags_to_remove = current_tags - desired_tags
         for tag_name in tags_to_remove:
             self.untag_object(obj, tag_name)
-        
+
         # Add new tags
         tags_to_add = desired_tags - current_tags
         for tag_name in tags_to_add:
             self.tag_object(obj, tag_name, created_by)
-    
+
     def get_popular_tags(
         self,
         limit: int = 10,
@@ -289,15 +290,15 @@ class TaggingService:
         queryset = self.Tag.objects.annotate(
             computed_usage_count=models.Count('tagged_items')
         )
-        
+
         if model_class:
             content_type = ContentType.objects.get_for_model(model_class)
             queryset = queryset.filter(
                 tagged_items__content_type=content_type
             )
-        
+
         return queryset.order_by('-computed_usage_count')[:limit]
-    
+
     def get_related_tags(
         self,
         tag_name: str,
@@ -321,10 +322,10 @@ class TaggingService:
             tag = self.Tag.objects.get(name=tag_name.strip())
         except self.Tag.DoesNotExist:
             return self.Tag.objects.none()
-        
+
         # Get objects tagged with this tag
         tagged_items = self.TaggedItem.objects.filter(tag=tag)
-        
+
         # Get other tags on those same objects
         related_tag_ids = self.TaggedItem.objects.filter(
             content_type__in=tagged_items.values('content_type'),
@@ -334,9 +335,9 @@ class TaggingService:
         ).values('tag').annotate(
             count=models.Count('tag')
         ).order_by('-count')[:limit].values_list('tag', flat=True)
-        
+
         return self.Tag.objects.filter(id__in=related_tag_ids)
-    
+
     def search_tags(self, query: str, limit: int = 10):
         """
         Search for tags by name.
@@ -351,12 +352,12 @@ class TaggingService:
         return self.Tag.objects.filter(
             name__icontains=query.strip()
         )[:limit]
-    
+
     @staticmethod
     def _slugify_tag(tag_name: str) -> str:
         """Create URL-friendly slug from tag name"""
         return slugify(tag_name)[:120]
-    
+
     def get_tag_cloud_data(
         self,
         model_class: Optional[type] = None,
@@ -379,7 +380,7 @@ class TaggingService:
         """
         # Build base queryset
         queryset = self.Tag.objects.all()
-        
+
         # Apply model filter first, then annotate with distinct count
         if model_class:
             content_type = ContentType.objects.get_for_model(model_class)
@@ -392,20 +393,20 @@ class TaggingService:
             queryset = queryset.annotate(
                 computed_usage_count=models.Count('tagged_items', distinct=True)
             )
-        
+
         # Filter by min_count and get top 100
         tags_data = list(queryset.filter(
             computed_usage_count__gte=min_count
         ).order_by('-computed_usage_count')[:100].values('name', 'slug', 'computed_usage_count'))
-        
+
         if not tags_data:
             return []
-        
+
         # Calculate weights (1-5 scale for font sizing)
         counts = [item['computed_usage_count'] for item in tags_data]
         min_cnt = min(counts)
         max_cnt = max(counts)
-        
+
         for item in tags_data:
             if max_cnt == min_cnt:
                 weight = 3
@@ -414,5 +415,5 @@ class TaggingService:
             item['weight'] = weight
             item['tag'] = item['name']
             item['count'] = item['computed_usage_count']
-        
+
         return tags_data

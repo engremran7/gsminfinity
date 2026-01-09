@@ -4,7 +4,6 @@ import logging
 import uuid
 from typing import List, Tuple
 
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils import timezone

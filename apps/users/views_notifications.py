@@ -6,11 +6,11 @@ from typing import Any, Dict
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from .models import Announcement, Notification
+from .models import Notification
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class FirmwareAIAnalyzer:
     - Firmware type classification
     - Partition structure analysis
     """
-    
+
     # Known chipset signatures (hex patterns)
     CHIPSET_SIGNATURES = {
         'MediaTek MT6765': b'MT6765',
@@ -41,21 +41,21 @@ class FirmwareAIAnalyzer:
         'Unisoc T610': b'T610',
         'Unisoc T618': b'T618',
     }
-    
+
     # Android version patterns
     ANDROID_VERSION_PATTERNS = [
         (rb'Android\s+(\d+)', 'Android {}'),
         (rb'android-(\d+)', 'Android {}'),
         (rb'ro\.build\.version\.release=(\d+)', 'Android {}'),
     ]
-    
+
     # Partition names
     COMMON_PARTITIONS = [
         'boot', 'system', 'vendor', 'product', 'odm',
         'recovery', 'cache', 'userdata', 'metadata',
         'vbmeta', 'dtbo', 'super', 'persist'
     ]
-    
+
     @classmethod
     def analyze_firmware(cls, firmware_file_path: str) -> Dict[str, Any]:
         """
@@ -80,15 +80,15 @@ class FirmwareAIAnalyzer:
         try:
             # First try pattern-based extraction (faster, more reliable)
             result = cls._pattern_based_analysis(firmware_file_path)
-            
+
             # If confidence is low, try AI-based analysis
             if result.get('confidence', 0) < 0.7:
                 ai_result = cls._ai_based_analysis(firmware_file_path)
                 if ai_result.get('confidence', 0) > result.get('confidence', 0):
                     result = ai_result
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Firmware analysis failed: {e}", exc_info=True)
             return {
@@ -96,7 +96,7 @@ class FirmwareAIAnalyzer:
                 'confidence': 0.0,
                 'method': 'error'
             }
-    
+
     @classmethod
     def _pattern_based_analysis(cls, firmware_file_path: str) -> Dict[str, Any]:
         """
@@ -113,21 +113,21 @@ class FirmwareAIAnalyzer:
             'confidence': 0.0,
             'method': 'pattern'
         }
-        
+
         try:
             # Read first 10MB for analysis
             with open(firmware_file_path, 'rb') as f:
                 header = f.read(10 * 1024 * 1024)
-            
+
             confidence_score = 0.0
-            
+
             # Detect chipset
             for chipset_name, signature in cls.CHIPSET_SIGNATURES.items():
                 if signature in header:
                     result['chipset'] = chipset_name
                     confidence_score += 0.3
                     break
-            
+
             # Detect Android version
             for pattern, template in cls.ANDROID_VERSION_PATTERNS:
                 match = re.search(pattern, header)
@@ -136,31 +136,31 @@ class FirmwareAIAnalyzer:
                     result['android_version'] = template.format(version)
                     confidence_score += 0.2
                     break
-            
+
             # Detect security patch level
             patch_pattern = rb'ro\.build\.version\.security_patch=(\d{4}-\d{2}-\d{2})'
             match = re.search(patch_pattern, header)
             if match:
                 result['security_patch'] = match.group(1).decode('utf-8')
                 confidence_score += 0.2
-            
+
             # Detect build date
             date_pattern = rb'ro\.build\.date=([A-Za-z]{3}\s+\d{1,2}\s+\d{4})'
             match = re.search(date_pattern, header)
             if match:
                 result['build_date'] = match.group(1).decode('utf-8')
                 confidence_score += 0.1
-            
+
             # Detect partitions
             for partition in cls.COMMON_PARTITIONS:
                 if partition.encode() in header:
                     result['partitions'].append(partition)
-            
+
             if result['partitions']:
                 confidence_score += 0.2
-            
+
             result['confidence'] = min(confidence_score, 1.0)
-            
+
             # Classify firmware type
             if b'engineering' in header.lower() or b'eng' in header.lower():
                 result['firmware_type'] = 'engineering'
@@ -168,14 +168,14 @@ class FirmwareAIAnalyzer:
                 result['firmware_type'] = 'official'
             elif b'modified' in header.lower() or b'custom' in header.lower():
                 result['firmware_type'] = 'modified'
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Pattern-based analysis failed: {e}")
             result['error'] = str(e)
             return result
-    
+
     @classmethod
     def _ai_based_analysis(cls, firmware_file_path: str) -> Dict[str, Any]:
         """
@@ -184,18 +184,18 @@ class FirmwareAIAnalyzer:
         """
         try:
             from apps.ai.services import test_completion
-            
+
             # Read sample for AI analysis
             with open(firmware_file_path, 'rb') as f:
                 header = f.read(1024 * 1024)  # 1MB sample
-            
+
             # Convert to hex (first 1000 bytes)
             hex_sample = header[:1000].hex()
-            
+
             # Extract readable strings
             strings = re.findall(rb'[\x20-\x7E]{10,}', header[:10000])
             readable_strings = '\n'.join([s.decode('utf-8', errors='ignore') for s in strings[:50]])
-            
+
             prompt = f"""
 Analyze this firmware file header and extract metadata.
 
@@ -216,23 +216,23 @@ Extract and return ONLY a JSON object with these fields:
 
 Return ONLY valid JSON, no markdown formatting.
 """
-            
+
             response = test_completion(prompt)
             content = response.get("text", "{}")
-            
+
             # Clean JSON from markdown
             if content.startswith("```json"):
                 content = content.replace("```json", "").replace("```", "")
             elif content.startswith("```"):
                 content = content.replace("```", "")
-            
+
             content = content.strip()
-            
+
             data = json.loads(content)
             data['method'] = 'ai'
-            
+
             return data
-            
+
         except Exception as e:
             logger.error(f"AI-based analysis failed: {e}", exc_info=True)
             return {
@@ -240,7 +240,7 @@ Return ONLY valid JSON, no markdown formatting.
                 'confidence': 0.0,
                 'method': 'ai_error'
             }
-    
+
     @classmethod
     def update_pending_firmware(cls, pending_firmware) -> bool:
         """
@@ -254,32 +254,32 @@ Return ONLY valid JSON, no markdown formatting.
         """
         try:
             file_path = pending_firmware.stored_file_path
-            
+
             if not Path(file_path).exists():
                 logger.warning(f"Firmware file not found: {file_path}")
                 return False
-            
+
             # Run analysis
             result = cls.analyze_firmware(file_path)
-            
+
             # Update model fields
             if result.get('chipset'):
                 pending_firmware.ai_chipset = result['chipset']
-            
+
             if result.get('android_version'):
                 pending_firmware.ai_android_version = result['android_version']
-            
+
             if result.get('partitions'):
                 pending_firmware.partitions = result['partitions']
-            
+
             if result.get('firmware_type') and result['firmware_type'] != 'unknown':
                 pending_firmware.ai_firmware_type = result['firmware_type']
-            
+
             # Store full analysis in metadata
             pending_firmware.metadata = pending_firmware.metadata or {}
             pending_firmware.metadata['ai_analysis'] = result
             pending_firmware.metadata['analysis_timestamp'] = str(timezone.now())
-            
+
             # Update AI status based on confidence
             confidence = result.get('confidence', 0.0)
             if confidence >= 0.8:
@@ -288,16 +288,16 @@ Return ONLY valid JSON, no markdown formatting.
                 pending_firmware.ai_status = 'partial'
             else:
                 pending_firmware.ai_status = 'failed'
-            
+
             pending_firmware.save()
-            
+
             logger.info(
                 f"Firmware analysis completed for {pending_firmware.id}: "
                 f"confidence={confidence:.2f}, method={result.get('method')}"
             )
-            
+
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to update pending firmware: {e}", exc_info=True)
             return False
@@ -316,18 +316,17 @@ def analyze_and_update_firmware(pending_firmware_id: int) -> Dict[str, Any]:
         Analysis result dictionary
     """
     from apps.firmwares.models import PendingFirmware
-    from django.utils import timezone
-    
+
     try:
         pf = PendingFirmware.objects.get(id=pending_firmware_id)
         success = FirmwareAIAnalyzer.update_pending_firmware(pf)
-        
+
         return {
             'success': success,
             'firmware_id': str(pf.id),
             'metadata': pf.metadata.get('ai_analysis', {})
         }
-        
+
     except PendingFirmware.DoesNotExist:
         return {
             'success': False,

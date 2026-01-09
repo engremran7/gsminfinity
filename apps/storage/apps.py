@@ -8,5 +8,4 @@ class StorageConfig(AppConfig):
 
     def ready(self):
         # Import signals to register handlers
-        import apps.storage.signals
-        import apps.storage.signal_handlers
+        pass

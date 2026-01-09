@@ -10,10 +10,11 @@ Handles:
 All handlers use async tasks where possible to avoid blocking requests
 """
 
-from django.apps import apps
-from django.dispatch import receiver
-from django.db.models.signals import post_save, post_delete
 import logging
+
+from django.apps import apps
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 
 logger = logging.getLogger(__name__)
 
@@ -28,12 +29,12 @@ except ImportError:
 
 try:
     from apps.core.signals import (
-        firmware_uploaded,
-        firmware_download_requested,
         firmware_download_ready,
+        firmware_download_requested,
+        firmware_uploaded,
         storage_quota_exhausted,
     )
-    
+
     @receiver(firmware_uploaded)
     def handle_firmware_uploaded(sender, storage_location, firmware, **kwargs):
         """
@@ -47,16 +48,16 @@ try:
             if hasattr(firmware, 'is_uploaded'):
                 firmware.is_uploaded = True
                 firmware.save(update_fields=['is_uploaded'])
-            
+
             # Invalidate homepage cache
             from apps.pages.widgets import HomePageWidgetService
             HomePageWidgetService.invalidate_caches(['latest_firmwares'])
-            
+
             logger.info(f"Firmware uploaded: {firmware.id} via storage app")
-            
+
         except Exception as e:
             logger.error(f"Error handling firmware_uploaded signal: {e}")
-    
+
     @receiver(firmware_download_requested)
     def handle_download_requested(sender, user, firmware, **kwargs):
         """
@@ -66,10 +67,11 @@ try:
         """
         try:
             from django.contrib.contenttypes.models import ContentType
+
             from .tasks import log_firmware_download_attempt
-            
+
             content_type = ContentType.objects.get_for_model(firmware)
-            
+
             # Async log to avoid blocking
             log_firmware_download_attempt.delay(
                 firmware_ct_id=content_type.id,
@@ -77,10 +79,10 @@ try:
                 user_id=user.id,
                 status='initiated',
             )
-            
+
         except Exception as e:
             logger.error(f"Error handling download_requested: {e}")
-    
+
     @receiver(firmware_download_ready)
     def handle_download_ready(sender, session, **kwargs):
         """
@@ -92,19 +94,19 @@ try:
             # Update download attempt if storage_session_id was logged
             from django.apps import apps
             FirmwareDownloadAttempt = apps.get_model('firmwares', 'FirmwareDownloadAttempt')
-            
+
             if hasattr(session, 'id'):
                 attempt = FirmwareDownloadAttempt.objects.filter(
                     storage_session_id=session.id
                 ).first()
-                
+
                 if attempt:
                     attempt.status = 'ready'
                     attempt.save(update_fields=['status'])
-            
+
         except Exception as e:
             logger.error(f"Error handling download_ready: {e}")
-    
+
     @receiver(storage_quota_exhausted)
     def handle_storage_quota_exhausted(sender, drive, **kwargs):
         """
@@ -130,7 +132,7 @@ def invalidate_brand_caches(sender, instance, created, **kwargs):
             HomePageWidgetService.invalidate_caches(['latest_firmwares'])
         except Exception as e:
             logger.warning(f"Failed to invalidate caches: {e}")
-        
+
         # Auto-create blog category for brand
         from .blog_automation import FirmwareBlogService
         try:
@@ -170,13 +172,13 @@ def handle_firmware_uploaded_blog(sender, instance, created, **kwargs):
             # Try async via Celery first
             from django.conf import settings
             use_celery = getattr(settings, 'CELERY_BROKER_URL', None) is not None
-            
+
             if use_celery:
                 try:
                     from .tasks import generate_firmware_blog_post
                     generate_firmware_blog_post.delay(model_id=instance.model.id)
                     logger.info(f"Queued blog generation task for {instance.model.name}")
-                    
+
                     # Also notify distribution system async
                     if apps.is_installed('apps.distribution'):
                         from apps.core.signals import content_updated
@@ -189,13 +191,13 @@ def handle_firmware_uploaded_blog(sender, instance, created, **kwargs):
                     return
                 except ImportError:
                     pass  # Fall through to sync
-            
+
             # Fallback: sync blog generation
             from .blog_automation import FirmwareBlogService
             post = FirmwareBlogService.generate_firmware_post(instance.model)
             if post:
                 logger.info(f"Blog post auto-generated for {instance.model.name}: {post.title}")
-                
+
                 # Notify distribution system of new firmware availability
                 if apps.is_installed('apps.distribution'):
                     try:
@@ -208,7 +210,7 @@ def handle_firmware_uploaded_blog(sender, instance, created, **kwargs):
                         )
                     except ImportError:
                         logger.debug("Core signals not available for distribution notification")
-                        
+
         except Exception as e:
             logger.error(f"Failed to generate blog post: {e}")
 
@@ -243,11 +245,11 @@ def handle_pending_firmware_decision(sender, instance, **kwargs):
         # Check if already processed
         if hasattr(instance, '_processed'):
             return
-        
+
         try:
             # Convert to appropriate firmware type based on ai_category
             from django.apps import apps
-            
+
             category_map = {
                 'official': 'OfficialFirmware',
                 'engineering': 'EngineeringFirmware',
@@ -255,10 +257,10 @@ def handle_pending_firmware_decision(sender, instance, **kwargs):
                 'modified': 'ModifiedFirmware',
                 'other': 'OtherFirmware',
             }
-            
+
             target_model_name = category_map.get(instance.ai_category, 'OtherFirmware')
             TargetModel = apps.get_model('firmwares', target_model_name)
-            
+
             # Create new firmware
             firmware = TargetModel.objects.create(
                 original_file_name=instance.original_file_name,
@@ -273,16 +275,16 @@ def handle_pending_firmware_decision(sender, instance, **kwargs):
                 encrypted_password=instance.encrypted_password,
                 metadata=instance.metadata,
             )
-            
+
             # Mark as processed
             instance._processed = True
-            
+
             # Invalidate caches
             from apps.pages.widgets import HomePageWidgetService
             HomePageWidgetService.invalidate_caches(['latest_firmwares'])
-            
+
             logger.info(f"Converted pending firmware {instance.id} to {target_model_name}: {firmware.id}")
-            
+
             # Auto-generate blog post for this model if it has firmwares now
             if firmware.model:
                 from .blog_automation import FirmwareBlogService
@@ -292,7 +294,7 @@ def handle_pending_firmware_decision(sender, instance, **kwargs):
                         logger.info(f"Blog post created for approved firmware: {post.title}")
                 except Exception as e:
                     logger.error(f"Failed to generate blog post for approved firmware: {e}")
-            
+
             # Notify uploader of approval
             if instance.uploader:
                 try:
@@ -307,14 +309,14 @@ def handle_pending_firmware_decision(sender, instance, **kwargs):
                     )
                 except Exception as e:
                     logger.warning(f"Failed to send approval notification: {e}")
-            
+
         except Exception as e:
             logger.error(f"Error converting pending firmware: {e}")
-    
+
     elif instance.admin_decision == 'rejected':
         # Cleanup file and notify uploader
         logger.info(f"Pending firmware rejected: {instance.id}")
-        
+
         # Delete the stored file
         if instance.stored_file_path:
             try:
@@ -324,7 +326,7 @@ def handle_pending_firmware_decision(sender, instance, **kwargs):
                     logger.info(f"Deleted rejected firmware file: {instance.stored_file_path}")
             except Exception as e:
                 logger.error(f"Failed to delete rejected firmware file: {e}")
-        
+
         # Notify uploader of rejection
         if instance.uploader:
             try:
@@ -355,7 +357,7 @@ def handle_firmware_request(sender, instance, created, **kwargs):
         # Invalidate cache
         from apps.pages.widgets import HomePageWidgetService
         HomePageWidgetService.invalidate_caches(['most_requested'])
-        
+
         # If urgent, notify admins
         if instance.urgency >= 3:  # High or Urgent
             logger.warning(

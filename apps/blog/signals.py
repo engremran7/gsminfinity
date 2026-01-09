@@ -66,7 +66,7 @@ def connect_signals():
     from django.conf import settings
     Post = _get_post_model()
     PostStatus = _get_post_status()
-    
+
     @receiver(post_save, sender=Post)
     def post_after_save(sender, instance, created=False, **kwargs):
         _sync_tag_usage(instance)
@@ -74,9 +74,9 @@ def connect_signals():
 
         # Check if notifications are enabled (deferred import)
         from apps.users.services.notifications import notifications_enabled
-        
+
         is_published = instance.status == PostStatus.PUBLISHED
-        
+
         if created and is_published and notifications_enabled():
             try:
                 from apps.blog.tasks import send_post_notifications_batched

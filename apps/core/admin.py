@@ -16,13 +16,12 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Iterable
 
-from django import forms
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
 from apps.core.models import AppRegistry
+
 
 # App registry admin
 @admin.register(AppRegistry)

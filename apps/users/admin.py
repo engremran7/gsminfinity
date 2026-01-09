@@ -23,14 +23,12 @@ while preserving your export features.
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Optional
 
 from django.contrib import admin, messages
 from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -398,12 +396,12 @@ try:
             (_("Profile Completion"), {"fields": ("required_profile_fields",)}),
             (_("Payments"), {"fields": ("enable_payments",)}),
         )
-        
+
         readonly_fields = ("notification_stats",)
 
         def has_add_permission(self, request):
             return False
-        
+
         def notification_stats(self, obj):
             """Display notification system statistics."""
             from django.utils.html import format_html
@@ -412,7 +410,7 @@ try:
                 prefs_count = NotificationPreferences.objects.count()
                 push_count = PushSubscription.objects.filter(is_active=True).count()
                 unread_notifs = Notification.objects.filter(is_read=False).count()
-                
+
                 return format_html(
                     "<strong>System Status:</strong><br/>"
                     "✅ Active Users: {}<br/>"
@@ -464,9 +462,9 @@ class NotificationPreferencesAdmin(BaseAdminClass):
     )
 
     search_fields = ("user__email", "user__username", "user__full_name")
-    
+
     readonly_fields = ("user", "created_at", "updated_at")
-    
+
     fieldsets = (
         (_("User"), {
             "fields": ("user", "created_at", "updated_at")
@@ -509,7 +507,7 @@ class NotificationPreferencesAdmin(BaseAdminClass):
     list_per_page = 50
     date_hierarchy = "updated_at"
     save_on_top = True
-    
+
     actions = [
         "enable_all_email",
         "disable_all_email",
@@ -769,7 +767,7 @@ class PushSubscriptionAdmin(BaseAdminClass):
     list_per_page = 50
     date_hierarchy = "created_at"
     save_on_top = True
-    
+
     actions = [
         "activate_selected",
         "deactivate_selected",
@@ -864,7 +862,7 @@ class PushSubscriptionAdmin(BaseAdminClass):
         """Send a test notification to selected subscriptions."""
         try:
             from apps.users.services.notifications import send_notification
-            
+
             success_count = 0
             for subscription in queryset.filter(is_active=True):
                 try:
@@ -878,7 +876,7 @@ class PushSubscriptionAdmin(BaseAdminClass):
                     success_count += 1
                 except Exception as exc:
                     logger.warning("Failed to send test notification: %s", exc)
-            
+
             self.message_user(
                 request,
                 _("Sent test notifications to %d subscriptions.") % success_count,
@@ -894,14 +892,14 @@ class PushSubscriptionAdmin(BaseAdminClass):
         try:
             from datetime import timedelta
             threshold = timezone.now() - timedelta(days=30)
-            
+
             old_inactive = queryset.filter(
                 is_active=False,
                 last_used_at__lt=threshold
             )
             count = old_inactive.count()
             old_inactive.delete()
-            
+
             self.message_user(
                 request,
                 _("Deleted %d old inactive subscriptions.") % count,
@@ -915,8 +913,8 @@ class PushSubscriptionAdmin(BaseAdminClass):
 # ==============================================================================
 # Social Account Provider Admin (Enhanced)
 # ==============================================================================
-from allauth.socialaccount.models import SocialApp
 from allauth.socialaccount.admin import SocialAppAdmin as BaseSocialAppAdmin
+from allauth.socialaccount.models import SocialApp
 
 # Unregister the default admin
 admin.site.unregister(SocialApp)
@@ -925,12 +923,12 @@ admin.site.unregister(SocialApp)
 @admin.register(SocialApp)
 class EnhancedSocialAppAdmin(BaseSocialAppAdmin):
     """Enhanced admin for social authentication providers with helpful documentation."""
-    
+
     list_display = ("name", "provider", "status_display", "sites_list", "modified_display")
     list_filter = ("provider",)
     search_fields = ("name", "provider", "client_id")
     filter_horizontal = ("sites",)
-    
+
     fieldsets = (
         (None, {
             "fields": ("provider", "name"),
@@ -951,14 +949,14 @@ class EnhancedSocialAppAdmin(BaseSocialAppAdmin):
             "description": "Select which sites this provider is enabled for.",
         }),
     )
-    
+
     def status_display(self, obj):
         """Show if provider has valid-looking credentials."""
         if obj.client_id.startswith("your-") or len(obj.client_id) < 10:
             return "⚠️ Test/Placeholder"
         return "✓ Configured"
     status_display.short_description = "Status"
-    
+
     def sites_list(self, obj):
         """Display associated sites."""
         sites = obj.sites.all()
@@ -966,14 +964,14 @@ class EnhancedSocialAppAdmin(BaseSocialAppAdmin):
             return "❌ No sites"
         return ", ".join(site.domain for site in sites[:3])
     sites_list.short_description = "Sites"
-    
+
     def modified_display(self, obj):
         """Show when last modified."""
         if hasattr(obj, "modified"):
             return obj.modified.strftime("%Y-%m-%d %H:%M")
         return "-"
     modified_display.short_description = "Last Modified"
-    
+
     def get_readonly_fields(self, request, obj=None):
         """Make provider readonly when editing existing apps."""
         if obj:  # editing existing

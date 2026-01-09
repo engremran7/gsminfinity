@@ -3,12 +3,11 @@ Firmware AI Client - Integrates with core AI infrastructure for firmware analysi
 """
 from __future__ import annotations
 
-import logging
 import json
+import logging
 import re
-import os
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 from django.conf import settings
 from django.core.cache import cache
@@ -20,11 +19,11 @@ logger = logging.getLogger(__name__)
 # Try to import core AI client
 try:
     from apps.core.ai_client import (
-        _load_config, 
-        _call_openai_response, 
+        AICircuitBreaker,
         AiClientError,
         AIRateLimiter,
-        AICircuitBreaker
+        _call_openai_response,
+        _load_config,
     )
     AI_AVAILABLE = True
 except ImportError:
@@ -37,13 +36,13 @@ class AIClient:
     Firmware analysis AI client using the core AI infrastructure.
     Provides firmware classification, brand/model detection, and schema proposals.
     """
-    
+
     CATEGORY_NAMES = {k: v for k, v in MAIN_CATEGORIES}
-    
+
     def __init__(self):
         self.rate_limiter = AIRateLimiter(requests_per_minute=30) if AI_AVAILABLE else None
         self.circuit_breaker = AICircuitBreaker(failure_threshold=3, recovery_timeout=180) if AI_AVAILABLE else None
-    
+
     def analyze_firmware(self, file_path: str, password: str | None = None) -> dict:
         """
         Analyze a firmware file to extract metadata and classify it.
@@ -65,22 +64,22 @@ class AIClient:
             "partitions": [],
             "metadata": {},
         }
-        
+
         if not file_path or not Path(file_path).exists():
             logger.warning(f"Firmware file not found: {file_path}")
             return default_result
-        
+
         filename = Path(file_path).name
         file_size = Path(file_path).stat().st_size if Path(file_path).exists() else 0
-        
+
         # Try pattern-based analysis first (fast, no API call)
         pattern_result = self._analyze_by_patterns(filename)
-        
+
         # If we got high confidence from patterns, return early
         if pattern_result.get("confidence", 0) >= 0.8:
             logger.info(f"Pattern-based analysis sufficient for: {filename}")
             return {**default_result, **pattern_result, "metadata": {"source": "pattern_analysis"}}
-        
+
         # Use AI for deeper analysis if available and enabled
         if AI_AVAILABLE and getattr(settings, 'AI_OPENAI_API_KEY', None):
             try:
@@ -92,14 +91,14 @@ class AIClient:
                 logger.warning(f"AI analysis failed, using pattern results: {e}")
             except Exception as e:
                 logger.error(f"Unexpected error in AI analysis: {e}")
-        
+
         return {**default_result, **pattern_result, "metadata": {"source": "pattern_analysis"}}
-    
+
     def _analyze_by_patterns(self, filename: str) -> dict:
         """Pattern-based firmware analysis for common naming conventions."""
         result = {"confidence": 0.0}
         filename_lower = filename.lower()
-        
+
         # Brand detection patterns
         brand_patterns = {
             "samsung": [r"sm[-_]?[a-z]\d{3}", r"samsung", r"galaxy"],
@@ -120,7 +119,7 @@ class AIClient:
             "infinix": [r"infinix", r"hot[-_]?\d", r"note[-_]?\d"],
             "itel": [r"itel"],
         }
-        
+
         for brand, patterns in brand_patterns.items():
             for pattern in patterns:
                 if re.search(pattern, filename_lower):
@@ -129,7 +128,7 @@ class AIClient:
                     break
             if "brand" in result:
                 break
-        
+
         # Model detection from common patterns
         model_patterns = [
             r"(sm[-_]?[a-z]\d{3}[a-z]?)",  # Samsung SM-XXXX
@@ -140,14 +139,14 @@ class AIClient:
             r"(v\d{4})",                     # Vivo
             r"(kb\d{4})",                    # Various
         ]
-        
+
         for pattern in model_patterns:
             match = re.search(pattern, filename_lower)
             if match:
                 result["model"] = match.group(1).upper()
                 result["confidence"] = max(result["confidence"], 0.6)
                 break
-        
+
         # Category detection
         if any(kw in filename_lower for kw in ["official", "stock", "full_ota", "baseband"]):
             result["category"] = "official"
@@ -166,7 +165,7 @@ class AIClient:
                 if subtype.replace("_", "") in filename_lower or subtype in filename_lower:
                     result["subtype"] = subtype
                     break
-        
+
         # Chipset detection
         chipset_patterns = {
             "mediatek": [r"mt\d{4}", r"helio", r"mediatek"],
@@ -176,7 +175,7 @@ class AIClient:
             "unisoc": [r"unisoc", r"sc\d{4}", r"spreadtrum"],
             "apple": [r"a\d{2}[-_]?bionic", r"m\d[-_]?chip"],
         }
-        
+
         for chipset, patterns in chipset_patterns.items():
             for pattern in patterns:
                 if re.search(pattern, filename_lower):
@@ -185,34 +184,34 @@ class AIClient:
                     break
             if "chipset" in result:
                 break
-        
+
         # Partition detection from filename
         partition_keywords = ["boot", "recovery", "system", "vendor", "super", "preloader", "lk", "logo", "modem", "tz", "sbl", "abl", "dtbo", "vbmeta"]
         found_partitions = [p for p in partition_keywords if p in filename_lower]
         if found_partitions:
             result["partitions"] = found_partitions
-        
+
         return result
-    
+
     def _analyze_with_ai(self, filename: str, file_size: int, password: Optional[str] = None) -> Optional[dict]:
         """Use AI for advanced firmware analysis."""
         if not AI_AVAILABLE:
             return None
-        
+
         # Check cache first
         cache_key = f"firmware_ai_analysis:{hash(filename):x}"
         cached = cache.get(cache_key)
         if cached:
             return cached
-        
+
         # Rate limiting
         if self.rate_limiter and not self.rate_limiter.is_allowed():
             logger.warning("Firmware AI analysis rate limited")
             return None
-        
+
         try:
             config = _load_config()
-            
+
             system_prompt = """You are a firmware analysis expert. Analyze the filename and determine:
 1. Brand (e.g., Samsung, Xiaomi, OPPO)
 2. Model (e.g., SM-A525F, Redmi Note 10)
@@ -232,7 +231,7 @@ Return JSON with: brand, model, variant, category, subtype, chipset"""
 
             with self.circuit_breaker:
                 response = _call_openai_response(config, system_prompt, user_prompt)
-                
+
                 # Parse JSON response
                 try:
                     # Extract JSON from response (handle markdown code blocks)
@@ -248,24 +247,24 @@ Return JSON with: brand, model, variant, category, subtype, chipset"""
                             "subtype": str(result.get("subtype", "")).lower() if result.get("subtype") else None,
                             "chipset": str(result.get("chipset", "")).strip(),
                         }
-                        
+
                         # Validate category
                         if normalized["category"] not in [k for k, _ in MAIN_CATEGORIES]:
                             normalized["category"] = None
-                        
+
                         # Cache successful result
                         cache.set(cache_key, normalized, timeout=86400)  # 24 hours
                         return normalized
                 except json.JSONDecodeError:
                     logger.warning(f"Failed to parse AI response as JSON: {response[:200]}")
-                    
+
         except AiClientError as e:
             logger.warning(f"AI client error: {e}")
         except Exception as e:
             logger.error(f"Unexpected error in firmware AI analysis: {e}")
-        
+
         return None
-    
+
     def propose_schema(self, brand_name: str, context: dict | None = None) -> dict:
         """
         Propose a firmware schema for a brand based on AI analysis.
@@ -288,20 +287,20 @@ Return JSON with: brand, model, variant, category, subtype, chipset"""
             "board_id_patterns": [],
             "flash_formats": [],
         }
-        
+
         if not AI_AVAILABLE or not getattr(settings, 'AI_OPENAI_API_KEY', None):
             # Return heuristic-based schema for known brands
             return self._get_heuristic_schema(brand_name)
-        
+
         # Check cache
         cache_key = f"firmware_schema:{brand_name.lower()}"
         cached = cache.get(cache_key)
         if cached:
             return cached
-        
+
         try:
             config = _load_config()
-            
+
             system_prompt = """You are a mobile device firmware expert. Generate a firmware schema for the given brand.
 Include: chipset patterns, naming conventions, region codes, flash formats, etc.
 Respond in JSON format only."""
@@ -316,7 +315,7 @@ Return JSON with: chipset_patterns, naming_patterns, variant_rules, region_codes
 
             with self.circuit_breaker:
                 response = _call_openai_response(config, system_prompt, user_prompt)
-                
+
                 try:
                     json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response, re.DOTALL)
                     if json_match:
@@ -326,16 +325,16 @@ Return JSON with: chipset_patterns, naming_patterns, variant_rules, region_codes
                         return merged
                 except json.JSONDecodeError:
                     logger.warning(f"Failed to parse schema response: {response[:200]}")
-                    
+
         except Exception as e:
             logger.error(f"Error proposing schema: {e}")
-        
+
         return self._get_heuristic_schema(brand_name)
-    
+
     def _get_heuristic_schema(self, brand_name: str) -> dict:
         """Get pre-defined schema patterns for known brands."""
         brand_lower = brand_name.lower()
-        
+
         schemas = {
             "samsung": {
                 "chipset_patterns": ["exynos", "snapdragon", "mediatek"],
@@ -356,7 +355,7 @@ Return JSON with: chipset_patterns, naming_patterns, variant_rules, region_codes
                 "flash_formats": ["ofp", "scatter"],
             },
         }
-        
+
         base_schema = {
             "chipset_patterns": [],
             "naming_patterns": [],
@@ -368,5 +367,5 @@ Return JSON with: chipset_patterns, naming_patterns, variant_rules, region_codes
             "board_id_patterns": [],
             "flash_formats": [],
         }
-        
+
         return {**base_schema, **schemas.get(brand_lower, {})}

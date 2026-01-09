@@ -5,9 +5,8 @@ import logging
 from dataclasses import dataclass
 from typing import Protocol
 
-from apps.distribution.models import ShareJob, ShareLog
 from apps.distribution.api import get_settings
-from apps.distribution.models import SocialAccount
+from apps.distribution.models import ShareJob, ShareLog, SocialAccount
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +61,7 @@ def connector_for(channel: str) -> Connector:
     """
     Returns the connector implementation for a channel; falls back to StubConnector.
     """
-    from . import social, messaging, email, dev, search, feeds
+    from . import dev, email, feeds, messaging, search, social
 
     mapping = {
         "twitter": social.TwitterConnector(),

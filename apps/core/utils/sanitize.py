@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from django.utils.text import slugify as django_slugify
 
@@ -46,22 +47,22 @@ def sanitize_html(
         "h5",
         "iframe",
     ])
-    
+
     # Convert attrs to nh3 format (dict of sets)
     raw_attrs = allowed_attrs or {
         "a": ["href", "title", "rel", "target"],
         "iframe": ["src", "width", "height", "frameborder", "allow", "allowfullscreen", "class", "title"],
     }
     attrs = {k: set(v) for k, v in raw_attrs.items()}
-    
+
     cleaned = nh3.clean(
-        html, 
-        tags=tags, 
-        attributes=attrs, 
-        strip_comments=True, 
+        html,
+        tags=tags,
+        attributes=attrs,
+        strip_comments=True,
         url_schemes={"http", "https", "mailto"}
     )
-    
+
     # Drop iframes not on the allowed prefix list
     result = cleaned
     if "iframe" in tags:

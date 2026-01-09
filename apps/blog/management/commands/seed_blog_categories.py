@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, List, Tuple
+from collections.abc import Iterable
+from typing import Any, List, Tuple
 
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
 
 from apps.blog.models import Category
-
 
 DEFAULT_CATEGORIES: List[Tuple[str, Iterable[str]]] = [
     ("AI", ["Safety", "Productivity", "Tools"]),

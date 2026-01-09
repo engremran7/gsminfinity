@@ -3,11 +3,13 @@ Signal handlers for users app
 Responds to notification signals without creating circular dependencies.
 """
 import logging
+
 from django.dispatch import receiver
+
 from apps.core.signals import (
     notification_send_requested,
+    user_login_success,
     user_registered,
-    user_login_success
 )
 
 logger = logging.getLogger(__name__)
@@ -17,8 +19,8 @@ logger = logging.getLogger(__name__)
 def send_notifications(sender, user_ids, title, message, notification_type='info', **kwargs):
     """Handle notification send requests from other apps"""
     try:
-        from apps.users.models import Notification, CustomUser
-        
+        from apps.users.models import CustomUser, Notification
+
         users = CustomUser.objects.filter(id__in=user_ids)
         notifications = [
             Notification(
@@ -29,7 +31,7 @@ def send_notifications(sender, user_ids, title, message, notification_type='info
             )
             for user in users
         ]
-        
+
         created = Notification.objects.bulk_create(notifications)
         logger.info(f"Sent {len(created)} notifications")
         return len(created)
@@ -43,7 +45,7 @@ def send_welcome_notification(sender, user, request, **kwargs):
     """Send welcome notification when user registers"""
     try:
         from apps.users.models import Notification
-        
+
         Notification.objects.create(
             recipient=user,
             title="Welcome!",
@@ -60,7 +62,7 @@ def track_login(sender, user, request, **kwargs):
     """Track successful login"""
     try:
         from django.core.cache import cache
-        
+
         cache_key = f'user_last_login_{user.pk}'
         cache.set(cache_key, user.last_login, 3600)
         logger.debug(f"Tracked login for user: {user.pk}")

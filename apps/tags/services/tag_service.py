@@ -4,30 +4,29 @@ Handles all tag operations with AI suggestions, trending, analytics, and relatio
 """
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Any, Tuple
-from django.db import transaction, models
-from django.db.models import F, Q, Count, Avg, Max, Sum
-from django.contrib.contenttypes.models import ContentType
+import logging
+import re
+from datetime import timedelta
+from typing import Any, Dict, List, Optional, Tuple
+
+from django.core.cache import cache
+from django.db import transaction
+from django.db.models import Count, F, Max
 from django.utils import timezone
 from django.utils.text import slugify
-from django.core.cache import cache
-from django.conf import settings
-import re
-import logging
-from collections import Counter
-from datetime import timedelta
 
-from apps.tags.models import Tag
+from apps.core import ai
+from apps.core.events import event_bus
+
 # ARCHIVED: Enhanced models moved to apps/core/versions/
 # from apps.tags.models_enhanced import (
 #     TagCategory, TagRelationship, TagTrending, TagAnalytics,
 #     TagSubscription, TagSuggestion, TagBlacklist, TagMerge,
 #     TagCollection, TagAlias
 # )
-from apps.core.infrastructure import QueueService, EmailService
-from apps.core.events import event_bus, EventTypes
+from apps.core.infrastructure import EmailService, QueueService
 from apps.core.metrics import metrics
-from apps.core import ai
+from apps.tags.models import Tag
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +36,13 @@ class TagService:
     Centralized service for all tag operations.
     Provides enterprise-grade tagging with AI, analytics, and relationships.
     """
-    
+
     def __init__(self):
         self.queue = QueueService()
         self.email = EmailService()
-    
+
     # ==================== CRUD Operations ====================
-    
+
     @transaction.atomic
     def create_tag(
         self,
@@ -69,20 +68,20 @@ class TagService:
             Created Tag instance
         """
         metrics.increment("tag.create")
-        
+
         # Normalize name
         normalized = name.strip().lower()
-        
+
         # Check blacklist
         if self._is_blacklisted(normalized):
             raise ValueError(f"Tag name '{name}' is blacklisted")
-        
+
         # Check for alias
         alias = TagAlias.objects.filter(alias=normalized).first()
         if alias:
             logger.info(f"Tag name '{name}' is an alias for {alias.canonical_tag}")
             return alias.canonical_tag
-        
+
         # Create tag
         tag = Tag.objects.create(
             name=name.strip(),
@@ -92,23 +91,23 @@ class TagService:
             parent=parent,
             is_curated=is_curated
         )
-        
+
         # Create analytics
         TagAnalytics.objects.create(
             tag=tag,
             first_used=timezone.now()
         )
-        
+
         # Publish event
         event_bus.publish("tag.created", {
             "tag_id": tag.id,
             "name": tag.name,
             "created_by": created_by.id if created_by else None
         })
-        
+
         logger.info(f"Tag '{name}' created (ID: {tag.id})")
         return tag
-    
+
     @transaction.atomic
     def update_tag(
         self,
@@ -120,23 +119,23 @@ class TagService:
     ) -> Tag:
         """Update tag properties."""
         metrics.increment("tag.update")
-        
+
         if name:
             tag.name = name.strip()
             tag.normalized_name = name.strip().lower()
             tag.slug = slugify(tag.normalized_name)
-        
+
         if description is not None:
             tag.description = description
-        
+
         if is_curated is not None:
             tag.is_curated = is_curated
-        
+
         tag.save()
-        
+
         logger.info(f"Tag {tag.id} updated")
         return tag
-    
+
     @transaction.atomic
     def merge_tags(
         self,
@@ -150,12 +149,12 @@ class TagService:
         Migrates all tagged items and creates redirect.
         """
         metrics.increment("tag.merge")
-        
+
         # Get all items tagged with source
         from apps.tags.models_tagged_item import TaggedItem
         items = TaggedItem.objects.filter(tag=source_tag)
         items_count = items.count()
-        
+
         # Migrate to target tag
         migrated = 0
         for item in items:
@@ -165,23 +164,23 @@ class TagService:
                 content_type=item.content_type,
                 object_id=item.object_id
             ).exists()
-            
+
             if not exists:
                 item.tag = target_tag
                 item.save()
                 migrated += 1
             else:
                 item.delete()  # Remove duplicate
-        
+
         # Update usage counts
         target_tag.usage_count = F("usage_count") + migrated
         target_tag.save(update_fields=["usage_count"])
-        
+
         # Mark source as merged
         source_tag.merge_into = target_tag
         source_tag.is_active = False
         source_tag.save(update_fields=["merge_into", "is_active"])
-        
+
         # Create merge record
         merge = TagMerge.objects.create(
             source_tag_name=source_tag.name,
@@ -190,12 +189,12 @@ class TagService:
             reason=reason,
             items_migrated=migrated
         )
-        
+
         logger.info(f"Merged tag '{source_tag.name}' into '{target_tag.name}' ({migrated} items)")
         return merge
-    
+
     # ==================== AI Suggestions ====================
-    
+
     def suggest_tags_for_content(
         self,
         content: str,
@@ -210,14 +209,14 @@ class TagService:
             List of dicts with 'name', 'confidence', 'rationale'
         """
         metrics.increment("tag.ai_suggest")
-        
+
         # Check cache
         import hashlib
         cache_key = f"tag_suggestions:{hashlib.md5((content + title).encode()).hexdigest()[:16]}"
         cached = cache.get(cache_key)
         if cached:
             return cached
-        
+
         # Prepare prompt
         existing_str = ", ".join(existing_tags) if existing_tags else "none"
         prompt = f"""Suggest relevant tags for the following content.
@@ -242,7 +241,7 @@ For each tag, provide:
 
 Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
 """
-        
+
         try:
             # Create a system user for AI calls (or use anonymous)
             from django.contrib.auth import get_user_model
@@ -254,13 +253,13 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             except:
                 # AI client not available
                 return []
-            
+
             if not system_user:
                 return []
-            
+
             # Use AI client for text generation
             response = ai.generate_text(prompt, max_tokens=500)
-            
+
             # Parse response
             import json
             # Extract JSON from response (handles markdown code blocks)
@@ -269,7 +268,7 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
                 suggestions = json.loads(json_match.group(0))
             else:
                 suggestions = []
-            
+
             # Validate and normalize
             validated = []
             for sug in suggestions:
@@ -279,17 +278,17 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
                         "confidence": float(sug.get("confidence", 0.5)),
                         "rationale": sug.get("rationale", "")
                     })
-            
+
             # Cache results
             cache.set(cache_key, validated, timeout=3600)  # 1 hour
-            
+
             logger.info(f"AI suggested {len(validated)} tags")
             return validated
-            
+
         except Exception as e:
             logger.error(f"AI tag suggestion failed: {e}")
             return []
-    
+
     @transaction.atomic
     def create_tag_suggestion(
         self,
@@ -303,12 +302,12 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
         Create tag suggestion for review.
         """
         normalized = suggested_name.strip().lower()
-        
+
         # Check if tag already exists
         existing = Tag.objects.filter(normalized_name=normalized).first()
         if existing:
             raise ValueError(f"Tag '{suggested_name}' already exists")
-        
+
         suggestion = TagSuggestion.objects.create(
             suggested_name=suggested_name.strip(),
             normalized_name=normalized,
@@ -318,10 +317,10 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             ai_confidence=ai_confidence,
             status=TagSuggestion.Status.PENDING
         )
-        
+
         logger.info(f"Tag suggestion created: '{suggested_name}' by {suggested_by}")
         return suggestion
-    
+
     @transaction.atomic
     def approve_tag_suggestion(
         self,
@@ -337,24 +336,24 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             created_by=suggestion.suggested_by,
             is_curated=True
         )
-        
+
         suggestion.status = TagSuggestion.Status.APPROVED
         suggestion.reviewed_by = reviewed_by
         suggestion.reviewed_at = timezone.now()
         suggestion.created_tag = tag
         suggestion.save()
-        
+
         # Notify suggester
         self.queue.enqueue(
             "apps.tags.tasks.notify_suggestion_approved",
             suggestion_id=suggestion.id
         )
-        
+
         logger.info(f"Tag suggestion approved: '{suggestion.suggested_name}'")
         return tag
-    
+
     # ==================== Relationships ====================
-    
+
     @transaction.atomic
     def create_relationship(
         self,
@@ -376,14 +375,14 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
                 "created_by": created_by
             }
         )
-        
+
         if not created:
             relationship.strength = strength
             relationship.save(update_fields=["strength"])
-        
+
         logger.info(f"Created relationship: {from_tag} → {relationship_type} → {to_tag}")
         return relationship
-    
+
     def get_related_tags(
         self,
         tag: Tag,
@@ -398,14 +397,14 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             from_tag=tag,
             strength__gte=min_strength
         ).select_related("to_tag")
-        
+
         if relationship_type:
             qs = qs.filter(relationship_type=relationship_type)
-        
+
         qs = qs.order_by("-strength", "-to_tag__usage_count")[:limit]
-        
+
         return [rel.to_tag for rel in qs]
-    
+
     def discover_related_tags(
         self,
         tag: Tag,
@@ -416,12 +415,12 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
         Returns list of (tag, co_occurrence_count) tuples.
         """
         from apps.tags.models_tagged_item import TaggedItem
-        
+
         # Get all items tagged with this tag
         tagged_items = TaggedItem.objects.filter(tag=tag).values(
             "content_type_id", "object_id"
         )
-        
+
         # Find tags that appear on same items
         related = TaggedItem.objects.filter(
             content_type_id__in=[item["content_type_id"] for item in tagged_items],
@@ -433,21 +432,21 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
         ).filter(
             count__gte=min_co_occurrence
         ).order_by("-count")[:20]
-        
+
         # Get tag objects
         tag_ids = [r["tag"] for r in related]
         tags = {t.id: t for t in Tag.objects.filter(id__in=tag_ids)}
-        
+
         result = [
             (tags[r["tag"]], r["count"])
             for r in related
             if r["tag"] in tags
         ]
-        
+
         return result
-    
+
     # ==================== Trending ====================
-    
+
     @transaction.atomic
     def update_trending_tags(self, period: str = "daily"):
         """
@@ -455,7 +454,7 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
         Run as periodic task.
         """
         metrics.increment(f"tag.trending.update.{period}")
-        
+
         # Define time windows
         period_map = {
             "hourly": timedelta(hours=1),
@@ -463,13 +462,13 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             "weekly": timedelta(days=7),
             "monthly": timedelta(days=30)
         }
-        
+
         if period not in period_map:
             raise ValueError(f"Invalid period: {period}")
-        
+
         now = timezone.now()
         start_time = now - period_map[period]
-        
+
         # Get tag usage in period
         from apps.tags.models_tagged_item import TaggedItem
         usage = TaggedItem.objects.filter(
@@ -477,7 +476,7 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
         ).values("tag").annotate(
             count=Count("id")
         ).order_by("-count")[:100]
-        
+
         # Calculate previous period for growth rate
         prev_start = start_time - period_map[period]
         prev_usage = {
@@ -487,22 +486,22 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
                 created_at__lt=start_time
             ).values("tag").annotate(count=Count("id"))
         }
-        
+
         # Update trending records
         for rank, item in enumerate(usage, start=1):
             tag_id = item["tag"]
             current_count = item["count"]
             prev_count = prev_usage.get(tag_id, 0)
-            
+
             # Calculate growth rate
             if prev_count > 0:
                 growth_rate = ((current_count - prev_count) / prev_count) * 100
             else:
                 growth_rate = 100.0 if current_count > 0 else 0.0
-            
+
             # Calculate trending score (combines usage + growth)
             trending_score = current_count * (1 + growth_rate / 100)
-            
+
             # Update or create
             TagTrending.objects.update_or_create(
                 tag_id=tag_id,
@@ -515,9 +514,9 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
                     "calculated_at": now
                 }
             )
-        
+
         logger.info(f"Updated {len(usage)} trending tags for period '{period}'")
-    
+
     def get_trending_tags(
         self,
         period: str = "daily",
@@ -530,18 +529,18 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
         cached = cache.get(cache_key)
         if cached:
             return cached
-        
+
         trending = TagTrending.objects.filter(
             period=period
         ).select_related("tag").order_by("rank")[:limit]
-        
+
         tags = [t.tag for t in trending]
-        
+
         cache.set(cache_key, tags, timeout=300)  # 5 minutes
         return tags
-    
+
     # ==================== Analytics ====================
-    
+
     @transaction.atomic
     def update_tag_analytics(self, tag_id: int):
         """
@@ -552,25 +551,25 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             tag = Tag.objects.get(id=tag_id)
         except Tag.DoesNotExist:
             return
-        
+
         analytics, _ = TagAnalytics.objects.get_or_create(tag=tag)
-        
+
         # Get usage data
         from apps.tags.models_tagged_item import TaggedItem
         items = TaggedItem.objects.filter(tag=tag)
-        
+
         analytics.total_usage = items.count()
         analytics.last_used = items.aggregate(Max("created_at"))["created_at__max"]
-        
+
         # Update tag usage_count
         tag.usage_count = analytics.total_usage
         tag.save(update_fields=["usage_count"])
-        
+
         # Calculate growth rates
         now = timezone.now()
         week_ago = now - timedelta(days=7)
         month_ago = now - timedelta(days=30)
-        
+
         usage_7d = items.filter(created_at__gte=week_ago).count()
         usage_30d = items.filter(created_at__gte=month_ago).count()
         usage_prev_7d = items.filter(
@@ -581,22 +580,22 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             created_at__gte=month_ago - timedelta(days=30),
             created_at__lt=month_ago
         ).count()
-        
+
         # Calculate growth rates
         if usage_prev_7d > 0:
             analytics.growth_rate_7d = ((usage_7d - usage_prev_7d) / usage_prev_7d) * 100
         else:
             analytics.growth_rate_7d = 0.0
-        
+
         if usage_prev_30d > 0:
             analytics.growth_rate_30d = ((usage_30d - usage_prev_30d) / usage_prev_30d) * 100
         else:
             analytics.growth_rate_30d = 0.0
-        
+
         analytics.save()
-        
+
         logger.debug(f"Updated analytics for tag {tag_id}")
-    
+
     def get_tag_stats(self, tag: Tag) -> Dict[str, Any]:
         """
         Get comprehensive statistics for tag.
@@ -605,9 +604,9 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             analytics = tag.analytics
         except TagAnalytics.DoesNotExist:
             analytics = TagAnalytics.objects.create(tag=tag)
-        
+
         from apps.tags.models_tagged_item import TaggedItem
-        
+
         # Recent usage
         now = timezone.now()
         usage_24h = TaggedItem.objects.filter(
@@ -618,15 +617,15 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             tag=tag,
             created_at__gte=now - timedelta(days=7)
         ).count()
-        
+
         # Related tags
         related = self.get_related_tags(tag, limit=5)
-        
+
         # Trending data
         trending = TagTrending.objects.filter(tag=tag).values(
             "period", "rank", "trending_score"
         )
-        
+
         return {
             "total_usage": analytics.total_usage,
             "usage_24h": usage_24h,
@@ -639,9 +638,9 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             "related_tags": [{"name": t.name, "slug": t.slug} for t in related],
             "trending": list(trending)
         }
-    
+
     # ==================== Subscriptions ====================
-    
+
     @transaction.atomic
     def subscribe_to_tag(
         self,
@@ -660,10 +659,10 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
                 "is_active": True
             }
         )
-        
+
         logger.info(f"User {user.id} subscribed to tag '{tag.name}'")
         return subscription
-    
+
     @transaction.atomic
     def unsubscribe_from_tag(self, tag: Tag, user: Any) -> bool:
         """
@@ -673,15 +672,15 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             tag=tag,
             user=user
         ).delete()
-        
+
         return deleted_count > 0
-    
+
     # ==================== Utilities ====================
-    
+
     def _is_blacklisted(self, normalized_name: str) -> bool:
         """Check if tag name is blacklisted."""
         blacklist = TagBlacklist.objects.filter(is_active=True)
-        
+
         for item in blacklist:
             if item.is_regex:
                 if re.match(item.pattern, normalized_name):
@@ -689,9 +688,9 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             else:
                 if item.pattern == normalized_name:
                     return True
-        
+
         return False
-    
+
     def normalize_tag_name(self, name: str) -> str:
         """Normalize tag name for consistency."""
         # Remove extra whitespace
@@ -703,7 +702,7 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
         # Limit length
         normalized = normalized[:64]
         return normalized
-    
+
     def auto_tag_content(
         self,
         content_object: Any,
@@ -721,13 +720,13 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
             title=title,
             max_suggestions=max_tags * 2  # Get extras to filter
         )
-        
+
         # Filter by confidence
         filtered = [
             s for s in suggestions
             if s["confidence"] >= min_confidence
         ][:max_tags]
-        
+
         # Get or create tags
         tags = []
         for sug in filtered:
@@ -740,6 +739,6 @@ Format as JSON array: [{{"name": "...", "confidence": 0.9, "rationale": "..."}}]
                 }
             )
             tags.append(tag)
-        
+
         logger.info(f"Auto-tagged content with {len(tags)} tags")
         return tags

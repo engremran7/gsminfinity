@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+import io
+import logging
+import time
+from pathlib import Path
+
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload
 from googleapiclient.errors import HttpError
-from pathlib import Path
-import io
-import time
-from django.conf import settings
-from django.utils import timezone
-from ..models import ServiceAccount, SharedDriveAccount
-import logging
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+
+from ..models import ServiceAccount
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +20,15 @@ class GoogleDriveService:
     Google Drive API operations for firmware storage
     Handles uploads, downloads, copies, and folder management
     """
-    
+
     SCOPES = ['https://www.googleapis.com/auth/drive']
     CHUNK_SIZE = 10 * 1024 * 1024  # 10MB chunks for resumable uploads
-    
+
     def __init__(self, service_account_obj: ServiceAccount):
         self.service_account = service_account_obj
         self.shared_drive = service_account_obj.shared_drive
         self.service = self._build_service()
-    
+
     def _build_service(self):
         """Build Google Drive API client"""
         try:
@@ -40,7 +40,7 @@ class GoogleDriveService:
         except Exception as e:
             logger.error(f"Failed to build Drive service for {self.service_account.name}: {e}")
             raise
-    
+
     def upload_to_shared_drive(
         self,
         local_path: str,
@@ -61,34 +61,34 @@ class GoogleDriveService:
             dict with file_id, name, size, md5
         """
         start_time = time.time()
-        
+
         try:
             file_metadata = {
                 'name': file_name or Path(local_path).name,
                 'parents': [folder_id] if folder_id else [self.shared_drive.drive_id],
                 'driveId': self.shared_drive.drive_id
             }
-            
+
             media = MediaFileUpload(
                 local_path,
                 mimetype=mime_type,
                 resumable=True,
                 chunksize=self.CHUNK_SIZE
             )
-            
+
             file = self.service.files().create(
                 body=file_metadata,
                 media_body=media,
                 supportsAllDrives=True,
                 fields='id, name, size, md5Checksum, createdTime'
             ).execute()
-            
+
             # Calculate transfer stats
             duration = time.time() - start_time
             file_size_bytes = int(file.get('size', 0))
             file_size_gb = file_size_bytes / (1024 ** 3)
             speed_mbps = (file_size_bytes * 8 / duration / 1_000_000) if duration > 0 else 0
-            
+
             # Update service account stats (will be done by caller)
             result = {
                 'file_id': file['id'],
@@ -99,20 +99,20 @@ class GoogleDriveService:
                 'created_time': file.get('createdTime'),
                 'speed_mbps': speed_mbps
             }
-            
+
             logger.info(
                 f"Uploaded {file['name']} ({file_size_gb:.2f}GB) to {self.shared_drive.name} "
                 f"in {duration:.1f}s ({speed_mbps:.1f} Mbps)"
             )
-            
+
             return result
-            
+
         except HttpError as e:
             logger.error(f"Upload failed: {e}")
             self.service_account.consecutive_failures += 1
             self.service_account.save(update_fields=['consecutive_failures'])
             raise
-    
+
     def copy_to_user_drive(
         self,
         source_file_id: str,
@@ -131,47 +131,47 @@ class GoogleDriveService:
             dict with file_id, download_link, size
         """
         start_time = time.time()
-        
+
         try:
             # Copy file
             file_metadata = {
                 'name': f"[GsmInfinity] {file_name}",
                 'description': f'Temporary firmware download. Link expires in 24 hours.'
             }
-            
+
             copied_file = self.service.files().copy(
                 fileId=source_file_id,
                 body=file_metadata,
                 supportsAllDrives=True,
                 fields='id, name, size, webViewLink, webContentLink'
             ).execute()
-            
+
             # Share with user
             permission = {
                 'type': 'user',
                 'role': 'reader',
                 'emailAddress': user_email
             }
-            
+
             self.service.permissions().create(
                 fileId=copied_file['id'],
                 body=permission,
                 sendNotificationEmail=False,
                 supportsAllDrives=True
             ).execute()
-            
+
             # Get download link
             link_file = self.service.files().get(
                 fileId=copied_file['id'],
                 fields='webContentLink',
                 supportsAllDrives=True
             ).execute()
-            
+
             # Calculate stats
             duration = time.time() - start_time
             file_size_bytes = int(copied_file.get('size', 0))
             file_size_gb = file_size_bytes / (1024 ** 3)
-            
+
             result = {
                 'file_id': copied_file['id'],
                 'download_link': link_file.get('webContentLink'),
@@ -179,19 +179,19 @@ class GoogleDriveService:
                 'size': file_size_bytes,
                 'size_gb': file_size_gb
             }
-            
+
             logger.info(
                 f"Copied {file_name} to user {user_email} in {duration:.1f}s"
             )
-            
+
             return result
-            
+
         except HttpError as e:
             logger.error(f"Copy to user drive failed: {e}")
             self.service_account.consecutive_failures += 1
             self.service_account.save(update_fields=['consecutive_failures'])
             raise
-    
+
     def delete_file(self, file_id: str) -> bool:
         """
         Delete file from drive
@@ -207,18 +207,18 @@ class GoogleDriveService:
                 fileId=file_id,
                 supportsAllDrives=True
             ).execute()
-            
+
             logger.info(f"Deleted file {file_id}")
             return True
-            
+
         except HttpError as e:
             if e.resp.status == 404:
                 logger.warning(f"File {file_id} not found (already deleted?)")
                 return True
-            
+
             logger.error(f"Delete failed for {file_id}: {e}")
             raise
-    
+
     def get_file_info(self, file_id: str) -> dict | None:
         """
         Get file metadata
@@ -235,17 +235,17 @@ class GoogleDriveService:
                 fields='id, name, size, md5Checksum, createdTime, modifiedTime, parents',
                 supportsAllDrives=True
             ).execute()
-            
+
             return file
-            
+
         except HttpError as e:
             if e.resp.status == 404:
                 logger.warning(f"File {file_id} not found")
                 return None
-            
+
             logger.error(f"Get file info failed for {file_id}: {e}")
             raise
-    
+
     def create_folder(
         self,
         folder_name: str,
@@ -268,20 +268,20 @@ class GoogleDriveService:
                 'parents': [parent_folder_id] if parent_folder_id else [self.shared_drive.drive_id],
                 'driveId': self.shared_drive.drive_id
             }
-            
+
             folder = self.service.files().create(
                 body=file_metadata,
                 supportsAllDrives=True,
                 fields='id, name'
             ).execute()
-            
+
             logger.info(f"Created folder '{folder_name}' in {self.shared_drive.name}")
             return folder['id']
-            
+
         except HttpError as e:
             logger.error(f"Create folder failed: {e}")
             raise
-    
+
     def list_files_in_folder(
         self,
         folder_id: str,
@@ -299,7 +299,7 @@ class GoogleDriveService:
         """
         try:
             query = f"'{folder_id}' in parents and trashed = false"
-            
+
             results = self.service.files().list(
                 q=query,
                 pageSize=page_size,
@@ -309,13 +309,13 @@ class GoogleDriveService:
                 corpora='drive',
                 driveId=self.shared_drive.drive_id
             ).execute()
-            
+
             return results.get('files', [])
-            
+
         except HttpError as e:
             logger.error(f"List files failed: {e}")
             raise
-    
+
     def move_file(
         self,
         file_id: str,
@@ -338,9 +338,9 @@ class GoogleDriveService:
                 fields='parents',
                 supportsAllDrives=True
             ).execute()
-            
+
             previous_parents = ','.join(file.get('parents', []))
-            
+
             # Move file
             self.service.files().update(
                 fileId=file_id,
@@ -348,14 +348,14 @@ class GoogleDriveService:
                 removeParents=previous_parents,
                 supportsAllDrives=True
             ).execute()
-            
+
             logger.info(f"Moved file {file_id} to folder {new_parent_folder_id}")
             return True
-            
+
         except HttpError as e:
             logger.error(f"Move file failed: {e}")
             raise
-    
+
     def download_file(
         self,
         file_id: str,
@@ -376,25 +376,25 @@ class GoogleDriveService:
                 fileId=file_id,
                 supportsAllDrives=True
             )
-            
+
             fh = io.FileIO(destination_path, 'wb')
             downloader = MediaIoBaseDownload(fh, request, chunksize=self.CHUNK_SIZE)
-            
+
             done = False
             while not done:
                 status, done = downloader.next_chunk()
                 if status:
                     progress = int(status.progress() * 100)
                     logger.debug(f"Download progress: {progress}%")
-            
+
             fh.close()
             logger.info(f"Downloaded file {file_id} to {destination_path}")
             return True
-            
+
         except HttpError as e:
             logger.error(f"Download failed: {e}")
             raise
-    
+
     def verify_file_integrity(
         self,
         file_id: str,
@@ -411,21 +411,21 @@ class GoogleDriveService:
             True if MD5 matches
         """
         file_info = self.get_file_info(file_id)
-        
+
         if not file_info:
             return False
-        
+
         actual_md5 = file_info.get('md5Checksum')
-        
+
         if not actual_md5:
             logger.warning(f"No MD5 checksum available for {file_id}")
             return False
-        
+
         matches = actual_md5 == expected_md5
-        
+
         if not matches:
             logger.error(
                 f"MD5 mismatch for {file_id}: expected={expected_md5}, actual={actual_md5}"
             )
-        
+
         return matches

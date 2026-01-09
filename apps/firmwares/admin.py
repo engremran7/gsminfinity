@@ -1,23 +1,23 @@
 from django.contrib import admin
-from django.utils.html import format_html, mark_safe
 from django.db.models import Count
-from django.utils.safestring import mark_safe as safe_mark
+from django.utils.html import format_html, mark_safe
+
 from .models import (
     Brand,
-    Model,
-    Variant,
-    BrandSchema,
-    SchemaUpdateProposal,
     BrandCreationRequest,
-    ModelCreationRequest,
-    VariantCreationRequest,
-    PendingFirmware,
-    OfficialFirmware,
+    BrandSchema,
     EngineeringFirmware,
-    ReadbackFirmware,
+    Model,
+    ModelCreationRequest,
     ModifiedFirmware,
+    OfficialFirmware,
     OtherFirmware,
+    PendingFirmware,
+    ReadbackFirmware,
+    SchemaUpdateProposal,
     UnclassifiedFirmware,
+    Variant,
+    VariantCreationRequest,
 )
 
 
@@ -112,12 +112,12 @@ class DeviceModelAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     autocomplete_fields = ('brand',)
     ordering = ('brand__name', 'name')
-    
+
     def variant_count(self, obj):
         count = obj.variants.count()
         return format_html('<span style="font-weight: bold;">{}</span>', count)
     variant_count.short_description = 'Variants'
-    
+
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('brand').annotate(Count('variants'))
 
@@ -131,12 +131,12 @@ class VariantAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     autocomplete_fields = ('model',)
     ordering = ('model__brand__name', 'model__name', 'name')
-    
+
     def get_brand(self, obj):
         return obj.model.brand.name
     get_brand.short_description = 'Brand'
     get_brand.admin_order_field = 'model__brand__name'
-    
+
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('model__brand')
 
@@ -155,7 +155,7 @@ class SchemaUpdateProposalAdmin(admin.ModelAdmin):
     list_filter = ('status', 'created_at')
     search_fields = ('brand__name', 'proposed_by__email')
     readonly_fields = ('created_at', 'updated_at')
-    
+
     def status_badge(self, obj):
         colors = {'pending': 'orange', 'approved': 'green', 'rejected': 'red'}
         color = colors.get(obj.status, 'gray')
@@ -173,7 +173,7 @@ class BrandCreationRequestAdmin(admin.ModelAdmin):
     search_fields = ('name', 'requested_by__email')
     readonly_fields = ('created_at', 'reviewed_at')
     actions = ['approve_requests', 'reject_requests']
-    
+
     def status_badge(self, obj):
         colors = {'pending': 'orange', 'approved': 'green', 'rejected': 'red'}
         color = colors.get(obj.status, 'gray')
@@ -182,7 +182,7 @@ class BrandCreationRequestAdmin(admin.ModelAdmin):
             color, obj.status.upper()
         )
     status_badge.short_description = 'Status'
-    
+
     def approve_requests(self, request, queryset):
         from django.utils.text import slugify
         count = 0
@@ -194,7 +194,7 @@ class BrandCreationRequestAdmin(admin.ModelAdmin):
             count += 1
         self.message_user(request, f'{count} brand(s) approved and created.')
     approve_requests.short_description = 'Approve selected requests'
-    
+
     def reject_requests(self, request, queryset):
         count = queryset.filter(status='pending').update(status='rejected', reviewed_by=request.user)
         self.message_user(request, f'{count} request(s) rejected.')
@@ -208,7 +208,7 @@ class ModelCreationRequestAdmin(admin.ModelAdmin):
     search_fields = ('name', 'brand__name', 'requested_by__email')
     readonly_fields = ('created_at', 'reviewed_at')
     autocomplete_fields = ('brand',)
-    
+
     def status_badge(self, obj):
         colors = {'pending': 'orange', 'approved': 'green', 'rejected': 'red'}
         color = colors.get(obj.status, 'gray')
@@ -226,7 +226,7 @@ class VariantCreationRequestAdmin(admin.ModelAdmin):
     search_fields = ('name', 'model__name', 'model__brand__name', 'requested_by__email')
     readonly_fields = ('created_at', 'reviewed_at')
     autocomplete_fields = ('model',)
-    
+
     def status_badge(self, obj):
         colors = {'pending': 'orange', 'approved': 'green', 'rejected': 'red'}
         color = colors.get(obj.status, 'gray')
@@ -244,7 +244,7 @@ class PendingFirmwareAdmin(admin.ModelAdmin):
     search_fields = ('original_file_name', 'ai_brand', 'ai_model', 'ai_variant', 'chipset')
     readonly_fields = ('created_at', 'updated_at', 'id')
     autocomplete_fields = ('uploaded_brand', 'uploaded_model', 'uploaded_variant')
-    
+
     fieldsets = (
         ('File Info', {
             'fields': ('id', 'original_file_name', 'stored_file_path', 'uploader')
@@ -271,7 +271,7 @@ class PendingFirmwareAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def admin_decision_badge(self, obj):
         colors = {'pending': 'orange', 'approved': 'green', 'rejected': 'red'}
         color = colors.get(obj.admin_decision, 'gray')
@@ -289,7 +289,7 @@ class BaseFirmwareAdmin(admin.ModelAdmin):
     search_fields = ('original_file_name', 'brand__name', 'model__name', 'variant__name', 'chipset')
     readonly_fields = ('created_at', 'updated_at', 'id')
     autocomplete_fields = ('brand', 'model', 'variant')
-    
+
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('brand', 'model', 'variant', 'uploader')
 

@@ -13,16 +13,20 @@ Usage: python manage.py seed_firmware_data [--brands=100] [--clear]
 import random
 import uuid
 from datetime import date, timedelta
+
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
-from django.utils import timezone
 
 from apps.firmwares.models import (
-    Brand, Model, Variant,
-    OfficialFirmware, EngineeringFirmware, ReadbackFirmware,
-    ModifiedFirmware, OtherFirmware
+    Brand,
+    EngineeringFirmware,
+    Model,
+    ModifiedFirmware,
+    OfficialFirmware,
+    OtherFirmware,
+    ReadbackFirmware,
+    Variant,
 )
-
 
 # Realistic brand data
 BRANDS_DATA = [
@@ -203,7 +207,7 @@ class Command(BaseCommand):
     def _create_brands(self, count: int) -> list:
         brands = []
         brand_names = BRANDS_DATA[:count] if count <= len(BRANDS_DATA) else BRANDS_DATA + [f"Brand{i}" for i in range(count - len(BRANDS_DATA))]
-        
+
         for name in brand_names[:count]:
             slug = slugify(name)
             brand, created = Brand.objects.get_or_create(
@@ -212,31 +216,31 @@ class Command(BaseCommand):
             )
             if created:
                 brands.append(brand)
-        
+
         return brands
 
     def _create_models(self, brands: list, avg_per_brand: int) -> list:
         models = []
-        
+
         for brand in brands:
             # Get patterns for this brand
             patterns = MODEL_PATTERNS.get(brand.name, MODEL_PATTERNS["default"])
-            
+
             # Randomize number of models (avg_per_brand +/- 2)
             num_models = max(1, random.randint(avg_per_brand - 2, avg_per_brand + 2))
-            
+
             for i in range(num_models):
                 pattern = random.choice(patterns)
                 # Use different number ranges
                 num = random.choice([str(i) for i in range(1, 20)] + ["10", "11", "12", "13", "14", "15", "20", "21", "22", "23", "24", "50", "60", "70", "80", "90", "100", "200"])
-                
+
                 name = pattern.format(n=num)
                 slug = slugify(name)
-                
+
                 # Avoid duplicates
                 if Model.objects.filter(brand=brand, slug=slug).exists():
                     continue
-                
+
                 model = Model.objects.create(
                     brand=brand,
                     name=name,
@@ -248,32 +252,32 @@ class Command(BaseCommand):
                     is_active=random.random() > 0.1,  # 90% active
                 )
                 models.append(model)
-        
+
         return models
 
     def _create_variants(self, models: list) -> list:
         variants = []
-        
+
         for model in models:
             # Create 1-4 variants per model
             num_variants = random.randint(1, 4)
             used_regions = set()
-            
+
             for i in range(num_variants):
                 # Pick a region
                 available_regions = [r for r in REGIONS if r[0] not in used_regions]
                 if not available_regions:
                     break
-                
+
                 region_code, region_name = random.choice(available_regions)
                 used_regions.add(region_code)
-                
+
                 # Pick a chipset based on brand
                 chipset = self._get_chipset_for_brand(model.brand.name)
-                
+
                 name = region_name
                 slug = slugify(f"{model.name}-{region_code}")
-                
+
                 variant = Variant.objects.create(
                     model=model,
                     name=name,
@@ -286,13 +290,13 @@ class Command(BaseCommand):
                     is_active=model.is_active,
                 )
                 variants.append(variant)
-        
+
         return variants
 
     def _create_firmwares(self, variants: list, count: int) -> int:
         if not variants:
             return 0
-        
+
         firmware_types = [
             (OfficialFirmware, 0.5),  # 50% official
             (EngineeringFirmware, 0.2),  # 20% engineering
@@ -300,24 +304,24 @@ class Command(BaseCommand):
             (ModifiedFirmware, 0.15),  # 15% modified
             (OtherFirmware, 0.05),  # 5% other
         ]
-        
+
         created = 0
         for _ in range(count):
             # Pick a random variant
             variant = random.choice(variants)
             model = variant.model
             brand = model.brand
-            
+
             # Pick firmware type based on weights
             fw_type = random.choices(
                 [t[0] for t in firmware_types],
                 weights=[t[1] for t in firmware_types]
             )[0]
-            
+
             # Generate firmware data
             android_ver = random.choice(ANDROID_VERSIONS)
             build_date = self._random_release_date()
-            
+
             fw_data = {
                 "original_file_name": self._generate_filename(brand.name, model.name, variant.region, android_ver),
                 "stored_file_path": f"/storage/firmwares/{brand.slug}/{model.slug}/{uuid.uuid4()}.zip",
@@ -338,7 +342,7 @@ class Command(BaseCommand):
                 "is_verified": random.random() > 0.3,  # 70% verified
                 "is_active": random.random() > 0.1,  # 90% active
             }
-            
+
             # Add subtype for certain firmware types
             if fw_type == EngineeringFirmware:
                 fw_data["subtype"] = random.choice(["Factory", "QC", "Debug", "Test", "PreRelease"])
@@ -346,10 +350,10 @@ class Command(BaseCommand):
                 fw_data["subtype"] = random.choice(["Root", "Custom ROM", "Debloated", "Optimized"])
             elif fw_type == OtherFirmware:
                 fw_data["subtype"] = random.choice(["Recovery", "TWRP", "Bootloader", "Kernel"])
-            
+
             fw_type.objects.create(**fw_data)
             created += 1
-        
+
         return created
 
     def _generate_model_code(self, brand_name: str) -> str:
@@ -381,7 +385,7 @@ class Command(BaseCommand):
             "Honor": CHIPSETS["HiSilicon"] + CHIPSETS["Qualcomm"] + CHIPSETS["MediaTek"],
             "Google": CHIPSETS["Google"],
         }
-        
+
         chipset_list = brand_chipsets.get(brand_name, CHIPSETS["Qualcomm"] + CHIPSETS["MediaTek"] + CHIPSETS["Unisoc"])
         return random.choice(chipset_list)
 

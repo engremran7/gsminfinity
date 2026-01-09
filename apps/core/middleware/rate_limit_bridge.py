@@ -7,10 +7,11 @@ Prevents brute-force login/signup attempts globally.
 """
 
 import logging
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
-from django.http import JsonResponse, HttpResponse
-from django.apps import apps
+from django.http import HttpResponse, JsonResponse
+
 from apps.core.utils.ip import get_client_ip
 
 logger = logging.getLogger(__name__)

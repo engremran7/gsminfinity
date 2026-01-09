@@ -1,8 +1,7 @@
 
 from django.urls import path
 
-from . import views
-from . import feeds
+from . import feeds, views
 
 app_name = "blog"
 

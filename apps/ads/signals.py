@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import logging
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Campaign, AdCreative
+
+from .models import Campaign
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +18,7 @@ def notify_campaign_status_change(sender, instance, created, **kwargs):
     if created:
         return
 
-    # Check if is_active changed (requires dirty field tracking or pre-save, 
+    # Check if is_active changed (requires dirty field tracking or pre-save,
     # but for now we'll just notify if it's active and has a creator)
     if instance.is_active and instance.created_by:
         try:
@@ -24,7 +26,7 @@ def notify_campaign_status_change(sender, instance, created, **kwargs):
             # We might want to debounce this or check if it was already active
             # For this audit, we'll assume this is a desired "Campaign Active" alert
             # In a real app, we'd check `if instance.tracker.has_changed('is_active')`
-            
+
             send_notification(
                 recipient=instance.created_by,
                 title="Campaign Active",

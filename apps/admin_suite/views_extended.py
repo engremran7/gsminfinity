@@ -10,15 +10,13 @@ Views for:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse
 from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.http import require_POST
 
-from .views_shared import _render_admin, _make_breadcrumb, _ADMIN_DISABLED
+from .views_shared import _ADMIN_DISABLED, _make_breadcrumb, _render_admin
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +73,12 @@ def admin_suite_i18n(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.i18n.models import Language, TranslationKey, Translation, MissingTranslation
+        from apps.i18n.models import (
+            Language,
+            MissingTranslation,
+            Translation,
+            TranslationKey,
+        )
 
         all_languages = Language.objects.all().order_by("-is_active", "name")
         stats["total_languages"] = all_languages.count()
@@ -141,7 +144,7 @@ def admin_suite_i18n_translations(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.i18n.models import Translation, TranslationKey, Language
+            from apps.i18n.models import Language, Translation, TranslationKey
 
             if action == "save_translation":
                 key_id = request.POST.get("key_id")
@@ -160,14 +163,14 @@ def admin_suite_i18n_translations(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.i18n.models import Translation, TranslationKey, Language
+        from apps.i18n.models import Language, Translation, TranslationKey
 
         languages = list(Language.objects.filter(is_active=True).order_by("name").values("id", "code", "name"))
-        
+
         qs = TranslationKey.objects.all()
         if query:
             qs = qs.filter(key__icontains=query)
-        
+
         total_count = qs.count()
         keys = list(qs.order_by("key")[offset:offset + page_size].values("id", "key", "context", "created_at"))
 
@@ -224,7 +227,7 @@ def admin_suite_devices_settings(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            from apps.devices.models import DeviceSettings, DevicePolicy
+            from apps.devices.models import DevicePolicy, DeviceSettings
 
             if action == "save_settings":
                 ds = DeviceSettings.get_solo()
@@ -255,7 +258,7 @@ def admin_suite_devices_settings(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.devices.models import DeviceSettings, DevicePolicy, Device
+        from apps.devices.models import DevicePolicy, DeviceSettings
 
         device_settings = DeviceSettings.get_solo()
         policies = list(DevicePolicy.objects.all().order_by("app_label").values(
@@ -520,7 +523,7 @@ def admin_suite_features(request: HttpRequest) -> HttpResponse:
         from apps.core.models import FeatureSettings
 
         feature_settings = FeatureSettings.get_solo()
-        
+
         # Build list of feature fields for template (can't access _meta in templates)
         for field in feature_settings._meta.get_fields():
             if hasattr(field, 'get_internal_type') and field.get_internal_type() == 'BooleanField':
@@ -592,10 +595,10 @@ def admin_suite_blog_posts(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.blog.models import Post, Category
+        from apps.blog.models import Category, Post
 
         categories = list(Category.objects.all().order_by("name").values("id", "name", "slug"))
-        
+
         qs = Post.objects.select_related("author", "category").all()
         if query:
             qs = qs.filter(title__icontains=query)
@@ -603,7 +606,7 @@ def admin_suite_blog_posts(request: HttpRequest) -> HttpResponse:
             qs = qs.filter(is_published=True)
         elif status_filter == "draft":
             qs = qs.filter(is_published=False)
-        
+
         total_count = qs.count()
         posts = list(qs.order_by("-created_at")[offset:offset + page_size].values(
             "id", "title", "slug", "author__email", "category__name", "is_published",
@@ -679,7 +682,7 @@ def admin_suite_crawler_rules(request: HttpRequest) -> HttpResponse:
             message = f"Action failed: {exc}"
 
     try:
-        from apps.crawler_guard.models import CrawlerRule, CrawlerLog
+        from apps.crawler_guard.models import CrawlerLog, CrawlerRule
 
         rules = list(CrawlerRule.objects.all().order_by("-is_active", "name").values(
             "id", "name", "user_agent_pattern", "ip_pattern", "action", "is_active",

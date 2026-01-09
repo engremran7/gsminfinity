@@ -8,7 +8,6 @@ from solo.models import SingletonModel
 
 from apps.core.models import AuditFieldsModel, SoftDeleteModel, TimestampedModel
 
-
 # ==================== AD NETWORK PROVIDERS ====================
 
 class AdNetwork(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
@@ -45,7 +44,7 @@ class AdNetwork(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         ("custom", "Custom Ad Server"),
         ("direct", "Direct Sales"),
     ]
-    
+
     name = models.CharField(max_length=100, unique=True)
     network_type = models.CharField(max_length=30, choices=NETWORK_TYPES)
     is_enabled = models.BooleanField(default=False)
@@ -53,12 +52,12 @@ class AdNetwork(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         default=10,
         help_text="Higher priority networks are tried first (waterfall)."
     )
-    
+
     # Authentication
     publisher_id = models.CharField(max_length=100, blank=True, default="")
     api_key = models.CharField(max_length=255, blank=True, default="")
     api_secret = models.CharField(max_length=255, blank=True, default="")
-    
+
     # Script/Tag Configuration
     header_script = models.TextField(
         blank=True, default="",
@@ -68,35 +67,35 @@ class AdNetwork(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         blank=True, default="",
         help_text="JavaScript to inject at end of <body>."
     )
-    
+
     # Revenue Share
     revenue_share_percent = models.DecimalField(
         max_digits=5, decimal_places=2, default=100.00,
         help_text="Percentage of revenue we keep (after network cut)."
     )
-    
+
     # Supported Ad Types
     supports_display = models.BooleanField(default=True)
     supports_native = models.BooleanField(default=False)
     supports_video = models.BooleanField(default=False)
     supports_rewarded = models.BooleanField(default=False)
     supports_auto_ads = models.BooleanField(default=False)
-    
+
     # Configuration
     config = models.JSONField(
         default=dict, blank=True,
         help_text="Network-specific configuration JSON."
     )
-    
+
     # Status
     last_sync_at = models.DateTimeField(null=True, blank=True)
     sync_status = models.CharField(max_length=50, blank=True, default="")
-    
+
     class Meta:
         ordering = ["-priority", "name"]
         verbose_name = "Ad Network"
         verbose_name_plural = "Ad Networks"
-    
+
     def __str__(self):
         return f"{self.name} ({self.get_network_type_display()})"
 
@@ -120,7 +119,7 @@ class AdUnit(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         ("in_feed", "In-Feed"),
         ("multiplex", "Multiplex/Grid"),
     ]
-    
+
     network = models.ForeignKey(
         AdNetwork, on_delete=models.CASCADE, related_name="ad_units"
     )
@@ -130,7 +129,7 @@ class AdUnit(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         help_text="Ad unit ID from the network (slot ID, zone ID, etc.)."
     )
     ad_format = models.CharField(max_length=20, choices=AD_FORMATS, default="display")
-    
+
     # Dimensions
     width = models.PositiveIntegerField(default=0, help_text="0 = responsive")
     height = models.PositiveIntegerField(default=0, help_text="0 = responsive")
@@ -138,10 +137,10 @@ class AdUnit(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         max_length=50, blank=True, default="",
         help_text="e.g., '300x250', 'responsive', 'fluid'"
     )
-    
+
     # Status
     is_enabled = models.BooleanField(default=True)
-    
+
     # Performance
     estimated_cpm = models.DecimalField(
         max_digits=8, decimal_places=4, default=0,
@@ -151,17 +150,17 @@ class AdUnit(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         max_digits=5, decimal_places=2, default=0,
         help_text="Historical fill rate percentage."
     )
-    
+
     # Render code
     render_code = models.TextField(
         blank=True, default="",
         help_text="Custom HTML/JS to render this ad unit."
     )
-    
+
     class Meta:
         unique_together = ("network", "unit_id")
         ordering = ["network", "name"]
-    
+
     def __str__(self):
         return f"{self.network.name} - {self.name} ({self.size_label or 'responsive'})"
 
@@ -183,7 +182,7 @@ class RewardedAdConfig(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         ("unlock", "Content Unlock"),
         ("custom", "Custom Reward"),
     ]
-    
+
     name = models.CharField(max_length=100, unique=True)
     placement = models.ForeignKey(
         "AdPlacement", on_delete=models.CASCADE, related_name="rewarded_configs",
@@ -197,9 +196,9 @@ class RewardedAdConfig(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         AdUnit, on_delete=models.SET_NULL, null=True, blank=True,
         limit_choices_to={"ad_format": "rewarded"}
     )
-    
+
     is_enabled = models.BooleanField(default=False)
-    
+
     # Reward Configuration
     reward_type = models.CharField(max_length=20, choices=REWARD_TYPES, default="download")
     reward_amount = models.PositiveIntegerField(default=1)
@@ -207,7 +206,7 @@ class RewardedAdConfig(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         max_length=255, blank=True, default="",
         help_text="User-facing description of the reward."
     )
-    
+
     # Limits
     cooldown_minutes = models.PositiveIntegerField(
         default=30,
@@ -217,17 +216,17 @@ class RewardedAdConfig(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         default=5,
         help_text="Maximum rewarded ads per user per day."
     )
-    
+
     # Video Requirements
     min_watch_seconds = models.PositiveIntegerField(
         default=0,
         help_text="Minimum seconds user must watch (0 = full video)."
     )
-    
+
     class Meta:
         verbose_name = "Rewarded Ad Config"
         verbose_name_plural = "Rewarded Ad Configs"
-    
+
     def __str__(self):
         return f"{self.name} ({self.get_reward_type_display()})"
 
@@ -244,12 +243,12 @@ class RewardedAdView(TimestampedModel):
     config = models.ForeignKey(
         RewardedAdConfig, on_delete=models.SET_NULL, null=True, related_name="views"
     )
-    
+
     # View Details
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     watch_duration_seconds = models.PositiveIntegerField(default=0)
-    
+
     # Status
     STATUS_CHOICES = [
         ("started", "Started"),
@@ -258,24 +257,24 @@ class RewardedAdView(TimestampedModel):
         ("error", "Error"),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="started")
-    
+
     # Reward
     reward_granted = models.BooleanField(default=False)
     reward_type = models.CharField(max_length=20, blank=True, default="")
     reward_amount = models.PositiveIntegerField(default=0)
-    
+
     # Request Info
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True, default="")
     page_url = models.URLField(blank=True, default="")
-    
+
     class Meta:
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "created_at"]),
             models.Index(fields=["config", "status"]),
         ]
-    
+
     def __str__(self):
         return f"{self.user} - {self.config} @ {self.created_at}"
 
@@ -308,10 +307,10 @@ class AutoAdsScanResult(TimestampedModel):
     )
     applied = models.BooleanField(default=False)
     applied_at = models.DateTimeField(null=True, blank=True)
-    
+
     class Meta:
         ordering = ["-created_at"]
-    
+
     def __str__(self):
         return f"Scan: {self.template_path} ({self.created_at})"
 
@@ -346,7 +345,7 @@ class AffiliateProvider(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         ("awin", "Awin"),
         ("custom", "Custom/Direct"),
     ]
-    
+
     name = models.CharField(max_length=100, unique=True)
     provider_type = models.CharField(max_length=30, choices=PROVIDER_TYPES)
     is_enabled = models.BooleanField(default=False)
@@ -354,7 +353,7 @@ class AffiliateProvider(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         default=10,
         help_text="Higher priority providers are used first."
     )
-    
+
     # API Credentials
     api_key = models.CharField(max_length=255, blank=True, default="")
     api_secret = models.CharField(max_length=255, blank=True, default="")
@@ -363,7 +362,7 @@ class AffiliateProvider(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         help_text="Affiliate tracking tag (e.g., Amazon Associate Tag)."
     )
     partner_id = models.CharField(max_length=100, blank=True, default="")
-    
+
     # API Configuration
     api_endpoint = models.URLField(
         blank=True, default="",
@@ -377,13 +376,13 @@ class AffiliateProvider(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         max_length=20, blank=True, default="www.amazon.com",
         help_text="Marketplace domain."
     )
-    
+
     # Tracking
     default_tracking_params = models.JSONField(
         default=dict, blank=True,
         help_text="Default UTM/tracking parameters for all links."
     )
-    
+
     # Revenue
     commission_rate = models.DecimalField(
         max_digits=5, decimal_places=2, default=0,
@@ -393,17 +392,17 @@ class AffiliateProvider(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         default=24,
         help_text="Affiliate cookie duration in hours."
     )
-    
+
     # Sync Status
     last_sync_at = models.DateTimeField(null=True, blank=True)
     sync_status = models.CharField(max_length=100, blank=True, default="")
     products_count = models.PositiveIntegerField(default=0)
-    
+
     class Meta:
         ordering = ["-priority", "name"]
         verbose_name = "Affiliate Provider"
         verbose_name_plural = "Affiliate Providers"
-    
+
     def __str__(self):
         return f"{self.name} ({self.get_provider_type_display()})"
 
@@ -418,7 +417,7 @@ class AffiliateProductCategory(TimestampedModel):
     parent = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True, related_name="children"
     )
-    
+
     # Mapping to device types
     device_keywords = models.TextField(
         blank=True, default="",
@@ -428,15 +427,15 @@ class AffiliateProductCategory(TimestampedModel):
         max_length=100, blank=True, default="",
         help_text="Brand slug to auto-match (e.g., 'samsung', 'xiaomi')."
     )
-    
+
     # Display
     icon = models.CharField(max_length=50, blank=True, default="")
     is_active = models.BooleanField(default=True)
-    
+
     class Meta:
         verbose_name_plural = "Affiliate Product Categories"
         ordering = ["name"]
-    
+
     def __str__(self):
         if self.parent:
             return f"{self.parent.name} > {self.name}"
@@ -465,21 +464,21 @@ class AffiliateProduct(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         ("book", "Book/Guide"),
         ("other", "Other"),
     ]
-    
+
     provider = models.ForeignKey(
         AffiliateProvider, on_delete=models.CASCADE, related_name="products"
     )
     category = models.ForeignKey(
-        AffiliateProductCategory, on_delete=models.SET_NULL, 
+        AffiliateProductCategory, on_delete=models.SET_NULL,
         null=True, blank=True, related_name="products"
     )
-    
+
     # Product Info
     name = models.CharField(max_length=255)
     slug = models.SlugField(max_length=280, db_index=True)
     description = models.TextField(blank=True, default="")
     product_type = models.CharField(max_length=30, choices=PRODUCT_TYPES, default="accessory")
-    
+
     # External IDs
     external_id = models.CharField(
         max_length=100, db_index=True,
@@ -488,29 +487,29 @@ class AffiliateProduct(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
     asin = models.CharField(max_length=20, blank=True, default="", db_index=True)
     upc = models.CharField(max_length=20, blank=True, default="")
     ean = models.CharField(max_length=20, blank=True, default="")
-    
+
     # Pricing
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     sale_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=5, default="USD")
     price_updated_at = models.DateTimeField(null=True, blank=True)
-    
+
     # Images
     image_url = models.URLField(blank=True, default="")
     thumbnail_url = models.URLField(blank=True, default="")
     additional_images = models.JSONField(default=list, blank=True)
-    
+
     # Links
     product_url = models.URLField(help_text="Direct product URL.")
     affiliate_url = models.URLField(
         blank=True, default="",
         help_text="Full affiliate link with tracking."
     )
-    
+
     # Ratings
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
     review_count = models.PositiveIntegerField(default=0)
-    
+
     # Targeting - Which brands/models this product is relevant for
     target_brands = models.ManyToManyField(
         "firmwares.Brand", blank=True, related_name="affiliate_products",
@@ -524,33 +523,33 @@ class AffiliateProduct(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
         blank=True, default="",
         help_text="Keywords to match (one per line). E.g., 'samsung galaxy s24', 'xiaomi redmi'."
     )
-    
+
     # Universal product (shows on all pages)
     is_universal = models.BooleanField(
         default=False,
         help_text="Show on all pages regardless of targeting."
     )
-    
+
     # Status
     is_enabled = models.BooleanField(default=True)
     is_in_stock = models.BooleanField(default=True)
     availability_message = models.CharField(max_length=100, blank=True, default="")
-    
+
     # Performance
     impressions = models.PositiveIntegerField(default=0)
     clicks = models.PositiveIntegerField(default=0)
     conversions = models.PositiveIntegerField(default=0)
     revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    
+
     # AI Optimization
     ai_relevance_score = models.DecimalField(
         max_digits=5, decimal_places=2, default=0,
         help_text="AI-calculated relevance score for targeting."
     )
-    
+
     # Metadata from API
     api_data = models.JSONField(default=dict, blank=True)
-    
+
     class Meta:
         unique_together = ("provider", "external_id")
         ordering = ["-ai_relevance_score", "-rating", "name"]
@@ -559,16 +558,16 @@ class AffiliateProduct(TimestampedModel, SoftDeleteModel, AuditFieldsModel):
             models.Index(fields=["product_type", "is_enabled"]),
             models.Index(fields=["is_universal", "is_enabled"]),
         ]
-    
+
     def __str__(self):
         return f"{self.name} ({self.provider.name})"
-    
+
     def get_display_price(self):
         """Return sale price if available, otherwise regular price."""
         if self.sale_price and self.sale_price < self.price:
             return self.sale_price
         return self.price
-    
+
     def get_discount_percent(self):
         """Calculate discount percentage if on sale."""
         if self.sale_price and self.sale_price < self.price and self.price > 0:
@@ -584,10 +583,10 @@ class AffiliateProductMatch(TimestampedModel):
     product = models.ForeignKey(
         AffiliateProduct, on_delete=models.CASCADE, related_name="matches"
     )
-    
+
     # Match target (one of these)
     brand = models.ForeignKey(
-        "firmwares.Brand", on_delete=models.CASCADE, 
+        "firmwares.Brand", on_delete=models.CASCADE,
         null=True, blank=True, related_name="product_matches"
     )
     model = models.ForeignKey(
@@ -602,7 +601,7 @@ class AffiliateProductMatch(TimestampedModel):
         "blog.Post", on_delete=models.CASCADE,
         null=True, blank=True, related_name="product_matches"
     )
-    
+
     # Match quality
     match_type = models.CharField(
         max_length=20,
@@ -614,7 +613,7 @@ class AffiliateProductMatch(TimestampedModel):
         default="auto"
     )
     relevance_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    
+
     # Override settings
     position = models.PositiveIntegerField(
         default=0,
@@ -628,10 +627,10 @@ class AffiliateProductMatch(TimestampedModel):
         default=False,
         help_text="Hide this product from this page."
     )
-    
+
     class Meta:
         ordering = ["-is_pinned", "position", "-relevance_score"]
-    
+
     def __str__(self):
         target = self.brand or self.model or self.variant or self.blog_post
         return f"{self.product.name} → {target}"
@@ -642,24 +641,24 @@ class AffiliateClick(TimestampedModel):
     Track affiliate link clicks for analytics and fraud detection.
     """
     product = models.ForeignKey(
-        AffiliateProduct, on_delete=models.SET_NULL, 
+        AffiliateProduct, on_delete=models.SET_NULL,
         null=True, related_name="click_events"
     )
     provider = models.ForeignKey(
         AffiliateProvider, on_delete=models.SET_NULL,
         null=True, related_name="click_events"
     )
-    
+
     # Source
     page_url = models.URLField()
     referrer = models.URLField(blank=True, default="")
-    
+
     # Context
     brand_slug = models.CharField(max_length=100, blank=True, default="")
     model_slug = models.CharField(max_length=100, blank=True, default="")
     firmware_id = models.PositiveIntegerField(null=True, blank=True)
     blog_slug = models.CharField(max_length=200, blank=True, default="")
-    
+
     # User
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
@@ -668,18 +667,18 @@ class AffiliateClick(TimestampedModel):
     session_id = models.CharField(max_length=100, blank=True, default="")
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True, default="")
-    
+
     # Geolocation
     country = models.CharField(max_length=5, blank=True, default="")
     region = models.CharField(max_length=100, blank=True, default="")
-    
+
     class Meta:
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["product", "created_at"]),
             models.Index(fields=["provider", "created_at"]),
         ]
-    
+
     def __str__(self):
         return f"Click: {self.product} @ {self.created_at}"
 
@@ -1370,37 +1369,37 @@ class AdsSettings(SingletonModel):
         default=False,
         help_text="Enable AdSense Auto Ads (page-level ads)."
     )
-    
+
     # Media.net (Yahoo/Bing Network)
     medianet_enabled = models.BooleanField(default=False, help_text="Enable Media.net ads.")
     medianet_customer_id = models.CharField(max_length=50, blank=True, default="")
-    
+
     # Ezoic
     ezoic_enabled = models.BooleanField(default=False, help_text="Enable Ezoic AI ad optimization.")
     ezoic_site_id = models.CharField(max_length=50, blank=True, default="")
-    
+
     # AdThrive / Mediavine (Premium publishers)
     adthrive_enabled = models.BooleanField(default=False, help_text="Enable AdThrive (premium).")
     adthrive_site_id = models.CharField(max_length=50, blank=True, default="")
     mediavine_enabled = models.BooleanField(default=False, help_text="Enable Mediavine (premium).")
     mediavine_site_id = models.CharField(max_length=50, blank=True, default="")
-    
+
     # PropellerAds (Push notifications, popunders)
     propellerads_enabled = models.BooleanField(default=False, help_text="Enable PropellerAds.")
     propellerads_zone_id = models.CharField(max_length=50, blank=True, default="")
-    
+
     # Amazon Publisher Services
     amazon_ads_enabled = models.BooleanField(default=False, help_text="Enable Amazon Publisher Services.")
     amazon_ads_publisher_id = models.CharField(max_length=100, blank=True, default="")
-    
+
     # Infolinks (In-text ads)
     infolinks_enabled = models.BooleanField(default=False, help_text="Enable Infolinks in-text ads.")
     infolinks_pid = models.CharField(max_length=50, blank=True, default="")
-    
+
     # Carbon Ads (Developer-focused)
     carbon_enabled = models.BooleanField(default=False, help_text="Enable Carbon Ads (tech audience).")
     carbon_serve_id = models.CharField(max_length=100, blank=True, default="")
-    
+
     # BuySellAds
     buysellads_enabled = models.BooleanField(default=False, help_text="Enable BuySellAds.")
     buysellads_zone_id = models.CharField(max_length=100, blank=True, default="")
@@ -1558,7 +1557,7 @@ class AdsSettings(SingletonModel):
         default="phone accessories,smartphone case,screen protector,charger,cable",
         help_text="Default keywords to search when no specific context available."
     )
-    
+
     # Amazon Product Advertising API
     amazon_paapi_enabled = models.BooleanField(
         default=False,
@@ -1657,7 +1656,7 @@ class AdsSettings(SingletonModel):
         """Check if ads should be shown for this user/page combination."""
         if not self.ads_enabled:
             return False
-        
+
         # Check excluded user roles
         if user and user.is_authenticated:
             excluded_roles = [r.strip() for r in self.excluded_user_roles.split(",")]
@@ -1665,7 +1664,7 @@ class AdsSettings(SingletonModel):
                 return False
             if "superuser" in excluded_roles and user.is_superuser:
                 return False
-        
+
         # Check excluded pages
         if page_url and self.excluded_pages:
             import fnmatch
@@ -1673,7 +1672,7 @@ class AdsSettings(SingletonModel):
                 pattern = pattern.strip()
                 if pattern and fnmatch.fnmatch(page_url, pattern):
                     return False
-        
+
         return True
 
 

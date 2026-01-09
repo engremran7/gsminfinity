@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import uuid
+
 from django.conf import settings
 from django.db import models
+
 from .constants import MAIN_CATEGORIES
 
 
@@ -317,9 +319,3 @@ class UnclassifiedFirmware(BaseFirmware):
 
 
 # Import tracking models (kept separate for cleaner organization)
-from .tracking_models import (
-    FirmwareView,
-    FirmwareDownloadAttempt,
-    FirmwareRequest,
-    FirmwareStats,
-)

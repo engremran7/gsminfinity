@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand
-from django.contrib.contenttypes.models import ContentType
 
 from apps.blog.models import Post
 from apps.seo.services.internal_linking.engine import refresh_linkable_entity

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from django.contrib.sitemaps.views import index, sitemap
+from django.contrib.sites.models import Site
 from django.http import Http404
 from django.template.response import TemplateResponse
-from django.contrib.sites.models import Site
 
 from apps.site_settings.models import SiteSettings
 

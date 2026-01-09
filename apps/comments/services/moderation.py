@@ -4,12 +4,12 @@ from __future__ import annotations
 import hashlib
 import logging
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
-from django.core.cache import cache
-from django.utils import timezone
+from typing import Dict, Optional
 
-from apps.core.utils.sanitize import sanitize_html
+from django.core.cache import cache
+
 from apps.core import ai_client
+from apps.core.utils.sanitize import sanitize_html
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def _extract_scores(raw_text: str) -> Dict[str, float]:
     scores = {"toxicity": 0.0, "spam": 0.0, "hate": 0.0}
     if not raw_text:
         return scores
-    
+
     lower = raw_text.lower()
     # Look for score patterns like "toxicity: 0.8" or "spam score: 0.3"
     import re
@@ -52,7 +52,7 @@ def _extract_scores(raw_text: str) -> Dict[str, float]:
 
 
 def classify_comment(
-    text: str, 
+    text: str,
     context: Optional[str] = None,
     use_cache: bool = True,
     cache_ttl: int = 3600
@@ -75,7 +75,7 @@ def classify_comment(
             score=0.0,
             rationale="Empty comment"
         )
-    
+
     # Check cache first
     cache_key = _compute_cache_key(text, context)
     if use_cache:
@@ -84,10 +84,10 @@ def classify_comment(
             logger.debug(f"Using cached moderation result for key {cache_key[:8]}")
             cached["cached"] = True
             return ModerationResult(**cached)
-    
+
     # Sanitize input
     safe_text = sanitize_html(text or "", allowed_tags=["p", "br", "strong", "em"])
-    
+
     # Use AI client if available
     if not hasattr(ai_client, 'generate_text'):
         # No AI available, use heuristic only
@@ -96,7 +96,7 @@ def classify_comment(
             score=0.5,
             rationale="AI moderation not available"
         )
-    
+
     # Quick heuristic checks before AI call
     lower_text = safe_text.lower()
     if len(safe_text) < 3:
@@ -119,7 +119,7 @@ def classify_comment(
             from django.contrib.auth import get_user_model
             User = get_user_model()
             dummy_user = User.objects.first()  # Get any user for system calls
-            
+
             if not dummy_user:
                 # No users yet, use heuristic
                 return ModerationResult(
@@ -127,17 +127,17 @@ def classify_comment(
                     score=0.5,
                     rationale="No AI moderation available (no users)"
                 )
-            
+
             # Use ai_client.moderate_text
             moderation_result = ai_client.moderate_text(safe_text, dummy_user)
             raw = moderation_result.get("analysis", "")
             toxicity_score = float(moderation_result.get("score", "0.0"))
-            
+
             # Extract additional scores from raw text
             scores = _extract_scores(raw)
             if toxicity_score > 0:
                 scores["toxicity"] = toxicity_score
-            
+
             # Determine label based on scores
             max_score = max(scores.values())
             if max_score >= 0.8:
@@ -148,7 +148,7 @@ def classify_comment(
                 label = "pending"
             else:
                 label = "approved"
-            
+
             # Override with explicit label if found
             if raw:
                 lower = raw.lower()
@@ -160,7 +160,7 @@ def classify_comment(
                     label = "approved"
                 elif "label: pending" in lower:
                     label = "pending"
-            
+
             result = ModerationResult(
                 label=label,
                 score=max_score,
@@ -169,7 +169,7 @@ def classify_comment(
                 spam_score=scores["spam"],
                 hate_score=scores["hate"]
             )
-            
+
         except Exception as exc:
             logger.error(f"AI moderation failed: {exc}", exc_info=True)
             # Fail-safe: require manual review on errors
@@ -178,7 +178,7 @@ def classify_comment(
                 score=0.5,
                 rationale=f"Moderation unavailable: {str(exc)[:100]}"
             )
-    
+
     # Cache the result
     if use_cache:
         cache_data = {
@@ -191,7 +191,7 @@ def classify_comment(
         }
         cache.set(cache_key, cache_data, cache_ttl)
         logger.debug(f"Cached moderation result for key {cache_key[:8]}")
-    
+
     return result
 
 

@@ -3,14 +3,14 @@ from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
 from .models import (
-    SEOModel,
-    Metadata,
-    SchemaEntry,
-    SitemapEntry,
-    Redirect,
     LinkableEntity,
     LinkSuggestion,
+    Metadata,
+    Redirect,
+    SchemaEntry,
+    SEOModel,
     SEOSettings,
+    SitemapEntry,
 )
 
 

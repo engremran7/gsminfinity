@@ -11,15 +11,14 @@ AI provider integration for the assistant endpoint.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
-import json
+from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ImproperlyConfigured
 from django.core.cache import cache
 
 try:

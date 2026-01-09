@@ -106,7 +106,7 @@ def format_relative(dt: datetime) -> str:
     """
     delta = now() - dt
     is_future_time = delta.total_seconds() < 0
-    
+
     if is_future_time:
         delta = -delta
         prefix = 'in '
@@ -114,41 +114,41 @@ def format_relative(dt: datetime) -> str:
     else:
         prefix = ''
         suffix = ' ago'
-    
+
     seconds = int(delta.total_seconds())
-    
+
     if seconds < 60:
         if is_future_time:
             return 'in a moment'
         return 'just now'
-    
+
     minutes = seconds // 60
     if minutes < 60:
         unit = 'minute' if minutes == 1 else 'minutes'
         return f'{prefix}{minutes} {unit}{suffix}'
-    
+
     hours = minutes // 60
     if hours < 24:
         unit = 'hour' if hours == 1 else 'hours'
         return f'{prefix}{hours} {unit}{suffix}'
-    
+
     days = delta.days
     if days == 1:
         return 'tomorrow' if is_future_time else 'yesterday'
-    
+
     if days < 7:
         return f'{prefix}{days} days{suffix}'
-    
+
     weeks = days // 7
     if weeks < 4:
         unit = 'week' if weeks == 1 else 'weeks'
         return f'{prefix}{weeks} {unit}{suffix}'
-    
+
     months = days // 30
     if months < 12:
         unit = 'month' if months == 1 else 'months'
         return f'{prefix}{months} {unit}{suffix}'
-    
+
     years = days // 365
     unit = 'year' if years == 1 else 'years'
     return f'{prefix}{years} {unit}{suffix}'
@@ -244,7 +244,7 @@ def end_of_month(dt: Optional[datetime] = None) -> datetime:
         next_month = dt.replace(year=dt.year + 1, month=1, day=1)
     else:
         next_month = dt.replace(month=dt.month + 1, day=1)
-    
+
     last_day = next_month - timedelta(days=1)
     return end_of_day(last_day)
 
@@ -278,13 +278,13 @@ def age_in_years(birth_date: datetime) -> int:
     """
     today = now().date()
     bd = birth_date.date() if isinstance(birth_date, datetime) else birth_date
-    
+
     age = today.year - bd.year
-    
+
     # Adjust if birthday hasn't occurred this year
     if (today.month, today.day) < (bd.month, bd.day):
         age -= 1
-    
+
     return age
 
 

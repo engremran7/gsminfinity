@@ -14,7 +14,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Any, Dict, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any, Dict, Optional
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.cache import cache

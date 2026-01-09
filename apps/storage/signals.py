@@ -1,8 +1,8 @@
 # Storage App Signal Handlers
-from django.db.models.signals import post_save, pre_delete, post_delete
-from django.dispatch import receiver
-from django.apps import apps
 import logging
+
+from django.db.models.signals import post_delete, post_save, pre_delete
+from django.dispatch import receiver
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +35,13 @@ def cleanup_gdrive_file_on_delete(sender, instance, **kwargs):
         try:
             from .services import ServiceAccountRouter
             from .services.gdrive import GoogleDriveService
-            
+
             router = ServiceAccountRouter()
             sa = router.get_best_service_account(
                 required_gb=0.1,
                 preferred_drive_id=str(instance.shared_drive.id) if instance.shared_drive else None
             )
-            
+
             if sa:
                 gdrive_service = GoogleDriveService(sa)
                 gdrive_service.delete_file(instance.gdrive_file_id)
@@ -70,7 +70,7 @@ def check_drive_capacity_on_update(sender, instance, **kwargs):
     Check if drive is approaching capacity and send alert signal
     """
     utilization = instance.utilization_percent()
-    
+
     # Send alert if utilization exceeds 90%
     if utilization >= 90 and instance.is_active:
         try:
@@ -86,7 +86,7 @@ def check_drive_capacity_on_update(sender, instance, **kwargs):
             )
         except Exception as e:
             logger.error(f"Failed to send quota exhausted signal: {e}")
-    
+
     # Send critical health alert
     if instance.health_status in ['critical', 'full']:
         try:

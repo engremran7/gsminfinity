@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 import hashlib
-from typing import Iterable, List, Dict
-from django.db import transaction, models
-from django.utils import timezone
+from typing import Dict, List
 
-from apps.tags.models import Tag
-from apps.core import ai
-from apps.core import ai_client
-from apps.tags.models_keyword import KeywordProvider, KeywordSuggestion
+from django.db import transaction
+from django.utils import timezone
 from django.utils.text import slugify
+
+from apps.core import ai_client
+from apps.tags.models import Tag
+from apps.tags.models_keyword import KeywordProvider, KeywordSuggestion
 
 
 def _normalize(text: str) -> str:

@@ -9,8 +9,6 @@ from typing import List
 
 import requests
 from celery import shared_task
-from django.conf import settings
-from django.contrib.sites.models import Site
 from django.urls import reverse
 from django.utils import timezone
 
@@ -37,13 +35,13 @@ def ping_search_engines(self, sitemap_url: str) -> dict:
         ping_search_engines.delay("https://example.com/sitemap.xml")
     """
     results = {}
-    
+
     # Search engine ping URLs
     pings = [
         f"https://www.google.com/ping?sitemap={sitemap_url}",
         f"https://www.bing.com/ping?sitemap={sitemap_url}",
     ]
-    
+
     for ping_url in pings:
         engine_name = "Google" if "google" in ping_url else "Bing"
         try:
@@ -62,7 +60,7 @@ def ping_search_engines(self, sitemap_url: str) -> dict:
             # Retry on network errors
             if not isinstance(e, requests.Timeout):
                 raise self.retry(exc=e)
-    
+
     return results
 
 
@@ -73,7 +71,7 @@ def ping_search_engines(self, sitemap_url: str) -> dict:
     soft_time_limit=300,
 )
 def send_post_notifications_batched(
-    self, 
+    self,
     post_id: int,
     notification_title: str,
     notification_body: str,
@@ -99,10 +97,10 @@ def send_post_notifications_batched(
             batch_size=500
         )
     """
+    from apps.blog.models import Post
     from apps.users.models import CustomUser
     from apps.users.services.notifications import broadcast_notification
-    from apps.blog.models import Post
-    
+
     stats = {
         "total_users": 0,
         "batches_processed": 0,
@@ -110,7 +108,7 @@ def send_post_notifications_batched(
         "errors": 0,
         "started_at": timezone.now().isoformat(),
     }
-    
+
     try:
         try:
             post = Post.objects.get(pk=post_id)
@@ -125,16 +123,16 @@ def send_post_notifications_batched(
             f"Starting notification batch send for post {post_id} "
             f"to {stats['total_users']} users"
         )
-        
+
         # Process in batches using iterator to avoid loading all users into memory
         users_qs = CustomUser.objects.filter(is_active=True).iterator(
             chunk_size=batch_size
         )
-        
+
         batch = []
         for user in users_qs:
             batch.append(user)
-            
+
             if len(batch) >= batch_size:
                 try:
                     broadcast_notification(
@@ -152,7 +150,7 @@ def send_post_notifications_batched(
                 except Exception as e:
                     logger.error(f"Failed to send notification batch: {e}")
                     stats["errors"] += 1
-        
+
         # Send remaining batch
         if batch:
             try:
@@ -170,19 +168,19 @@ def send_post_notifications_batched(
             except Exception as e:
                 logger.error(f"Failed to send final notification batch: {e}")
                 stats["errors"] += 1
-        
+
         stats["completed_at"] = timezone.now().isoformat()
         logger.info(
             f"Completed notification send for post {post_id}: "
             f"{stats['notifications_sent']}/{stats['total_users']} sent "
             f"in {stats['batches_processed']} batches"
         )
-        
+
     except Exception as e:
         logger.exception(f"Critical error in notification task for post {post_id}")
         stats["critical_error"] = str(e)
         raise self.retry(exc=e)
-    
+
     return stats
 
 
@@ -198,11 +196,12 @@ def sync_tag_usage_counts(tag_ids: List[int]) -> dict:
         dict: Statistics about the update
     """
     from django.db.models import Count, Q
+
+    from apps.blog.models import PostStatus
     from apps.tags.models import Tag
-    from apps.blog.models import Post, PostStatus
-    
+
     stats = {"updated_count": 0, "errors": 0}
-    
+
     try:
         # Annotate tags with their post counts in a single query
         tags_with_counts = Tag.objects.filter(id__in=tag_ids).annotate(
@@ -212,27 +211,27 @@ def sync_tag_usage_counts(tag_ids: List[int]) -> dict:
                 distinct=True
             )
         )
-        
+
         # Bulk update using case/when for conditional updates
-        from django.db.models import Case, When, F
-        
+        from django.db.models import Case, When
+
         cases = [
             When(id=tag.id, then=tag.published_count)
             for tag in tags_with_counts
         ]
-        
+
         updated = Tag.objects.filter(id__in=tag_ids).update(
             usage_count=Case(*cases, default=0)
         )
-        
+
         stats["updated_count"] = updated
         logger.info(f"Updated usage counts for {updated} tags")
-        
+
     except Exception as e:
         logger.error(f"Failed to sync tag usage counts: {e}")
         stats["errors"] = 1
         stats["error_message"] = str(e)
-    
+
     return stats
 
 
@@ -241,11 +240,13 @@ def generate_ai_post(topic: str, user_id: int) -> int | None:
     """
     Generate a blog post using AI based on a topic.
     """
-    from apps.ai.services import test_completion
-    from apps.blog.models import Post
+    import json
+
     from django.contrib.auth import get_user_model
     from django.utils.text import slugify
-    import json
+
+    from apps.ai.services import test_completion
+    from apps.blog.models import Post
 
     prompt = f"""
     Write a comprehensive blog post about: {topic}.
@@ -261,18 +262,18 @@ def generate_ai_post(topic: str, user_id: int) -> int | None:
     try:
         response = test_completion(prompt)
         content_text = response.get("text", "")
-        
+
         # Clean up markdown code blocks if present
         if content_text.startswith("```json"):
             content_text = content_text.replace("```json", "").replace("```", "")
         elif content_text.startswith("```"):
             content_text = content_text.replace("```", "")
-            
+
         data = json.loads(content_text)
-        
+
         User = get_user_model()
         user = User.objects.get(pk=user_id)
-        
+
         post = Post.objects.create(
             title=data.get("title", topic),
             slug=slugify(data.get("title", topic))[:240],
@@ -284,16 +285,16 @@ def generate_ai_post(topic: str, user_id: int) -> int | None:
             status="draft", # Default to draft for review
             is_ai_generated=True,
         )
-        
+
         # Add tags
         from apps.tags.models import Tag
         for tag_name in data.get("tags", []):
             tag_slug = slugify(tag_name)
             tag, _ = Tag.objects.get_or_create(slug=tag_slug, defaults={"name": tag_name})
             post.tags.add(tag)
-            
+
         return post.id
-        
+
     except Exception as e:
         logger.error(f"Failed to generate AI post: {e}")
         return None
@@ -305,14 +306,15 @@ def auto_translate_post(post_id: int) -> dict:
     Automatically translate a blog post into all enabled languages.
     Uses DeepL if configured, otherwise falls back to AI.
     """
+    from django.conf import settings
+
+    from apps.ai.services import test_completion
     from apps.blog.models import Post, PostTranslation
     from apps.i18n.models import Locale
     from apps.i18n.translation_provider import DeepLTranslator
-    from apps.ai.services import test_completion
-    from django.conf import settings
 
     results = {"translated": [], "errors": []}
-    
+
     try:
         post = Post.objects.get(pk=post_id)
     except Post.DoesNotExist:
@@ -324,7 +326,7 @@ def auto_translate_post(post_id: int) -> dict:
     # 2. Fallback to settings.LANGUAGES
     if not target_langs:
         target_langs = [code for code, _ in getattr(settings, "LANGUAGES", [])]
-    
+
     # Remove source language (assuming 'en' or site default)
     source_lang = getattr(settings, "LANGUAGE_CODE", "en")
     if source_lang in target_langs:
@@ -350,8 +352,8 @@ def auto_translate_post(post_id: int) -> dict:
             if translator:
                 try:
                     translations = translator.translate(
-                        [post.title, post.summary, post.body], 
-                        target=lang, 
+                        [post.title, post.summary, post.body],
+                        target=lang,
                         source=source_lang
                     )
                     if len(translations) == 3:
@@ -374,7 +376,7 @@ def auto_translate_post(post_id: int) -> dict:
                 # Clean JSON
                 if text.startswith("```"):
                     text = text.split("```")[1].replace("json", "").strip()
-                
+
                 import json
                 data = json.loads(text)
                 title_tr = data.get("title", "")
@@ -392,7 +394,7 @@ def auto_translate_post(post_id: int) -> dict:
                     seo_description=summary_tr[:320]
                 )
                 results["translated"].append(lang)
-            
+
         except Exception as e:
             logger.error(f"Translation failed for {lang}: {e}")
             results["errors"].append(f"{lang}: {str(e)}")

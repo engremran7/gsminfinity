@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
+
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
-from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
-from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
 
 from apps.devices.models import Device, DeviceEvent
 from apps.devices.utils.device_fingerprint import make_os_fingerprint
@@ -72,7 +73,7 @@ def device_payload_view(request: HttpRequest) -> JsonResponse:
             ua = request.META.get("HTTP_USER_AGENT", "")
             # 1. Calculate Weak Fingerprint (Empty payload)
             weak_fp, _ = make_os_fingerprint(request.user.id, ua, {})
-            
+
             # 2. Calculate Strong Fingerprint (With current payload)
             strong_fp, _ = make_os_fingerprint(request.user.id, ua, clean)
 
@@ -81,7 +82,7 @@ def device_payload_view(request: HttpRequest) -> JsonResponse:
                 # Find the weak device
                 weak_device = Device.objects.filter(user=request.user, os_fingerprint=weak_fp).first()
                 strong_device = Device.objects.filter(user=request.user, os_fingerprint=strong_fp).first()
-                
+
                 if weak_device:
                     if not strong_device:
                         # Case 1: Weak exists, Strong does not -> Upgrade Weak to Strong
@@ -113,10 +114,11 @@ def acknowledge_new_device(request: HttpRequest) -> HttpResponse:
 
     If dismiss_only=true, just mark the popup as shown without trusting the device.
     """
-    from apps.devices.services import resolve_or_create_device
-    from apps.devices.models import Device
-    from apps.devices.utils.device_fingerprint import make_os_fingerprint
     import logging
+
+    from apps.devices.models import Device
+    from apps.devices.services import resolve_or_create_device
+    from apps.devices.utils.device_fingerprint import make_os_fingerprint
 
     logger = logging.getLogger(__name__)
 

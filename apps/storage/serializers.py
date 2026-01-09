@@ -1,10 +1,11 @@
 from rest_framework import serializers
+
 from .models import (
-    SharedDriveAccount,
-    ServiceAccount,
+    DriveFileOrganization,
     FirmwareStorageLocation,
+    ServiceAccount,
+    SharedDriveAccount,
     UserDownloadSession,
-    DriveFileOrganization
 )
 
 
@@ -12,7 +13,7 @@ class SharedDriveAccountSerializer(serializers.ModelSerializer):
     utilization_percent = serializers.SerializerMethodField()
     available_slots = serializers.SerializerMethodField()
     active_service_accounts = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = SharedDriveAccount
         fields = [
@@ -22,20 +23,20 @@ class SharedDriveAccountSerializer(serializers.ModelSerializer):
             'last_health_check'
         ]
         read_only_fields = ['current_file_count', 'total_size_gb', 'last_health_check']
-    
+
     def get_utilization_percent(self, obj):
         return round(obj.utilization_percent(), 2)
-    
+
     def get_available_slots(self, obj):
         return obj.available_file_slots()
-    
+
     def get_active_service_accounts(self, obj):
         return obj.service_accounts.filter(is_active=True).count()
 
 
 class ServiceAccountSerializer(serializers.ModelSerializer):
     available_quota_gb = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = ServiceAccount
         fields = [
@@ -48,7 +49,7 @@ class ServiceAccountSerializer(serializers.ModelSerializer):
             'used_quota_today_gb', 'total_operations', 'last_used_at',
             'average_speed_mbps'
         ]
-    
+
     def get_available_quota_gb(self, obj):
         return round(obj.available_quota_gb(), 2)
 
@@ -56,7 +57,7 @@ class ServiceAccountSerializer(serializers.ModelSerializer):
 class FirmwareStorageLocationSerializer(serializers.ModelSerializer):
     file_size_gb = serializers.SerializerMethodField()
     is_available = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = FirmwareStorageLocation
         fields = [
@@ -66,10 +67,10 @@ class FirmwareStorageLocationSerializer(serializers.ModelSerializer):
             'created_at', 'last_verified_at'
         ]
         read_only_fields = ['download_count', 'consecutive_failures', 'created_at']
-    
+
     def get_file_size_gb(self, obj):
         return round(obj.file_size_gb(), 3)
-    
+
     def get_is_available(self, obj):
         return obj.is_available()
 
@@ -79,7 +80,7 @@ class UserDownloadSessionSerializer(serializers.ModelSerializer):
     file_size = serializers.SerializerMethodField()
     time_remaining_seconds = serializers.SerializerMethodField()
     is_expired = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = UserDownloadSession
         fields = [
@@ -88,16 +89,16 @@ class UserDownloadSessionSerializer(serializers.ModelSerializer):
             'error_message', 'created_at', 'copy_completed_at'
         ]
         read_only_fields = '__all__'
-    
+
     def get_file_name(self, obj):
         return obj.storage_location.file_name if obj.storage_location else None
-    
+
     def get_file_size(self, obj):
         return obj.storage_location.file_size_bytes if obj.storage_location else None
-    
+
     def get_time_remaining_seconds(self, obj):
         return int(obj.time_remaining().total_seconds())
-    
+
     def get_is_expired(self, obj):
         return obj.is_expired()
 
@@ -105,7 +106,7 @@ class UserDownloadSessionSerializer(serializers.ModelSerializer):
 class DriveFileOrganizationSerializer(serializers.ModelSerializer):
     folder_path = serializers.SerializerMethodField()
     size_gb = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = DriveFileOrganization
         fields = [
@@ -113,7 +114,7 @@ class DriveFileOrganizationSerializer(serializers.ModelSerializer):
             'size_gb', 'created_at'
         ]
         read_only_fields = ['file_count', 'created_at']
-    
+
     def get_folder_path(self, obj):
         path_parts = [obj.brand_name]
         if obj.model_name:
@@ -123,7 +124,7 @@ class DriveFileOrganizationSerializer(serializers.ModelSerializer):
         if obj.category_name:
             path_parts.append(obj.category_name)
         return '/'.join(path_parts)
-    
+
     def get_size_gb(self, obj):
         return round(obj.total_size_bytes / (1024 ** 3), 3)
 

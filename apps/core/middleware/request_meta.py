@@ -14,10 +14,11 @@ Enterprise-grade request metadata middleware for GSMInfinity.
 from __future__ import annotations
 
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.http import HttpRequest, HttpResponse
+
 from apps.core.utils.ip import get_client_ip
 
 logger = logging.getLogger(__name__)

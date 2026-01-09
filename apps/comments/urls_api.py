@@ -6,7 +6,6 @@ The basic Comment API functionality is available via apps/comments/api.py
 
 To restore these endpoints, reintegrate from apps/core/versions/api_enhanced.py
 """
-from django.urls import path
 
 app_name = "comments_api"
 

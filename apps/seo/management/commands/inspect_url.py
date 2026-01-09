@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import urllib.request
-from urllib.parse import urlparse
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 
 from django.conf import settings
 from django.core.management.base import BaseCommand

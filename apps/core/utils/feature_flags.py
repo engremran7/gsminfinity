@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import functools
-from typing import Optional, Any
-from django.core.cache import cache
+from typing import Any, Optional
+
 
 from apps.core.app_service import AppService
 

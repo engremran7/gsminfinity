@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import functools
 import logging
-from typing import Callable, Optional, Union
+from collections.abc import Callable
+from typing import Optional
 
 from django.contrib import messages
-from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
-from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
@@ -50,27 +50,27 @@ def email_verification_required(
         @functools.wraps(func)
         def wrapper(request: HttpRequest, *args, **kwargs) -> HttpResponse:
             user = request.user
-            
+
             # Must be authenticated
             if not user.is_authenticated:
                 return redirect("account_login")
-            
+
             # Social login users are already verified by OAuth provider
             signup_method = getattr(user, "signup_method", None)
             if signup_method == "social":
                 return func(request, *args, **kwargs)
-            
+
             # Check if email is verified
             email_verified_at = getattr(user, "email_verified_at", None)
             if email_verified_at is not None:
                 return func(request, *args, **kwargs)
-            
+
             # Also check allauth EmailAddress model
             try:
                 from allauth.account.models import EmailAddress
                 email_obj = EmailAddress.objects.filter(
-                    user=user, 
-                    email=user.email, 
+                    user=user,
+                    email=user.email,
                     verified=True
                 ).first()
                 if email_obj:
@@ -82,18 +82,18 @@ def email_verification_required(
                     return func(request, *args, **kwargs)
             except Exception as e:
                 logger.warning(f"Failed to check EmailAddress: {e}")
-            
+
             # User needs to verify email
             msg = message or _("Please verify your email address before continuing.")
             messages.warning(request, msg)
-            
+
             # Store the intended URL for post-verification redirect
             request.session["next_after_verify"] = request.get_full_path()
-            
+
             return redirect(redirect_url)
-        
+
         return wrapper
-    
+
     # Allow using @email_verification_required without parentheses
     if view_func is not None:
         return decorator(view_func)
@@ -117,24 +117,24 @@ def profile_complete_required(
         @functools.wraps(func)
         def wrapper(request: HttpRequest, *args, **kwargs) -> HttpResponse:
             user = request.user
-            
+
             # Must be authenticated
             if not user.is_authenticated:
                 return redirect("account_login")
-            
+
             # Check if profile is completed
             profile_completed = getattr(user, "profile_completed", True)
             if profile_completed:
                 return func(request, *args, **kwargs)
-            
+
             # Profile not complete
             msg = message or _("Please complete your profile to continue.")
             messages.info(request, msg)
-            
+
             return redirect(redirect_url)
-        
+
         return wrapper
-    
+
     if view_func is not None:
         return decorator(view_func)
     return decorator
@@ -153,24 +153,24 @@ def social_user_profile_required(
         @functools.wraps(func)
         def wrapper(request: HttpRequest, *args, **kwargs) -> HttpResponse:
             user = request.user
-            
+
             if not user.is_authenticated:
                 return redirect("account_login")
-            
+
             # Only check social login users
             signup_method = getattr(user, "signup_method", None)
             if signup_method != "social":
                 return func(request, *args, **kwargs)
-            
+
             # Check if profile completed
             profile_completed = getattr(user, "profile_completed", True)
             if profile_completed:
                 return func(request, *args, **kwargs)
-            
+
             return redirect(redirect_url)
-        
+
         return wrapper
-    
+
     if view_func is not None:
         return decorator(view_func)
     return decorator

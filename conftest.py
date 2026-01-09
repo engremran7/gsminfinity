@@ -12,10 +12,9 @@ from typing import TYPE_CHECKING
 
 import django
 import pytest
-from django.conf import settings
 
 if TYPE_CHECKING:
-    from django.contrib.auth import get_user_model
+    pass
 
 
 def pytest_configure():
@@ -23,7 +22,7 @@ def pytest_configure():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.settings_dev")
     os.environ.setdefault("DJANGO_SECRET_KEY", "test-secret-key-for-testing-only")
     os.environ.setdefault("DB_ENGINE", "django.db.backends.postgresql")
-    
+
     # Ensure Django is setup before tests run
     django.setup()
 
@@ -41,7 +40,7 @@ def django_db_setup(django_db_blocker):
     is properly configured with all migrations applied.
     """
     from django.core.management import call_command
-    
+
     with django_db_blocker.unblock():
         # Ensure migrations are applied to test database
         call_command("migrate", "--run-syncdb", verbosity=0)
@@ -50,12 +49,12 @@ def django_db_setup(django_db_blocker):
 @pytest.fixture
 def admin_user(db):
     """Create an admin user for testing."""
-    from apps.users.models import CustomUser
-    
     # Use a unique username for each test to avoid conflicts
     import uuid
+
+    from apps.users.models import CustomUser
     unique_id = uuid.uuid4().hex[:8]
-    
+
     user = CustomUser.objects.create_user(
         username=f"testadmin_{unique_id}",
         email=f"testadmin_{unique_id}@test.local",
@@ -70,12 +69,12 @@ def admin_user(db):
 @pytest.fixture
 def regular_user(db):
     """Create a regular user for testing."""
-    from apps.users.models import CustomUser
-    
     # Use a unique username for each test to avoid conflicts
     import uuid
+
+    from apps.users.models import CustomUser
     unique_id = uuid.uuid4().hex[:8]
-    
+
     user = CustomUser.objects.create_user(
         username=f"testuser_{unique_id}",
         email=f"testuser_{unique_id}@test.local",

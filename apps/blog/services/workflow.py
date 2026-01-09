@@ -4,7 +4,6 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 from django.db import transaction
 from django.utils import timezone

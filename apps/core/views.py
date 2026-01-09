@@ -16,13 +16,15 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from typing import Any, Dict, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any, Dict, List, Optional
 
 import django
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+from django.db import connections
 from django.http import (
-    Http404,
     HttpRequest,
     HttpResponse,
     HttpResponseServerError,
@@ -32,13 +34,10 @@ from django.shortcuts import render
 from django.template import TemplateDoesNotExist
 from django.template.loader import get_template
 from django.urls import NoReverseMatch, reverse
-from django.db import connections
 from django.utils.timezone import now, timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
 
-from apps.core.cache import DistributedCacheManager
 
 logger = logging.getLogger(__name__)
 

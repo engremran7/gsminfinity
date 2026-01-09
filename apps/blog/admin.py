@@ -2,7 +2,15 @@
 from django.contrib import admin
 from solo.admin import SingletonModelAdmin
 
-from .models import BlogSettings, Category, Post, AutoTopic, PostTranslation, CategoryTranslation, TagTranslation
+from .models import (
+    AutoTopic,
+    BlogSettings,
+    Category,
+    CategoryTranslation,
+    Post,
+    PostTranslation,
+    TagTranslation,
+)
 
 
 @admin.register(Category)

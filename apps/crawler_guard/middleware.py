@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import fnmatch
 import hashlib
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse

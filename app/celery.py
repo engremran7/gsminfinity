@@ -4,8 +4,6 @@ from __future__ import annotations
 import os
 from datetime import timedelta
 import logging
-from functools import wraps
-from typing import Callable, Any
 
 from celery import Celery
 

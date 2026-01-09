@@ -4,9 +4,10 @@ Listens to content updates and invalidates relevant widget caches
 Ensures homepage always shows fresh data without manual cache clearing
 """
 
-from django.dispatch import receiver
-from django.db.models.signals import post_save, post_delete
 import logging
+
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,6 @@ def invalidate_firmware_caches(sender, instance, created, **kwargs):
 def invalidate_trending_firmware_cache(sender, instance, created, **kwargs):
     """Invalidate trending cache when views/downloads change"""
     if created:
-        from .widgets import HomePageWidgetService
         # Don't invalidate on every view (too expensive), rely on periodic aggregation
         # Cache will naturally expire in 5 minutes
         pass
@@ -76,17 +76,17 @@ def invalidate_blogs_on_delete(sender, instance, **kwargs):
 # If you have custom signals defined in apps.core.signals, listen to them
 try:
     from apps.core.signals import (
-        firmware_uploaded,
         firmware_download_ready,
+        firmware_uploaded,
     )
-    
+
     @receiver(firmware_uploaded)
     def on_firmware_uploaded_signal(sender, storage_location, firmware, **kwargs):
         """Invalidate when firmware uploaded via storage app"""
         from .widgets import HomePageWidgetService
         HomePageWidgetService.invalidate_caches(['latest_firmwares'])
         logger.debug("Invalidated caches via firmware_uploaded signal")
-    
+
     @receiver(firmware_download_ready)
     def on_firmware_download_signal(sender, session, **kwargs):
         """Track download completions for trending calculation"""

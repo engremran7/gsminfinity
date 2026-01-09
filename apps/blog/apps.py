@@ -11,7 +11,7 @@ class BlogConfig(AppConfig):
         # Connect signals with deferred imports to prevent circular dependencies
         from . import signals
         signals.connect_signals()
-        
+
         # Register signal handlers for cross-app communication
         try:
             from . import signal_handlers  # noqa: F401
@@ -21,6 +21,7 @@ class BlogConfig(AppConfig):
         # Register blog sitemap with the central registry (soft-fail to keep app modular)
         try:
             from apps.pages.sitemap_registry import register_sitemap
+
             from .sitemaps import PublishedBlogPostsSitemap
 
             register_sitemap("blog", PublishedBlogPostsSitemap)

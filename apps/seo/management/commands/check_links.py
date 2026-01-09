@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import urllib.request
-from urllib.error import URLError, HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 
 from django.conf import settings

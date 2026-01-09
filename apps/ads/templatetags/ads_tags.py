@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 from django import template
-from django.utils.safestring import mark_safe
 from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 
 from apps.ads.models import AdPlacement, AdsSettings
 from apps.core.cache import cache
@@ -41,7 +41,7 @@ def render_ad_slot(context, slug: str, allowed_types: str = "", allowed_sizes: s
         return ""
 
     request = context.get("request")
-    
+
     # Check user exclusions
     settings_obj = _get_ads_settings()
     if settings_obj and request:
@@ -49,7 +49,7 @@ def render_ad_slot(context, slug: str, allowed_types: str = "", allowed_sizes: s
         page_url = request.path if hasattr(request, 'path') else ""
         if not settings_obj.should_show_ads(user=user, page_url=page_url):
             return ""
-    
+
     consent_flags = getattr(request, "consent_flags", None)
     if consent_flags is not None:
         try:
@@ -99,29 +99,29 @@ def render_rewarded_ad(context, config_name: str = ""):
     """
     if not _ads_enabled():
         return ""
-    
+
     settings_obj = _get_ads_settings()
     if not settings_obj or not settings_obj.rewarded_ads_enabled:
         return ""
-    
+
     request = context.get("request")
     user = getattr(request, 'user', None) if request else None
-    
+
     # Rewarded ads require authentication
     if not user or not user.is_authenticated:
         return ""
-    
+
     try:
         from apps.ads.models import RewardedAdConfig
-        
+
         if config_name:
             config = RewardedAdConfig.objects.filter(name=config_name, is_enabled=True).first()
         else:
             config = RewardedAdConfig.objects.filter(is_enabled=True).first()
-        
+
         if not config:
             return ""
-        
+
         html = render_to_string(
             "ads/components/rewarded_button.html",
             {
@@ -147,13 +147,13 @@ def render_network_ads(context, network_type: str = "adsense"):
     """
     if not _ads_enabled():
         return ""
-    
+
     settings_obj = _get_ads_settings()
     if not settings_obj or not settings_obj.ad_networks_enabled:
         return ""
-    
+
     request = context.get("request")
-    
+
     try:
         if network_type == "adsense" and settings_obj.adsense_enabled:
             html = _render_adsense(settings_obj, request)
@@ -167,7 +167,7 @@ def render_network_ads(context, network_type: str = "adsense"):
                 html = network.header_script or ""
             else:
                 return ""
-        
+
         return mark_safe(html)
     except Exception as e:
         import logging
@@ -181,13 +181,13 @@ def _render_adsense(settings_obj, request) -> str:
     publisher_id = settings_obj.adsense_publisher_id
     if not publisher_id:
         return ""
-    
+
     auto_ads = settings_obj.adsense_auto_ads
-    
+
     html = f'''
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={publisher_id}" crossorigin="anonymous"></script>
     '''
-    
+
     if auto_ads:
         html += '''
         <script>
@@ -197,7 +197,7 @@ def _render_adsense(settings_obj, request) -> str:
             });
         </script>
         '''
-    
+
     return html
 
 
@@ -206,7 +206,7 @@ def _render_medianet(settings_obj, request) -> str:
     customer_id = settings_obj.medianet_customer_id
     if not customer_id:
         return ""
-    
+
     return f'''
     <script type="text/javascript">
         window._mNHandle = window._mNHandle || {{}};
@@ -233,10 +233,10 @@ def inject_ads(value, frequency=3):
     """
     if not _ads_enabled():
         return value
-        
+
     if not value:
         return ""
-    
+
     settings_obj = _get_ads_settings()
     if settings_obj and not settings_obj.auto_ads_in_article:
         return value
@@ -250,9 +250,9 @@ def inject_ads(value, frequency=3):
     for i, p in enumerate(paragraphs):
         if not p.strip():
             continue
-            
+
         new_content.append(p + '</p>')
-        
+
         # Inject ad after every Nth paragraph, but not at the very end
         if (i + 1) % frequency == 0 and i < len(paragraphs) - 1:
             slot_num = (i + 1) // frequency
@@ -260,9 +260,9 @@ def inject_ads(value, frequency=3):
             # So we inject a placeholder div that JS or a second pass could pick up.
             # OR better: we just render a generic slot structure directly if we can't access DB.
             # However, for this "intelligent" feature, let's try to render a real slot if possible.
-            # Since we can't access 'context' in a filter easily without a custom tag, 
+            # Since we can't access 'context' in a filter easily without a custom tag,
             # we will inject a lazy-load marker that the frontend JS (ads.js) can hydrate.
-            
+
             ad_html = f'''
             <div class="my-8 flex justify-center">
                 <div class="ad-slot-in-content" data-ad-slot="in-content-{slot_num}" data-requires-consent="ads">
@@ -287,24 +287,24 @@ def ads_header_scripts(context):
     settings_obj = _get_ads_settings()
     if not settings_obj or not settings_obj.ads_enabled:
         return {"render": False}
-    
+
     request = context.get("request")
-    
+
     # Collect all enabled network scripts
     networks = []
-    
+
     if settings_obj.adsense_enabled and settings_obj.adsense_publisher_id:
         networks.append({
             "name": "adsense",
             "script": _render_adsense(settings_obj, request),
         })
-    
+
     if settings_obj.medianet_enabled and settings_obj.medianet_customer_id:
         networks.append({
             "name": "medianet",
             "script": _render_medianet(settings_obj, request),
         })
-    
+
     # Add custom networks from AdNetwork model
     try:
         from apps.ads.models import AdNetwork
@@ -315,7 +315,7 @@ def ads_header_scripts(context):
             })
     except Exception:
         pass
-    
+
     return {
         "render": True,
         "networks": networks,
@@ -333,9 +333,9 @@ def ads_consent_mode():
     settings_obj = _get_ads_settings()
     if not settings_obj:
         return ""
-    
+
     default = settings_obj.consent_mode_default
-    
+
     return mark_safe(f'''
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -354,10 +354,10 @@ def ads_consent_mode():
 
 @register.inclusion_tag("ads/components/affiliate_products.html", takes_context=True)
 def render_affiliate_products(
-    context, 
-    brand=None, 
-    model=None, 
-    variant=None, 
+    context,
+    brand=None,
+    model=None,
+    variant=None,
     blog_post=None,
     max_products=4,
     layout="grid",
@@ -374,7 +374,7 @@ def render_affiliate_products(
     settings_obj = _get_ads_settings()
     if not settings_obj or not settings_obj.affiliate_products_enabled:
         return {"render": False}
-    
+
     # Check page-type specific settings
     if brand and not settings_obj.affiliate_products_show_on_brand:
         return {"render": False}
@@ -384,9 +384,9 @@ def render_affiliate_products(
         return {"render": False}
     if blog_post and not settings_obj.affiliate_products_show_on_blog:
         return {"render": False}
-    
+
     request = context.get("request")
-    
+
     try:
         products = _get_contextual_products(
             brand=brand,
@@ -396,7 +396,7 @@ def render_affiliate_products(
             max_products=min(max_products, settings_obj.affiliate_products_max_per_page),
             settings_obj=settings_obj,
         )
-        
+
         return {
             "render": True,
             "products": products,
@@ -422,12 +422,13 @@ def _get_contextual_products(brand=None, model=None, variant=None, blog_post=Non
     3. Keyword matches
     4. Universal products
     """
-    from apps.ads.models import AffiliateProduct, AffiliateProductMatch
     from django.db.models import Q
-    
+
+    from apps.ads.models import AffiliateProduct, AffiliateProductMatch
+
     products = []
     seen_ids = set()
-    
+
     # 1. First, get any manual matches (pinned products)
     match_filters = Q(is_hidden=False)
     if brand:
@@ -438,49 +439,49 @@ def _get_contextual_products(brand=None, model=None, variant=None, blog_post=Non
         match_filters &= Q(variant=variant)
     elif blog_post:
         match_filters &= Q(blog_post=blog_post)
-    
+
     manual_matches = AffiliateProductMatch.objects.filter(
         match_filters,
         product__is_enabled=True,
         product__is_in_stock=True,
     ).select_related("product", "product__provider").order_by("-is_pinned", "position", "-relevance_score")[:max_products]
-    
+
     for match in manual_matches:
         if match.product_id not in seen_ids:
             products.append(match.product)
             seen_ids.add(match.product_id)
-    
+
     if len(products) >= max_products:
         return products[:max_products]
-    
+
     # 2. Get brand/model targeted products
     remaining = max_products - len(products)
     targeted_filters = Q(is_enabled=True, is_in_stock=True)
     targeted_filters &= ~Q(id__in=seen_ids)
-    
+
     if brand:
         targeted_filters &= Q(target_brands=brand)
     elif model:
         targeted_filters &= (Q(target_models=model) | Q(target_brands=model.brand))
     elif variant and hasattr(variant, 'model') and variant.model:
         targeted_filters &= (Q(target_models=variant.model) | Q(target_brands=variant.model.brand))
-    
+
     targeted_products = AffiliateProduct.objects.filter(targeted_filters).order_by(
         "-ai_relevance_score", "-rating"
     )[:remaining]
-    
+
     for product in targeted_products:
         if product.id not in seen_ids:
             products.append(product)
             seen_ids.add(product.id)
-    
+
     if len(products) >= max_products:
         return products[:max_products]
-    
+
     # 3. Keyword matching
     remaining = max_products - len(products)
     keywords = []
-    
+
     if brand:
         keywords.extend([brand.name.lower()])
     elif model:
@@ -492,29 +493,29 @@ def _get_contextual_products(brand=None, model=None, variant=None, blog_post=Non
     elif blog_post:
         # Extract keywords from blog post title/tags
         keywords.append(blog_post.title.lower() if hasattr(blog_post, 'title') else "")
-    
+
     if keywords:
         keyword_filters = Q(is_enabled=True, is_in_stock=True)
         keyword_filters &= ~Q(id__in=seen_ids)
-        
+
         keyword_q = Q()
         for kw in keywords:
             if kw:
                 keyword_q |= Q(target_keywords__icontains=kw)
-        
+
         if keyword_q:
             keyword_products = AffiliateProduct.objects.filter(
                 keyword_filters & keyword_q
             ).order_by("-ai_relevance_score", "-rating")[:remaining]
-            
+
             for product in keyword_products:
                 if product.id not in seen_ids:
                     products.append(product)
                     seen_ids.add(product.id)
-    
+
     if len(products) >= max_products:
         return products[:max_products]
-    
+
     # 4. Universal products as fallback
     remaining = max_products - len(products)
     universal_products = AffiliateProduct.objects.filter(
@@ -522,12 +523,12 @@ def _get_contextual_products(brand=None, model=None, variant=None, blog_post=Non
         is_in_stock=True,
         is_universal=True,
     ).exclude(id__in=seen_ids).order_by("-ai_relevance_score", "-rating")[:remaining]
-    
+
     for product in universal_products:
         if product.id not in seen_ids:
             products.append(product)
             seen_ids.add(product.id)
-    
+
     return products[:max_products]
 
 
@@ -539,30 +540,30 @@ def track_affiliate_click(context, product):
     """
     if not product:
         return "#"
-    
+
     request = context.get("request")
-    
+
     try:
         # Build tracking URL
         base_url = product.affiliate_url or product.product_url
-        
+
         # Add tracking parameters
-        from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
-        
+        from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+
         parsed = urlparse(base_url)
         params = parse_qs(parsed.query)
-        
+
         # Add internal tracking
         params["_gsm_click"] = [str(product.id)]
         if request:
             params["_gsm_ref"] = [request.path[:100]]
-        
+
         new_query = urlencode(params, doseq=True)
         tracked_url = urlunparse((
             parsed.scheme, parsed.netloc, parsed.path,
             parsed.params, new_query, parsed.fragment
         ))
-        
+
         return tracked_url
     except Exception:
         return product.affiliate_url or product.product_url or "#"

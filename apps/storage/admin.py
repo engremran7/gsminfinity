@@ -1,13 +1,13 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.db.models import Sum, Count
+
 from .models import (
-    SharedDriveAccount,
-    ServiceAccount,
+    DriveFileOrganization,
     FirmwareStorageLocation,
-    UserDownloadSession,
+    ServiceAccount,
     ServiceAccountQuotaLog,
-    DriveFileOrganization
+    SharedDriveAccount,
+    UserDownloadSession,
 )
 
 
@@ -25,7 +25,7 @@ class SharedDriveAccountAdmin(admin.ModelAdmin):
         'utilization_display', 'available_slots_display'
     ]
     ordering = ['-priority', '-is_active', 'current_file_count']
-    
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'drive_id', 'owner_email', 'priority')
@@ -44,11 +44,11 @@ class SharedDriveAccountAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def drive_id_short(self, obj):
         return f"{obj.drive_id[:20]}..." if len(obj.drive_id) > 20 else obj.drive_id
     drive_id_short.short_description = 'Drive ID'
-    
+
     def utilization_badge(self, obj):
         percent = obj.utilization_percent()
         if percent >= 95:
@@ -59,13 +59,13 @@ class SharedDriveAccountAdmin(admin.ModelAdmin):
             color = 'yellow'
         else:
             color = 'green'
-        
+
         return format_html(
             '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{:.1f}%</span>',
             color, percent
         )
     utilization_badge.short_description = 'Utilization'
-    
+
     def health_status_badge(self, obj):
         colors = {
             'healthy': 'green',
@@ -80,27 +80,27 @@ class SharedDriveAccountAdmin(admin.ModelAdmin):
             color, obj.health_status.upper()
         )
     health_status_badge.short_description = 'Health'
-    
+
     def service_account_count(self, obj):
         return obj.service_accounts.filter(is_active=True).count()
     service_account_count.short_description = 'Active SAs'
-    
+
     def utilization_display(self, obj):
         return f"{obj.utilization_percent():.2f}%"
     utilization_display.short_description = 'Utilization %'
-    
+
     def available_slots_display(self, obj):
         return f"{obj.available_file_slots():,} files"
     available_slots_display.short_description = 'Available Slots'
-    
+
     actions = ['update_health_status', 'reset_file_counts']
-    
+
     def update_health_status(self, request, queryset):
         for drive in queryset:
             drive.update_health_status()
         self.message_user(request, f"Updated health status for {queryset.count()} drives")
     update_health_status.short_description = "Update health status"
-    
+
     def reset_file_counts(self, request, queryset):
         queryset.update(current_file_count=0, total_size_gb=0.0)
         self.message_user(request, f"Reset file counts for {queryset.count()} drives")
@@ -121,7 +121,7 @@ class ServiceAccountAdmin(admin.ModelAdmin):
         'last_used_at', 'available_quota_display', 'quota_reset_at'
     ]
     ordering = ['shared_drive', 'used_quota_today_gb']
-    
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('shared_drive', 'name', 'email', 'credentials_path')
@@ -143,32 +143,32 @@ class ServiceAccountAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def email_short(self, obj):
         return f"{obj.email[:30]}..." if len(obj.email) > 30 else obj.email
     email_short.short_description = 'Email'
-    
+
     def quota_badge(self, obj):
         available = obj.available_quota_gb()
         percent_used = ((obj.daily_quota_gb - available) / obj.daily_quota_gb) * 100
-        
+
         if percent_used >= 90:
             color = 'red'
         elif percent_used >= 70:
             color = 'orange'
         else:
             color = 'green'
-        
+
         return format_html(
             '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{:.1f} GB</span>',
             color, available
         )
     quota_badge.short_description = 'Available Quota'
-    
+
     def available_quota_display(self, obj):
         return f"{obj.available_quota_gb():.2f} GB"
     available_quota_display.short_description = 'Available Quota'
-    
+
     def last_used_display(self, obj):
         if not obj.last_used_at:
             return "Never"
@@ -181,19 +181,19 @@ class ServiceAccountAdmin(admin.ModelAdmin):
         minutes = (delta.seconds % 3600) // 60
         return f"{minutes}m ago"
     last_used_display.short_description = 'Last Used'
-    
+
     actions = ['reset_quota', 'activate_accounts', 'deactivate_accounts']
-    
+
     def reset_quota(self, request, queryset):
         queryset.update(used_quota_today_gb=0.0, consecutive_failures=0)
         self.message_user(request, f"Reset quota for {queryset.count()} service accounts")
     reset_quota.short_description = "Reset quota usage"
-    
+
     def activate_accounts(self, request, queryset):
         queryset.update(is_active=True, consecutive_failures=0)
         self.message_user(request, f"Activated {queryset.count()} service accounts")
     activate_accounts.short_description = "Activate selected accounts"
-    
+
     def deactivate_accounts(self, request, queryset):
         queryset.update(is_active=False)
         self.message_user(request, f"Deactivated {queryset.count()} service accounts")
@@ -211,7 +211,7 @@ class FirmwareStorageLocationAdmin(admin.ModelAdmin):
     search_fields = ['file_name', 'gdrive_file_id', 'external_url']
     readonly_fields = ['download_count', 'last_verified_at', 'file_size_display']
     ordering = ['-is_primary', '-priority', '-created_at']
-    
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('content_type', 'object_id', 'storage_type', 'file_name')
@@ -239,7 +239,7 @@ class FirmwareStorageLocationAdmin(admin.ModelAdmin):
             )
         })
     )
-    
+
     def file_size_display(self, obj):
         size_gb = obj.file_size_bytes / (1024 ** 3)
         if size_gb >= 1:
@@ -265,7 +265,7 @@ class UserDownloadSessionAdmin(admin.ModelAdmin):
     ]
     date_hierarchy = 'created_at'
     ordering = ['-created_at']
-    
+
     fieldsets = (
         ('Session Information', {
             'fields': ('user', 'storage_location', 'service_account', 'status')
@@ -290,18 +290,18 @@ class UserDownloadSessionAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def id_short(self, obj):
         return str(obj.id)[:8]
     id_short.short_description = 'ID'
-    
+
     def file_name_display(self, obj):
         if obj.storage_location:
             name = obj.storage_location.file_name
             return f"{name[:40]}..." if len(name) > 40 else name
         return "N/A"
     file_name_display.short_description = 'File'
-    
+
     def status_badge(self, obj):
         colors = {
             'pending': 'gray',
@@ -319,15 +319,15 @@ class UserDownloadSessionAdmin(admin.ModelAdmin):
             color, obj.status.upper()
         )
     status_badge.short_description = 'Status'
-    
+
     def time_remaining_display(self, obj):
         remaining = obj.time_remaining()
         if remaining.total_seconds() <= 0:
             return "EXPIRED"
-        
+
         hours = remaining.seconds // 3600
         minutes = (remaining.seconds % 3600) // 60
-        
+
         if remaining.days > 0:
             return f"{remaining.days}d {hours}h"
         elif hours > 0:
@@ -335,16 +335,16 @@ class UserDownloadSessionAdmin(admin.ModelAdmin):
         else:
             return f"{minutes}m"
     time_remaining_display.short_description = 'Time Remaining'
-    
+
     actions = ['cleanup_expired', 'delete_from_drive']
-    
+
     def cleanup_expired(self, request, queryset):
         expired = queryset.filter(expires_at__lt=timezone.now(), status='ready')
         count = expired.count()
         expired.update(status='expired')
         self.message_user(request, f"Marked {count} sessions as expired")
     cleanup_expired.short_description = "Mark expired sessions"
-    
+
     def delete_from_drive(self, request, queryset):
         # This would trigger Celery task to delete from GDrive
         count = queryset.count()
@@ -362,7 +362,7 @@ class ServiceAccountQuotaLogAdmin(admin.ModelAdmin):
     search_fields = ['service_account__name']
     date_hierarchy = 'date'
     ordering = ['-date', 'service_account']
-    
+
     def bytes_transferred_display(self, obj):
         gb = obj.total_bytes_transferred / (1024 ** 3)
         return f"{gb:.2f} GB"
@@ -379,7 +379,7 @@ class DriveFileOrganizationAdmin(admin.ModelAdmin):
     search_fields = ['brand_name', 'model_name', 'variant_name']
     readonly_fields = ['file_count', 'total_size_bytes']
     ordering = ['shared_drive', 'brand_name', 'model_name', 'variant_name']
-    
+
     def path_display(self, obj):
         path_parts = [obj.brand_name]
         if obj.model_name:
@@ -388,10 +388,10 @@ class DriveFileOrganizationAdmin(admin.ModelAdmin):
             path_parts.append(obj.variant_name)
         if obj.category_name:
             path_parts.append(obj.category_name)
-        
+
         return " / ".join(path_parts)
     path_display.short_description = 'Folder Path'
-    
+
     def size_display(self, obj):
         gb = obj.total_size_bytes / (1024 ** 3)
         if gb >= 1:

@@ -235,7 +235,7 @@ class DistributionSettings(SingletonModel):
         blank=True,
         help_text="Default channels for auto-distribution (empty = use all active channels). Example: ['twitter', 'facebook', 'linkedin']"
     )
-    
+
     # ============================================================
     # Platform & Distribution Limits (Policy Compliance)
     # ============================================================
@@ -247,7 +247,7 @@ class DistributionSettings(SingletonModel):
         default=4,
         help_text="Minimum hours between auto-distributions for same content. Prevents spam. Recommended: 4-24 hours."
     )
-    
+
     # ============================================================
     # SEO Limits (Search Engine Guidelines)
     # ============================================================
@@ -263,7 +263,7 @@ class DistributionSettings(SingletonModel):
         default=10,
         help_text="⚠️ Maximum SEO-focused tags per content. Too many tags = keyword stuffing = Google penalty. Recommended: 5-10."
     )
-    
+
     # ============================================================
     # Auto-Tagging Limits (Content Optimization)
     # ============================================================
@@ -275,7 +275,7 @@ class DistributionSettings(SingletonModel):
         default=7,
         help_text="How often (in days) to regenerate auto-tags for existing content. Lower = more frequent updates. 0 = never update."
     )
-    
+
     # ============================================================
     # Retry & Error Handling
     # ============================================================
@@ -287,7 +287,7 @@ class DistributionSettings(SingletonModel):
         default=1800,
         help_text="Wait time (seconds) before retrying a failed job. 1800s = 30 minutes. Use exponential backoff for rate limits."
     )
-    
+
     # ============================================================
     # Advanced Features
     # ============================================================
@@ -310,7 +310,7 @@ class DistributionSettings(SingletonModel):
 
     def __str__(self) -> str:
         return "Distribution Settings"
-    
+
     def get_limits_summary(self):
         """Return a summary of current limits for display"""
         return {
@@ -353,39 +353,39 @@ class ContentDistribution(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
-    
+
     # Distribution metadata
     title = models.CharField(max_length=255)
     summary = models.TextField(blank=True, default="")
     content_url = models.URLField(blank=True, default="")
-    
+
     # Target channels for distribution
     target_channels = models.JSONField(
-        default=list, 
+        default=list,
         blank=True,
         help_text="List of channels to distribute to (twitter, linkedin, facebook, etc.)"
     )
-    
+
     # Distribution status and tracking
     status = models.CharField(
         max_length=20,
         choices=DistributionStatus.choices,
         default=DistributionStatus.PENDING
     )
-    
+
     # Distribution settings (inherits from DistributionSettings by default)
     priority = models.PositiveIntegerField(default=5, help_text="1=highest, 10=lowest")
     schedule_at = models.DateTimeField(null=True, blank=True, help_text="Schedule distribution for later")
-    
+
     # Tracking fields
     distributed_at = models.DateTimeField(null=True, blank=True)
     distribution_count = models.PositiveIntegerField(default=0, help_text="Number of successful distributions")
     failed_count = models.PositiveIntegerField(default=0)
     last_error = models.TextField(blank=True, default="")
-    
+
     # Metadata
     metadata = models.JSONField(default=dict, blank=True, help_text="Additional distribution metadata")
-    
+
     # Audit fields
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -396,7 +396,7 @@ class ContentDistribution(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         ordering = ['-created_at']
         indexes = [
@@ -406,74 +406,74 @@ class ContentDistribution(models.Model):
         ]
         verbose_name = "Content Distribution"
         verbose_name_plural = "Content Distributions"
-    
+
     def __str__(self):
         return f"Distribution: {self.title} ({self.get_status_display()})"
-    
+
     def get_settings(self):
         """Get global distribution settings"""
         return DistributionSettings.get_solo()
-    
+
     def is_ready_for_distribution(self):
         """Check if content is ready to be distributed"""
         if self.status not in [DistributionStatus.PENDING, DistributionStatus.QUEUED]:
             return False
-        
+
         if self.schedule_at and self.schedule_at > timezone.now():
             return False
-        
+
         # Check frequency limit
         if self.distributed_at:
             settings = self.get_settings()
             hours_since_last = (timezone.now() - self.distributed_at).total_seconds() / 3600
             if hours_since_last < settings.distribution_frequency_hours:
                 return False
-        
+
         return True
-    
+
     def mark_completed(self):
         """Mark distribution as completed"""
         self.status = DistributionStatus.COMPLETED
         self.distributed_at = timezone.now()
         self.distribution_count += 1
         self.save(update_fields=['status', 'distributed_at', 'distribution_count', 'updated_at'])
-    
+
     def mark_failed(self, error_message):
         """Mark distribution as failed with error message"""
         self.status = DistributionStatus.FAILED
         self.failed_count += 1
         self.last_error = error_message
         self.save(update_fields=['status', 'failed_count', 'last_error', 'updated_at'])
-    
+
     def apply_limits(self):
         """
         Apply policy-compliant limits from DistributionSettings to prevent over-distribution.
         This ensures all content respects the configured limits in admin panel.
         """
         settings = self.get_settings()
-        
+
         # Limit target channels based on admin configuration
         if len(self.target_channels) > settings.max_platforms_per_content:
             self.target_channels = self.target_channels[:settings.max_platforms_per_content]
-        
+
         # Check metadata for tags and apply limits from settings
         if 'tags' in self.metadata:
             tags = self.metadata['tags']
             if len(tags) > settings.max_auto_tags:
                 self.metadata['tags'] = tags[:settings.max_auto_tags]
-        
+
         if 'seo_tags' in self.metadata:
             seo_tags = self.metadata['seo_tags']
             if len(seo_tags) > settings.max_seo_tags:
                 self.metadata['seo_tags'] = seo_tags[:settings.max_seo_tags]
-        
+
         # Truncate title and summary to SEO limits
         if len(self.title) > settings.max_seo_title_length:
             self.title = self.title[:settings.max_seo_title_length - 3] + '...'
-        
+
         if len(self.summary) > settings.max_seo_description_length:
             self.summary = self.summary[:settings.max_seo_description_length - 3] + '...'
-        
+
         self.save()
 
 

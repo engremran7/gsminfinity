@@ -5,9 +5,9 @@ from django.shortcuts import redirect
 from django.urls import reverse
 
 from apps.devices.services import (
-    enforce_device_policy_for_service,
-    attach_device_cookie,
     DevicePolicyError,
+    attach_device_cookie,
+    enforce_device_policy_for_service,
 )
 
 
@@ -54,14 +54,14 @@ class DeviceEnforcementMiddleware:
 
             response = self.get_response(request)
             attach_device_cookie(response, result.get("device"))
-            
+
             # Update popup data if it exists (to ensure counts are fresh)
             if request.session.get("new_device_popup"):
                 try:
                     device_obj = result.get("device")
                     # Force raw fingerprint update
                     dev_name_update = getattr(device_obj, "display_name", "") or getattr(device_obj, "os_fingerprint", "New Device")
-                    
+
                     request.session["new_device_popup"].update({
                         "device_name": dev_name_update,
                         "remaining_devices": inner_ctx.get("remaining_devices"),

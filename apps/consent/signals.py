@@ -17,11 +17,12 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from apps.consent.models import ConsentRecord
-from apps.consent.utils import get_active_policy, resolve_site_domain
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.db import transaction
 from django.dispatch import receiver
+
+from apps.consent.models import ConsentRecord
+from apps.consent.utils import get_active_policy, resolve_site_domain
 
 logger = logging.getLogger(__name__)
 

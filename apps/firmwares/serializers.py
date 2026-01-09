@@ -1,6 +1,13 @@
-from rest_framework import serializers
 from django.core.validators import MinLengthValidator
-from .models import PendingFirmware, SchemaUpdateProposal, BrandCreationRequest, ModelCreationRequest, VariantCreationRequest
+from rest_framework import serializers
+
+from .models import (
+    BrandCreationRequest,
+    ModelCreationRequest,
+    PendingFirmware,
+    SchemaUpdateProposal,
+    VariantCreationRequest,
+)
 
 
 class PendingFirmwareUploadSerializer(serializers.Serializer):

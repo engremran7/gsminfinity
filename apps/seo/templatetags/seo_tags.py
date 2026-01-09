@@ -4,13 +4,13 @@ from __future__ import annotations
 import json
 
 from django import template
+from django.contrib.contenttypes.models import ContentType
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
-from django.contrib.contenttypes.models import ContentType
 
 from apps.core.utils import feature_flags
+from apps.seo.models import Metadata, SchemaEntry, SEOModel
 from apps.site_settings.models import SiteSettings
-from apps.seo.models import SEOModel, Metadata, SchemaEntry
 
 register = template.Library()
 

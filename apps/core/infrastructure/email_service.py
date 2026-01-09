@@ -5,16 +5,16 @@ Email Service - Email Abstraction
 Unified interface for sending emails with template support.
 """
 
-from abc import ABC, abstractmethod
-from typing import List, Optional, Dict, Any
 import logging
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class EmailBackend(ABC):
     """Abstract email backend interface"""
-    
+
     @abstractmethod
     def send(
         self,
@@ -30,7 +30,7 @@ class EmailBackend(ABC):
 
 class DjangoEmailBackend(EmailBackend):
     """Django's built-in email backend"""
-    
+
     def send(
         self,
         subject: str,
@@ -73,10 +73,10 @@ class EmailService:
             context={'username': 'John'}
         )
     """
-    
+
     def __init__(self, backend: Optional[EmailBackend] = None):
         self.backend = backend or DjangoEmailBackend()
-    
+
     def send_email(
         self,
         subject: str,
@@ -100,7 +100,7 @@ class EmailService:
         """
         from django.conf import settings
         from_email = from_email or settings.DEFAULT_FROM_EMAIL
-        
+
         return self.backend.send(
             subject=subject,
             message=message,
@@ -108,7 +108,7 @@ class EmailService:
             recipient_list=to_emails,
             html_message=html_message
         )
-    
+
     def send_templated_email(
         self,
         template_prefix: str,
@@ -133,9 +133,9 @@ class EmailService:
         Returns:
             Number of emails sent
         """
-        from django.template.loader import render_to_string
         from django.template import TemplateDoesNotExist
-        
+        from django.template.loader import render_to_string
+
         try:
             # Render subject (remove newlines)
             try:
@@ -145,24 +145,24 @@ class EmailService:
                     subject = render_to_string(f'{template_prefix}_subject.html', context).strip()
                 except TemplateDoesNotExist:
                     subject = "Message from GSM Infinity"
-            
+
             # Render plain text message
             try:
                 text_message = render_to_string(f'{template_prefix}.txt', context)
             except TemplateDoesNotExist:
                 text_message = ""
-            
+
             # Render HTML message
             html_message = None
             try:
                 html_message = render_to_string(f'{template_prefix}.html', context)
             except TemplateDoesNotExist:
                 pass
-            
+
             if not text_message and not html_message:
                 logger.error(f"No email templates found for '{template_prefix}'")
                 return 0
-            
+
             return self.send_email(
                 subject=subject,
                 message=text_message,
@@ -170,11 +170,11 @@ class EmailService:
                 from_email=from_email,
                 html_message=html_message
             )
-        
+
         except Exception as e:
             logger.error(f"Templated email failed: {e}", exc_info=True)
             return 0
-    
+
     def send_bulk_email(
         self,
         subject: str,
@@ -206,7 +206,7 @@ class EmailService:
                 from_email=from_email
             )
             total_sent += sent
-        
+
         return total_sent
 
 

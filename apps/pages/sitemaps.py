@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from django.conf import settings
 from django.contrib.sitemaps import Sitemap
 from django.contrib.sites.models import Site
 from django.urls import reverse

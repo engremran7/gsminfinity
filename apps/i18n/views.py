@@ -2,15 +2,20 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, Dict
 
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse, HttpResponseBadRequest
-import logging
-from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from django.contrib.auth.decorators import user_passes_test
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from apps.i18n.api import bundle, locale_for_request, register_manifest, theme_for_request
+from apps.i18n.api import (
+    bundle,
+    locale_for_request,
+    register_manifest,
+    theme_for_request,
+)
 from apps.i18n.models import LanguageProfile, Locale
 from apps.i18n.translation_provider import get_translator
 

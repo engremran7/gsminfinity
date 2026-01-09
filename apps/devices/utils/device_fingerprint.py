@@ -44,7 +44,7 @@ def make_os_fingerprint(user_id: int, ua: str, payload: Dict[str, str] | None) -
     """
     p = payload or {}
     os_info = parse_os_from_ua(ua or "")
-    
+
     # We use hardware traits + OS info to identify the "machine"
     # Browser variations (Chrome vs Firefox) should ideally produce the same
     # fingerprint if they expose the same hardware info (screen, cores, gpu).

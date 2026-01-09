@@ -5,8 +5,8 @@ import logging
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.deprecation import MiddlewareMixin
 
-from apps.users.services.rate_limit import allow_action
 from apps.core.utils.ip import get_client_ip
+from apps.users.services.rate_limit import allow_action
 
 logger = logging.getLogger(__name__)
 

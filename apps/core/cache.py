@@ -16,7 +16,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Any, Callable, Optional, TypeVar
+from collections.abc import Callable
+from typing import Optional, TypeVar
 
 from django.contrib.sites.models import Site
 from django.core.cache import cache

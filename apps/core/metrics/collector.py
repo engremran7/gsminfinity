@@ -5,8 +5,9 @@ Metrics Collector - Application Metrics
 Collect and track application metrics.
 """
 
-from typing import Any, Dict, Optional
 import logging
+from typing import Any, Dict, Optional
+
 from django.db import models
 
 logger = logging.getLogger(__name__)
@@ -14,18 +15,18 @@ logger = logging.getLogger(__name__)
 
 class Metric(models.Model):
     """Stored metric data"""
-    
+
     name = models.CharField(max_length=200, db_index=True)
     value = models.FloatField()
     tags = models.JSONField(default=dict, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
-    
+
     class Meta:
         ordering = ['-timestamp']
         indexes = [
             models.Index(fields=['name', 'timestamp']),
         ]
-    
+
     def __str__(self):
         return f"{self.name}={self.value} @{self.timestamp}"
 
@@ -40,12 +41,12 @@ class MetricsCollector:
         metrics.increment('api_calls')
         metrics.timing('db_query_time', 150)  # milliseconds
     """
-    
+
     def __init__(self, backend: Optional[str] = None):
         from django.conf import settings
         self.backend = backend or getattr(settings, 'METRICS_BACKEND', 'database')
         self.enabled = getattr(settings, 'METRICS_ENABLED', True)
-    
+
     def track(self, metric_name: str, value: float, tags: Optional[Dict[str, Any]] = None):
         """
         Track a metric value.
@@ -57,13 +58,13 @@ class MetricsCollector:
         """
         if not self.enabled:
             return
-        
+
         tags = tags or {}
-        
+
         try:
             if self.backend == 'database':
                 Metric.objects.create(name=metric_name, value=value, tags=tags)
-            
+
             elif self.backend == 'prometheus':
                 # Prometheus integration (requires prometheus_client)
                 try:
@@ -72,7 +73,7 @@ class MetricsCollector:
                     pass
                 except ImportError:
                     logger.warning("prometheus_client not installed")
-            
+
             elif self.backend == 'statsd':
                 # StatsD integration (requires statsd)
                 try:
@@ -81,12 +82,12 @@ class MetricsCollector:
                     pass
                 except ImportError:
                     logger.warning("statsd not installed")
-            
+
             logger.debug(f"Tracked metric: {metric_name}={value} {tags}")
-        
+
         except Exception as e:
             logger.error(f"Failed to track metric {metric_name}: {e}")
-    
+
     def increment(self, counter_name: str, amount: int = 1, tags: Optional[Dict[str, Any]] = None):
         """
         Increment a counter.
@@ -97,7 +98,7 @@ class MetricsCollector:
             tags: Optional tags
         """
         self.track(counter_name, amount, tags)
-    
+
     def decrement(self, counter_name: str, amount: int = 1, tags: Optional[Dict[str, Any]] = None):
         """
         Decrement a counter.
@@ -108,7 +109,7 @@ class MetricsCollector:
             tags: Optional tags
         """
         self.track(counter_name, -amount, tags)
-    
+
     def timing(self, timer_name: str, milliseconds: float, tags: Optional[Dict[str, Any]] = None):
         """
         Track timing/duration.
@@ -119,7 +120,7 @@ class MetricsCollector:
             tags: Optional tags
         """
         self.track(timer_name, milliseconds, tags)
-    
+
     def gauge(self, gauge_name: str, value: float, tags: Optional[Dict[str, Any]] = None):
         """
         Set a gauge value.
@@ -130,7 +131,7 @@ class MetricsCollector:
             tags: Optional tags
         """
         self.track(gauge_name, value, tags)
-    
+
     def get_metrics(
         self,
         metric_name: str,
@@ -153,19 +154,19 @@ class MetricsCollector:
         if self.backend != 'database':
             logger.warning("get_metrics only works with database backend")
             return []
-        
+
         qs = Metric.objects.filter(name=metric_name)
-        
+
         if start_time:
             qs = qs.filter(timestamp__gte=start_time)
-        
+
         if end_time:
             qs = qs.filter(timestamp__lte=end_time)
-        
+
         if tags:
             for key, value in tags.items():
                 qs = qs.filter(tags__contains={key: value})
-        
+
         return qs
 
 
@@ -179,18 +180,18 @@ class Timer:
             # Code to time
             posts = Post.objects.all()
     """
-    
+
     def __init__(self, metric_name: str, tags: Optional[Dict[str, Any]] = None):
         self.metric_name = metric_name
         self.tags = tags or {}
         self.collector = MetricsCollector()
         self.start_time = None
-    
+
     def __enter__(self):
         import time
         self.start_time = time.time()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         import time
         if self.start_time:

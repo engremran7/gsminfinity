@@ -2,28 +2,30 @@
 Settings Service Implementation
 Provides access to site settings without direct model imports in core.
 """
-from typing import Any, Dict, Optional
+from typing import Any, Dict
+
 from django.core.cache import cache
+
 from apps.core.interfaces import SettingsProvider
 
 
 class DjangoSettingsProvider(SettingsProvider):
     """Implementation that uses Django's settings module"""
-    
+
     def get(self, key: str, default: Any = None) -> Any:
         """Get setting from Django settings or site_settings model"""
         from django.conf import settings
-        
+
         # First try Django settings
         if hasattr(settings, key):
             return getattr(settings, key)
-        
+
         # Fall back to database settings (lazy import to avoid circular dependency)
         cache_key = f'site_setting_{key}'
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
-        
+
         try:
             from apps.site_settings.models import SiteSettings
             site_settings = SiteSettings.get_solo()
@@ -32,7 +34,7 @@ class DjangoSettingsProvider(SettingsProvider):
             return value
         except Exception:
             return default
-    
+
     def get_all(self) -> Dict[str, Any]:
         """Get all settings as dictionary"""
         try:

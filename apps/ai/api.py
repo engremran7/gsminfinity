@@ -6,7 +6,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional
 
-from apps.ai.services import get_settings, list_models, register_knowledge_source, run_workflow
+from apps.ai.services import (
+    get_settings,
+    list_models,
+    register_knowledge_source,
+    run_workflow,
+)
 
 
 def settings_snapshot() -> Dict[str, Any]:

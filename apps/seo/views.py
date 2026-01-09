@@ -1,31 +1,38 @@
 
 from __future__ import annotations
 
+import hashlib
+import ipaddress
 import logging
 import socket
-import ipaddress
-import hashlib
 import urllib.request
 from urllib.parse import urlparse
-from urllib.error import HTTPError, URLError
-from django.http import JsonResponse, HttpRequest, HttpResponse
-from django.shortcuts import render, redirect
-from django.db.models import Q, Count
-from django.views.decorators.http import require_GET, require_POST
+
+from django.conf import settings
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.contenttypes.models import ContentType
-from django.conf import settings
+from django.db.models import Count, Q
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_GET, require_POST
 
 from apps.blog.models import Post
+from apps.consent.utils import check as consent_check
 from apps.core.app_service import AppService
 from apps.core.utils import feature_flags
-from apps.consent.utils import check as consent_check
-from .models import SEOModel, Metadata, SitemapEntry, Redirect, LinkableEntity, LinkSuggestion
-from apps.seo.services.ai.metadata import generate_metadata
-from apps.seo.services.scoring.serp import serp_analyze
-from apps.seo.services.readability import readability_score
-from apps.seo.services.crawlers.heatmap import heatmap
 from apps.core.utils.logging import log_event
+from apps.seo.services.ai.metadata import generate_metadata
+from apps.seo.services.crawlers.heatmap import heatmap
+from apps.seo.services.scoring.serp import serp_analyze
+
+from .models import (
+    LinkableEntity,
+    LinkSuggestion,
+    Metadata,
+    Redirect,
+    SEOModel,
+    SitemapEntry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +96,7 @@ def _is_private_host(hostname: str) -> bool:
             ip_obj = ipaddress.ip_address(ip)
         except ValueError:
             continue
-        
+
         # Check standard private/reserved ranges
         if (
             ip_obj.is_private
@@ -99,7 +106,7 @@ def _is_private_host(hostname: str) -> bool:
             or ip_obj.is_multicast
         ):
             return True
-        
+
         # Additional checks for cloud metadata and CGN
         ip_str = str(ip_obj)
         if (
@@ -108,7 +115,7 @@ def _is_private_host(hostname: str) -> bool:
             or ip_str.startswith('0.')          # "This" network
         ):
             return True
-            
+
     return False
 
 

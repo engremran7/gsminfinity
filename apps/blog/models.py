@@ -2,14 +2,15 @@
 from __future__ import annotations
 
 from django.conf import settings
+from django.core.validators import MaxLengthValidator, MinLengthValidator
 from django.db import models
-from django.core.validators import MinLengthValidator, MaxLengthValidator
+from django.db.models import QuerySet
+from django.db.models.functions import Lower
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
-from django.urls import reverse
 from solo.models import SingletonModel
-from django.db.models.functions import Lower
-from django.db.models import QuerySet
+
 from apps.core.utils.sanitize import sanitize_html
 
 
@@ -105,7 +106,7 @@ class Post(models.Model):
     views_count = models.PositiveIntegerField(default=0, help_text="Total views")
     likes_count = models.PositiveIntegerField(default=0, help_text="Total likes")
     comments_count = models.PositiveIntegerField(default=0, help_text="Total comments")
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

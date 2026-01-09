@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from .views_shared import *
-# Explicitly import underscore-prefixed helpers that star import omits
-from .views_shared import _render_admin, _make_breadcrumb, _ADMIN_DISABLED
 from django.utils import timezone
+
+from .views_shared import *
+
+# Explicitly import underscore-prefixed helpers that star import omits
+from .views_shared import _ADMIN_DISABLED, _make_breadcrumb, _render_admin
 
 __all__ = [
     "admin_suite_command_search",
@@ -31,8 +33,8 @@ def admin_suite_command_search(request: HttpRequest) -> JsonResponse:
         if cache.get(cache_key):
             return JsonResponse({"error": "rate_limited"}, status=429)
         cache.set(cache_key, True, timeout=2)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to set cache key for command throttle: %s", exc)
 
     shortcuts = [
         ("Admin Home", "admin_suite:admin_suite", "overview home"),
@@ -60,7 +62,8 @@ def admin_suite_command_search(request: HttpRequest) -> JsonResponse:
     for label, url_name, tags in shortcuts:
         try:
             url = reverse(url_name)
-        except Exception:
+        except Exception as exc:
+            logger.debug("Failed to reverse URL %s: %s", url_name, exc)
             continue
         haystack = f"{label.lower()} {tags}"
         if q and q not in haystack:
@@ -98,8 +101,8 @@ def admin_suite(request: HttpRequest) -> HttpResponse:
                 "login_policy": sec_conf.get("DEFAULT_LOGIN_RISK_POLICY", "mfa_if_high"),
             }
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to load security configuration: %s", exc)
 
     return _render_admin(
         request,

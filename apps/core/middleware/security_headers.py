@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 import secrets
-from typing import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse

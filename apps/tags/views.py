@@ -1,23 +1,23 @@
 
 from __future__ import annotations
 
-from django.http import JsonResponse, Http404, HttpRequest, HttpResponse
-from django.views.decorators.http import require_GET, require_POST
-from django.db.models import Q
-from django.shortcuts import render, get_object_or_404
-from django.core.paginator import Paginator
-from django.contrib.auth.decorators import login_required
-from django.contrib.admin.views.decorators import staff_member_required
 from difflib import SequenceMatcher
 
-
-from .models import Tag
-from apps.blog.models import Post, PostStatus
+from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, render
 from django.template.loader import render_to_string
 from django.utils import timezone
-from apps.core import ai_client
+from django.views.decorators.http import require_GET, require_POST
+
+from apps.blog.models import Post, PostStatus
 from apps.core.app_service import AppService
+
 from . import services
+from .models import Tag
 
 
 def _get_tag_settings() -> dict:

@@ -1,14 +1,14 @@
 
 from __future__ import annotations
 
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.tokens import default_token_generator
-from django.http import JsonResponse, HttpRequest
+from django.http import HttpRequest, JsonResponse
+from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from django.views.decorators.http import require_POST
-from django.urls import reverse
 
 from .models import Notification
 from .services.rate_limit import allow_action
@@ -75,23 +75,23 @@ def notification_stats(request: HttpRequest) -> JsonResponse:
     """
     if not request.user.is_staff:
         return JsonResponse({"error": "Unauthorized"}, status=403)
-    
+
     try:
         from django.utils import timezone
-        from datetime import timedelta
+
         from apps.users.models import CustomUser, Notification, PushSubscription
-        
+
         today = timezone.now().date()
         today_start = timezone.datetime.combine(today, timezone.datetime.min.time())
         today_start = timezone.make_aware(today_start)
-        
+
         stats = {
             "unread": Notification.objects.filter(is_read=False).count(),
             "active_users": CustomUser.objects.filter(is_active=True).count(),
             "push_subscriptions": PushSubscription.objects.filter(is_active=True).count(),
             "today_notifications": Notification.objects.filter(created_at__gte=today_start).count(),
         }
-        
+
         return JsonResponse(stats)
     except Exception as exc:
         return JsonResponse({"error": str(exc)}, status=500)

@@ -5,10 +5,11 @@ Blog Post Service
 Business logic for blog post management.
 """
 
-from typing import Optional, List
+import logging
+from typing import List, Optional
+
 from django.db import transaction
 from django.utils import timezone
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -23,17 +24,17 @@ class PostService:
         post = service.create_post("Title", "Body", author=user)
         service.publish_post(post, publish_now=True)
     """
-    
+
     def __init__(self):
         try:
-            from apps.core.infrastructure import QueueService, EmailService
+            from apps.core.infrastructure import EmailService, QueueService
             self.queue = QueueService()
             self.email = EmailService()
         except ImportError:
             logger.warning("Infrastructure services not available")
             self.queue = None
             self.email = None
-    
+
     @transaction.atomic
     def create_post(
         self,
@@ -60,10 +61,10 @@ class PostService:
         """
         from apps.blog.models import Post, PostStatus
         from apps.core.utils.text import reading_time
-        
+
         # Calculate reading time
         read_time = reading_time(body)
-        
+
         post = Post.objects.create(
             title=title,
             body=body,
@@ -74,21 +75,21 @@ class PostService:
             reading_time=read_time,
             **kwargs
         )
-        
+
         # Create initial version
         self._create_version(post, author, "Initial version")
-        
+
         logger.info(f"Created post: {post.title} (ID: {post.id})")
-        
+
         # Publish event
         try:
-            from apps.core.events import event_bus, EventTypes
+            from apps.core.events import EventTypes, event_bus
             event_bus.publish(EventTypes.BLOG_POST_CREATED, {'post_id': post.id})
         except ImportError:
             pass
-        
+
         return post
-    
+
     @transaction.atomic
     def publish_post(
         self,
@@ -108,25 +109,25 @@ class PostService:
             Updated Post instance
         """
         from apps.blog.models import PostStatus
-        
+
         if publish_now:
             post.status = PostStatus.PUBLISHED
             post.published_at = timezone.now()
             post.is_published = True
             post.save()
-            
+
             logger.info(f"Published post: {post.title}")
-            
+
             # Trigger post-publish tasks
             self._on_post_published(post)
-        
+
         else:
             post.status = PostStatus.SCHEDULED
             post.publish_at = schedule_at
             post.save()
-            
+
             logger.info(f"Scheduled post: {post.title} for {schedule_at}")
-            
+
             # Schedule publication task
             if self.queue and schedule_at:
                 delay = (schedule_at - timezone.now()).total_seconds()
@@ -136,15 +137,15 @@ class PostService:
                         int(delay),
                         post_id=post.id
                     )
-        
+
         return post
-    
+
     def _on_post_published(self, post):
         """Post-publish hooks"""
-        
+
         # Publish event
         try:
-            from apps.core.events import event_bus, EventTypes
+            from apps.core.events import EventTypes, event_bus
             event_bus.publish(EventTypes.BLOG_POST_PUBLISHED, {
                 'post_id': post.id,
                 'title': post.title,
@@ -152,18 +153,18 @@ class PostService:
             })
         except ImportError:
             pass
-        
+
         # Notify subscribers (async if queue available)
         if self.queue:
             self.queue.enqueue(
                 'apps.blog.tasks.notify_subscribers',
                 post_id=post.id
             )
-        
+
         # Update sitemap
         if self.queue:
             self.queue.enqueue('apps.seo.tasks.update_sitemap')
-        
+
         # Auto-share if distribution app available
         try:
             from apps.app_registry.services import AppRegistryService
@@ -172,7 +173,7 @@ class PostService:
                 DistributionService().auto_share_post(post)
         except ImportError:
             pass
-    
+
     @transaction.atomic
     def update_post(
         self,
@@ -194,37 +195,37 @@ class PostService:
             Updated Post instance
         """
         from apps.core.utils.text import reading_time
-        
+
         # Create version snapshot before update
         self._create_version(post, updated_by, change_summary)
-        
+
         # Update fields
         for key, value in fields.items():
             setattr(post, key, value)
-        
+
         # Recalculate reading time if body changed
         if 'body' in fields:
             post.reading_time = reading_time(fields['body'])
-        
+
         post.version += 1
         post.save()
-        
+
         logger.info(f"Updated post: {post.title} (v{post.version})")
-        
+
         # Publish event
         try:
-            from apps.core.events import event_bus, EventTypes
+            from apps.core.events import EventTypes, event_bus
             event_bus.publish(EventTypes.BLOG_POST_UPDATED, {'post_id': post.id})
         except ImportError:
             pass
-        
+
         return post
-    
+
     def _create_version(self, post, user, summary: str):
         """Create version snapshot"""
         try:
             from apps.blog.models_versioning import PostVersion
-            
+
             PostVersion.objects.create(
                 post=post,
                 version_number=post.version,
@@ -234,11 +235,11 @@ class PostService:
                 created_by=user,
                 change_summary=summary
             )
-            
+
             logger.debug(f"Created version {post.version} for post {post.id}")
         except ImportError:
             logger.warning("PostVersion model not available")
-    
+
     def get_related_posts(self, post, limit: int = 5) -> List:
         """
         Get related posts based on category and tags.
@@ -251,19 +252,19 @@ class PostService:
             List of related Post instances
         """
         from apps.blog.models import Post, PostStatus
-        
+
         related = Post.objects.filter(
             status=PostStatus.PUBLISHED,
             is_published=True
         ).exclude(id=post.id)
-        
+
         # Prioritize same category
         if post.category:
             related = related.filter(category=post.category)
-        
+
         # Order by published date
         return list(related.order_by('-published_at')[:limit])
-    
+
     def get_trending_posts(self, days: int = 7, limit: int = 10) -> List:
         """
         Get trending posts (recent, can integrate with analytics later).
@@ -275,17 +276,18 @@ class PostService:
         Returns:
             List of trending Post instances
         """
-        from apps.blog.models import Post, PostStatus
         from datetime import timedelta
-        
+
+        from apps.blog.models import Post, PostStatus
+
         cutoff = timezone.now() - timedelta(days=days)
-        
+
         return list(Post.objects.filter(
             status=PostStatus.PUBLISHED,
             is_published=True,
             published_at__gte=cutoff
         ).order_by('-published_at')[:limit])
-    
+
     def get_featured_posts(self, limit: int = 5) -> List:
         """
         Get featured posts.
@@ -297,13 +299,13 @@ class PostService:
             List of featured Post instances
         """
         from apps.blog.models import Post, PostStatus
-        
+
         return list(Post.objects.filter(
             status=PostStatus.PUBLISHED,
             is_published=True,
             featured=True
         ).order_by('-published_at')[:limit])
-    
+
     def archive_post(self, post, archived_by):
         """
         Archive a post (soft action).
@@ -316,14 +318,14 @@ class PostService:
             Updated Post instance
         """
         from apps.blog.models import PostStatus
-        
+
         post.status = PostStatus.ARCHIVED
         post.save()
-        
+
         logger.info(f"Archived post: {post.title}")
-        
+
         return post
-    
+
     @transaction.atomic
     def delete_post(self, post, deleted_by):
         """
@@ -341,16 +343,16 @@ class PostService:
             post.soft_delete(user=deleted_by)
         else:
             post.delete()
-        
+
         logger.info(f"Deleted post: {post.title}")
-        
+
         # Publish event
         try:
-            from apps.core.events import event_bus, EventTypes
+            from apps.core.events import EventTypes, event_bus
             event_bus.publish(EventTypes.BLOG_POST_DELETED, {'post_id': post.id})
         except ImportError:
             pass
-        
+
         return post
 
 

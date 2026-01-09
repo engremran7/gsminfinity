@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .views_shared import *
-from .views_shared import _render_admin, _make_breadcrumb
+from .views_shared import _make_breadcrumb, _render_admin
 
 # Extracted views_auth views from legacy views.py
 
@@ -33,8 +33,8 @@ class AdminSuiteLoginView(LoginView):
             )
             try:
                 logout(request)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to logout user during admin access denial: %s", exc)
         # Simple throttle per IP/user
         cache_key = self._attempt_key()
         attempts = cache.get(cache_key, 0)
@@ -68,14 +68,14 @@ class AdminSuiteLoginView(LoginView):
             # Optionally shorten session for admin area
             try:
                 self.request.session.set_expiry(getattr(settings, "ADMIN_SESSION_AGE", 3600))
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Failed to set admin session expiry: %s", exc)
             # Force security question setup on first staff login
             try:
                 if not hasattr(user, "security_question"):
                     return reverse("admin_suite:admin_suite_security_question_setup")
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Security question check failed: %s", exc)
             return reverse("admin_suite:admin_suite")
         # Fallback: always stay on admin login for non-staff
         return reverse("admin_suite:admin_suite_login")
@@ -98,8 +98,8 @@ def admin_suite_security_question(request: HttpRequest) -> HttpResponse:
             from django.contrib.auth.models import AnonymousUser
 
             request.user = AnonymousUser()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to logout user during password recovery: %s", exc)
 
     identifier = (request.POST.get("identifier") or request.GET.get("identifier") or "").strip()
     user_obj = None

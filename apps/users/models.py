@@ -21,12 +21,12 @@ import string
 from typing import Any, Dict, Optional
 
 from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import (
     AbstractBaseUser,
     BaseUserManager,
     PermissionsMixin,
 )
-from django.contrib.auth.hashers import make_password, check_password
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.utils import timezone
@@ -134,7 +134,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     )
     phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
     currency = models.CharField(max_length=10, null=True, blank=True)
-    
+
     class Roles(models.TextChoices):
         ADMIN = "admin", "Admin"
         EDITOR = "editor", "Editor"
@@ -231,7 +231,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def get_full_name(self) -> str:
         """Return the full name or username as fallback."""
         return self.full_name or self.username or self.email.split('@')[0]
-    
+
     @property
     def is_verified(self) -> bool:
         return bool(self.email_verified_at)
@@ -263,9 +263,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def can_create_posts(self) -> bool:
         """Check if user can create blog posts based on role, staff status, or explicit permission."""
         return (
-            self.is_staff or 
-            self.is_superuser or 
-            self.can_create_blog_posts or 
+            self.is_staff or
+            self.is_superuser or
+            self.can_create_blog_posts or
             self.has_role(self.Roles.AUTHOR, self.Roles.EDITOR, self.Roles.ADMIN)
         )
 
@@ -609,12 +609,12 @@ class MFADevice(models.Model):
     Stores user MFA device enrollment for TOTP-based 2FA.
     Secret is encrypted at rest using Fernet.
     """
-    
+
     DEVICE_TYPE_CHOICES = [
         ('totp', 'TOTP Authenticator App'),
         ('backup', 'Backup Codes'),
     ]
-    
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -622,31 +622,31 @@ class MFADevice(models.Model):
     )
     device_type = models.CharField(max_length=16, choices=DEVICE_TYPE_CHOICES, default='totp')
     name = models.CharField(max_length=64, default='Authenticator App')
-    
+
     # Encrypted TOTP secret (base32 encoded)
     secret_encrypted = models.CharField(max_length=512, blank=True, default='')
-    
+
     # Backup codes (JSON list of hashed codes) - only for device_type='backup'
     backup_codes_hash = models.JSONField(default=list, blank=True)
-    
+
     is_primary = models.BooleanField(default=False, help_text="Primary MFA device")
     is_active = models.BooleanField(default=True)
-    
+
     # Tracking
     last_used_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = "MFA Device"
         verbose_name_plural = "MFA Devices"
         indexes = [
             models.Index(fields=['user', 'is_active'], name='mfa_user_active_idx'),
         ]
-    
+
     def __str__(self) -> str:
         return f"MFA {self.get_device_type_display()} for {self.user.email}"
-    
+
     @classmethod
     def get_fernet(cls):
         """
@@ -655,12 +655,13 @@ class MFADevice(models.Model):
         Uses dedicated MFA_ENCRYPTION_KEY if available, falls back to SECRET_KEY.
         Having a separate key allows SECRET_KEY rotation without invalidating MFA.
         """
-        from cryptography.fernet import Fernet
-        from django.conf import settings
         import base64
         import hashlib
         import warnings
-        
+
+        from cryptography.fernet import Fernet
+        from django.conf import settings
+
         # Use dedicated MFA key if available, fallback to SECRET_KEY
         mfa_key = getattr(settings, 'MFA_ENCRYPTION_KEY', None)
         if not mfa_key:
@@ -672,12 +673,12 @@ class MFADevice(models.Model):
                     UserWarning
                 )
             mfa_key = settings.SECRET_KEY
-        
+
         # Derive a Fernet key from the source key
         key = hashlib.sha256(mfa_key.encode()).digest()
         fernet_key = base64.urlsafe_b64encode(key)
         return Fernet(fernet_key)
-    
+
     def set_secret(self, raw_secret: str) -> None:
         """Encrypt and store the TOTP secret."""
         if not raw_secret:
@@ -689,7 +690,7 @@ class MFADevice(models.Model):
         except Exception as e:
             logger.error(f"Failed to encrypt MFA secret: {e}")
             raise ValueError("Failed to encrypt MFA secret")
-    
+
     def get_secret(self) -> Optional[str]:
         """Decrypt and return the TOTP secret."""
         if not self.secret_encrypted:
@@ -700,40 +701,40 @@ class MFADevice(models.Model):
         except Exception as e:
             logger.error(f"Failed to decrypt MFA secret: {e}")
             return None
-    
+
     def verify_code(self, code: str) -> bool:
         """Verify a TOTP code against this device."""
         from apps.users.mfa import TOTPService
-        
+
         secret = self.get_secret()
         if not secret:
             return False
-        
+
         is_valid = TOTPService.verify(secret, code)
         if is_valid:
             self.last_used_at = timezone.now()
             self.save(update_fields=['last_used_at'])
         return is_valid
-    
+
     def generate_backup_codes(self, count: int = 10) -> list:
         """Generate and store backup codes. Returns unhashed codes for user."""
         codes = []
         hashed_codes = []
-        
+
         for _ in range(count):
             code = secrets.token_hex(4).upper()  # 8-char hex code
             codes.append(code)
             hashed_codes.append(make_password(code))
-        
+
         self.backup_codes_hash = hashed_codes
         self.device_type = 'backup'
         self.save(update_fields=['backup_codes_hash', 'device_type'])
         return codes
-    
+
     def verify_backup_code(self, code: str) -> bool:
         """Verify and consume a backup code."""
         code = (code or '').strip().upper()
-        
+
         for i, hashed in enumerate(self.backup_codes_hash):
             if check_password(code, hashed):
                 # Remove used code
@@ -749,7 +750,7 @@ class MFADevice(models.Model):
 # --------------------------------------------------------------------------
 class NotificationPreferences(models.Model):
     """User notification preferences for granular control over notification channels and types."""
-    
+
     FREQUENCY_CHOICES = [
         ('instant', 'Instant'),
         ('hourly', 'Hourly Digest'),
@@ -757,13 +758,13 @@ class NotificationPreferences(models.Model):
         ('weekly', 'Weekly Digest'),
         ('never', 'Never'),
     ]
-    
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='notification_preferences'
     )
-    
+
     # Email notification toggles
     email_comments = models.BooleanField(default=True, help_text="Email when someone comments on your posts")
     email_replies = models.BooleanField(default=True, help_text="Email when someone replies to your comments")
@@ -771,55 +772,55 @@ class NotificationPreferences(models.Model):
     email_new_posts = models.BooleanField(default=False, help_text="Email about new blog posts")
     email_security = models.BooleanField(default=True, help_text="Email for security alerts (always enabled)")
     email_frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='instant')
-    
+
     # Web notification toggles
     web_comments = models.BooleanField(default=True, help_text="Web notifications for comment interactions")
     web_awards = models.BooleanField(default=True, help_text="Web notifications for awards and achievements")
     web_moderation = models.BooleanField(default=True, help_text="Web notifications for moderation updates")
     web_system = models.BooleanField(default=True, help_text="Web notifications for system announcements")
-    
+
     # Push notification toggle
     push_enabled = models.BooleanField(default=False, help_text="Enable browser push notifications")
-    
+
     # Quiet hours
     quiet_hours_enabled = models.BooleanField(default=False, help_text="Mute notifications during quiet hours")
     quiet_hours_start = models.TimeField(default='22:00', help_text="Start of quiet hours")
     quiet_hours_end = models.TimeField(default='08:00', help_text="End of quiet hours")
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = "Notification Preferences"
         verbose_name_plural = "Notification Preferences"
-    
+
     def __str__(self) -> str:
         return f"Preferences for {self.user.email}"
-    
+
     def is_quiet_hours_now(self) -> bool:
         """Check if current time is within quiet hours."""
         if not self.quiet_hours_enabled:
             return False
-        
+
         from datetime import time
         current_time = timezone.now().time()
-        
+
         if self.quiet_hours_start < self.quiet_hours_end:
             # Normal range (e.g., 22:00 - 23:59)
             return self.quiet_hours_start <= current_time <= self.quiet_hours_end
         else:
             # Overnight range (e.g., 22:00 - 08:00)
             return current_time >= self.quiet_hours_start or current_time <= self.quiet_hours_end
-    
+
     def should_send_email(self, notification_type: str) -> bool:
         """Check if email should be sent for this notification type."""
         if self.email_frequency == 'never':
             return False
-        
+
         # Security always sent
         if notification_type == 'security':
             return True
-        
+
         # Check specific type preferences
         type_map = {
             'comment': self.email_comments,
@@ -827,9 +828,9 @@ class NotificationPreferences(models.Model):
             'mention': self.email_mentions,
             'post': self.email_new_posts,
         }
-        
+
         return type_map.get(notification_type, False)
-    
+
     def should_send_web(self, notification_type: str) -> bool:
         """Check if web notification should be sent for this notification type."""
         type_map = {
@@ -841,7 +842,7 @@ class NotificationPreferences(models.Model):
             'moderation': self.web_moderation,
             'system': self.web_system,
         }
-        
+
         return type_map.get(notification_type, True)
 
 
@@ -850,36 +851,36 @@ class NotificationPreferences(models.Model):
 # --------------------------------------------------------------------------
 class PushSubscription(models.Model):
     """Store push notification subscriptions for web push."""
-    
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='push_subscriptions'
     )
-    
+
     # Web Push subscription details
     endpoint = models.URLField(max_length=500, unique=True)
     p256dh = models.CharField(max_length=255, help_text="Encryption key")
     auth = models.CharField(max_length=255, help_text="Authentication secret")
-    
+
     # Metadata
     user_agent = models.CharField(max_length=500, blank=True)
     device_name = models.CharField(max_length=255, blank=True)
     is_active = models.BooleanField(default=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     last_used_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name = "Push Subscription"
         verbose_name_plural = "Push Subscriptions"
         indexes = [
             models.Index(fields=['user', 'is_active'], name='push_user_active_idx'),
         ]
-    
+
     def __str__(self) -> str:
         return f"Push subscription for {self.user.email} ({self.device_name or 'Unknown device'})"
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dict for pywebpush library."""
         return {
