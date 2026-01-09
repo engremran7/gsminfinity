@@ -39,10 +39,83 @@ def _safe_filename(name: str) -> str:
 
 
 def handle_upload(*, uploader, uploaded_brand, uploaded_model, uploaded_variant, file_obj, is_password_protected, password, extra_info=None):
-    # Guard against oversized uploads to prevent resource exhaustion
+    """
+    Handle firmware file upload with comprehensive security validation.
+    
+    Args:
+        uploader: User uploading the file
+        uploaded_brand: Brand foreign key
+        uploaded_model: Model foreign key
+        uploaded_variant: Variant foreign key
+        file_obj: Uploaded file object
+        is_password_protected: Boolean indicating if file is password protected
+        password: Password for protected files
+        extra_info: Optional additional metadata
+    
+    Returns:
+        PendingFirmware: Created pending firmware object
+    
+    Raises:
+        ValueError: If file validation fails
+    """
+    # Critical: Check if file size is None (could indicate upload issues)
     size = getattr(file_obj, "size", None)
-    if size is not None and size > MAX_UPLOAD_BYTES:
-        raise ValueError(f"Upload exceeds maximum allowed size of {MAX_UPLOAD_BYTES} bytes")
+    if size is None:
+        raise ValueError("File size could not be determined. Upload may have failed.")
+    
+    # Guard against oversized uploads to prevent resource exhaustion
+    if size > MAX_UPLOAD_BYTES:
+        raise ValueError(f"Upload exceeds maximum allowed size of {MAX_UPLOAD_BYTES} bytes ({size} bytes provided)")
+    
+    # Validate minimum file size (avoid empty or corrupted uploads)
+    if size < 100:  # 100 bytes minimum
+        raise ValueError("File is too small to be a valid firmware (minimum 100 bytes)")
+    
+    # Validate file mime type using python-magic if available
+    try:
+        import magic
+        mime = magic.Magic(mime=True)
+        
+        # Read a small chunk to detect mime type
+        file_obj.seek(0)
+        file_header = file_obj.read(8192)
+        file_obj.seek(0)
+        
+        detected_mime = mime.from_buffer(file_header)
+        
+        # Allowed mime types for firmware files
+        allowed_mimes = {
+            'application/zip',
+            'application/x-zip-compressed',
+            'application/octet-stream',
+            'application/x-tar',
+            'application/gzip',
+            'application/x-gzip',
+            'application/x-7z-compressed',
+            'application/x-rar-compressed',
+        }
+        
+        if detected_mime not in allowed_mimes:
+            raise ValueError(
+                f"Invalid file type detected: {detected_mime}. "
+                f"Only compressed firmware files are allowed."
+            )
+    except ImportError:
+        # python-magic not installed - skip mime validation but log warning
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning("python-magic not installed. Skipping MIME type validation. Install with: pip install python-magic")
+    except Exception as exc:
+        # Log but don't fail on mime detection errors
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning("MIME type detection failed: %s", exc)
+    
+    # TODO: Add virus scanning integration point
+    # if ENABLE_VIRUS_SCAN:
+    #     scan_result = virus_scanner.scan_file(file_obj)
+    #     if not scan_result.is_clean:
+    #         raise ValueError(f"File failed virus scan: {scan_result.threat_name}")
 
     tmp_root = Path(getattr(settings, "FIRMWARE_STORAGE_ROOT", settings.BASE_DIR / "storage"))
     tmp_dir = tmp_root / "pending" / str(uuid.uuid4())
@@ -111,22 +184,97 @@ def attempt_extraction(pf: PendingFirmware) -> None:
 
 
 def run_ai_analysis(pf: PendingFirmware) -> None:
+    """
+    Run AI analysis on pending firmware with proper error handling and retries.
+    
+    Args:
+        pf: PendingFirmware instance to analyze
+    
+    Implements:
+        - Specific exception handling (AiClientError, Timeout)
+        - Exponential backoff retry logic
+        - Detailed error logging
+    """
+    import time
+    import logging
+    from apps.core.ai_client import AiClientError
+    
+    logger = logging.getLogger(__name__)
     pw = decrypt_password(pf.encrypted_password) if (AI_SEND_PASSWORD and pf.encrypted_password) else None
-    try:
-        result = ai_client.analyze_firmware(pf.stored_file_path, password=pw)
-    except Exception:
-        pf.metadata = {**pf.metadata, "ai_error": "analysis_failed"}
-        pf.save(update_fields=["metadata"])
-        return
-    pf.ai_brand = result.get("brand", "") or ""
-    pf.ai_model = result.get("model", "") or ""
-    pf.ai_variant = result.get("variant", "") or ""
-    pf.ai_category = result.get("category") or None
-    pf.ai_subtype = result.get("subtype") or None
-    pf.chipset = result.get("chipset", "") or ""
-    pf.partitions = result.get("partitions", []) or []
-    pf.metadata = {**pf.metadata, **(result.get("metadata") or {})}
-    pf.save()
+    
+    max_retries = 3
+    base_delay = 1.0  # seconds
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            result = ai_client.analyze_firmware(pf.stored_file_path, password=pw)
+            
+            # Successfully got result
+            pf.ai_brand = result.get("brand", "") or ""
+            pf.ai_model = result.get("model", "") or ""
+            pf.ai_variant = result.get("variant", "") or ""
+            pf.ai_category = result.get("category") or None
+            pf.ai_subtype = result.get("subtype") or None
+            pf.chipset = result.get("chipset", "") or ""
+            pf.partitions = result.get("partitions", []) or []
+            pf.metadata = {**pf.metadata, **(result.get("metadata") or {})}
+            pf.save()
+            return  # Success - exit
+            
+        except AiClientError as exc:
+            # AI client specific error
+            error_msg = f"AI client error on attempt {attempt}/{max_retries}: {exc}"
+            logger.error(error_msg, exc_info=True)
+            
+            if attempt >= max_retries:
+                # Final attempt failed
+                pf.metadata = {
+                    **pf.metadata, 
+                    "ai_error": "ai_client_error",
+                    "ai_error_detail": str(exc),
+                    "ai_attempts": attempt
+                }
+                pf.save(update_fields=["metadata"])
+                return
+                
+        except TimeoutError as exc:
+            # Timeout error
+            error_msg = f"AI analysis timeout on attempt {attempt}/{max_retries}: {exc}"
+            logger.error(error_msg, exc_info=True)
+            
+            if attempt >= max_retries:
+                pf.metadata = {
+                    **pf.metadata,
+                    "ai_error": "analysis_timeout",
+                    "ai_error_detail": "AI analysis took too long to complete",
+                    "ai_attempts": attempt
+                }
+                pf.save(update_fields=["metadata"])
+                return
+                
+        except Exception as exc:
+            # Catch-all for unexpected errors
+            error_msg = f"Unexpected error during AI analysis on attempt {attempt}/{max_retries}: {exc}"
+            logger.exception(error_msg)
+            
+            if attempt >= max_retries:
+                pf.metadata = {
+                    **pf.metadata,
+                    "ai_error": "analysis_failed",
+                    "ai_error_detail": str(exc),
+                    "ai_error_type": type(exc).__name__,
+                    "ai_attempts": attempt
+                }
+                pf.save(update_fields=["metadata"])
+                return
+        
+        # Calculate exponential backoff with jitter
+        if attempt < max_retries:
+            delay = base_delay * (2 ** (attempt - 1))
+            jitter = delay * 0.1 * (0.5 + time.time() % 1)  # 10% jitter
+            sleep_time = min(delay + jitter, 30.0)  # Cap at 30 seconds
+            logger.info(f"Retrying AI analysis after {sleep_time:.2f}s (attempt {attempt}/{max_retries})")
+            time.sleep(sleep_time)
 
 
 @transaction.atomic

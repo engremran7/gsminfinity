@@ -393,22 +393,49 @@ def social_posting_create(request: HttpRequest) -> JsonResponse:
             created_by=request.user,
         )
         
-        # Set credentials based on auth type
+        # Set credentials based on auth type with validation
         if auth_type == 'api_token' and data.get("bot_token"):
-            account.set_bot_token(data["bot_token"])
+            bot_token = data["bot_token"].strip()
+            # Sanitize bot token - remove any whitespace and validate format
+            if not bot_token or len(bot_token) < 10:
+                return JsonResponse({"error": "Invalid bot token format"}, status=400)
+            account.set_bot_token(bot_token)
             if data.get("destination_id"):
                 account.status = "active"
+                
         elif auth_type == 'webhook' and data.get("webhook_url"):
-            account.set_webhook_url(data["webhook_url"])
+            webhook_url = data["webhook_url"].strip()
+            
+            # Critical: Validate webhook URL for security
+            if not _validate_webhook_url(webhook_url):
+                return JsonResponse({
+                    "error": "Invalid webhook URL. Must be HTTPS and cannot point to localhost or private IPs."
+                }, status=400)
+            
+            account.set_webhook_url(webhook_url)
             account.status = "active"
+            
         elif auth_type == 'access_token' and data.get("access_token"):
-            account.set_access_token(data["access_token"])
+            access_token = data["access_token"].strip()
+            # Sanitize access token
+            if not access_token or len(access_token) < 10:
+                return JsonResponse({"error": "Invalid access token format"}, status=400)
+            account.set_access_token(access_token)
             account.status = "active"
+            
         elif auth_type in ['api_key_secret', 'oauth2']:
             if data.get("api_key"):
-                account.set_api_key(data["api_key"])
+                api_key = data["api_key"].strip()
+                # Sanitize API key
+                if not api_key or len(api_key) < 10:
+                    return JsonResponse({"error": "Invalid API key format"}, status=400)
+                account.set_api_key(api_key)
             if data.get("api_secret"):
-                account.set_api_secret(data["api_secret"])
+                api_secret = data["api_secret"].strip()
+                # Sanitize API secret
+                if not api_secret or len(api_secret) < 10:
+                    return JsonResponse({"error": "Invalid API secret format"}, status=400)
+                account.set_api_secret(api_secret)
         
         account.save()
         
@@ -428,6 +455,72 @@ def social_posting_create(request: HttpRequest) -> JsonResponse:
     except Exception as exc:
         logger.exception("Failed to create social posting account: %s", exc)
         return JsonResponse({"error": str(exc)}, status=500)
+
+
+def _validate_webhook_url(url: str) -> bool:
+    """
+    Validate webhook URL for security.
+    
+    Requirements:
+        - Must be HTTPS (no HTTP allowed)
+        - Cannot be localhost or loopback
+        - Cannot be private IP addresses (RFC 1918)
+        - Must be a valid URL format
+    
+    Args:
+        url: Webhook URL to validate
+    
+    Returns:
+        bool: True if URL is valid and safe, False otherwise
+    """
+    import re
+    from urllib.parse import urlparse
+    import ipaddress
+    
+    try:
+        parsed = urlparse(url)
+        
+        # Must be HTTPS
+        if parsed.scheme != 'https':
+            logger.warning(f"Webhook URL rejected: not HTTPS - {url}")
+            return False
+        
+        # Must have a hostname
+        if not parsed.netloc:
+            logger.warning(f"Webhook URL rejected: missing hostname - {url}")
+            return False
+        
+        # Extract hostname (remove port if present)
+        hostname = parsed.netloc.split(':')[0].lower()
+        
+        # Block localhost and loopback
+        localhost_patterns = ['localhost', '127.', '0.0.0.0', '::1', '0:0:0:0:0:0:0:1']
+        if any(pattern in hostname for pattern in localhost_patterns):
+            logger.warning(f"Webhook URL rejected: localhost/loopback - {url}")
+            return False
+        
+        # Try to resolve as IP and check if it's private
+        try:
+            # If hostname is already an IP
+            ip = ipaddress.ip_address(hostname)
+            if ip.is_private or ip.is_loopback or ip.is_link_local:
+                logger.warning(f"Webhook URL rejected: private/loopback IP - {url}")
+                return False
+        except ValueError:
+            # Not a direct IP, which is fine - it's a domain name
+            pass
+        
+        # Block common internal/private domain patterns
+        internal_patterns = ['.local', '.internal', '.lan', '.home', 'intranet']
+        if any(pattern in hostname for pattern in internal_patterns):
+            logger.warning(f"Webhook URL rejected: internal domain - {url}")
+            return False
+        
+        return True
+        
+    except Exception as exc:
+        logger.error(f"Webhook URL validation error: {exc}")
+        return False
 
 
 @csrf_protect
