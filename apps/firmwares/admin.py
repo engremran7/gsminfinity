@@ -78,26 +78,11 @@ class BrandAdmin(admin.ModelAdmin):
                     This will fetch data from GSMArena and AI sources to complete missing information.
                 </p>
             </div>
-            <script>
-            function autofillBrand(brandId) {{
-                fetch(`/api/firmwares/brand/${{brandId}}/autofill/`, {{
-                    method: 'POST',
-                    headers: {{'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}}
-                }})
-                .then(r => r.json())
-                .then(data => {{
-                    if (data.success) {{
-                        alert('Auto-fill completed! Refresh the page to see changes.');
-                        location.reload();
-                    }} else {{
-                        alert('Error: ' + (data.error || 'Unknown error'));
-                    }}
-                }})
-                .catch(e => alert('Error: ' + e.message));
-            }}
-            </script>
         ''')
     autofill_help.short_description = 'Auto-Fill Assistant'
+    
+    class Media:
+        js = ('firmwares/js/admin_autofill.js',)
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(Count('models'))

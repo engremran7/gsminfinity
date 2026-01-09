@@ -474,8 +474,8 @@ CSRF_COOKIE_DOMAIN = env_str(os.getenv("CSRF_COOKIE_DOMAIN"), None)
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = env_str(os.getenv("SESSION_COOKIE_SAMESITE"), "Lax")
-CSRF_COOKIE_SAMESITE = env_str(os.getenv("CSRF_COOKIE_SAMESITE"), "Lax")
+SESSION_COOKIE_SAMESITE = 'Strict'  # Security: Strict SameSite policy
+CSRF_COOKIE_SAMESITE = 'Strict'  # Security: Strict SameSite policy
 SESSION_COOKIE_AGE = int(env_str(os.getenv("SESSION_COOKIE_AGE"), "1209600"))  # 14 days default
 SESSION_SAVE_EVERY_REQUEST = env_bool(os.getenv("SESSION_SAVE_EVERY_REQUEST"), False)
 
@@ -731,7 +731,16 @@ SUMMERNOTE_CONFIG = {
     # Storage class
     'attachment_storage_class': 'django.core.files.storage.FileSystemStorage',
     
-    # Set attachment size limit (5MB)
+    # SECURITY: Restrict attachment file types to images only
+    'attachment_allowed_types': [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'image/svg+xml',
+    ],
+    
+    # SECURITY: Set attachment size limit (5MB)
     'attachment_filesize_limit': 5 * 1024 * 1024,
     
     # Allowed image file extensions - remove the model line
