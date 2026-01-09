@@ -82,3 +82,4 @@ function getCsrfToken() {
     
     return null;
 }
+

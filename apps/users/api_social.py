@@ -516,19 +516,26 @@ def _validate_webhook_url(url: str) -> bool:
                 return False
         except ValueError:
             # Not a direct IP - it's a domain name, try to resolve it
+            # Note: DNS resolution has inherent TOCTOU issues and DNS rebinding risks.
+            # The hostname could resolve to a safe IP now but be changed to a private IP later.
+            # Consider implementing DNS result caching with TTL for production use.
             try:
-                # Resolve domain to IP and check
-                resolved_ips = socket.getaddrinfo(hostname, None)
+                # Resolve domain to IP and check (with 2-second timeout)
+                resolved_ips = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM, 0, socket.AI_ADDRCONFIG)
+                socket.setdefaulttimeout(2.0)
+                
                 for _, _, _, _, sockaddr in resolved_ips:
                     ip_str = sockaddr[0]
                     ip = ipaddress.ip_address(ip_str)
                     if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
                         logger.warning(f"Webhook URL rejected: resolves to private IP {ip_str} - {url}")
                         return False
-            except (socket.gaierror, ValueError):
+            except (socket.gaierror, ValueError, socket.timeout):
                 # Cannot resolve - could be typo or non-existent domain
                 # Allow it through but log warning
                 logger.warning(f"Webhook URL warning: cannot resolve hostname - {url}")
+            finally:
+                socket.setdefaulttimeout(None)  # Reset to default
         
         # Block common internal/private domain patterns
         internal_patterns = [r'\.local$', r'\.internal$', r'\.lan$', r'\.home$', r'^intranet\.']

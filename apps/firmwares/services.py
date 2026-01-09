@@ -106,10 +106,15 @@ def handle_upload(*, uploader, uploaded_brand, uploaded_model, uploaded_variant,
         # Additional validation: check file extension as secondary confirmation
         file_extension = Path(file_obj.name).suffix.lower()
         allowed_extensions = {'.zip', '.tar', '.gz', '.tgz', '.7z', '.rar', '.bin', '.img'}
-        if file_extension and file_extension not in allowed_extensions:
+        
+        # Require a valid extension explicitly
+        if not file_extension:
+            raise ValueError("File must have a valid extension (e.g., .zip, .tar, .gz)")
+        
+        if file_extension not in allowed_extensions:
             raise ValueError(
                 f"Invalid file extension: {file_extension}. "
-                f"Only firmware archive files are allowed."
+                f"Only firmware archive files are allowed: {', '.join(sorted(allowed_extensions))}"
             )
     except ImportError:
         # python-magic not installed - skip mime validation but log warning
@@ -213,10 +218,13 @@ def run_ai_analysis(pf: PendingFirmware) -> None:
     logger = logging.getLogger(__name__)
     pw = decrypt_password(pf.encrypted_password) if (AI_SEND_PASSWORD and pf.encrypted_password) else None
     
-    max_retries = 3
-    base_delay = 1.0  # seconds
+    # Retry configuration
+    MAX_RETRIES = 3
+    BASE_DELAY = 1.0  # seconds
+    JITTER_FACTOR = 0.1  # 10% jitter
+    MAX_DELAY = 30.0  # seconds
     
-    for attempt in range(1, max_retries + 1):
+    for attempt in range(1, MAX_RETRIES + 1):
         try:
             result = ai_client.analyze_firmware(pf.stored_file_path, password=pw)
             
@@ -234,10 +242,10 @@ def run_ai_analysis(pf: PendingFirmware) -> None:
             
         except AiClientError as exc:
             # AI client specific error
-            error_msg = f"AI client error on attempt {attempt}/{max_retries}: {exc}"
+            error_msg = f"AI client error on attempt {attempt}/{MAX_RETRIES}: {exc}"
             logger.error(error_msg, exc_info=True)
             
-            if attempt >= max_retries:
+            if attempt >= MAX_RETRIES:
                 # Final attempt failed
                 pf.metadata = {
                     **pf.metadata, 
@@ -250,10 +258,10 @@ def run_ai_analysis(pf: PendingFirmware) -> None:
                 
         except TimeoutError as exc:
             # Timeout error
-            error_msg = f"AI analysis timeout on attempt {attempt}/{max_retries}: {exc}"
+            error_msg = f"AI analysis timeout on attempt {attempt}/{MAX_RETRIES}: {exc}"
             logger.error(error_msg, exc_info=True)
             
-            if attempt >= max_retries:
+            if attempt >= MAX_RETRIES:
                 pf.metadata = {
                     **pf.metadata,
                     "ai_error": "analysis_timeout",
@@ -265,10 +273,10 @@ def run_ai_analysis(pf: PendingFirmware) -> None:
                 
         except Exception as exc:
             # Catch-all for unexpected errors
-            error_msg = f"Unexpected error during AI analysis on attempt {attempt}/{max_retries}: {exc}"
+            error_msg = f"Unexpected error during AI analysis on attempt {attempt}/{MAX_RETRIES}: {exc}"
             logger.exception(error_msg)
             
-            if attempt >= max_retries:
+            if attempt >= MAX_RETRIES:
                 pf.metadata = {
                     **pf.metadata,
                     "ai_error": "analysis_failed",
@@ -280,12 +288,12 @@ def run_ai_analysis(pf: PendingFirmware) -> None:
                 return
         
         # Calculate exponential backoff with proper random jitter
-        if attempt < max_retries:
+        if attempt < MAX_RETRIES:
             import random
-            delay = base_delay * (2 ** (attempt - 1))
-            jitter = delay * 0.1 * random.random()  # Proper random jitter (0-10% of delay)
-            sleep_time = min(delay + jitter, 30.0)  # Cap at 30 seconds
-            logger.info(f"Retrying AI analysis after {sleep_time:.2f}s (attempt {attempt}/{max_retries})")
+            delay = BASE_DELAY * (2 ** (attempt - 1))
+            jitter = delay * JITTER_FACTOR * random.random()
+            sleep_time = min(delay + jitter, MAX_DELAY)
+            logger.info(f"Retrying AI analysis after {sleep_time:.2f}s (attempt {attempt}/{MAX_RETRIES})")
             time.sleep(sleep_time)
 
 
