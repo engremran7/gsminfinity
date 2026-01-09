@@ -197,7 +197,14 @@ class PendingFirmware(Timestamped):
     category_locked = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.original_file_name} ({self.id})"
+        # Use AI-detected or uploaded fields to create meaningful representation
+        brand = self.ai_brand or (self.uploaded_brand.name if self.uploaded_brand else "Unknown Brand")
+        model = self.ai_model or (self.uploaded_model.name if self.uploaded_model else "Unknown Model")
+        variant = self.ai_variant or (self.uploaded_variant.name if self.uploaded_variant else "")
+        
+        if variant:
+            return f"{brand} {model} ({variant})"
+        return f"{brand} {model}"
 
 
 class BaseFirmware(Timestamped):

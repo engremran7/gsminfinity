@@ -19,6 +19,14 @@ class DeviceEnforcementMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
+        # Pre-compute exempt paths at initialization to avoid calling reverse() on every request
+        from django.urls import reverse
+        self.exempt_paths = {
+            reverse("users:device_approval_needed"),
+            reverse("users:approve_device"),
+            reverse("users:device_mfa_challenge"),
+            reverse("devices:acknowledge_new_device"),
+        }
 
     def __call__(self, request):
         # Skip unauthenticated requests
@@ -38,12 +46,7 @@ class DeviceEnforcementMiddleware:
         # Skip for trust/untrust endpoints to avoid consent/fp prompts
         # CRITICAL: Must include the actual approval action URL, otherwise we get an infinite loop
         # because the approval view itself triggers the "untrusted device" check before it can run.
-        if (
-            request.path.startswith(reverse("users:device_approval_needed"))
-            or request.path.startswith(reverse("users:approve_device"))
-            or request.path.startswith(reverse("users:device_mfa_challenge"))
-            or request.path.startswith(reverse("devices:acknowledge_new_device"))
-        ):
+        if any(request.path.startswith(path) for path in self.exempt_paths):
             return self.get_response(request)
 
         try:

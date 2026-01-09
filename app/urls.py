@@ -79,7 +79,7 @@ urlpatterns = [
     # Keep Django admin available under a non-default path for reverse('admin:*') compatibility
     path("django-admin/", admin.site.urls),
     # Legacy Django-admin blog paths redirect to Admin Suite blog manager
-    path("admin/blog/", RedirectView.as_view(url="/admin/blog/", permanent=False)),
+    path("admin/blog/", RedirectView.as_view(url="/admin/blog/posts/", permanent=False)),
     path(
         "admin/blog/post/<int:pk>/change/",
         RedirectView.as_view(url="/admin/blog/?post_id=%(pk)s", permanent=False),

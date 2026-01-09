@@ -6,6 +6,9 @@ from typing import Any, Dict, Optional
 from django.core.cache import cache
 from apps.core.interfaces import SettingsProvider
 
+# Sentinel object for cache checks
+_CACHE_SENTINEL = object()
+
 
 class DjangoSettingsProvider(SettingsProvider):
     """Implementation that uses Django's settings module"""
@@ -20,8 +23,8 @@ class DjangoSettingsProvider(SettingsProvider):
         
         # Fall back to database settings (lazy import to avoid circular dependency)
         cache_key = f'site_setting_{key}'
-        cached = cache.get(cache_key)
-        if cached is not None:
+        cached = cache.get(cache_key, _CACHE_SENTINEL)
+        if cached is not _CACHE_SENTINEL:
             return cached
         
         try:
