@@ -155,7 +155,7 @@ class TagService:
         from apps.tags.models_tagged_item import TaggedItem
 
         items = TaggedItem.objects.filter(tag=source_tag)
-        items.count()
+        items_count = items.count()
 
         # Migrate to target tag
         migrated = 0
