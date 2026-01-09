@@ -1,7 +1,16 @@
 from __future__ import annotations
 
-from .views_shared import *
-from .views_shared import _make_breadcrumb, _render_admin
+from django import forms
+from django.conf import settings
+from django.contrib.admin.views.decorators import staff_member_required
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_protect
+
+from apps.pages.models import Page
+
+from .views_shared import _ADMIN_DISABLED, _make_breadcrumb, _render_admin
 
 
 # Extracted views_content views from legacy views.py

@@ -1,7 +1,24 @@
 from __future__ import annotations
 
-from .views_shared import *
-from .views_shared import _make_breadcrumb, _render_admin
+import secrets
+
+from django import forms
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import get_user_model, logout
+from django.contrib.auth.forms import SetPasswordForm
+from django.contrib.auth.views import LoginView
+from django.core.cache import cache
+from django.core.mail import send_mail
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import redirect, render
+from django.urls import reverse, reverse_lazy
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
+
+from apps.users import models as user_models
+from apps.users.models import SecurityQuestion
+
+from .views_shared import STAFF_ONLY, _make_breadcrumb, _render_admin
 
 # Extracted views_auth views from legacy views.py
 

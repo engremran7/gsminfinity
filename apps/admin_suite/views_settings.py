@@ -1,9 +1,15 @@
 from __future__ import annotations
 
-from .views_shared import *
-from .views_shared import _make_breadcrumb, _render_admin
 
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.http import Http404, HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
+from django.urls import reverse, reverse_lazy
+from django.views.decorators.csrf import csrf_protect
 
+from .views_shared import STAFF_ONLY, _ADMIN_DISABLED, _make_breadcrumb, _render_admin
 # Extracted views_settings views from legacy views.py
 @staff_member_required
 def admin_suite_settings(request: HttpRequest) -> HttpResponse:
