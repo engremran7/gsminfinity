@@ -307,15 +307,17 @@ def resolve_or_create_device(
                 pass
             device.save(update_fields=list(set(updates)))
         else:
-            # Enforce monthly/yearly quotas before creating (with row lock)
+            # Enforce monthly/yearly quotas before creating
+            # Note: count() operations don't need select_for_update() since the
+            # entire transaction is atomic and device creation is protected
             if monthly_quota:
                 month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-                month_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=month_start).select_for_update().count()
+                month_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=month_start).count()
                 if month_count >= int(monthly_quota):
                     raise DevicePolicyError("monthly_device_quota", {"policy": policy})
             if yearly_quota:
                 year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-                year_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=year_start).select_for_update().count()
+                year_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=year_start).count()
                 if year_count >= int(yearly_quota):
                     raise DevicePolicyError("yearly_device_quota", {"policy": policy})
 
@@ -324,7 +326,7 @@ def resolve_or_create_device(
                 window_map = {"3m": 90, "6m": 180, "12m": 365}
                 days = window_map.get(override.window, 180)
                 window_start = max(override.last_reset_at, now - timezone.timedelta(days=days))
-                registrations = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=window_start).select_for_update().count()
+                registrations = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=window_start).count()
                 limit = override.max_devices if override.max_devices is not None else policy.get("max_devices") or 5
                 if registrations >= int(limit):
                     _emit_security_event(
@@ -357,7 +359,7 @@ def resolve_or_create_device(
                     # Lock the quota record
                     quota_record = UserDeviceQuota.objects.filter(user=user).select_for_update().first()
                     window_start = max(quota_record.last_reset_at, now - timezone.timedelta(days=window_days))
-                    registrations = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=window_start).select_for_update().count()
+                    registrations = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=window_start).count()
                     limit = quota_policy.get("default_limit", policy.get("max_devices") or 5)
                     if registrations >= int(limit):
                         _emit_security_event(
@@ -369,13 +371,14 @@ def resolve_or_create_device(
                         )
                         raise DevicePolicyError("device_quota_exceeded", {"policy": policy, "window_days": window_days})
 
-            # Enforce max devices (global + per-user override) with select_for_update
+            # Enforce max devices (global + per-user override)
+            # count() doesn't need select_for_update - atomic transaction protects creation
             max_devices = int((override.max_devices if override and override.max_devices is not None else policy.get("max_devices") or 5))
-            current_count = Device.objects.filter(user=user, is_blocked=False).select_for_update().count()
+            current_count = Device.objects.filter(user=user, is_blocked=False).count()
             if current_count >= max_devices:
                 if policy.get("device_locking_mode") == "strict":
                     raise DevicePolicyError("limit_reached", {"policy": policy})
-                # soft mode: evict oldest
+                # soft mode: evict oldest (lock only the one to evict)
                 oldest = Device.objects.filter(user=user, is_blocked=False).select_for_update().order_by("last_seen_at").first()
                 if oldest:
                     try:

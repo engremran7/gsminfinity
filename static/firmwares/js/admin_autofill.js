@@ -75,9 +75,12 @@ function getCsrfToken() {
     }
     
     // Try to get from cookie
-    const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
-    if (cookie) {
-        return cookie.split('=')[1];
+    const cookies = document.cookie.split('; ');
+    for (let cookie of cookies) {
+        const parts = cookie.split('=');
+        if (parts[0] === 'csrftoken') {
+            return parts[1];
+        }
     }
     
     return null;

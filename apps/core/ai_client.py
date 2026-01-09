@@ -573,7 +573,8 @@ def _scrub_sensitive_data(data: Any) -> Any:
         (re.compile(r'(secret|password|passwd|pwd)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9\-_]{10,})["\']?', re.IGNORECASE), r'\1": "SECRET_REDACTED"'),
         (re.compile(r'(token|bearer)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9\-_\.]{10,})["\']?', re.IGNORECASE), r'\1": "TOKEN_REDACTED"'),
         (re.compile(r'(sk-[a-zA-Z0-9]{20,})', re.IGNORECASE), 'SK_KEY_REDACTED'),
-        (re.compile(r'\b([0-9a-f]{32,64})\b', re.IGNORECASE), 'HASH_REDACTED'),  # Long hex strings
+        # Only redact hex strings in key-like contexts (e.g., after key/secret/token words)
+        (re.compile(r'(key|secret|token|hash)[\s:=]+([0-9a-f]{32,64})\b', re.IGNORECASE), r'\1: HASH_REDACTED'),
     ]
     
     if isinstance(data, dict):

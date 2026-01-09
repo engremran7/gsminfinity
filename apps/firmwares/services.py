@@ -212,6 +212,7 @@ def run_ai_analysis(pf: PendingFirmware) -> None:
         - Detailed error logging
     """
     import time
+    import random
     import logging
     from apps.core.ai_client import AiClientError
     
@@ -289,7 +290,6 @@ def run_ai_analysis(pf: PendingFirmware) -> None:
         
         # Calculate exponential backoff with proper random jitter
         if attempt < MAX_RETRIES:
-            import random
             delay = BASE_DELAY * (2 ** (attempt - 1))
             jitter = delay * JITTER_FACTOR * random.random()
             sleep_time = min(delay + jitter, MAX_DELAY)
