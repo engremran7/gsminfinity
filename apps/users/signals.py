@@ -72,8 +72,8 @@ def handle_user_signed_up(request, user, **kwargs):
         if sociallogin:
             try:
                 perform_login(request, user, email_verification="optional")
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Failed to perform login for social signup: %s", exc)
 
     except Exception as exc:
         logger.exception(

@@ -37,8 +37,8 @@ def _enabled_channels() -> List[str]:
         override = settings_obj.get("default_channels") or []
         if override:
             return override
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to get distribution settings: %s", exc)
     return getattr(settings, "DISTRIBUTION_CHANNELS", list(Channel.values))
 
 
@@ -197,8 +197,8 @@ def fanout_post_publish(post: "Post", *, created_by=None) -> SharePlan | None:
             return None
         if not settings_obj.get("auto_fanout_on_publish", True):
             return None
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to check distribution settings for fanout: %s", exc)
     plan = create_plan_for_post(post, created_by=created_by)
     if not plan:
         logger.info("distribution.plan.skipped", extra={"post": post.slug, "reason": "no_channels"})

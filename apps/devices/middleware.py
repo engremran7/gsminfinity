@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -9,6 +11,8 @@ from apps.devices.services import (
     attach_device_cookie,
     DevicePolicyError,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class DeviceEnforcementMiddleware:
@@ -40,8 +44,8 @@ class DeviceEnforcementMiddleware:
             reg = AppRegistry.get_solo()
             if reg and getattr(reg, "device_identity_enabled", True) is False:
                 return self.get_response(request)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Failed to check device identity registry setting: %s", exc)
 
         # Skip for trust/untrust endpoints to avoid consent/fp prompts
         # CRITICAL: Must include the actual approval action URL, otherwise we get an infinite loop
@@ -73,8 +77,8 @@ class DeviceEnforcementMiddleware:
                         "quota_reset_days": inner_ctx.get("quota_reset_days"),
                     })
                     request.session.modified = True
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Failed to update new device popup session data: %s", exc)
 
             # Only show popup for NEW devices that are NOT already trusted
             # This prevents the popup from reappearing after user acknowledges
@@ -113,8 +117,8 @@ class DeviceEnforcementMiddleware:
                             "quota_reset_days": inner_ctx.get("quota_reset_days"),
                         }
                         request.session["pending_device_prompt_uuid"] = device_fp
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug("Failed to create new device popup session data: %s", exc)
             return response
         except DevicePolicyError as exc:
             reason = exc.reason
@@ -160,7 +164,8 @@ class DevicePayloadMiddleware:
                     payload = json.loads(decoded)
                     # Optional: Promote to session for faster access next time
                     # request.session["device_payload"] = payload
-                except Exception:
+                except Exception as exc:
+                    logger.debug("Failed to parse device payload from cookie: %s", exc)
                     payload = None
 
         request.device_payload = payload
