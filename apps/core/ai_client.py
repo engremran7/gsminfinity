@@ -427,6 +427,11 @@ def _call_openai_with_retry(config: AiConfig, system_prompt: str, question: str,
                 timeout=config.timeout,
             )
             text = _extract_text_response(response)
+            
+            # Log response with sensitive data scrubbed
+            scrubbed_response = _scrub_sensitive_data(text)
+            logger.debug("AI response (scrubbed): %s", scrubbed_response[:200])
+            
             _emit_metrics(
                 ok=bool(text),
                 attempt=attempt,
@@ -434,8 +439,10 @@ def _call_openai_with_retry(config: AiConfig, system_prompt: str, question: str,
             )
             return text
         except Exception as exc:  # pragma: no cover - provider edge cases
+            # Scrub exception messages before logging
+            scrubbed_exc = _scrub_sensitive_data(str(exc))
             logger.warning(
-                "AI provider attempt %s/%s failed: %s", attempt, attempts, exc
+                "AI provider attempt %s/%s failed: %s", attempt, attempts, scrubbed_exc
             )
             if attempt >= attempts:
                 logger.exception("AI provider call failed after retries")
@@ -445,6 +452,12 @@ def _call_openai_with_retry(config: AiConfig, system_prompt: str, question: str,
             time.sleep(delay)
 
     return ""
+
+
+def _mock_response(user_content: str) -> str:
+    """Deterministic mock useful for tests and local dev without keys."""
+    snippet = (user_content or "").strip().split("\n")[0][:120]
+    return f"[mock-ai] {snippet or 'No content provided.'}"
 
 
 def generate_title(text: str, user: Any) -> str:
@@ -540,10 +553,41 @@ def _extract_text_response(response) -> str:
     return ""
 
 
-def _mock_response(user_content: str) -> str:
-    # Deterministic mock useful for tests and local dev without keys.
-    snippet = (user_content or "").strip().split("\n")[0][:120]
-    return f"[mock-ai] {snippet or 'No content provided.'}"
+def _scrub_sensitive_data(data: Any) -> Any:
+    """
+    Scrub sensitive data (API keys, passwords, tokens) from data before logging.
+    
+    Recursively processes dictionaries, lists, and strings to redact sensitive patterns.
+    
+    Args:
+        data: Data to scrub (dict, list, str, or other)
+    
+    Returns:
+        Scrubbed version of the data with sensitive values redacted
+    """
+    import re
+    
+    # Patterns to detect and redact - now with simpler replacement
+    sensitive_patterns = [
+        (re.compile(r'(api[_-]?key|apikey)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9\-_]{10,})["\']?', re.IGNORECASE), r'\1": "API_KEY_REDACTED"'),
+        (re.compile(r'(secret|password|passwd|pwd)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9\-_]{10,})["\']?', re.IGNORECASE), r'\1": "SECRET_REDACTED"'),
+        (re.compile(r'(token|bearer)["\']?\s*[:=]\s*["\']?([a-zA-Z0-9\-_\.]{10,})["\']?', re.IGNORECASE), r'\1": "TOKEN_REDACTED"'),
+        (re.compile(r'(sk-[a-zA-Z0-9]{20,})', re.IGNORECASE), 'SK_KEY_REDACTED'),
+        # Only redact hex strings in key-like contexts (e.g., after key/secret/token words)
+        (re.compile(r'(key|secret|token|hash)[\s:=]+([0-9a-f]{32,64})\b', re.IGNORECASE), r'\1: HASH_REDACTED'),
+    ]
+    
+    if isinstance(data, dict):
+        return {k: _scrub_sensitive_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [_scrub_sensitive_data(item) for item in data]
+    elif isinstance(data, str):
+        scrubbed = data
+        for pattern, replacement in sensitive_patterns:
+            scrubbed = pattern.sub(replacement, scrubbed)
+        return scrubbed
+    else:
+        return data
 
 
 def _emit_metrics(*, ok: bool, attempt: int, elapsed_ms: int) -> None:

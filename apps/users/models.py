@@ -652,26 +652,24 @@ class MFADevice(models.Model):
         """
         Get Fernet instance for MFA secret encryption/decryption.
         
-        Uses dedicated MFA_ENCRYPTION_KEY if available, falls back to SECRET_KEY.
-        Having a separate key allows SECRET_KEY rotation without invalidating MFA.
+        Uses dedicated MFA_ENCRYPTION_KEY for security and key rotation safety.
+        
+        Raises:
+            ImproperlyConfigured: If MFA_ENCRYPTION_KEY is not configured.
         """
         from cryptography.fernet import Fernet
         from django.conf import settings
+        from django.core.exceptions import ImproperlyConfigured
         import base64
         import hashlib
-        import warnings
         
-        # Use dedicated MFA key if available, fallback to SECRET_KEY
+        # Use dedicated MFA key (no fallback to SECRET_KEY for security)
         mfa_key = getattr(settings, 'MFA_ENCRYPTION_KEY', None)
         if not mfa_key:
-            # Fallback for backwards compatibility
-            if not settings.DEBUG:
-                warnings.warn(
-                    "MFA_ENCRYPTION_KEY not configured. Using SECRET_KEY as fallback. "
-                    "Set MFA_ENCRYPTION_KEY in production for key rotation safety.",
-                    UserWarning
-                )
-            mfa_key = settings.SECRET_KEY
+            raise ImproperlyConfigured(
+                "MFA_ENCRYPTION_KEY must be configured. Generate with: "
+                "python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
         
         # Derive a Fernet key from the source key
         key = hashlib.sha256(mfa_key.encode()).digest()

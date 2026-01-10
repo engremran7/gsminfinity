@@ -195,6 +195,16 @@ class PendingFirmware(Timestamped):
     )
     admin_notes = models.TextField(blank=True, default="")
     category_locked = models.BooleanField(default=False)
+    
+    class Meta:
+        indexes = [
+            # Index for admin moderation queries (filtering by decision and ordering by date)
+            models.Index(fields=['admin_decision', '-created_at'], name='pend_decision_created_idx'),
+            # Index for extraction status filtering
+            models.Index(fields=['extraction_status'], name='pend_extraction_idx'),
+            # Composite index for uploader-specific pending items
+            models.Index(fields=['uploader', 'admin_decision', '-created_at'], name='pend_uploader_decision_idx'),
+        ]
 
     def __str__(self):
         # Use AI-detected or uploaded fields to create meaningful representation

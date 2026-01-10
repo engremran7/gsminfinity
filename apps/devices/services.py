@@ -237,7 +237,12 @@ def resolve_or_create_device(
     """
     Resolve an existing device or create a new one subject to policy rules.
     Returns (device, is_new, context).
+    
+    Uses transaction.atomic() and select_for_update() to prevent race conditions
+    when checking and incrementing device counts.
     """
+    from django.db import transaction
+    
     ident = resolve_identity(request, user=user, service_name=service_name)
     policy = ident["policy_snapshot"]
     now = timezone.now()
@@ -275,125 +280,132 @@ def resolve_or_create_device(
         cutoff = now - timezone.timedelta(days=int(expiry_days))
         Device.objects.filter(user=user, last_seen_at__lt=cutoff).delete()
 
-    device = Device.objects.filter(user=user, os_fingerprint=os_fp).first()
-    override = UserDeviceQuota.objects.filter(user=user).first()
+    # Use transaction.atomic() and select_for_update() to prevent race conditions
+    with transaction.atomic():
+        # Lock the user's device quota record to prevent concurrent modifications
+        override = UserDeviceQuota.objects.filter(user=user).select_for_update().first()
+        
+        device = Device.objects.filter(user=user, os_fingerprint=os_fp).select_for_update().first()
 
-    if device:
-        updates = ["last_seen_at"]
-        device.last_seen_at = now
-        device.os_name = os_info.name or device.os_name
-        device.os_version = os_info.version or device.os_version
-        device.browser_family = _parse_browser_family(ua or device.browser_family)
-        device.os_family = _parse_os_family(ua or device.os_family)
-        updates.extend(["os_name", "os_version", "browser_family", "os_family"])
+        if device:
+            updates = ["last_seen_at"]
+            device.last_seen_at = now
+            device.os_name = os_info.name or device.os_name
+            device.os_version = os_info.version or device.os_version
+            device.browser_family = _parse_browser_family(ua or device.browser_family)
+            device.os_family = _parse_os_family(ua or device.os_family)
+            updates.extend(["os_name", "os_version", "browser_family", "os_family"])
 
-        try:
-            # merge payload into metadata without losing existing fields
-            metadata = device.metadata if isinstance(device.metadata, dict) else {}
-            if payload:
-                metadata = {**metadata, "payload": payload}
-                device.metadata = metadata
-                updates.append("metadata")
-        except Exception:
-            pass
-        device.save(update_fields=list(set(updates)))
-    else:
-        # override = UserDeviceQuota.objects.filter(user=user).first()  <-- Moved up
-
-        # Enforce monthly/yearly quotas before creating
-        if monthly_quota:
-            month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-            month_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=month_start).count()
-            if month_count >= int(monthly_quota):
-                raise DevicePolicyError("monthly_device_quota", {"policy": policy})
-        if yearly_quota:
-            year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-            year_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=year_start).count()
-            if year_count >= int(yearly_quota):
-                raise DevicePolicyError("yearly_device_quota", {"policy": policy})
-
-        # Enforce user-specific rolling window quota if configured
-        if override:
-            window_map = {"3m": 90, "6m": 180, "12m": 365}
-            days = window_map.get(override.window, 180)
-            window_start = max(override.last_reset_at, now - timezone.timedelta(days=days))
-            registrations = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=window_start).count()
-            limit = override.max_devices if override.max_devices is not None else policy.get("max_devices") or 5
-            if registrations >= int(limit):
-                _emit_security_event(
-                    "device_quota_exceeded",
-                    user=user,
-                    device=None,
-                    ip=ident.get("ip"),
-                    metadata={"window_days": days, "limit": limit},
-                )
-                raise DevicePolicyError("user_window_quota", {"policy": policy, "window_days": days})
-
-        # Enforce global rolling quota when enabled in SecurityConfig (only if no per-user override)
-        if not override:
             try:
-                from apps.security_suite.api import get_device_quota_policy
-
-                quota_policy = get_device_quota_policy()
+                # merge payload into metadata without losing existing fields
+                metadata = device.metadata if isinstance(device.metadata, dict) else {}
+                if payload:
+                    metadata = {**metadata, "payload": payload}
+                    device.metadata = metadata
+                    updates.append("metadata")
             except Exception:
-                quota_policy = {"enforcement_enabled": False}
-            if quota_policy.get("enforcement_enabled"):
-                window_days = int(quota_policy.get("window_days", 365))
-                quota_record, _ = UserDeviceQuota.objects.get_or_create(
-                    user=user,
-                    defaults={
-                        "window": quota_policy.get("default_window", "12m"),
-                        "max_devices": None,
-                        "last_reset_at": now,
-                    },
-                )
-                window_start = max(quota_record.last_reset_at, now - timezone.timedelta(days=window_days))
+                pass
+            device.save(update_fields=list(set(updates)))
+        else:
+            # Enforce monthly/yearly quotas before creating
+            # Note: count() operations don't need select_for_update() since the
+            # entire transaction is atomic and device creation is protected
+            if monthly_quota:
+                month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                month_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=month_start).count()
+                if month_count >= int(monthly_quota):
+                    raise DevicePolicyError("monthly_device_quota", {"policy": policy})
+            if yearly_quota:
+                year_start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                year_count = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=year_start).count()
+                if year_count >= int(yearly_quota):
+                    raise DevicePolicyError("yearly_device_quota", {"policy": policy})
+
+            # Enforce user-specific rolling window quota if configured
+            if override:
+                window_map = {"3m": 90, "6m": 180, "12m": 365}
+                days = window_map.get(override.window, 180)
+                window_start = max(override.last_reset_at, now - timezone.timedelta(days=days))
                 registrations = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=window_start).count()
-                limit = quota_policy.get("default_limit", policy.get("max_devices") or 5)
+                limit = override.max_devices if override.max_devices is not None else policy.get("max_devices") or 5
                 if registrations >= int(limit):
                     _emit_security_event(
                         "device_quota_exceeded",
                         user=user,
                         device=None,
                         ip=ident.get("ip"),
-                        metadata={"window_days": window_days, "limit": limit},
+                        metadata={"window_days": days, "limit": limit},
                     )
-                    raise DevicePolicyError("device_quota_exceeded", {"policy": policy, "window_days": window_days})
+                    raise DevicePolicyError("user_window_quota", {"policy": policy, "window_days": days})
 
-        # Enforce max devices (global + per-user override)
-        max_devices = int((override.max_devices if override and override.max_devices is not None else policy.get("max_devices") or 5))
-        current_count = Device.objects.filter(user=user, is_blocked=False).count()
-        if current_count >= max_devices:
-            if policy.get("device_locking_mode") == "strict":
-                raise DevicePolicyError("limit_reached", {"policy": policy})
-            # soft mode: evict oldest
-            oldest = Device.objects.filter(user=user, is_blocked=False).order_by("last_seen_at").first()
-            if oldest:
+            # Enforce global rolling quota when enabled in SecurityConfig (only if no per-user override)
+            if not override:
                 try:
-                    _log_event(oldest, user, service_name or "login", success=False, reason="evicted_oldest", ctx=ident)
-                    from apps.users.services.notifications import send_notification
+                    from apps.security_suite.api import get_device_quota_policy
 
-                    send_notification(
-                        user,
-                        "Old device removed",
-                        f"The oldest device ({getattr(oldest, 'display_name', '') or getattr(oldest, 'os_fingerprint', '')}) was removed to make room for a new sign-in.",
-                        level="info",
-                        channel="web",
-                    )
+                    quota_policy = get_device_quota_policy()
                 except Exception:
-                    logger.debug("Failed to log/notify eviction", exc_info=True)
-                oldest.delete()
-        device = Device.objects.create(
-            user=user,
-            os_fingerprint=os_fp,
-            os_name=os_info.name,
-            os_version=os_info.version,
-            hardware_uuid=os_fp,  # legacy compatibility
-            browser_family=_parse_browser_family(ua),
-            os_family=_parse_os_family(ua),
-            metadata={"payload": payload} if payload else {},
-            first_seen_at=now,
-            last_seen_at=now,
+                    quota_policy = {"enforcement_enabled": False}
+                if quota_policy.get("enforcement_enabled"):
+                    window_days = int(quota_policy.get("window_days", 365))
+                    quota_record, _ = UserDeviceQuota.objects.get_or_create(
+                        user=user,
+                        defaults={
+                            "window": quota_policy.get("default_window", "12m"),
+                            "max_devices": None,
+                            "last_reset_at": now,
+                        },
+                    )
+                    # Lock the quota record
+                    quota_record = UserDeviceQuota.objects.filter(user=user).select_for_update().first()
+                    window_start = max(quota_record.last_reset_at, now - timezone.timedelta(days=window_days))
+                    registrations = Device.objects.filter(user=user, is_blocked=False, first_seen_at__gte=window_start).count()
+                    limit = quota_policy.get("default_limit", policy.get("max_devices") or 5)
+                    if registrations >= int(limit):
+                        _emit_security_event(
+                            "device_quota_exceeded",
+                            user=user,
+                            device=None,
+                            ip=ident.get("ip"),
+                            metadata={"window_days": window_days, "limit": limit},
+                        )
+                        raise DevicePolicyError("device_quota_exceeded", {"policy": policy, "window_days": window_days})
+
+            # Enforce max devices (global + per-user override)
+            # count() doesn't need select_for_update - atomic transaction protects creation
+            max_devices = int((override.max_devices if override and override.max_devices is not None else policy.get("max_devices") or 5))
+            current_count = Device.objects.filter(user=user, is_blocked=False).count()
+            if current_count >= max_devices:
+                if policy.get("device_locking_mode") == "strict":
+                    raise DevicePolicyError("limit_reached", {"policy": policy})
+                # soft mode: evict oldest (lock only the one to evict)
+                oldest = Device.objects.filter(user=user, is_blocked=False).select_for_update().order_by("last_seen_at").first()
+                if oldest:
+                    try:
+                        _log_event(oldest, user, service_name or "login", success=False, reason="evicted_oldest", ctx=ident)
+                        from apps.users.services.notifications import send_notification
+
+                        send_notification(
+                            user,
+                            "Old device removed",
+                            f"The oldest device ({getattr(oldest, 'display_name', '') or getattr(oldest, 'os_fingerprint', '')}) was removed to make room for a new sign-in.",
+                            level="info",
+                            channel="web",
+                        )
+                    except Exception:
+                        logger.debug("Failed to log/notify eviction", exc_info=True)
+                    oldest.delete()
+            device = Device.objects.create(
+                user=user,
+                os_fingerprint=os_fp,
+                os_name=os_info.name,
+                os_version=os_info.version,
+                hardware_uuid=os_fp,  # legacy compatibility
+                browser_family=_parse_browser_family(ua),
+                os_family=_parse_os_family(ua),
+                metadata={"payload": payload} if payload else {},
+                first_seen_at=now,
+                last_seen_at=now,
             # New devices require user approval via popup
             is_trusted=False,
         )

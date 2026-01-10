@@ -65,7 +65,7 @@ class BrandAdmin(admin.ModelAdmin):
             <div style="background-color: #f0f7ff; padding: 15px; border-radius: 5px; border-left: 4px solid #3b82f6;">
                 <h4 style="margin-top: 0;">Auto-Fill Missing Fields</h4>
                 <p>Click the button below to automatically fill missing fields from internet sources and AI:</p>
-                <button type="button" onclick="autofillBrand({obj.pk})" style="
+                <button type="button" onclick="autofillBrand({obj.pk}, event)" style="
                     background-color: #3b82f6;
                     color: white;
                     padding: 8px 16px;
@@ -78,26 +78,11 @@ class BrandAdmin(admin.ModelAdmin):
                     This will fetch data from GSMArena and AI sources to complete missing information.
                 </p>
             </div>
-            <script>
-            function autofillBrand(brandId) {{
-                fetch(`/api/firmwares/brand/${{brandId}}/autofill/`, {{
-                    method: 'POST',
-                    headers: {{'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value}}
-                }})
-                .then(r => r.json())
-                .then(data => {{
-                    if (data.success) {{
-                        alert('Auto-fill completed! Refresh the page to see changes.');
-                        location.reload();
-                    }} else {{
-                        alert('Error: ' + (data.error || 'Unknown error'));
-                    }}
-                }})
-                .catch(e => alert('Error: ' + e.message));
-            }}
-            </script>
         ''')
     autofill_help.short_description = 'Auto-Fill Assistant'
+    
+    class Media:
+        js = ('firmwares/js/admin_autofill.js',)
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(Count('models'))

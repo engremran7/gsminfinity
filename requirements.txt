@@ -53,6 +53,7 @@ python-dotenv>=1.0.1
 requests>=2.32.3
 whitenoise>=6.8.2
 httpx>=0.28.1
+python-magic>=0.4.27  # For MIME type detection in file uploads
 
 # -----------------------------------------------------------------------------
 # Testing & Quality (dev dependencies)
